@@ -1,0 +1,36 @@
+{
+  "name": "AI Team Room",
+  "short_name": "AI Team",
+  "description": "Автономная команда ИИ-агентов — 3D студия и командный чат",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0d0d",
+  "theme_color": "#6c63ff",
+  "orientation": "any",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Командный чат",
+      "short_name": "Чат",
+      "description": "Открыть командный чат",
+      "url": "/?view=chat",
+      "icons": [{"src": "/static/icons/icon-192.png", "sizes": "192x192"}]
+    }
+  ]
+}

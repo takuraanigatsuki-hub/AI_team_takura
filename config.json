@@ -1,0 +1,20 @@
+{
+    "host": "0.0.0.0",
+    "port": 8000,
+    "learning_interval_min": 5,
+    "learning_interval_max": 15,
+    "learning_sources": [
+        "web_search",
+        "wikipedia",
+        "devto",
+        "github",
+        "habr",
+        "stackoverflow",
+        "hackernews",
+        "books",
+        "arxiv",
+        "gutenberg"
+    ],
+    "persist_knowledge": true,
+    "debug": false
+}

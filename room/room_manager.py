@@ -1,0 +1,274 @@
+import asyncio
+import json
+from datetime import datetime
+from typing import Dict, Set, Any, Optional
+from fastapi import WebSocket
+
+from task_history import TaskHistory
+
+LEARNING_TYPES = frozenset({
+    "learning", "learning_result", "reflection", "rest"
+})
+
+WORK_TYPES = frozenset({
+    "user_message", "system", "error", "task_received", "task_done",
+    "assignment", "orchestrating", "pm_plan", "message", "site_ready",
+    "react_preview",
+})
+
+
+class RoomManager:
+    """Менеджер комнаты — координирует всех агентов и WebSocket соединения"""
+
+    def __init__(self):
+        self.active_connections: Set[WebSocket] = set()
+        self.agents: Dict[str, Any] = {}
+        self.work_history = []
+        self.learning_history = []
+        self.max_history = 500
+        self.task_history = TaskHistory()
+        self._last_submitted_id: Optional[str] = None
+        self.current_plan: Optional[dict] = None
+
+    def register_agent(self, agent):
+        self.agents[agent.agent_id] = agent
+        agent.room_manager = self
+
+    def _channel_for(self, msg_type: str) -> str:
+        if msg_type in LEARNING_TYPES:
+            return "learning"
+        return "work"
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.add(websocket)
+
+        if self.work_history:
+            await websocket.send_text(json.dumps({
+                "type": "history",
+                "channel": "work",
+                "messages": self.work_history[-100:]
+            }, ensure_ascii=False))
+
+        if self.learning_history:
+            await websocket.send_text(json.dumps({
+                "type": "history",
+                "channel": "learning",
+                "messages": self.learning_history[-100:]
+            }, ensure_ascii=False))
+
+        await websocket.send_text(json.dumps({
+            "type": "agents_state",
+            "agents": [agent.get_state() for agent in self.agents.values()]
+        }, ensure_ascii=False))
+
+        await websocket.send_text(json.dumps({
+            "type": "task_history",
+            "stats": self.task_history.stats(),
+            "tasks": self.task_history.get_all()[:80],
+            "timestamp": datetime.now().isoformat()
+        }, ensure_ascii=False))
+
+        if self.current_plan:
+            await websocket.send_text(json.dumps({
+                "type": "pm_plan",
+                "agent_id": "pm",
+                "agent_name": "Виктор",
+                "agent_emoji": "🎯",
+                "message": self.current_plan.get("plan", ""),
+                "task": self.current_plan.get("task", ""),
+                "channel": "work",
+                "timestamp": datetime.now().isoformat()
+            }, ensure_ascii=False))
+
+        await self.broadcast_work({
+            "type": "system",
+            "message": "🟢 Пользователь подключился к комнате",
+            "timestamp": datetime.now().isoformat()
+        }, exclude=websocket)
+
+    async def disconnect(self, websocket: WebSocket):
+        self.active_connections.discard(websocket)
+        await self.broadcast_work({
+            "type": "system",
+            "message": "🔴 Пользователь покинул комнату",
+            "timestamp": datetime.now().isoformat()
+        })
+
+    def _append_history(self, message: dict, channel: str):
+        message["channel"] = channel
+        if channel == "learning":
+            self.learning_history.append(message)
+            if len(self.learning_history) > self.max_history:
+                self.learning_history = self.learning_history[-self.max_history:]
+        else:
+            self.work_history.append(message)
+            if len(self.work_history) > self.max_history:
+                self.work_history = self.work_history[-self.max_history:]
+
+    async def broadcast(self, message: dict, exclude: WebSocket = None):
+        """Обратная совместимость — маршрутизация по каналу."""
+        ch = message.get("channel") or self._channel_for(message.get("type", ""))
+        message["channel"] = ch
+        self._append_history(message, ch)
+        await self._send_to_clients(message, exclude)
+
+    async def broadcast_work(self, message: dict, exclude: WebSocket = None):
+        message["channel"] = "work"
+        self._append_history(message, "work")
+        await self._send_to_clients(message, exclude)
+
+    async def broadcast_learning(self, message: dict, exclude: WebSocket = None):
+        message["channel"] = "learning"
+        self._append_history(message, "learning")
+        await self._send_to_clients(message, exclude)
+
+    async def _send_to_clients(self, message: dict, exclude: WebSocket = None):
+        message_text = json.dumps(message, ensure_ascii=False)
+        disconnected = set()
+        for connection in self.active_connections:
+            if connection == exclude:
+                continue
+            try:
+                await connection.send_text(message_text)
+            except Exception:
+                disconnected.add(connection)
+        for conn in disconnected:
+            self.active_connections.discard(conn)
+
+    async def send_agents_state(self):
+        await self.broadcast({
+            "type": "agents_state",
+            "agents": [agent.get_state() for agent in self.agents.values()]
+        })
+
+    def has_pending_work(self) -> bool:
+        if self.task_history.get_active():
+            return True
+        for agent in self.agents.values():
+            if not agent.task_queue.empty():
+                return True
+        return False
+
+    async def handle_user_message(self, data: dict):
+        msg_type = data.get("type", "task")
+        target = data.get("target", "all")
+        text = data.get("text", "")
+
+        if not text.strip():
+            return
+
+        await self.broadcast_work({
+            "type": "user_message",
+            "message": text,
+            "target": target,
+            "timestamp": datetime.now().isoformat()
+        })
+
+        if msg_type == "task":
+            self._last_submitted_id = self.task_history.add_submitted(text, target, msg_type)
+            await self._broadcast_task_history()
+
+            if target == "all":
+                pm = self.agents.get("pm")
+                if pm:
+                    await pm.orchestrate_task(text, self.agents, parent_id=self._last_submitted_id)
+                else:
+                    for agent in self.agents.values():
+                        child_id = self.task_history.add_queued(
+                            text, agent.agent_id, agent.name, agent.emoji,
+                            parent_id=self._last_submitted_id, sender="Пользователь"
+                        )
+                        await agent.assign_task(
+                            text, sender="Пользователь",
+                            parent_id=self._last_submitted_id, task_id=child_id
+                        )
+            elif target == "pm":
+                pm = self.agents.get("pm")
+                if pm:
+                    await pm.orchestrate_task(text, self.agents, parent_id=self._last_submitted_id)
+            else:
+                agent = self.agents.get(target)
+                if agent:
+                    child_id = self.task_history.add_queued(
+                        text, target, agent.name, agent.emoji,
+                        parent_id=self._last_submitted_id, sender="Пользователь"
+                    )
+                    await agent.assign_task(
+                        text, sender="Пользователь",
+                        parent_id=self._last_submitted_id, task_id=child_id
+                    )
+                else:
+                    await self.broadcast_work({
+                        "type": "error",
+                        "message": f"Агент '{target}' не найден",
+                        "timestamp": datetime.now().isoformat()
+                    })
+
+        elif msg_type == "chat":
+            if target == "all":
+                pm = self.agents.get("pm")
+                if pm:
+                    await pm.assign_task(f"Ответь на вопрос: {text}", sender="Пользователь")
+            else:
+                agent = self.agents.get(target)
+                if agent:
+                    await agent.handle_direct_chat(text)
+                else:
+                    await self.broadcast_work({
+                        "type": "error",
+                        "message": f"Агент '{target}' не найден",
+                        "timestamp": datetime.now().isoformat()
+                    })
+
+        elif msg_type == "direct_chat":
+            agent = self.agents.get(target)
+            if agent:
+                await agent.handle_direct_chat(text)
+            else:
+                await self.broadcast_work({
+                    "type": "error",
+                    "message": f"Агент '{target}' не найден",
+                    "timestamp": datetime.now().isoformat()
+                })
+
+    async def start_all_agents(self):
+        for agent in self.agents.values():
+            await agent.start()
+
+        await self.broadcast_work({
+            "type": "system",
+            "message": "🚀 Все агенты запущены и готовы к работе!",
+            "timestamp": datetime.now().isoformat()
+        })
+
+    async def stop_all_agents(self):
+        for agent in self.agents.values():
+            await agent.stop()
+
+    async def state_broadcaster(self):
+        while True:
+            await asyncio.sleep(3)
+            if self.active_connections:
+                await self.send_agents_state()
+
+    async def _broadcast_task_history(self):
+        await self.broadcast({
+            "type": "task_history",
+            "stats": self.task_history.stats(),
+            "tasks": self.task_history.get_all()[:80],
+            "timestamp": datetime.now().isoformat()
+        })
+
+    def record_task_started(self, task_id: str):
+        if task_id:
+            self.task_history.mark_in_progress(task_id)
+
+    def record_task_completed(self, task_id: str, response: str,
+                              agent_name: str = "", agent_emoji: str = ""):
+        if task_id:
+            self.task_history.mark_completed(task_id, response, agent_name, agent_emoji)
+
+    def record_task_failed(self, task_id: str, error: str = ""):
+        if task_id:
+            self.task_history.mark_failed(task_id, error)
