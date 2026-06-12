@@ -220,9 +220,15 @@
                 <span class="dl-memory-badge">${escape(next.source || 'auto')}</span>
                 <strong>${escape(next.name || 'Следующий макет')}</strong>
                 ${next.url ? `<a href="${escape(next.url)}" target="_blank" rel="noopener" class="dl-link">Открыть ↗</a>` : ''}
-            </div>` : '<p class="muted">Очередь пуста — нажмите «Сканировать» или подключите Figma OAuth</p>'}
+            </div>` : `<p class="muted">${escape(disc.empty_queue_hint || 'Очередь пуста — нажмите «Сканировать»')}</p>`}
+            ${(disc.hints || []).length ? `<ul class="dl-discovery-hints">${(disc.hints || []).map((h) =>
+                `<li class="muted">${escape(h)}</li>`).join('')}</ul>` : ''}
+            ${(disc.scan_blockers || []).length ? `<ul class="dl-discovery-blockers">${(disc.scan_blockers || []).map((b) =>
+                `<li>⚠️ ${escape(b)}</li>`).join('')}</ul>` : ''}
             <p class="muted dl-discovery-meta">
-                ${disc.last_scan_at ? `Скан: ${formatTime(disc.last_scan_at)}` : 'Скан ещё не выполнялся'}
+                ${disc.api_connected ? `API: ${escape(disc.auth_method || 'ok')}` : 'API: не подключён'}
+                ${typeof disc.teams_count === 'number' ? ` · teams: ${disc.teams_count}` : ''}
+                ${disc.last_scan_at ? ` · Скан: ${formatTime(disc.last_scan_at)}` : ''}
                 ${disc.last_study_at ? ` · Изучено: ${formatTime(disc.last_study_at)}` : ''}
             </p>`;
 

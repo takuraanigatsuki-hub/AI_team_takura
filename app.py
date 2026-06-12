@@ -1259,6 +1259,30 @@ def _figma_is_configured() -> bool:
     return is_figma_connected()
 
 
+async def _bootstrap_figma_discovery(room_manager) -> None:
+    """При старте — заполнить очередь из каталога/web_cache без ожидания фонового цикла."""
+    import asyncio
+    import config as cfg_module
+
+    await asyncio.sleep(3)
+    if not cfg_module.config.get("figma_study_enabled", True):
+        return
+    if not cfg_module.config.get("figma_auto_discover", True):
+        return
+    frontend = room_manager.agents.get("frontend")
+    if not frontend:
+        return
+    try:
+        from integrations.figma_discovery import run_discovery_scan
+
+        scan = await run_discovery_scan(frontend, include_web=True)
+        if scan.get("added"):
+            print(f"🎨 Figma discovery: в очередь добавлено {scan['added']} макет(ов)")
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("Figma discovery bootstrap: %s", e)
+
+
 async def _build_design_lab_payload() -> dict:
     """Полный ответ Дизайн-лаба — один источник для /api/figma/studio и /api/figma/design-lab."""
     from integrations.figma_discovery import enrich_discovery_status

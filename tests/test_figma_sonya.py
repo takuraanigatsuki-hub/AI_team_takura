@@ -24,13 +24,22 @@ def test_parse_figma_url_site_not_api():
 
 
 def test_parse_figma_url_design_supported():
-    from integrations.figma_client import parse_figma_url, is_figma_api_url
+    from integrations.figma_client import parse_figma_url, is_figma_api_url, is_valid_file_key
 
     url = "https://www.figma.com/design/abc123/My-File?node-id=1-2"
     parsed = parse_figma_url(url)
     assert parsed["file_type"] == "design"
     assert parsed["api_supported"] is True
     assert is_figma_api_url(url) is True
+    assert is_valid_file_key("abc123") is True
+    assert is_valid_file_key("1175755450846438274") is False
+
+
+def test_community_numeric_id_not_api_url():
+    from integrations.figma_client import is_figma_api_url
+
+    url = "https://www.figma.com/community/file/1175755450846438274"
+    assert is_figma_api_url(url) is False
 
 
 def test_rate_limit_cooldown_capped():
@@ -119,6 +128,30 @@ def test_figma_discovery_extract_urls():
     assert len(urls) == 1
     assert "abc123XYZ" in urls[0]
     assert file_key_to_url("abc123XYZ", "Test") == "https://www.figma.com/design/abc123XYZ/test"
+
+
+def test_figma_discovery_web_cache_enqueue(tmp_path, monkeypatch):
+    from integrations import figma_discovery as fd
+
+    disc_file = tmp_path / "sonya_figma_discovery.json"
+    monkeypatch.setattr(fd, "DISCOVERY_FILE", str(disc_file))
+
+    url = "https://www.figma.com/design/fk1qJWkEEIOPSIlMa5Q1OS/eCommerce-Landing"
+    state = fd.load_discovery()
+    state["web_cache"] = [url]
+    fd.save_discovery(state)
+
+    added = fd._enqueue_cached_web_urls(state)
+    assert added == 1
+    assert state["queue"][0]["file_key"] == "fk1qJWkEEIOPSIlMa5Q1OS"
+
+
+def test_figma_discovery_catalog_not_empty():
+    from integrations.figma_discovery import get_catalog
+
+    catalog = get_catalog()
+    assert len(catalog) >= 1
+    assert catalog[0].get("file_key")
 
 
 def test_figma_discovery_queue_and_status(tmp_path, monkeypatch):
