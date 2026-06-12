@@ -17,6 +17,10 @@ def _load_component(filename: str) -> str:
     return ""
 
 
+def _inject_task(template: str, task: str) -> str:
+    return template.replace("__TASK__", _esc(task))
+
+
 def is_site_task(task: str) -> bool:
     t = task.lower()
     return any(w in t for w in [
@@ -30,44 +34,44 @@ def generate_react_preview(task: str) -> dict:
     title = task[:60] if task else "Компонент"
 
     if is_site_task(task):
-        return {"title": "Готовый сайт", "code": _WEBSITE.format(task=_esc(task)), "is_site": True}
+        return {"title": "Готовый сайт", "code": _inject_task(_WEBSITE, task), "is_site": True}
 
     if any(w in t for w in ["логин", "login", "авториз", "вход", "sign in"]):
-        return {"title": "Форма входа", "code": _LOGIN_FORM.format(task=_esc(task))}
+        return {"title": "Форма входа", "code": _inject_task(_LOGIN_FORM, task)}
 
     if any(w in t for w in ["регистрац", "register", "signup", "sign up"]):
         return {"title": "Регистрация", "code": _build_register_form(task)}
 
     if any(w in t for w in ["кнопк", "button", "btn"]):
-        return {"title": "Интерактивная кнопка", "code": _BUTTON.format(task=_esc(task))}
+        return {"title": "Интерактивная кнопка", "code": _inject_task(_BUTTON, task)}
 
     if any(w in t for w in ["todo", "список дел", "задач", "чеклист", "checklist"]):
-        return {"title": "Todo-лист", "code": _TODO.format(task=_esc(task))}
+        return {"title": "Todo-лист", "code": _inject_task(_TODO, task)}
 
     if any(w in t for w in ["счётчик", "счетчик", "counter", "клик"]):
-        return {"title": "Счётчик", "code": _COUNTER.format(task=_esc(task))}
+        return {"title": "Счётчик", "code": _inject_task(_COUNTER, task)}
 
     if any(w in t for w in ["карточ", "card", "товар", "product"]):
-        return {"title": "Карточка", "code": _CARD.format(task=_esc(task))}
+        return {"title": "Карточка", "code": _inject_task(_CARD, task)}
 
     if any(w in t for w in ["таблиц", "table", "данн", "data grid"]):
-        return {"title": "Таблица данных", "code": _TABLE.format(task=_esc(task))}
+        return {"title": "Таблица данных", "code": _inject_task(_TABLE, task)}
 
     if any(w in t for w in ["модал", "modal", "диалог", "popup", "попап"]):
-        return {"title": "Модальное окно", "code": _MODAL.format(task=_esc(task))}
+        return {"title": "Модальное окно", "code": _inject_task(_MODAL, task)}
 
     if any(w in t for w in ["дашборд", "dashboard", "панел", "аналитик", "статистик"]):
-        return {"title": "Дашборд", "code": _DASHBOARD.format(task=_esc(task))}
+        return {"title": "Дашборд", "code": _inject_task(_DASHBOARD, task)}
 
     if any(w in t for w in ["навигац", "navbar", "меню", "header", "шапк"]):
-        return {"title": "Навигация", "code": _NAVBAR.format(task=_esc(task))}
+        return {"title": "Навигация", "code": _inject_task(_NAVBAR, task)}
 
     if any(w in t for w in ["форм", "form", "input", "поле"]):
-        return {"title": "Форма", "code": _GENERIC_FORM.format(task=_esc(task))}
+        return {"title": "Форма", "code": _inject_task(_GENERIC_FORM, task)}
 
     palettes = [_HERO, _CARD, _COUNTER, _BUTTON, _TODO]
     pick = random.choice(palettes)
-    return {"title": "UI компонент", "code": pick.format(task=_esc(task))}
+    return {"title": "UI компонент", "code": _inject_task(pick, task)}
 
 
 _COMMON_STYLES = """
@@ -89,7 +93,7 @@ const styles = {
   footer: { marginTop: 20, fontSize: 13, color: '#6b7280', textAlign: 'center' },
   link: { color: '#6c63ff', textDecoration: 'none', fontWeight: 600 },
 };
-const task = "{task}";
+const task = "__TASK__";
 """
 
 _REGISTER_STYLES = _COMMON_STYLES
@@ -99,8 +103,9 @@ def _build_register_form(task: str) -> str:
     component = _load_component("RegistrationForm.jsx")
     if component:
         body = re.sub(r"^/\*\*.*?\*/\s*", "", component, count=1, flags=re.DOTALL).strip()
-        return _REGISTER_STYLES.format(task=_esc(task)) + "\n" + body
-    return _REGISTER_FORM.format(task=_esc(task))
+        return _inject_task(_REGISTER_STYLES + "\n" + body, task)
+    return _inject_task(_REGISTER_FORM, task)
+
 
 _BUTTON = _COMMON_STYLES + """
 function App() {
@@ -110,7 +115,7 @@ function App() {
     <div style={styles.page}>
       <div style={styles.card}>
         <h1 style={styles.title}>Кнопка</h1>
-        <p style={styles.sub}>Задача: "{task}"</p>
+        <p style={styles.sub}>Задача: "__TASK__"</p>
         <button
           style={{...styles.btn, transform: hover ? 'scale(1.05)' : 'scale(1)', transition: 'all 0.2s'}}
           onMouseEnter={() => setHover(true)}
@@ -344,7 +349,7 @@ function App() {
 _WEBSITE = """
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const task = "{task}";
+  const task = "__TASK__";
   const features = [
     { icon: '⚡', title: 'Быстро', desc: 'Оптимизированная загрузка и Core Web Vitals' },
     { icon: '🎨', title: 'Красиво', desc: 'Современный UI с адаптивной вёрсткой' },

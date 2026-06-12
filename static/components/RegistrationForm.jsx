@@ -1,7 +1,7 @@
 /**
  * RegistrationForm — React-компонент регистрации.
  * Используется в React Preview (Соня) и как эталон для UI-задач.
- * Placeholder {task} подставляется генератором preview.
+ * Переменная task задаётся в react_preview.py (placeholder __TASK__).
  */
 function App() {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
