@@ -1008,6 +1008,7 @@
         in_progress: 'выполняется',
         awaiting_approval: '⏳ на проверке',
         revision_requested: '✎ правки',
+        cancelled: 'отменено',
         completed: '✓ готово',
         failed: 'ошибка',
     };
@@ -1171,10 +1172,11 @@
             const time = t.completed_at || t.awaiting_since || t.started_at || t.created_at;
             const timeStr = time ? formatTime(time) : '';
             const previewLink = t.preview_url
-                ? `<a href="${escapeHtml(t.preview_url)}" target="_blank" class="task-link-btn">👁 Preview</a>` : '';
-            const siteLink = t.agent_id === 'frontend' && t.status === 'awaiting_approval'
-                ? `<a href="/api/sites/latest" target="_blank" class="task-link-btn">🌐 Сайт</a>` : '';
-            const approvalBtns = t.status === 'awaiting_approval' ? `
+                ? `<a href="${escapeHtml(t.preview_url)}" target="_blank" rel="noopener" class="task-link-btn">👁 Preview</a>` : '';
+            const siteLink = (!t.parent_id && t.status === 'awaiting_approval')
+                ? `<a href="/api/sites/latest" target="_blank" rel="noopener" class="task-link-btn">🌐 Сайт</a>` : '';
+            const isTopLevel = !t.parent_id;
+            const approvalBtns = t.status === 'awaiting_approval' && isTopLevel ? `
                 <div class="task-approval">
                     <button type="button" class="btn-primary btn-sm" onclick="approveTask('${escapeHtml(t.id)}')">✓ Принять</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="requestTaskRevision('${escapeHtml(t.id)}')">✎ Правки</button>

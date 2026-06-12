@@ -515,7 +515,11 @@ a.dropdown-item {
 .tasks-layout { flex: 1; overflow: hidden; min-height: 0; background: var(--bg); }
 .tasks-layout.hidden { display: none !important; }
 .tasks-shell { max-width: 920px; margin: 0 auto; padding: 24px 20px; height: 100%; display: flex; flex-direction: column; min-height: 0; }
-.tasks-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; gap: 12px; }
+.tasks-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
+.tasks-head-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tasks-btn-warn { border-color: rgba(245, 158, 11, 0.45) !important; color: #f59e0b !important; }
+.tasks-btn-danger { border-color: rgba(239, 68, 68, 0.45) !important; color: #ef4444 !important; }
+.task-status-pill.cancelled { background: rgba(107, 114, 128, 0.15); color: #9ca3af; }
 .tasks-title { margin: 0; font-size: 22px; font-weight: 700; }
 .tasks-sub { margin: 4px 0 0; font-size: 13px; color: var(--text-muted); }
 .tasks-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
