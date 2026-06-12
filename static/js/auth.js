@@ -55,9 +55,11 @@
         const sub = currentUser.subscription || {};
         const bal = sub.balance_display != null ? sub.balance_display : (sub.balance ?? '—');
         const tierShort = sub.tier_emoji ? `${sub.tier_emoji}` : '';
+        const ownerBadge = currentUser.is_owner ? '<span class="hdr-owner" title="Владелец">👑 Owner</span>' : '';
         const adminBtn = (currentUser.is_owner || (currentUser.privileges || []).includes('manage_users'))
             ? `<button type="button" class="hdr-btn hdr-accent-purple" onclick="switchView('admin')" title="Admin">🛡</button>` : '';
         el.innerHTML = `
+            ${ownerBadge}
             <span class="hdr-balance" title="Баланс · ${sub.tier_name || 'Free'}">${tierShort} ${bal} кр.</span>
             ${adminBtn}
             <button type="button" class="hdr-btn" onclick="switchView('profile')" title="Личный кабинет">👤 ${name}</button>

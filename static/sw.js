@@ -3,7 +3,7 @@
  * Обеспечивает установку на телефон и кэширование статики
  */
 
-const CACHE_NAME = 'ai-team-room-v2';
+const CACHE_NAME = 'ai-team-room-v3';
 const STATIC_ASSETS = [
   '/',
   '/static/css/main.css',

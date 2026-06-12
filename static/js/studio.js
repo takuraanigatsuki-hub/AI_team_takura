@@ -424,7 +424,7 @@
         const particles = scene.getObjectByName('ambientParticles');
         if (particles) particles.rotation.y = t * 0.015;
 
-        Object.entries(speechSprites).forEach(([id, sprite) => {
+        Object.entries(speechSprites).forEach(([id, sprite]) => {
             const mesh = agentMeshes[id];
             if (mesh) sprite.position.set(mesh.position.x, mesh.position.y + 2.1 + Math.sin(t * 3) * 0.05, mesh.position.z);
             if (sprite.userData.expires && performance.now() > sprite.userData.expires) {

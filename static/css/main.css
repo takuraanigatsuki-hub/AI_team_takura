@@ -2148,6 +2148,17 @@ body.has-pipeline .header { box-shadow: 0 2px 20px rgba(0,0,0,0.15); }
     white-space: nowrap;
 }
 
+.hdr-owner {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(232, 184, 74, 0.15);
+    border: 1px solid rgba(232, 184, 74, 0.35);
+    color: var(--empire-gold);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: 0.01ms !important;

@@ -13,6 +13,10 @@ SESSIONS_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "sessions.
 SESSION_COOKIE = "ai_team_session"
 SESSION_DAYS = 30
 
+PRIMARY_OWNER_EMAILS = frozenset({
+    "takura.anigatsuki@gmail.com",
+})
+
 ALL_PRIVILEGES = [
     "admin",
     "manage_users",
@@ -86,15 +90,54 @@ def _find_user_by_email(email: str) -> Optional[dict]:
     email = email.strip().lower()
     for u in _load(USERS_FILE):
         if u.get("email") == email:
-            return u
+            return _apply_primary_owner(u)
     return None
 
 
 def _find_user(user_id: str) -> Optional[dict]:
     for u in _load(USERS_FILE):
         if u.get("id") == user_id:
-            return u
+            return _apply_primary_owner(u)
     return None
+
+
+def _apply_primary_owner(raw: dict) -> dict:
+    """Гарантирует owner-права для основного владельца проекта."""
+    if not raw:
+        return raw
+    email = (raw.get("email") or "").strip().lower()
+    if email not in PRIMARY_OWNER_EMAILS:
+        return raw
+    from room.subscriptions import initial_billing_for_owner
+
+    changed = False
+    owner_billing = initial_billing_for_owner()
+    if raw.get("role") != "owner":
+        raw["role"] = "owner"
+        changed = True
+    if list(raw.get("privileges") or []) != list(ALL_PRIVILEGES):
+        raw["privileges"] = list(ALL_PRIVILEGES)
+        changed = True
+    for key, val in owner_billing.items():
+        if raw.get(key) != val:
+            raw[key] = val
+            changed = True
+    if not raw.get("setup_complete"):
+        raw["setup_complete"] = True
+        changed = True
+    if (changed) {
+        raw["updated_at"] = datetime.now().isoformat()
+        users = _load(USERS_FILE)
+        for i, u in enumerate(users):
+            if u.get("id") == raw.get("id"):
+                users[i] = raw
+                _save_users(users)
+                break
+    return raw
+
+
+def is_primary_owner_email(email: str) -> bool:
+    return (email or "").strip().lower() in PRIMARY_OWNER_EMAILS
 
 
 def _public_user(user: dict) -> dict:
