@@ -27,6 +27,7 @@ ALL_PRIVILEGES = [
     "backup",
     "pipeline",
     "view_link",
+    "view_agent_learning",
     "all_views",
     "skip_setup",
 ]
@@ -42,6 +43,7 @@ ROLE_PRIVILEGES = {
         "deploy",
         "backup",
         "pipeline",
+        "view_agent_learning",
         "all_views",
         "skip_setup",
     ],
@@ -182,6 +184,7 @@ def _public_user(user: dict) -> dict:
         "is_owner": role == "owner",
         "is_tech_admin": role == "tech_admin",
         "is_support": role == "support",
+        "can_view_agent_learning": can_view_agent_learning(user),
         "setup_complete": bool(user.get("setup_complete")),
         "default_view": user.get("default_view", "dashboard"),
         "theme": user.get("theme", "dark"),
