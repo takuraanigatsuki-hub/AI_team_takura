@@ -6,7 +6,7 @@
         { keys: 'Ctrl+1', action: () => switchView('studio'), label: '3D Студия' },
         { keys: 'Ctrl+2', action: () => switchView('chat'), label: 'Рабочий чат' },
         { keys: 'Ctrl+3', action: () => switchView('learning'), label: 'Обучение' },
-        { keys: 'Ctrl+4', action: () => switchView('design'), label: 'Design' },
+        { keys: 'Ctrl+4', action: () => switchView('design'), label: 'Дизайн-лаб' },
         { keys: 'Ctrl+5', action: () => switchView('tasks'), label: 'Задачи' },
         { keys: 'Ctrl+6', action: () => switchView('dashboard'), label: 'Dashboard' },
         { keys: 'Ctrl+K', action: () => toggleCommandPalette(), label: 'Командная палитра' },

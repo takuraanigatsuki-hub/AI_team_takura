@@ -89,10 +89,8 @@
         if (view === 'kanban' && window.KanbanUI) KanbanUI.refresh();
         if (view === 'sprint' && window.SprintUI) SprintUI.load();
         if (view === 'timeline' && window.TimelineUI) TimelineUI.load(1);
-        if (view === 'design' && window.Integrations) {
-            Integrations.loadDefaultFigmaUrl();
-            Integrations.loadFigmaStatus();
-            Integrations.loadSonyaStudio();
+        if (view === 'design' && window.SonyaDesignLab) {
+            SonyaDesignLab.load();
         }
         if (view === 'sonya-studio' && window.SonyaStudio) SonyaStudio.load();
         if (view === 'dashboard' && window.Dashboard) Dashboard.load();
@@ -450,7 +448,7 @@
                 if (data.channel === 'learning' || LEARNING_TYPES.has(data.type)) {
                     if (data.type === 'figma_study') {
                         addLearningAgentMessage({ ...data, type: 'figma_study', message: data.message || '' });
-                        if (window.Integrations) Integrations.loadSonyaStudio();
+                        if (window.SonyaDesignLab) SonyaDesignLab.loadLab();
                     } else if (data.agent_id) addLearningAgentMessage(data);
                 } else if (data.agent_id) {
                     addAgentMessage(data);

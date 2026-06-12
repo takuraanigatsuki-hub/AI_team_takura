@@ -185,10 +185,10 @@
     }
 
     async function importFigma() {
-        const input = document.getElementById('figmaUrlInput');
+        const input = document.getElementById('dlFigmaUrl') || document.getElementById('figmaUrlInput');
         const url = input?.value?.trim();
         if (!url) return;
-        const resultEl = document.getElementById('figmaImportResult');
+        const resultEl = document.getElementById('dlStudyPreview') || document.getElementById('figmaImportResult');
         if (resultEl) resultEl.innerHTML = '<div class="panel-empty">Импорт…</div>';
         try {
             const resp = await fetch('/api/figma/import', {
@@ -217,7 +217,7 @@
     }
 
     function renderFigmaResult(data) {
-        const el = document.getElementById('figmaImportResult');
+        const el = document.getElementById('dlStudyPreview') || document.getElementById('figmaImportResult');
         if (!el) return;
         const s = data.summary || {};
         const colors = (s.colors || []).map(c => `<span class="color-swatch" style="background:${c}" title="${c}"></span>`).join('');
@@ -244,7 +244,7 @@
             const resp = await fetch('/api/config');
             if (!resp.ok) return;
             const cfg = await resp.json();
-            const input = document.getElementById('figmaUrlInput');
+            const input = document.getElementById('dlFigmaUrl') || document.getElementById('figmaUrlInput');
             if (input && cfg.figma_default_url) input.value = cfg.figma_default_url;
             // Импорт только по кнопке — авто-импорт перегружал Figma API (429)
         } catch (_) {}
@@ -324,6 +324,7 @@
         triggerSonyaCreate,
         runCursor,
         importFigma,
+        renderFigmaResult,
         loadDefaultFigmaUrl,
         toggleCursorPanel,
         pickRepo,

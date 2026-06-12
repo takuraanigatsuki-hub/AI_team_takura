@@ -63,7 +63,7 @@
                     <option value="chat" ${formData.default_view === 'chat' ? 'selected' : ''}>💬 Рабочий чат</option>
                     <option value="kanban" ${formData.default_view === 'kanban' ? 'selected' : ''}>📌 Kanban</option>
                     <option value="sonya-studio" ${formData.default_view === 'sonya-studio' ? 'selected' : ''}>✨ Studio</option>
-                    <option value="design" ${formData.default_view === 'design' ? 'selected' : ''}>🎨 Design</option>
+                    <option value="design" ${formData.default_view === 'design' ? 'selected' : ''}>🎨 Дизайн-лаб</option>
                     <option value="profile" ${formData.default_view === 'profile' ? 'selected' : ''}>👤 Кабинет</option>
                 </select>
                 <label class="sw-label">Тема</label>
