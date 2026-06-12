@@ -1,11 +1,7 @@
 """Генерация runnable React-кода для live preview Сони."""
 import re
 import random
-from pathlib import Path
-
 from integrations.figma_client import parse_figma_url
-
-_COMPONENTS_DIR = Path(__file__).resolve().parent.parent / "static" / "components"
 
 
 def _esc(s: str) -> str:
