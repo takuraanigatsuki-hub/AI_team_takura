@@ -250,7 +250,7 @@ async def auth_me(request: Request):
 
 
 @app.post("/api/auth/setup")
-async def auth_setup(body: AuthSetup, request):
+async def auth_setup(body: AuthSetup, request: Request):
     from room.user_auth import get_user_from_token, complete_setup
     from room.project_memory import set_memory
     user = get_user_from_token(_get_session_token(request))
