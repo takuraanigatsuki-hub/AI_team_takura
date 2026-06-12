@@ -5,6 +5,7 @@ from room.task_routing import (
     should_emit_react_preview,
     should_export_site,
     should_run_architecture_debate,
+    should_sync_to_github,
 )
 from agents.pm_orchestrator import PMOrchestratorAgent
 from agents.react_preview import generate_react_preview
@@ -54,6 +55,11 @@ def test_accounting_table_routing():
     preview = generate_react_preview(t)
     assert preview["title"] == "Бухгалтерская таблица"
     assert "Дебет" in preview["code"]
+
+
+def test_no_github_sync_for_table():
+    t = "мне нужно создать таблицу для бухгалтерии"
+    assert should_sync_to_github(t) is False
 
 
 def test_pm_routes_presentation_to_presenter_only():

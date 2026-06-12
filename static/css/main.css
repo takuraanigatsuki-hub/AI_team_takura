@@ -961,6 +961,19 @@ a.dropdown-item {
 .message.system .msg-avatar { display: none; }
 .message.system .msg-body { max-width: 100%; }
 
+.message.result-ready {
+    flex-direction: column;
+    align-items: stretch;
+    background: rgba(108, 99, 255, 0.08);
+    border: 1px solid rgba(108, 99, 255, 0.25);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin: 8px 0;
+}
+.message.result-ready .msg-header { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+.result-ready-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.result-ready-actions .btn-sm { font-size: 12px; padding: 6px 12px; text-decoration: none; }
+
 .msg-text code { background: var(--code-bg); padding: 1px 4px; border-radius: 3px; font-family: var(--mono); font-size: 11px; }
 .msg-text pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px; margin-top: 6px; overflow-x: auto; font-size: 11px; }
 
