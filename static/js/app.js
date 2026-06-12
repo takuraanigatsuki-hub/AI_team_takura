@@ -59,6 +59,7 @@
         document.getElementById('sprintView')?.classList.toggle('hidden', view !== 'sprint');
         document.getElementById('timelineView')?.classList.toggle('hidden', view !== 'timeline');
         document.getElementById('projectsView')?.classList.toggle('hidden', view !== 'projects');
+        document.getElementById('profileView')?.classList.toggle('hidden', view !== 'profile');
 
         if (view === 'tasks') loadTasks();
         if (view === 'projects' && window.ProjectsUI) ProjectsUI.load();
@@ -73,6 +74,7 @@
         if (view === 'sonya-studio' && window.SonyaStudio) SonyaStudio.load();
         if (view === 'dashboard' && window.Dashboard) Dashboard.load();
         if (view === 'dashboard' && window.PowerPack) PowerPack.loadCostWidget();
+        if (view === 'profile' && window.ProfileCabinet) ProfileCabinet.load();
 
         clearInterval(dashboardRefreshTimer);
         if (view === 'dashboard') {
@@ -1004,7 +1006,7 @@
         connect();
 
         let startView = viewParam || (user?.default_view) || 'studio';
-        if (!['studio', 'chat', 'learning', 'design', 'sonya-studio', 'tasks', 'projects', 'kanban', 'sprint', 'timeline', 'dashboard'].includes(startView)) {
+        if (!['studio', 'chat', 'learning', 'design', 'sonya-studio', 'tasks', 'projects', 'kanban', 'sprint', 'timeline', 'dashboard', 'profile'].includes(startView)) {
             startView = 'studio';
         }
         switchView(startView);

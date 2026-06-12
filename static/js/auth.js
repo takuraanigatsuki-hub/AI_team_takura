@@ -7,15 +7,24 @@
             const r = await fetch('/api/auth/me', { credentials: 'same-origin' });
             if (!r.ok) {
                 currentUser = null;
+                updateHeader();
                 return null;
             }
             currentUser = await r.json();
             updateHeader();
+            applyUserTheme(currentUser);
             return currentUser;
         } catch (_) {
             currentUser = null;
+            updateHeader();
             return null;
         }
+    }
+
+    function applyUserTheme(user) {
+        if (!user?.theme || user.theme === 'auto') return;
+        if (localStorage.getItem('ai-team-room-theme')) return;
+        if (window.applyTheme) applyTheme(user.theme);
     }
 
     function getUser() {
@@ -41,8 +50,9 @@
                 <a href="/?auth=login" class="hdr-btn">Вход</a>`;
             return;
         }
+        const name = escape(currentUser.name || currentUser.email.split('@')[0]);
         el.innerHTML = `
-            <span class="user-name" title="${escape(currentUser.email)}">👤 ${escape(currentUser.name || currentUser.email)}</span>
+            <button type="button" class="hdr-btn" onclick="switchView('profile')" title="Личный кабинет">👤 ${name}</button>
             <button type="button" class="hdr-btn" onclick="Auth.logout()">Выход</button>
             <a href="/" class="hdr-btn hdr-icon user-home" title="Главный сайт">🏠</a>`;
     }

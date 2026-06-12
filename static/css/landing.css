@@ -207,6 +207,24 @@ a { color: inherit; text-decoration: none; }
 .lp-switch { text-align: center; margin-top: 16px; font-size: 14px; color: var(--lp-muted); }
 .lp-link { background: none; border: none; color: var(--lp-accent-2); cursor: pointer; font-size: 14px; text-decoration: underline; }
 
+.hidden { display: none !important; }
+
+.lp-user-bar { align-items: center; }
+.lp-user-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(108, 99, 255, 0.15);
+    border: 1px solid rgba(108, 99, 255, 0.35);
+    font-size: 14px;
+    font-weight: 500;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 @media (max-width: 900px) {
     .lp-hero { grid-template-columns: 1fr; }
     .lp-hero-visual { order: -1; }

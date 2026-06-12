@@ -1,6 +1,7 @@
-/** Landing page — вход, регистрация, переход в Dashboard */
+/** Landing page — вход, регистрация, личный кабинет на главной */
 (function () {
     let mode = 'login';
+    let currentUser = null;
 
     const modal = document.getElementById('authModal');
     const form = document.getElementById('authForm');
@@ -32,17 +33,62 @@
         document.getElementById('authSwitch').textContent = isReg ? 'Войти' : 'Зарегистрироваться';
     }
 
-    async function goDashboard() {
+    function showGuestUI() {
+        document.getElementById('lpAuthGuest')?.classList.remove('hidden');
+        document.getElementById('lpAuthUser')?.classList.add('hidden');
+        document.getElementById('lpHeroCtaGuest')?.classList.remove('hidden');
+        document.getElementById('lpHeroCtaUser')?.classList.add('hidden');
+        document.getElementById('lpCtaGuest')?.classList.remove('hidden');
+        document.getElementById('lpCtaUser')?.classList.add('hidden');
+    }
+
+    function showUserUI(user) {
+        currentUser = user;
+        document.getElementById('lpAuthGuest')?.classList.add('hidden');
+        document.getElementById('lpAuthUser')?.classList.remove('hidden');
+        document.getElementById('lpHeroCtaGuest')?.classList.add('hidden');
+        document.getElementById('lpHeroCtaUser')?.classList.remove('hidden');
+        document.getElementById('lpCtaGuest')?.classList.add('hidden');
+        document.getElementById('lpCtaUser')?.classList.remove('hidden');
+
+        const name = user.name || user.email?.split('@')[0] || 'Пользователь';
+        const pill = document.getElementById('lpUserPill');
+        if (pill) pill.textContent = `👤 ${name}`;
+
+        const ws = user.default_view && user.default_view !== 'profile'
+            ? `/app?view=${encodeURIComponent(user.default_view)}`
+            : '/app';
+        document.getElementById('lpBtnWorkspace')?.setAttribute('href', ws);
+        document.getElementById('lpHeroWorkspace')?.setAttribute('href', ws);
+    }
+
+    async function initAuth() {
         try {
             const r = await fetch('/api/auth/me', { credentials: 'same-origin' });
             if (r.ok) {
-                location.href = '/app?view=dashboard';
-            } else {
-                openModal('login');
+                const user = await r.json();
+                showUserUI(user);
+                return user;
             }
-        } catch (_) {
-            location.href = '/app?view=dashboard';
+        } catch (_) { /* guest */ }
+        showGuestUI();
+        return null;
+    }
+
+    async function goDashboard() {
+        const user = currentUser || await initAuth();
+        if (user) {
+            const view = user.default_view && user.default_view !== 'profile' ? user.default_view : 'dashboard';
+            location.href = `/app?view=${encodeURIComponent(view)}`;
+        } else {
+            openModal('login');
         }
+    }
+
+    async function logout() {
+        await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+        currentUser = null;
+        showGuestUI();
     }
 
     document.getElementById('btnLogin')?.addEventListener('click', () => openModal('login'));
@@ -51,6 +97,7 @@
     document.getElementById('btnHeroStart')?.addEventListener('click', () => openModal('register'));
     document.getElementById('btnCtaRegister')?.addEventListener('click', () => openModal('register'));
     document.getElementById('btnCtaLogin')?.addEventListener('click', () => openModal('login'));
+    document.getElementById('btnLogout')?.addEventListener('click', logout);
     document.getElementById('authClose')?.addEventListener('click', closeModal);
     document.getElementById('authBackdrop')?.addEventListener('click', closeModal);
     document.getElementById('authSwitch')?.addEventListener('click', () => {
@@ -84,12 +131,11 @@
     });
 
     const params = new URLSearchParams(location.search);
-    if (params.get('auth') === 'login') openModal('login');
-    if (params.get('auth') === 'register') openModal('register');
-
-    fetch('/api/auth/me', { credentials: 'same-origin' }).then((r) => {
-        if (r.ok) {
-            document.getElementById('btnDashboard')?.classList.add('logged-in');
+    initAuth().then((user) => {
+        if (user && !params.get('auth')) {
+            closeModal();
         }
-    }).catch(() => {});
+        if (params.get('auth') === 'login') openModal('login');
+        if (params.get('auth') === 'register') openModal('register');
+    });
 })();

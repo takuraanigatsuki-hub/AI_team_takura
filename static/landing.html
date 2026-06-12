@@ -22,10 +22,16 @@
         <a href="#team">Команда</a>
         <a href="#pricing">Старт</a>
     </nav>
-    <div class="lp-header-actions">
+    <div class="lp-header-actions" id="lpAuthGuest">
         <button type="button" class="lp-btn-ghost" id="btnLogin">Вход</button>
         <button type="button" class="lp-btn-primary" id="btnRegister">Регистрация</button>
         <button type="button" class="lp-btn-accent" id="btnDashboard">Dashboard →</button>
+    </div>
+    <div class="lp-header-actions lp-user-bar hidden" id="lpAuthUser">
+        <span class="lp-user-pill" id="lpUserPill">👤 …</span>
+        <a href="/app?view=profile" class="lp-btn-ghost">👤 Кабинет</a>
+        <a href="/app" class="lp-btn-accent" id="lpBtnWorkspace">Рабочая область →</a>
+        <button type="button" class="lp-btn-ghost" id="btnLogout">Выход</button>
     </div>
 </header>
 
@@ -36,9 +42,13 @@
             <span class="lp-badge">11 агентов · 3D Studio · Figma Pipeline</span>
             <h1>Автономная команда<br><span class="lp-gradient">ИИ-агентов</span> для вашего проекта</h1>
             <p class="lp-lead">PM координирует задачи, Соня делает UI из Figma, Лео пишет код через Cursor SDK. Kanban, Sprint, Dashboard — всё в одном месте.</p>
-            <div class="lp-hero-cta">
+            <div class="lp-hero-cta" id="lpHeroCtaGuest">
                 <button type="button" class="lp-btn-xl" id="btnHeroStart">Начать бесплатно</button>
                 <a href="/app" class="lp-btn-xl-outline">Открыть Dashboard</a>
+            </div>
+            <div class="lp-hero-cta hidden" id="lpHeroCtaUser">
+                <a href="/app" class="lp-btn-xl" id="lpHeroWorkspace">Перейти в рабочую область</a>
+                <a href="/app?view=profile" class="lp-btn-xl-outline">Личный кабинет</a>
             </div>
             <div class="lp-hero-stats">
                 <div><strong>11</strong><span>агентов</span></div>
@@ -90,9 +100,13 @@
     <section class="lp-cta" id="pricing">
         <h2>Готовы начать?</h2>
         <p>Регистрация за 30 секунд — мастер первой настройки проведёт через интерфейс.</p>
-        <div class="lp-hero-cta">
+        <div class="lp-hero-cta" id="lpCtaGuest">
             <button type="button" class="lp-btn-xl" id="btnCtaRegister">Создать аккаунт</button>
             <button type="button" class="lp-btn-xl-outline" id="btnCtaLogin">Уже есть аккаунт</button>
+        </div>
+        <div class="lp-hero-cta hidden" id="lpCtaUser">
+            <a href="/app" class="lp-btn-xl">Открыть Dashboard</a>
+            <a href="/app?view=profile" class="lp-btn-xl-outline">Настройки профиля</a>
         </div>
     </section>
 </main>
@@ -126,6 +140,6 @@
     </div>
 </div>
 
-<script src="/static/js/landing.js?v=1"></script>
+<script src="/static/js/landing.js?v=2"></script>
 </body>
 </html>

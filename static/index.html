@@ -31,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/main.css?v=19">
+    <link rel="stylesheet" href="/static/css/main.css?v=20">
 </head>
 <body>
 
@@ -97,6 +97,7 @@
             <button type="button" class="view-tab" data-view="sprint" onclick="switchView('sprint')">🏃 Sprint</button>
             <button type="button" class="view-tab" data-view="timeline" onclick="switchView('timeline')">⏱ Timeline</button>
             <button type="button" class="view-tab" data-view="dashboard" onclick="switchView('dashboard')">📊 Dashboard</button>
+            <button type="button" class="view-tab" data-view="profile" onclick="switchView('profile')">👤 Кабинет</button>
         </nav>
     </div>
 </header>
@@ -243,6 +244,22 @@
             <div class="dash-loading">Загрузка…</div>
         </div>
         <div class="llm-cost-bar" id="llmCostWidget">LLM: …</div>
+    </div>
+
+    <!-- PROFILE / ЛИЧНЫЙ КАБИНЕТ -->
+    <div id="profileView" class="profile-layout hidden">
+        <aside class="profile-sidebar">
+            <div class="profile-sidebar-head">
+                <h2>👤 Личный кабинет</h2>
+                <p class="muted">Профиль, настройки и безопасность</p>
+            </div>
+            <nav class="profile-tab-nav" id="profileTabNav"></nav>
+        </aside>
+        <main class="profile-main">
+            <div id="profileTabContent" class="profile-tab-content">
+                <div class="panel-empty">Загрузка…</div>
+            </div>
+        </main>
     </div>
 
     <!-- TASKS VIEW -->
@@ -562,13 +579,14 @@
 <script src="/static/js/ui-enhancements.js?v=2"></script>
 <script src="/static/js/dashboard.js?v=2"></script>
 <script src="/static/js/agent-activity.js?v=1"></script>
-<script src="/static/js/auth.js?v=1"></script>
+<script src="/static/js/auth.js?v=2"></script>
+<script src="/static/js/profile.js?v=1"></script>
 <script src="/static/js/setup-wizard.js?v=1"></script>
 <script src="/static/js/projects.js?v=2"></script>
 <script src="/static/js/sprint.js?v=1"></script>
 <script src="/static/js/power-pack.js?v=1"></script>
 <script src="/static/js/sonya-studio.js?v=3"></script>
-<script src="/static/js/app.js?v=16"></script>
+<script src="/static/js/app.js?v=17"></script>
 
 <!-- PWA: регистрация Service Worker -->
 <script>

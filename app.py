@@ -202,10 +202,10 @@ class AuthSetup(BaseModel):
 
 
 class AuthProfileUpdate(BaseModel):
-    name: str = ""
-    default_view: str = ""
-    theme: str = ""
-    project_goal: str = ""
+    name: str | None = None
+    default_view: str | None = None
+    theme: str | None = None
+    project_goal: str | None = None
 
 
 class AuthPasswordChange(BaseModel):
@@ -305,10 +305,10 @@ async def auth_update_profile(body: AuthProfileUpdate, request: Request):
     try:
         updated = update_profile(
             user["id"],
-            name=body.name if body.name else None,
-            default_view=body.default_view or None,
-            theme=body.theme or None,
-            project_goal=body.project_goal if body.project_goal is not None else None,
+            name=body.name,
+            default_view=body.default_view,
+            theme=body.theme,
+            project_goal=body.project_goal,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
