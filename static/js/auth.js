@@ -77,7 +77,7 @@
         if (!currentUser) {
             el.innerHTML = `
                 <a href="/" class="hdr-btn">На сайт</a>
-                <a href="/?auth=login" class="hdr-btn">Вход</a>`;
+                <a href="/login" class="hdr-btn">Вход</a>`;
             return;
         }
         const name = escape(currentUser.name || currentUser.email.split('@')[0]);

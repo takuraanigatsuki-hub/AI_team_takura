@@ -145,7 +145,7 @@ def _match_preview_template(task: str) -> dict:
     if is_site_task(task):
         return {"title": "Готовый сайт", "code": _fmt(_WEBSITE, task), "is_site": True}
 
-    if any(w in t for w in ["логин", "login", "авториз", "вход", "sign in"]):
+    if any(w in t for w in ["логин", "login", "авториз", "вход", "sign in", "форма логина", "форма входа"]):
         return {"title": "Форма входа", "code": _fmt(_LOGIN_FORM, task)}
 
     if any(w in t for w in ["регистрац", "register", "signup", "sign up"]):
@@ -241,20 +241,60 @@ _LOGIN_FORM = _COMMON_STYLES + """
 function App() {
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [error, setError] = useState('');
   const [ok, setOk] = useState(false);
-  const submit = (e) => { e.preventDefault(); if(email && pass) setOk(true); };
+  const submit = (e) => {
+    e.preventDefault();
+    setError('');
+    if (!email.trim()) { setError('Введите email'); return; }
+    if (!email.includes('@')) { setError('Некорректный email'); return; }
+    if (pass.length < 6) { setError('Пароль — минимум 6 символов'); return; }
+    setOk(true);
+  };
   return (
     <div style={styles.page}>
       <div style={styles.card}>
         <h1 style={styles.title}>Вход</h1>
         <p style={styles.sub}>{task}</p>
         {ok ? (
-          <div style={{padding: 16, background: '#ecfdf5', borderRadius: 10, color: '#059669'}}>✓ Добро пожаловать, {email}!</div>
+          <div style={{padding: 16, background: '#ecfdf5', borderRadius: 10, color: '#059669', fontSize: 14}}>
+            ✓ Добро пожаловать, {email}!
+          </div>
         ) : (
           <form onSubmit={submit}>
-            <input style={styles.input} placeholder="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
-            <input style={styles.input} placeholder="Пароль" type="password" value={pass} onChange={e => setPass(e.target.value)} />
+            <label style={{display:'block', fontSize:12, color:'#6b7280', marginBottom:4}}>Email</label>
+            <input
+              style={styles.input}
+              placeholder="you@company.com"
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              autoComplete="email"
+            />
+            <label style={{display:'block', fontSize:12, color:'#6b7280', marginBottom:4}}>Пароль</label>
+            <div style={{position:'relative', marginBottom: 12}}>
+              <input
+                style={{...styles.input, marginBottom: 0, paddingRight: 40}}
+                placeholder="минимум 6 символов"
+                type={showPass ? 'text' : 'password'}
+                value={pass}
+                onChange={e => setPass(e.target.value)}
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                style={{position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', border:'none', background:'none', cursor:'pointer', fontSize:14}}
+              >
+                {showPass ? '🙈' : '👁'}
+              </button>
+            </div>
+            {error && <p style={{color:'#ef4444', fontSize:13, margin:'0 0 12px'}}>{error}</p>}
             <button type="submit" style={{...styles.btn, width: '100%'}}>Войти</button>
+            <p style={{textAlign:'center', marginTop:16, fontSize:13, color:'#6b7280'}}>
+              Нет аккаунта? <span style={{color:'#4f7df3', cursor:'pointer'}}>Зарегистрироваться</span>
+            </p>
           </form>
         )}
       </div>

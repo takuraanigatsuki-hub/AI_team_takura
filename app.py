@@ -196,6 +196,16 @@ async def app_spa():
     return HTMLResponse("<h1>Static files not found</h1>")
 
 
+@app.get("/login", response_class=HTMLResponse)
+async def login_page():
+    """Страница входа"""
+    html_file = os.path.join(static_dir, "login.html")
+    if os.path.exists(html_file):
+        with open(html_file, "r", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    return RedirectResponse("/?auth=login")
+
+
 @app.get("/cabinet")
 async def cabinet_page():
     """Личный кабинет — редирект в приложение."""
