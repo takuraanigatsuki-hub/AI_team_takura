@@ -150,7 +150,9 @@ class FrontendDevAgent(BaseAgent):
                     "timestamp": preview["timestamp"],
                 })
 
-    async def handle_direct_chat(self, text: str):
+    async def handle_direct_chat(self, text: str, force_chat: bool = False):
+        from room.user_intent import classify_user_message, record_user_wish
+
         self.direct_chat.append({
             "role": "user",
             "text": text,
@@ -167,55 +169,44 @@ class FrontendDevAgent(BaseAgent):
                 "timestamp": datetime.now().isoformat()
             })
 
+        record_user_wish(text, self.agent_id)
+
         reply = await self._maybe_handle_studio_command(text)
         if reply is not None:
-            self.direct_chat.append({
-                "role": "agent",
-                "text": reply,
-                "timestamp": datetime.now().isoformat()
-            })
-            from direct_chat_store import DirectChatStore
-            DirectChatStore.save(self.agent_id, self.direct_chat)
-            if self.room_manager:
-                await self.room_manager.broadcast({
-                    "type": "direct_agent_message",
-                    "agent_id": self.agent_id,
-                    "agent_name": self.name,
-                    "agent_emoji": self.emoji,
-                    "message": reply,
-                    "status": "idle",
-                    "location": self.location,
-                    "timestamp": datetime.now().isoformat()
-                })
-            self.status = "idle"
+            await self._save_direct_reply(reply)
             return
 
+        if classify_user_message(text, force_chat=force_chat) == "work":
+            reply = await self._start_user_task(text, sender="Пользователь")
+            await self._save_direct_reply(reply, status="working")
+            return
+
+        response = await self._build_response(text)
         await self._emit_preview(text)
-
-        response = self.build_task_response(text, self._find_relevant_knowledge(text))
         response += f"\n\n🖥️ **React Preview** обновлён — смотрите панель «{self.last_preview['title']}»."
+        await self._save_direct_reply(response)
 
+    async def _save_direct_reply(self, reply: str, status: str = "idle"):
+        from direct_chat_store import DirectChatStore
         self.direct_chat.append({
             "role": "agent",
-            "text": response,
+            "text": reply,
             "timestamp": datetime.now().isoformat()
         })
-        from direct_chat_store import DirectChatStore
         DirectChatStore.save(self.agent_id, self.direct_chat)
-
         if self.room_manager:
             await self.room_manager.broadcast({
                 "type": "direct_agent_message",
                 "agent_id": self.agent_id,
                 "agent_name": self.name,
                 "agent_emoji": self.emoji,
-                "message": response,
-                "status": self.status,
+                "message": reply,
+                "status": status,
                 "location": self.location,
                 "timestamp": datetime.now().isoformat()
             })
-
-        self.status = "idle"
+        if status == "idle":
+            self.status = "idle"
 
     async def _process_task(self, task: dict):
         self.status = "working"

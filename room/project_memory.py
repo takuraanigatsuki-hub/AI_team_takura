@@ -44,11 +44,13 @@ def context_for_prompt() -> str:
     data = _load()
     if not data.get("brief") and not data.get("goals"):
         return ""
-    lines = ["Контекст проекта команды:"]
+    lines = ["Контекст проекта и пожелания пользователя:"]
     if data.get("brief"):
         lines.append(f"Brief: {data['brief']}")
     if data.get("goals"):
-        lines.append("Цели: " + "; ".join(data["goals"][:5]))
+        lines.append("Запросы пользователя (приоритет):")
+        for g in data["goals"][:6]:
+            lines.append(f"  • {g}")
     if data.get("constraints"):
         lines.append("Ограничения: " + "; ".join(data["constraints"][:5]))
     return "\n".join(lines)

@@ -201,6 +201,7 @@ class RoomManager:
             return
 
         from room.mention_parser import parse_mentions
+        from room.user_intent import record_user_wish
         text, mention_target = parse_mentions(text)
         if mention_target:
             target = mention_target
@@ -216,6 +217,7 @@ class RoomManager:
         })
 
         if msg_type == "task":
+            record_user_wish(text, target if target not in ("all", "pm") else None)
             self._last_submitted_id = self.task_history.add_submitted(text, target, msg_type)
             await self._broadcast_task_history()
 
@@ -258,14 +260,15 @@ class RoomManager:
             await self._maybe_github_sync(text)
 
         elif msg_type == "chat":
+            record_user_wish(text, target if target not in ("all", None) else "pm")
             if target == "all":
                 pm = self.agents.get("pm")
                 if pm:
-                    await pm.assign_task(f"Ответь на вопрос: {text}", sender="Пользователь")
+                    await pm.handle_direct_chat(text, force_chat=True)
             else:
                 agent = self.agents.get(target)
                 if agent:
-                    await agent.handle_direct_chat(text)
+                    await agent.handle_direct_chat(text, force_chat=True)
                 else:
                     await self.broadcast_work({
                         "type": "error",

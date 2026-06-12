@@ -262,9 +262,23 @@ class BaseAgent:
         if self._work_mode_active():
             return
         action = random.choices(
-            ["learn", "reflect", "rest"],
-            weights=[0.50, 0.15, 0.10]
+            ["learn", "reflect", "rest", "user_wish"],
+            weights=[0.42, 0.12, 0.08, 0.18]
         )[0]
+        if action == "user_wish":
+            try:
+                from room.user_intent import pick_idle_user_task
+                wish = pick_idle_user_task(self.agent_id)
+                if wish:
+                    await self._broadcast(
+                        f"🎯 Продолжаю ваш запрос: *{wish[:80]}{'…' if len(wish) > 80 else ''}*",
+                        "message"
+                    )
+                    await self._start_user_task(wish, sender="Ваш запрос")
+                    return
+            except Exception:
+                pass
+            action = "learn"
         if action == "learn":
             await self._learn()
         elif action == "reflect":
@@ -288,7 +302,14 @@ class BaseAgent:
         self.status = "learning"
         self.location = "library"
         topics = LEARNING_TOPICS.get(self.agent_id, ["programming best practices"])
-        topic = random.choice(topics)
+        try:
+            from room.user_intent import topics_from_user_wishes
+            user_topics = topics_from_user_wishes(self.agent_id, limit=4)
+            if user_topics:
+                topics = user_topics + topics
+        except Exception:
+            pass
+        topic = random.choice(topics[: min(10, len(topics))])
 
         await self._broadcast(f"📚 Изучаю: *{topic}*...", "learning")
 
@@ -935,8 +956,39 @@ class BaseAgent:
             "reflection"
         )
 
-    async def handle_direct_chat(self, text: str):
-        """Личный диалог с пользователем — обсуждение, доработки, ревизии."""
+    async def _start_user_task(self, text: str, sender: str = "Пользователь") -> str:
+        """Поставить запрос пользователя в очередь выполнения."""
+        if self.agent_id == "pm" and self.room_manager and hasattr(self, "orchestrate_task"):
+            parent_id = self.room_manager.task_history.add_submitted(text, "all", "direct")
+            await self.room_manager._broadcast_task_history()
+            await self.orchestrate_task(text, self.room_manager.agents, parent_id=parent_id)
+            return (
+                f"Понял! **Распределяю по команде**:\n_{text[:280]}{'…' if len(text) > 280 else ''}_\n\n"
+                "Следите за прогрессом во вкладке **Задачи**."
+            )
+
+        if self.room_manager:
+            parent_id = self.room_manager.task_history.add_submitted(text, self.agent_id, "direct")
+            await self.room_manager._broadcast_task_history()
+            child_id = self.room_manager.task_history.add_queued(
+                text, self.agent_id, self.name, self.emoji,
+                parent_id=parent_id, sender=sender,
+            )
+            await self.assign_task(
+                text, sender=sender, parent_id=parent_id, task_id=child_id,
+            )
+        else:
+            await self.assign_task(text, sender=sender)
+
+        return (
+            f"Понял и **взял в работу**:\n_{text[:280]}{'…' if len(text) > 280 else ''}_\n\n"
+            "Результат появится в **Задачах** и **Проектах**."
+        )
+
+    async def handle_direct_chat(self, text: str, force_chat: bool = False):
+        """Личный диалог — чат или реальное выполнение по запросу пользователя."""
+        from room.user_intent import classify_user_message, record_user_wish
+
         self.direct_chat.append({
             "role": "user",
             "text": text,
@@ -953,22 +1005,11 @@ class BaseAgent:
                 "timestamp": datetime.now().isoformat()
             })
 
-        revision_keys = ("переделай", "дополни", "измени", "улучши", "исправь", "доработай",
-                         "redo", "revise", "fix", "update", "переделать", "добавь")
-        is_revision = any(k in text.lower() for k in revision_keys)
+        record_user_wish(text, self.agent_id)
+        mode = classify_user_message(text, force_chat=force_chat)
 
-        if is_revision:
-            from room.artifact_store import get_latest_artifact
-            last = get_latest_artifact(self.agent_id)
-            if last:
-                task = f"Доработка «{last.get('title', 'проект')}»: {text}"
-                await self.assign_task(task, sender="Обсуждение")
-                reply = (
-                    f"Поняла! Беру последний артефакт «{last.get('title')}» и дорабатываю.\n"
-                    f"Запрос: {text}\n\nСледите за результатом в моей **Деятельности** и в «Проектах»."
-                )
-            else:
-                reply = "Пока нет готовых проектов для доработки. Дайте задачу в режиме «Задача» — создам первый артефакт."
+        if mode == "work":
+            reply = await self._start_user_task(text, sender="Пользователь")
         else:
             reply = await self._build_response(text)
 
@@ -986,12 +1027,13 @@ class BaseAgent:
                 "agent_name": self.name,
                 "agent_emoji": self.emoji,
                 "message": reply,
-                "status": self.status,
+                "status": "idle" if mode == "chat" else "working",
                 "location": self.location,
                 "timestamp": datetime.now().isoformat()
             })
 
-        self.status = "idle"
+        if mode == "chat":
+            self.status = "idle"
 
     async def _process_task(self, task: dict):
         self.status = "working"
