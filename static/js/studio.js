@@ -227,13 +227,13 @@
         grid.position.y = 0.02;
         scene.add(grid);
 
-        addZoneFloor(-2, -2, 16, 10, 0x4a5568, 0x6c9eff);
-        addZoneFloor(11, 7.5, 8, 8, 0x3d5248, 0x5ecf8a);
-        addZoneFloor(-10, 9, 6, 10, 0x454050, 0xc792ea);
+        addZoneFloor(-2, -2, 16, 10, 0x3a3548, 0x9d4edd);
+        addZoneFloor(11, 7.5, 8, 8, 0x2d4038, 0x5ecf8a);
+        addZoneFloor(-10, 9, 6, 10, 0x3a3540, 0xe8b84a);
 
-        addZoneSign('СТУДИЯ', -2, -7.2, 0x6c9eff);
+        addZoneSign('СТУДИЯ', -2, -7.2, 0x9d4edd);
         addZoneSign('ОТДЫХ', 11, 3.2, 0x5ecf8a);
-        addZoneSign('БИБЛИОТЕКА', -10, 3.5, 0xc792ea);
+        addZoneSign('БИБЛИОТЕКА', -10, 3.5, 0xe8b84a);
 
         buildDesks();
         buildRestRoom();
@@ -402,7 +402,7 @@
         fill.position.set(-8, 14, -6);
         scene.add(fill);
 
-        const studioLight = new THREE.PointLight(0x7aa2ff, 0.75, 22);
+        const studioLight = new THREE.PointLight(0xc77dff, 0.85, 22);
         studioLight.position.set(-2, 5, -2);
         scene.add(studioLight);
 
@@ -411,7 +411,7 @@
         scene.add(restLight);
         restLightPt = restLight;
 
-        const libLight = new THREE.PointLight(0xc792ea, 0.6, 18);
+        const libLight = new THREE.PointLight(0xe8b84a, 0.65, 18);
         libLight.position.set(-10, 4, 9);
         scene.add(libLight);
     }
