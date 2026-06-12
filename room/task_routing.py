@@ -63,3 +63,41 @@ def should_export_site(task_text: str) -> bool:
 def should_run_architecture_debate(task_text: str) -> bool:
     """Debate только для явной архитектуры/API — не для таблиц, UI, презентаций."""
     return classify_task_kind(task_text) in ("architecture", "api")
+
+
+def should_sync_to_github(task_text: str) -> bool:
+    """GitHub / Cloud Agent — только для явных coding-задач, не для таблиц/UI/презентаций."""
+    from config import config
+
+    if not config.get("github_sync_on_tasks", False):
+        return False
+    kind = classify_task_kind(task_text)
+    if kind in ("table", "presentation", "model_3d", "site", "ui", "document"):
+        return False
+    t = (task_text or "").lower()
+    code_hints = [
+        "github", "git ", "pull request", "pr ", "cursor", "рефактор", "refactor",
+        "implement", "backend", "endpoint", "fastapi", "api ", "код", "code ",
+        "deploy", "docker", "kubernetes", "микросервис", "архитектур",
+    ]
+    if kind in ("api", "architecture", "infra", "tests"):
+        return True
+    return any(h in t for h in code_hints)
+
+
+def should_use_m365(task_text: str) -> bool:
+    """Microsoft 365 — таблицы, презентации, документы."""
+    kind = classify_task_kind(task_text)
+    return kind in ("table", "presentation", "document")
+
+
+def delivery_channel(task_text: str) -> str:
+    """Куда отдавать результат: m365, preview, github."""
+    if should_use_m365(task_text):
+        return "m365"
+    kind = classify_task_kind(task_text)
+    if kind in ("site", "ui", "table"):
+        return "preview"
+    if should_sync_to_github(task_text):
+        return "github"
+    return "chat"
