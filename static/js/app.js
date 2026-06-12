@@ -603,7 +603,7 @@
             learning_result: 'находка',
             reflection: 'размышление',
             rest: 'отдых',
-            figma_study: 'Figma',
+            figma_study: '🎨 дизайн',
         }[type] || 'обучение');
     }
 
