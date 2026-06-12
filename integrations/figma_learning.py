@@ -117,7 +117,7 @@ def ensure_seed_patterns() -> None:
         _merge_builtin_pattern(bp)
 
 
-def _merge_patterns(figma_result: dict, source_url: str) -> dict:
+def _merge_patterns(figma_result: dict, source_url: str, *, study_source: str = "figma") -> dict:
     patterns = load_patterns()
     summary = figma_result.get("summary") or {}
 
@@ -128,6 +128,7 @@ def _merge_patterns(figma_result: dict, source_url: str) -> dict:
         "fonts": summary.get("fonts", [])[:6],
         "frames": [f.get("name") for f in (summary.get("frames") or [])[:8]],
         "timestamp": datetime.now().isoformat(),
+        "source": study_source,
     }
     patterns["studied"] = ([studied] + patterns.get("studied", []))[:30]
 
@@ -281,7 +282,13 @@ async def remember_figma_from_import(agent, figma_result: dict, source_url: str)
     return knowledge
 
 
-async def study_reference_file(agent, url: str) -> Optional[dict]:
+async def study_reference_file(
+    agent,
+    url: str,
+    *,
+    source: str = "figma",
+    discovery_meta: Optional[dict] = None,
+) -> Optional[dict]:
     from integrations.figma_client import get_client_async, parse_figma_url, is_figma_api_url
     from integrations.figma_rate_limit import FigmaRateLimitError, is_in_cooldown
 
@@ -305,10 +312,11 @@ async def study_reference_file(agent, url: str) -> Optional[dict]:
     except Exception as e:
         return {"error": str(e), "url": url}
 
-    patterns = _merge_patterns(result, url)
+    patterns = _merge_patterns(result, url, study_source=source)
     summary = result.get("summary") or {}
     frames = summary.get("frames") or []
     frame_names = ", ".join(f.get("name", "") for f in frames[:4] if f.get("name"))
+    discovery_source = (discovery_meta or {}).get("discovery_source", "")
 
     knowledge = {
         "topic": f"Figma: {summary.get('file_name', 'макет')}",
@@ -319,7 +327,8 @@ async def study_reference_file(agent, url: str) -> Optional[dict]:
             f"Шрифты: {', '.join((summary.get('fonts') or [])[:3]) or 'system'}."
         ),
         "url": url,
-        "source": "figma",
+        "source": source,
+        "discovery_source": discovery_source or None,
         "keywords": ["figma", "design", "ui", "tokens"] + (summary.get("colors") or [])[:3],
         "timestamp": datetime.now().isoformat(),
         "figma_data": {
@@ -334,13 +343,15 @@ async def study_reference_file(agent, url: str) -> Optional[dict]:
     agent._persist_knowledge()
 
     if agent.room_manager:
+        auto_label = "🔍 **Самостоятельно нашла**" if source == "figma_auto" else "🎨 **Figma Community**"
+        src_hint = f" · {discovery_source}" if discovery_source and source == "figma_auto" else ""
         await agent.room_manager.broadcast_learning({
             "type": "figma_study",
             "agent_id": agent.agent_id,
             "agent_name": agent.name,
             "agent_emoji": agent.emoji,
             "message": (
-                f"🎨 **Figma Community** · изучила «{summary.get('file_name')}»\n"
+                f"{auto_label}{src_hint} · изучила «{summary.get('file_name')}»\n"
                 f"Цвета: {', '.join(summary.get('colors', [])[:5]) or '—'}\n"
                 f"Фреймы: {frame_names or '—'}\n"
                 f"🔗 {url}"
@@ -454,6 +465,13 @@ async def run_figma_study_session(agent) -> bool:
                 return True
             if result and result.get("rate_limit"):
                 return await study_builtin_pattern(agent)
+
+    import config as cfg_module
+    if cfg_module.config.get("figma_auto_discover", True):
+        from integrations.figma_discovery import try_autonomous_study
+
+        if await try_autonomous_study(agent):
+            return True
 
     # Нет API-ссылок или все запросы неудачны — локальный референс или веб
     if random.random() < 0.65:

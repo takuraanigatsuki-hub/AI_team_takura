@@ -119,6 +119,24 @@ class FigmaClient:
             raise RuntimeError(f"Figma API {resp.status_code}: {resp.text[:300]}")
         return resp.json()
 
+    async def get_me(self) -> dict:
+        resp = await self._request("GET", f"{self.base}/me", timeout=15.0)
+        if resp.status_code != 200:
+            raise RuntimeError(f"Figma API {resp.status_code}: {resp.text[:300]}")
+        return resp.json()
+
+    async def get_team_projects(self, team_id: str) -> dict:
+        resp = await self._request("GET", f"{self.base}/teams/{team_id}/projects", timeout=20.0)
+        if resp.status_code != 200:
+            raise RuntimeError(f"Figma API {resp.status_code}: {resp.text[:300]}")
+        return resp.json()
+
+    async def get_project_files(self, project_id: str) -> dict:
+        resp = await self._request("GET", f"{self.base}/projects/{project_id}/files", timeout=20.0)
+        if resp.status_code != 200:
+            raise RuntimeError(f"Figma API {resp.status_code}: {resp.text[:300]}")
+        return resp.json()
+
     async def get_local_variables(self, file_key: str) -> dict:
         resp = await self._request(
             "GET", f"{self.base}/files/{file_key}/variables/local", timeout=20.0
