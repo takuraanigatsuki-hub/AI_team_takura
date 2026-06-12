@@ -129,7 +129,7 @@
         if (view === 'sprint' && window.SprintUI) SprintUI.load();
         if (view === 'timeline' && window.TimelineUI) TimelineUI.load(1);
         if (isAgentLearning && agentLearningPanel === 'learning') {
-            loadLearningHistory();
+            loadLearningHistory(true);
         }
         if (isAgentLearning && agentLearningPanel === 'design' && window.SonyaDesignLab) {
             SonyaDesignLab.load();
@@ -783,7 +783,7 @@
 
     let learningHistoryLoaded = false;
 
-    async function loadLearningHistory() {
+    async function loadLearningHistory(force = false) {
         if (!canViewAgentLearning(window.Auth?.getUser())) return;
         try {
             const r = await fetch('/api/history');
@@ -792,9 +792,10 @@
             const msgs = data.learning || [];
             const container = document.getElementById('learningMessages');
             if (!container) return;
-            if (!learningHistoryLoaded && msgs.length) {
+            if (!force && learningHistoryLoaded) return;
+            learningHistoryLoaded = true;
+            if (msgs.length) {
                 container.innerHTML = '';
-                learningHistoryLoaded = true;
                 msgs.slice(-120).forEach((m) => addLearningAgentMessage(m));
                 scrollToBottom('learningMessages');
             }

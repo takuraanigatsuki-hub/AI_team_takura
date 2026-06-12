@@ -186,8 +186,12 @@ class RoomManager:
         })
 
     def has_pending_work(self) -> bool:
-        """Есть ли задачи в работе (не «ждут подтверждения» — тогда агенты могут учиться)."""
-        blocking = ("submitted", "queued", "in_progress", "triaging", "revision_requested")
+        """Есть ли задачи, где агенты реально заняты.
+
+        «submitted» и «awaiting_approval» не блокируют обучение — иначе зависшие
+        или ожидающие проверки задачи навсегда отключают ленту обучения.
+        """
+        blocking = ("queued", "in_progress", "triaging", "revision_requested")
         if any(t.get("status") in blocking for t in self.task_history.tasks):
             return True
         for agent in self.agents.values():
