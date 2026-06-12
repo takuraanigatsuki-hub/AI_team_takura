@@ -48,6 +48,9 @@ def test_projects(client):
     r = client.get("/api/projects")
     assert r.status_code == 200
     assert "projects" in r.json()
+
+
+def test_integrations_status(client):
     r = client.get("/api/integrations/status")
     assert r.status_code == 200
     data = r.json()
