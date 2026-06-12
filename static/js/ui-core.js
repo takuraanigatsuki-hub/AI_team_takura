@@ -208,6 +208,154 @@
 
     document.addEventListener('auth:updated', onAuthUpdated);
 
+    /* ─── Activity stream (right panel) ─── */
+    const ACTIVITY_MAX = 80;
+    const activityItems = [];
+    let activityOpen = false;
+
+    function formatActivityTime(iso) {
+        if (!iso) return 'сейчас';
+        try {
+            const d = new Date(iso);
+            return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        } catch (_) {
+            return '';
+        }
+    }
+
+    function renderActivityFeed() {
+        const feed = document.getElementById('activityFeed');
+        if (!feed) return;
+        if (!activityItems.length) {
+            feed.innerHTML = `<li class="activity-empty">${emptyState({
+                icon: '📡',
+                title: 'Пока тихо',
+                text: 'Здесь появятся задачи, деплои и сообщения команды.',
+            })}</li>`;
+            return;
+        }
+        feed.innerHTML = activityItems.map((item) => `
+            <li class="activity-item activity-${esc(item.kind)}">
+                <span class="activity-icon" aria-hidden="true">${item.icon}</span>
+                <div class="activity-body">
+                    <p class="activity-text">${esc(item.text)}</p>
+                    <time class="activity-time">${formatActivityTime(item.at)}</time>
+                </div>
+            </li>`).join('');
+    }
+
+    function pushActivity(item) {
+        activityItems.unshift({
+            kind: item.kind || 'info',
+            icon: item.icon || '•',
+            text: String(item.text || '').slice(0, 240),
+            at: item.at || new Date().toISOString(),
+        });
+        if (activityItems.length > ACTIVITY_MAX) activityItems.length = ACTIVITY_MAX;
+        renderActivityFeed();
+        const badge = document.getElementById('activityBadge');
+        if (badge && !activityOpen) {
+            const n = Math.min(9, activityItems.length);
+            badge.textContent = n > 9 ? '9+' : String(n);
+            badge.style.display = 'grid';
+        }
+    }
+
+    function setActivityOpen(open) {
+        activityOpen = open;
+        document.body.classList.toggle('activity-open', open);
+        const panel = document.getElementById('activityPanel');
+        if (panel) {
+            panel.classList.toggle('open', open);
+            panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+        }
+        const toggle = document.getElementById('activityToggle');
+        if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open) {
+            const badge = document.getElementById('activityBadge');
+            if (badge) badge.style.display = 'none';
+            try { localStorage.setItem('ai-team-activity-open', '1'); } catch (_) {}
+        } else {
+            try { localStorage.removeItem('ai-team-activity-open'); } catch (_) {}
+        }
+    }
+
+    function toggleActivityPanel() {
+        setActivityOpen(!activityOpen);
+    }
+
+    function initActivityPanel() {
+        if (document.getElementById('activityPanel')) return;
+        const panel = document.createElement('aside');
+        panel.id = 'activityPanel';
+        panel.className = 'activity-panel';
+        panel.setAttribute('aria-label', 'Лента событий');
+        panel.setAttribute('aria-hidden', 'true');
+        panel.innerHTML = `
+            <div class="activity-panel-head">
+                <h2>📡 Лента</h2>
+                <button type="button" class="activity-close hdr-icon" id="activityClose" aria-label="Закрыть ленту">×</button>
+            </div>
+            <ul class="activity-feed" id="activityFeed"></ul>`;
+        document.body.appendChild(panel);
+        document.getElementById('activityClose')?.addEventListener('click', () => setActivityOpen(false));
+        document.getElementById('activityToggle')?.addEventListener('click', toggleActivityPanel);
+        renderActivityFeed();
+        try {
+            if (localStorage.getItem('ai-team-activity-open') === '1') setActivityOpen(true);
+        } catch (_) {}
+    }
+
+    function wsMessageToActivity(data) {
+        if (!data || !data.type) return;
+        const msg = String(data.message || data.task || '').replace(/[*#_`]/g, '').slice(0, 160);
+        const map = {
+            task_awaiting_approval: { icon: '⏳', kind: 'task', text: msg || 'Задача ждёт подтверждения' },
+            task_approved: { icon: '✓', kind: 'task', text: msg || 'Задача принята' },
+            task_revision: { icon: '✎', kind: 'task', text: msg || 'Отправлено на доработку' },
+            artifact_created: { icon: '📦', kind: 'artifact', text: msg || data.title || 'Новый артефакт' },
+            deploy_ready: { icon: '🚀', kind: 'deploy', text: msg || 'Deploy готов' },
+            site_ready: { icon: '🌐', kind: 'site', text: msg || 'Сайт готов' },
+            pr_ready: { icon: '🔗', kind: 'pr', text: msg || 'PR / commit готов' },
+            pipeline_update: data.pipeline?.finished_at
+                ? { icon: '⚡', kind: 'pipeline', text: 'Pipeline завершён' } : null,
+            system: msg ? { icon: 'ℹ️', kind: 'system', text: msg } : null,
+        };
+        const item = map[data.type];
+        if (item) pushActivity(item);
+    }
+
+    /* ─── Accessibility + onboarding ─── */
+    function announceLive(text) {
+        const el = document.getElementById('ariaLiveStatus');
+        if (!el || !text) return;
+        el.textContent = '';
+        requestAnimationFrame(() => { el.textContent = text; });
+    }
+
+    function initGuestOnboarding() {
+        if (localStorage.getItem('ai-team-onboard-v1')) return;
+        const host = document.getElementById('tasksView');
+        if (!host || host.querySelector('.onboard-banner')) return;
+        const bar = document.createElement('div');
+        bar.className = 'onboard-banner';
+        bar.setAttribute('role', 'note');
+        bar.innerHTML = `
+            <div class="onboard-banner-text">
+                <strong>Добро пожаловать в Inbox</strong>
+                <span class="muted">Отправьте задачу в чат — она появится здесь. Примите или отправьте на правки одной кнопкой.</span>
+            </div>
+            <button type="button" class="btn-secondary btn-sm" onclick="UICore.dismissOnboarding()">Понятно</button>`;
+        const header = host.querySelector('.view-header') || host.firstElementChild;
+        if (header?.nextSibling) host.insertBefore(bar, header.nextSibling);
+        else host.prepend(bar);
+    }
+
+    function dismissOnboarding() {
+        try { localStorage.setItem('ai-team-onboard-v1', '1'); } catch (_) {}
+        document.querySelector('.onboard-banner')?.remove();
+    }
+
     global.UICore = {
         esc,
         emptyState,
@@ -217,8 +365,15 @@
         updateHeaderContext,
         setMobileTabActive,
         initMobileNav,
+        initActivityPanel,
+        initGuestOnboarding,
+        toggleActivityPanel,
+        pushActivity,
+        announceLive,
+        dismissOnboarding,
         updateMobileBadges,
         STATUS_LABELS,
         PRIO_LABELS,
+        ActivityStream: { push: pushActivity, onWsMessage: wsMessageToActivity },
     };
 })(window);
