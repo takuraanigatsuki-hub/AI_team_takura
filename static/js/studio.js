@@ -51,6 +51,9 @@
     let sunLight = null;
     let restLightPt = null;
 
+    let initialized = false;
+    let onCanvasClickBound = null;
+
     function showError(msg) {
         const el = document.getElementById('studioError');
         if (el) {
@@ -158,19 +161,19 @@
     function buildRoom() {
         const floor = new THREE.Mesh(
             new THREE.PlaneGeometry(36, 28),
-            new THREE.MeshStandardMaterial({ color: 0x3a3f4a, roughness: 0.9 })
+            new THREE.MeshStandardMaterial({ color: 0x454b58, roughness: 0.82, metalness: 0.05 })
         );
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
         scene.add(floor);
 
-        const grid = new THREE.GridHelper(36, 36, 0x5a6270, 0x2e333c);
+        const grid = new THREE.GridHelper(36, 18, 0x6a7390, 0x323842);
         grid.position.y = 0.02;
         scene.add(grid);
 
-        addZoneFloor(-2, -2, 16, 10, 0x4a5060);
-        addZoneFloor(11, 7.5, 8, 8, 0x3d5248);
-        addZoneFloor(-10, 9, 6, 10, 0x454050);
+        addZoneFloor(-2, -2, 16, 10, 0x4a5568, 0x6c9eff);
+        addZoneFloor(11, 7.5, 8, 8, 0x3d5248, 0x5ecf8a);
+        addZoneFloor(-10, 9, 6, 10, 0x454050, 0xc792ea);
 
         addZoneSign('СТУДИЯ', -2, -7.2, 0x6c9eff);
         addZoneSign('ОТДЫХ', 11, 3.2, 0x5ecf8a);
@@ -202,14 +205,27 @@
         scene.add(points);
     }
 
-    function addZoneFloor(x, z, w, d, color) {
+    function addZoneFloor(x, z, w, d, color, accent) {
         const mesh = new THREE.Mesh(
             new THREE.PlaneGeometry(w, d),
-            new THREE.MeshStandardMaterial({ color, roughness: 0.85 })
+            new THREE.MeshStandardMaterial({
+                color,
+                roughness: 0.78,
+                emissive: accent || 0x000000,
+                emissiveIntensity: accent ? 0.08 : 0,
+            })
         );
         mesh.rotation.x = -Math.PI / 2;
         mesh.position.set(x, 0.03, z);
         scene.add(mesh);
+
+        const ring = new THREE.Mesh(
+            new THREE.RingGeometry(Math.min(w, d) * 0.32, Math.min(w, d) * 0.36, 32),
+            new THREE.MeshBasicMaterial({ color: accent || 0x888888, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(x, 0.04, z);
+        scene.add(ring);
     }
 
     function addZoneSign(text, x, z, color) {
@@ -316,25 +332,30 @@
     }
 
     function setupLights() {
-        scene.add(new THREE.AmbientLight(0xffffff, 0.65));
-        scene.add(new THREE.HemisphereLight(0xddeeff, 0x3a3f4a, 0.55));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.72));
+        scene.add(new THREE.HemisphereLight(0xb8d4ff, 0x2a3038, 0.62));
 
-        const sun = new THREE.DirectionalLight(0xffffff, 0.9);
-        sun.position.set(10, 20, 8);
+        const sun = new THREE.DirectionalLight(0xfff4e6, 1.05);
+        sun.position.set(10, 22, 8);
         sun.castShadow = true;
+        sun.shadow.mapSize.set(1024, 1024);
         scene.add(sun);
         sunLight = sun;
 
-        const fill = new THREE.DirectionalLight(0xaaccff, 0.35);
-        fill.position.set(-8, 12, -6);
+        const fill = new THREE.DirectionalLight(0x88aaff, 0.42);
+        fill.position.set(-8, 14, -6);
         scene.add(fill);
 
-        const restLight = new THREE.PointLight(0x5ecf8a, 0.6, 20);
+        const studioLight = new THREE.PointLight(0x7aa2ff, 0.75, 22);
+        studioLight.position.set(-2, 5, -2);
+        scene.add(studioLight);
+
+        const restLight = new THREE.PointLight(0x5ecf8a, 0.7, 20);
         restLight.position.set(11, 4, 7);
         scene.add(restLight);
         restLightPt = restLight;
 
-        const libLight = new THREE.PointLight(0xc792ea, 0.5, 18);
+        const libLight = new THREE.PointLight(0xc792ea, 0.6, 18);
         libLight.position.set(-10, 4, 9);
         scene.add(libLight);
     }
@@ -438,35 +459,46 @@
             return false;
         }
 
+        const { width, height } = getCanvasSize(canvas);
+        if (width < 200 || height < 150) {
+            return false;
+        }
+
+        if (initialized && renderer) {
+            onAgentClick = clickCallback;
+            resize(canvas);
+            return true;
+        }
+
         try {
             hideError();
             canvasEl = canvas;
             onAgentClick = clickCallback;
             clock = new THREE.Clock();
 
-            const { width, height } = getCanvasSize(canvas);
-
             scene = new THREE.Scene();
             setTheme(isDark);
 
-            camera = new THREE.PerspectiveCamera(55, width / height, 0.1, 200);
-            camera.position.set(0, 16, 20);
-            camera.lookAt(0, 0, 2);
+            camera = new THREE.PerspectiveCamera(52, width / height, 0.1, 200);
+            camera.position.set(2, 15, 18);
+            camera.lookAt(0, 0, 1);
 
-            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
             renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
             renderer.setSize(width, height, false);
-            renderer.outputEncoding = THREE.sRGBEncoding || undefined;
+            renderer.setClearColor(0x12141a, 1);
+            if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
             renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
             if (typeof THREE.OrbitControls !== 'undefined') {
                 controls = new THREE.OrbitControls(camera, canvas);
                 controls.enableDamping = true;
                 controls.dampingFactor = 0.08;
-                controls.maxPolarAngle = Math.PI / 2.05;
-                controls.minDistance = 6;
-                controls.maxDistance = 40;
-                controls.target.set(0, 0, 2);
+                controls.maxPolarAngle = Math.PI / 2.08;
+                controls.minDistance = 5;
+                controls.maxDistance = 38;
+                controls.target.set(0, 0, 1);
             } else {
                 console.warn('[Studio] OrbitControls недоступен — камера статична');
             }
@@ -485,14 +517,17 @@
                 agentMeshes[id] = mesh;
             });
 
-            canvas.addEventListener('click', onCanvasClick);
+            if (onCanvasClickBound) canvas.removeEventListener('click', onCanvasClickBound);
+            onCanvasClickBound = onCanvasClick;
+            canvas.addEventListener('click', onCanvasClickBound);
 
             if (resizeObserver) resizeObserver.disconnect();
             resizeObserver = new ResizeObserver(() => resize(canvas));
             resizeObserver.observe(canvas.parentElement || canvas);
 
             resize(canvas);
-            animate();
+            if (!animId) animate();
+            initialized = true;
             return true;
         } catch (err) {
             showError('Ошибка 3D: ' + (err.message || err));
@@ -614,10 +649,15 @@
     function setTheme(dark) {
         isDark = dark;
         if (!scene) return;
-        const bg = dark ? 0x1a1d24 : 0xd8dce6;
+        const bg = dark ? 0x12141a : 0xd4dae6;
+        const fogColor = dark ? 0x181b24 : 0xe0e5ef;
         scene.background = new THREE.Color(bg);
-        if (scene.fog) scene.fog.color.setHex(bg);
-        else scene.fog = new THREE.Fog(bg, 30, 70);
+        if (scene.fog) {
+            scene.fog.color.setHex(fogColor);
+        } else {
+            scene.fog = new THREE.Fog(fogColor, 28, 85);
+        }
+        if (renderer) renderer.setClearColor(bg, 1);
     }
 
     function setDayNight(isDay) {
@@ -643,12 +683,15 @@
 
     function destroy() {
         if (animId) cancelAnimationFrame(animId);
+        animId = null;
         if (resizeObserver) resizeObserver.disconnect();
         if (renderer) renderer.dispose();
+        initialized = false;
     }
 
     global.StudioApp = {
         init, updateAgents, resize, setTheme, destroy, setPipelineHighlight,
         showSpeechBubble, burstConfetti, flyToAgent, setDayNight, pulseScreen,
+        isReady: () => initialized,
     };
 })(window);

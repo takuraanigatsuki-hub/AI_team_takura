@@ -79,12 +79,16 @@
             }, 30000);
         }
 
-        if (view === 'studio' && !studioInited) {
-            initStudio();
-        }
-        if (view === 'studio' && studioInited) {
-            const canvas = document.getElementById('studioCanvas');
-            if (canvas && window.StudioApp) StudioApp.resize(canvas);
+        if (view === 'studio') {
+            if (!studioInited) {
+                initStudio();
+            } else {
+                requestAnimationFrame(() => {
+                    const canvas = document.getElementById('studioCanvas');
+                    if (canvas && window.StudioApp) StudioApp.resize(canvas);
+                    if (window.StudioMinimap) StudioMinimap.update(Object.values(agents));
+                });
+            }
         }
     };
 
@@ -92,22 +96,36 @@
         const canvas = document.getElementById('studioCanvas');
         if (!canvas || !window.StudioApp) return;
 
-        const tryInit = () => {
-            const ok = StudioApp.init(canvas, openPrivateChat);
-            if (!ok) return;
-            studioInited = true;
-            if (Object.keys(agents).length) {
-                StudioApp.updateAgents(Object.values(agents));
-            }
-            updateStudioLegend();
-        };
-
         if (typeof THREE === 'undefined') {
             setTimeout(initStudio, 200);
             return;
         }
 
-        requestAnimationFrame(() => requestAnimationFrame(tryInit));
+        let attempts = 0;
+        const tryInit = () => {
+            attempts += 1;
+            const ok = StudioApp.init(canvas, openPrivateChat);
+            if (ok) {
+                studioInited = true;
+                if (Object.keys(agents).length) {
+                    StudioApp.updateAgents(Object.values(agents));
+                }
+                updateStudioLegend();
+                if (window.StudioMinimap) StudioMinimap.update(Object.values(agents));
+                return;
+            }
+            if (attempts < 48) {
+                requestAnimationFrame(tryInit);
+                return;
+            }
+            const err = document.getElementById('studioError');
+            if (err) {
+                err.textContent = 'Не удалось запустить 3D-сцену. Обновите страницу (Ctrl+F5).';
+                err.style.display = 'flex';
+            }
+        };
+
+        requestAnimationFrame(tryInit);
     }
 
     // ─── Private chat windows ────────────────────────────
@@ -408,6 +426,7 @@
         if (selectedAgent && agents[selectedAgent]) renderAgentDetail(agents[selectedAgent]);
         if (studioInited && window.StudioApp) StudioApp.updateAgents(agentsList);
         updateStudioLegend();
+        if (window.StudioMinimap) StudioMinimap.update(agentsList);
         const working = agentsList.filter((a) => ['working', 'learning', 'thinking'].includes(a.status)).length;
         if (window.UIEnhancements) UIEnhancements.updateAgentFooter(working);
         const pill = document.getElementById('activeAgentsPill');
