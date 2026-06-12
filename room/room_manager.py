@@ -400,6 +400,26 @@ class RoomManager:
         })
 
         if msg_type == "task":
+            if user:
+                from room.task_limits import check_and_record
+                from room.user_auth import charge_user_action
+                ok, msg = check_and_record(user)
+                if not ok:
+                    await self.broadcast_work({
+                        "type": "error",
+                        "message": f"⚠️ {msg}",
+                        "timestamp": datetime.now().isoformat(),
+                    })
+                    return
+                ok, msg = charge_user_action(user.get("id", ""), "task")
+                if not ok:
+                    await self.broadcast_work({
+                        "type": "error",
+                        "message": f"⚠️ {msg}",
+                        "timestamp": datetime.now().isoformat(),
+                    })
+                    return
+
             dup = self.task_history.find_active_duplicate(text)
             if dup:
                 await self.broadcast_work({

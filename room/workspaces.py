@@ -59,3 +59,29 @@ def add_member(workspace_id: str, user_id: str) -> Optional[dict]:
             _save(workspaces)
             return w
     return None
+
+
+def set_active(user_id: str, workspace_id: str) -> None:
+    path = os.path.join(os.path.dirname(__file__), "..", "data", "active_workspaces.json")
+    data = {}
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            pass
+    data[user_id] = workspace_id
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def get_active(user_id: str) -> str:
+    path = os.path.join(os.path.dirname(__file__), "..", "data", "active_workspaces.json")
+    if not os.path.exists(path):
+        return ""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f).get(user_id, "")
+    except Exception:
+        return ""

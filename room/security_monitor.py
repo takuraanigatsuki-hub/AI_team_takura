@@ -155,6 +155,16 @@ class SecurityMonitor:
         )
         if severity in ("high", "critical"):
             self.block_ip(ip, minutes=30, reason=threat_type)
+        try:
+            from room import notifications
+            notifications.push(
+                f"🛡 Threat: {threat_type}",
+                detail[:200],
+                ntype="security",
+                link="/app?view=admin",
+            )
+        except Exception:
+            pass
         return event
 
     def pop_pending(self, limit: int = 5) -> list:

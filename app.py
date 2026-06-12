@@ -643,6 +643,74 @@ async def subscription_upgrade(body: SubscriptionUpgradeRequest, request: Reques
     return {"ok": True, "user": updated, "message": f"Тариф обновлён до {SUBSCRIPTION_PLANS[tier]['name_ru']}"}
 
 
+class StripeCheckoutBody(BaseModel):
+    tier: str
+    success_url: str = ""
+    cancel_url: str = ""
+
+
+@app.get("/api/billing/stripe/status")
+async def stripe_billing_status():
+    from integrations.stripe_billing import status as stripe_status
+    from room.feature_flags import is_enabled
+    s = stripe_status()
+    s["enabled"] = is_enabled("stripe_billing") and s["configured"]
+    return s
+
+
+@app.post("/api/billing/stripe/checkout")
+async def stripe_checkout(body: StripeCheckoutBody, request: Request):
+    from integrations.stripe_billing import create_checkout_session, is_configured
+    from room.feature_flags import is_enabled
+    if not is_enabled("stripe_billing") or not is_configured():
+        raise HTTPException(status_code=503, detail="Stripe billing не настроен")
+    user = _current_user(request)
+    base = str(request.base_url).rstrip("/")
+    success = body.success_url or f"{base}/app?view=profile"
+    cancel = body.cancel_url or f"{base}/app?view=profile"
+    try:
+        session = await create_checkout_session(
+            user_id=user["id"],
+            user_email=user["email"],
+            tier=body.tier.lower().strip(),
+            success_url=success,
+            cancel_url=cancel,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    return {"ok": True, "url": session.get("url"), "session_id": session.get("id")}
+
+
+@app.post("/api/billing/stripe/webhook")
+async def stripe_webhook(request: Request):
+    from integrations.stripe_billing import verify_webhook, handle_webhook_event
+    from room.user_auth import _load, _save_users, USERS_FILE
+    payload = await request.body()
+    sig = request.headers.get("stripe-signature", "")
+    if not verify_webhook(payload, sig):
+        raise HTTPException(status_code=400, detail="Invalid signature")
+    try:
+        event = json.loads(payload)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    result = handle_webhook_event(
+        event,
+        users_loader=lambda: _load(USERS_FILE),
+        users_saver=_save_users,
+    )
+    from room import notifications
+    if result.get("action") == "subscription_activated":
+        notifications.push(
+            "Подписка активирована",
+            f"Тариф {result.get('tier')} успешно подключён",
+            user_id=result.get("user_id", ""),
+            ntype="billing",
+        )
+    return result
+
+
 @app.post("/api/admin/billing/topup")
 async def admin_billing_topup(body: AdminBalanceRequest, request: Request):
     from room.user_auth import admin_add_balance
@@ -873,13 +941,20 @@ class TaskRequest(BaseModel):
 
 
 @app.post("/api/task")
-async def assign_task(request: TaskRequest):
+async def assign_task(req: Request, request: TaskRequest):
     """Назначить задачу через REST API"""
+    user = _optional_user(req)
+    if user:
+        from room.task_limits import check_and_record
+        ok, msg = check_and_record(user)
+        if not ok:
+            raise HTTPException(status_code=429, detail=msg)
+        _charge_or_forbid(user, "task")
     await room.handle_user_message({
         "type": "task",
         "text": request.text,
         "target": request.target
-    })
+    }, user=user)
     return {"status": "ok", "message": f"Задача назначена: {request.text}"}
 
 
@@ -2478,6 +2553,129 @@ async def update_feature_flag(body: FlagUpdate, request: Request):
 @app.get("/api/learning/skill-matrix")
 async def learning_skill_matrix():
     return room._learning_store().get_skill_matrix()
+
+
+# ─── Notifications ─────────────────────────────────────────────
+
+@app.get("/api/notifications")
+async def list_notifications(request: Request):
+    user = _optional_user(request)
+    from room import notifications
+    uid = user.get("id", "") if user else ""
+    return {
+        "items": notifications.list_for_user(uid),
+        "unread": notifications.unread_count(uid),
+    }
+
+
+class NotifReadBody(BaseModel):
+    id: str
+
+
+@app.post("/api/notifications/read")
+async def mark_notification_read(body: NotifReadBody, request: Request):
+    user = _optional_user(request)
+    from room import notifications
+    uid = user.get("id", "") if user else ""
+    ok = notifications.mark_read(body.id, uid)
+    return {"ok": ok}
+
+
+# ─── Dashboard layout ────────────────────────────────────────
+
+@app.get("/api/dashboard/layout")
+async def get_dashboard_layout(request: Request):
+    user = _optional_user(request)
+    from room.dashboard_layout import get_layout
+    return get_layout(user.get("id", "") if user else "")
+
+
+class DashboardLayoutBody(BaseModel):
+    widgets: list[str] = []
+    hidden: list[str] = []
+
+
+@app.post("/api/dashboard/layout")
+async def save_dashboard_layout(body: DashboardLayoutBody, request: Request):
+    user = _optional_user(request)
+    from room.dashboard_layout import save_layout
+    uid = user.get("id", "") if user else "default"
+    return {"ok": True, "layout": save_layout(uid, body.widgets, body.hidden)}
+
+
+# ─── Task comments ───────────────────────────────────────────
+
+class TaskCommentBody(BaseModel):
+    text: str = ""
+
+
+@app.get("/api/tasks/{task_id}/comments")
+async def get_task_comments(task_id: str):
+    return {"comments": room.task_history.get_comments(task_id)}
+
+
+@app.post("/api/tasks/{task_id}/comments")
+async def add_task_comment(task_id: str, body: TaskCommentBody, request: Request):
+    user = _current_user(request)
+    text = (body.text or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Text required")
+    c = room.task_history.add_comment(
+        task_id, text,
+        user_id=user.get("id", ""),
+        user_name=user.get("name") or user.get("email", "User").split("@")[0],
+    )
+    if not c:
+        raise HTTPException(status_code=404, detail="Task not found")
+    await room._broadcast_task_history()
+    return {"ok": True, "comment": c}
+
+
+# ─── Workspaces extended ─────────────────────────────────────
+
+class WorkspaceSwitchBody(BaseModel):
+    workspace_id: str = ""
+
+
+@app.post("/api/workspaces/active")
+async def set_active_workspace(body: WorkspaceSwitchBody, request: Request):
+    user = _current_user(request)
+    from room.workspaces import set_active, list_for_user
+    ws_list = list_for_user(user["id"])
+    if body.workspace_id and not any(w.get("id") == body.workspace_id for w in ws_list):
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    set_active(user["id"], body.workspace_id)
+    return {"ok": True, "active_id": body.workspace_id}
+
+
+@app.get("/api/workspaces/active")
+async def get_active_workspace(request: Request):
+    user = _optional_user(request)
+    if not user:
+        return {"active_id": ""}
+    from room.workspaces import get_active, list_for_user
+    aid = get_active(user["id"])
+    return {"active_id": aid, "workspaces": list_for_user(user["id"])}
+
+
+# ─── Investor digest ─────────────────────────────────────────
+
+@app.post("/api/investor/digest")
+async def send_investor_digest(request: Request):
+    from room.user_auth import can_access_admin
+    user = _current_user(request)
+    if not can_access_admin(user):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    stats = room.task_history.stats()
+    learning = room._learning_store().get_dashboard()
+    from room import notifications
+    body = (
+        f"Задач: {stats.get('completed', 0)} выполнено, "
+        f"{stats.get('active', 0)} в работе. "
+        f"Средняя оценка Маши: {learning.get('stats', {}).get('average_score', '—')}/10"
+    )
+    notifications.push("📊 Weekly Investor Update", body, ntype="investor", link="/investor")
+    return {"ok": True, "digest": body}
 
 
 @app.post("/api/deploy")

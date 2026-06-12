@@ -19,6 +19,7 @@ PUBLIC_WRITE = frozenset({
     "/api/auth/register",
     "/api/auth/login",
     "/api/telegram/webhook",
+    "/api/billing/stripe/webhook",
 })
 
 PUBLIC_GET = frozenset({

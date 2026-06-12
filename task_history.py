@@ -55,6 +55,8 @@ class TaskHistory:
             "started_at": None,
             "completed_at": None,
             "priority": "medium",
+            "comments": [],
+            "workspace_id": "",
         })
         self._save()
         return task_id
@@ -287,3 +289,28 @@ class TaskHistory:
         self.tasks = []
         self._save()
         return total
+
+    def add_comment(
+        self,
+        task_id: str,
+        text: str,
+        user_id: str = "",
+        user_name: str = "User",
+    ) -> Optional[Dict]:
+        t = self._find(task_id)
+        if not t or not text.strip():
+            return None
+        comment = {
+            "id": str(uuid.uuid4())[:8],
+            "text": text.strip()[:500],
+            "user_id": user_id,
+            "user_name": user_name[:60],
+            "created_at": datetime.now().isoformat(),
+        }
+        t.setdefault("comments", []).append(comment)
+        self._save()
+        return comment
+
+    def get_comments(self, task_id: str) -> list:
+        t = self._find(task_id)
+        return list(t.get("comments", [])) if t else []
