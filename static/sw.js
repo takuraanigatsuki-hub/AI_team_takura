@@ -3,12 +3,16 @@
  * Обеспечивает установку на телефон и кэширование статики
  */
 
-const CACHE_NAME = 'ai-team-room-v11';
+const CACHE_NAME = 'ai-team-room-v12';
 const STATIC_ASSETS = [
   '/',
   '/static/css/main.css',
+  '/static/css/landing.css',
   '/static/css/feature-pack.css',
   '/static/js/app.js',
+  '/static/js/landing.js',
+  '/static/js/landing-demo.js',
+  '/static/js/cinematic-onboarding.js',
   '/static/js/feature-pack.js',
   '/static/js/studio.js',
   '/static/js/studio-textures.js',

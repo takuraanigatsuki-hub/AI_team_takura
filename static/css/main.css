@@ -1851,7 +1851,42 @@ body.has-pipeline .header { box-shadow: 0 2px 20px rgba(0,0,0,0.15); }
 .stream-message .stream-badge { font-size: 10px; color: var(--accent); margin-left: 8px; animation: blink 1s infinite; }
 @keyframes blink { 50% { opacity: 0.3; } }
 .stream-body { font-family: ui-monospace, monospace; white-space: pre-wrap; font-size: 13px; }
-.debate-overlay, .onboard-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.debate-overlay, .onboard-overlay, .cinematic-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.cinematic-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    max-width: 440px;
+    width: 100%;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+}
+.cinematic-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    margin-bottom: 12px;
+}
+.cinematic-card h2 { font-size: 20px; margin-bottom: 8px; }
+.cinematic-lead { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px; }
+.cinematic-input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 56px;
+}
+.cinematic-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+
 .debate-card, .onboard-card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 20px; max-width: 520px; width: 100%; }
 .debate-round { margin: 10px 0; padding: 10px; background: var(--surface-2); border-radius: 8px; }
 .debate-agent { font-weight: 600; margin-bottom: 4px; }
