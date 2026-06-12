@@ -3,6 +3,91 @@
  */
 (function (global) {
     let cursorStatus = null;
+    let figmaStatus = null;
+
+    async function loadFigmaStatus() {
+        try {
+            const resp = await fetch('/api/figma/status');
+            if (resp.ok) figmaStatus = await resp.json();
+        } catch (_) {}
+        renderFigmaAccount();
+    }
+
+    function renderFigmaAccount() {
+        const label = document.getElementById('figmaAccountLabel');
+        const dot = document.getElementById('figmaAccountDot');
+        const connectBtn = document.getElementById('figmaConnectBtn');
+        const disconnectBtn = document.getElementById('figmaDisconnectBtn');
+        if (!label) return;
+
+        const s = figmaStatus || {};
+        if (s.auth_method === 'oauth') {
+            const who = s.user_handle || s.user_email || s.user_name || 'Figma';
+            label.textContent = `✓ ${who}`;
+            if (dot) dot.className = 'figma-account-dot connected';
+            connectBtn?.classList.add('hidden');
+            disconnectBtn?.classList.remove('hidden');
+        } else if (s.auth_method === 'pat') {
+            label.textContent = '✓ Personal Token (.env)';
+            if (dot) dot.className = 'figma-account-dot connected';
+            connectBtn?.classList.remove('hidden');
+            connectBtn.textContent = s.oauth_app_configured ? 'Подключить OAuth' : 'OAuth не настроен';
+            connectBtn.disabled = !s.oauth_app_configured;
+            disconnectBtn?.classList.add('hidden');
+        } else if (s.oauth_app_configured) {
+            label.textContent = 'Аккаунт не подключён';
+            if (dot) dot.className = 'figma-account-dot';
+            connectBtn?.classList.remove('hidden');
+            connectBtn.textContent = 'Подключить Figma';
+            connectBtn.disabled = false;
+            disconnectBtn?.classList.add('hidden');
+        } else {
+            label.textContent = 'Добавьте OAuth или PAT в .env';
+            if (dot) dot.className = 'figma-account-dot error';
+            connectBtn?.classList.add('hidden');
+            disconnectBtn?.classList.add('hidden');
+        }
+    }
+
+    async function connectFigma() {
+        try {
+            const resp = await fetch('/api/figma/auth');
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.detail || 'OAuth не настроен');
+            window.location.href = data.auth_url;
+        } catch (e) {
+            alert(e.message);
+        }
+    }
+
+    async function disconnectFigma() {
+        if (!confirm('Отключить Figma OAuth?')) return;
+        try {
+            await fetch('/api/figma/disconnect', { method: 'POST' });
+            await loadFigmaStatus();
+            if (window.UIEnhancements) UIEnhancements.toast('Figma отключена', 'info');
+        } catch (e) {
+            alert(e.message);
+        }
+    }
+
+    function handleFigmaOAuthReturn() {
+        const params = new URLSearchParams(window.location.search);
+        const result = params.get('figma');
+        if (!result) return;
+        const msgs = {
+            connected: ['🎨 Figma аккаунт подключён', 'success'],
+            denied: ['Figma: доступ отклонён', 'error'],
+            error: ['Figma OAuth: ошибка', 'error'],
+        };
+        const [msg, type] = msgs[result] || [];
+        if (msg && window.UIEnhancements) UIEnhancements.toast(msg, type);
+        window.history.replaceState({}, '', window.location.pathname);
+        if (result === 'connected' && typeof switchView === 'function') {
+            switchView('design');
+            loadFigmaStatus();
+        }
+    }
 
     async function loadCursorStatus() {
         try {
@@ -144,21 +229,30 @@
         loadCursorStatus();
     }
 
+    let figmaAutoImported = false;
+
     async function loadDefaultFigmaUrl() {
+        await loadFigmaStatus();
         try {
             const resp = await fetch('/api/config');
             if (!resp.ok) return;
             const cfg = await resp.json();
             const input = document.getElementById('figmaUrlInput');
             if (input && cfg.figma_default_url) input.value = cfg.figma_default_url;
-            if (cfg.figma_configured && cfg.figma_default_url) {
+            if (cfg.figma_configured && cfg.figma_default_url && !figmaAutoImported) {
+                figmaAutoImported = true;
                 await importFigma();
             }
         } catch (_) {}
     }
 
+    handleFigmaOAuthReturn();
+
     global.Integrations = {
         loadCursorStatus,
+        loadFigmaStatus,
+        connectFigma,
+        disconnectFigma,
         runCursor,
         importFigma,
         loadDefaultFigmaUrl,

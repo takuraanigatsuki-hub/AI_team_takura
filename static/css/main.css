@@ -705,6 +705,20 @@ body::before {
 .design-sidebar { width: 280px; border-left: 1px solid var(--border); padding: 20px; background: var(--surface); overflow-y: auto; }
 .design-hero h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
 .design-hero p { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
+.figma-oauth-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 12px 14px; margin-bottom: 16px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--surface);
+}
+.figma-account { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.figma-account-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted);
+}
+.figma-account-dot.connected { background: var(--green); box-shadow: 0 0 8px rgba(94, 207, 138, 0.5); }
+.figma-account-dot.error { background: var(--red); }
+.figma-oauth-actions { display: flex; gap: 8px; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.hidden { display: none !important; }
 .design-import-row { display: flex; gap: 10px; margin-bottom: 20px; }
 .design-input {
     flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);

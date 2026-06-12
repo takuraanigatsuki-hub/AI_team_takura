@@ -23,6 +23,9 @@ _defaults = {
     "git_auto_sync": True,
     "git_sync_interval_sec": 60,
     "figma_access_token": "",
+    "figma_client_id": "",
+    "figma_client_secret": "",
+    "figma_redirect_uri": "",
     "figma_default_url": "https://www.figma.com/site/uYRfrETGR8pcwChwLtJ6Ua/Untitled?t=S7zOAy3vHRn3HWqR-0",
 }
 
@@ -68,6 +71,9 @@ def _load_config() -> dict:
         cfg["cursor_enabled"] = False
     figma_token = os.environ.get("FIGMA_ACCESS_TOKEN") or cfg.get("figma_access_token") or ""
     cfg["figma_access_token"] = figma_token
+    cfg["figma_client_id"] = os.environ.get("FIGMA_CLIENT_ID") or cfg.get("figma_client_id") or ""
+    cfg["figma_client_secret"] = os.environ.get("FIGMA_CLIENT_SECRET") or cfg.get("figma_client_secret") or ""
+    cfg["figma_redirect_uri"] = os.environ.get("FIGMA_REDIRECT_URI") or cfg.get("figma_redirect_uri") or ""
     return cfg
 
 

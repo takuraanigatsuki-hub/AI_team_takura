@@ -1,5 +1,7 @@
 """Figma REST API — импорт макетов и design tokens."""
 
+import json
+import os
 import re
 from typing import Optional
 from urllib.parse import unquote, urlparse, parse_qs
@@ -35,8 +37,9 @@ def parse_figma_url(url: str) -> Optional[dict]:
 
 
 class FigmaClient:
-    def __init__(self, access_token: str = ""):
+    def __init__(self, access_token: str = "", auth_type: str = "pat"):
         self.access_token = access_token
+        self.auth_type = auth_type  # "oauth" | "pat"
         self.base = "https://api.figma.com/v1"
 
     @property
@@ -44,7 +47,14 @@ class FigmaClient:
         return bool(self.access_token)
 
     def _headers(self) -> dict:
-        return {"X-Figma-Token": self.access_token, "User-Agent": "AI-Team-Room/1.0"}
+        headers = {"User-Agent": "AI-Team-Room/1.0"}
+        if not self.access_token:
+            return headers
+        if self.auth_type == "oauth":
+            headers["Authorization"] = f"Bearer {self.access_token}"
+        else:
+            headers["X-Figma-Token"] = self.access_token
+        return headers
 
     async def get_file(self, file_key: str, node_ids: Optional[str] = None) -> dict:
         params = {}
@@ -205,4 +215,24 @@ class FigmaClient:
 def get_client() -> FigmaClient:
     from config import config
 
-    return FigmaClient(access_token=config.get("figma_access_token", ""))
+    store_path = os.path.join(os.path.dirname(__file__), "..", "data", "figma_oauth.json")
+    try:
+        with open(store_path, "r", encoding="utf-8") as f:
+            store = json.load(f)
+        if store.get("access_token"):
+            return FigmaClient(access_token=store["access_token"], auth_type="oauth")
+    except Exception:
+        pass
+    token = config.get("figma_access_token", "")
+    return FigmaClient(access_token=token, auth_type="pat")
+
+
+async def get_client_async() -> FigmaClient:
+    from integrations.figma_oauth import ensure_valid_oauth_token
+    from config import config
+
+    oauth_token = await ensure_valid_oauth_token()
+    if oauth_token:
+        return FigmaClient(access_token=oauth_token, auth_type="oauth")
+    token = config.get("figma_access_token", "")
+    return FigmaClient(access_token=token, auth_type="pat")

@@ -261,7 +261,8 @@ async def get_config():
         "cursor_github_sync": cfg_module.config.get("cursor_github_sync", False),
         "cursor_cloud_mode": cfg_module.config.get("cursor_cloud_mode", True),
         "cursor_auto_create_pr": cfg_module.config.get("cursor_auto_create_pr", True),
-        "figma_configured": bool(cfg_module.config.get("figma_access_token")),
+        "figma_configured": _figma_is_configured(),
+        "figma_oauth_app": bool(cfg_module.config.get("figma_client_id") and cfg_module.config.get("figma_client_secret")),
         "figma_default_url": cfg_module.config.get("figma_default_url", ""),
         "git_auto_sync": cfg_module.config.get("git_auto_sync", True),
         "git_sync_interval_sec": cfg_module.config.get("git_sync_interval_sec", 60),
@@ -403,7 +404,7 @@ async def get_dashboard():
         "agents": agents_data,
         "total_knowledge": total_knowledge,
         "task_stats": room.task_history.stats(),
-        "figma_configured": bool(cfg_module.config.get("figma_access_token")),
+        "figma_configured": _figma_is_configured(),
         "git_auto_sync": cfg_module.config.get("git_auto_sync", True),
         "cursor_enabled": cfg_module.config.get("cursor_enabled", False),
         "cursor_repo_url": cfg_module.config.get("cursor_repo_url", ""),
@@ -573,10 +574,55 @@ async def cursor_github_sync(request: CursorRunRequest):
 
 # ─── Figma ────────────────────────────────────────────────────
 
+def _figma_is_configured() -> bool:
+    from integrations.figma_oauth import is_figma_connected
+    return is_figma_connected()
+
+
+@app.get("/api/figma/status")
+async def figma_status():
+    from integrations.figma_oauth import get_connection_status
+    return await get_connection_status()
+
+
+@app.get("/api/figma/auth")
+async def figma_auth_start():
+    from integrations.figma_oauth import oauth_app_configured, build_auth_url, get_redirect_uri
+
+    if not oauth_app_configured():
+        raise HTTPException(
+            status_code=400,
+            detail="FIGMA_CLIENT_ID и FIGMA_CLIENT_SECRET не заданы в .env",
+        )
+    return {"auth_url": build_auth_url(), "redirect_uri": get_redirect_uri()}
+
+
+@app.get("/api/figma/callback")
+async def figma_oauth_callback(code: str = "", state: str = "", error: str = ""):
+    from integrations.figma_oauth import verify_state, complete_oauth
+
+    if error:
+        return RedirectResponse("/?figma=denied")
+    if not code or not state or not verify_state(state):
+        return RedirectResponse("/?figma=error")
+    try:
+        await complete_oauth(code)
+        return RedirectResponse("/?figma=connected")
+    except Exception:
+        return RedirectResponse("/?figma=error")
+
+
+@app.post("/api/figma/disconnect")
+async def figma_disconnect():
+    from integrations.figma_oauth import clear_token_store
+    clear_token_store()
+    return {"ok": True}
+
+
 @app.post("/api/figma/import")
 async def figma_import(request: FigmaImportRequest):
     """Импорт макета из Figma по URL."""
-    from integrations.figma_client import get_client, parse_figma_url
+    from integrations.figma_client import get_client_async, parse_figma_url
 
     if not request.url.strip():
         raise HTTPException(status_code=400, detail="URL обязателен")
@@ -584,11 +630,11 @@ async def figma_import(request: FigmaImportRequest):
     if not parsed:
         raise HTTPException(status_code=400, detail="Некорректная ссылка Figma")
 
-    client = get_client()
+    client = await get_client_async()
     if not client.configured:
         raise HTTPException(
             status_code=400,
-            detail="FIGMA_ACCESS_TOKEN не задан. Добавьте в .env",
+            detail="Figma не подключена. Нажмите «Подключить Figma» или добавьте FIGMA_ACCESS_TOKEN в .env",
         )
     try:
         result = await client.import_design(request.url)

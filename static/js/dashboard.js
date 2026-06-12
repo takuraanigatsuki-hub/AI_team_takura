@@ -8,12 +8,13 @@
         grid.innerHTML = '<div class="dash-loading">Загрузка…</div>';
 
         try {
-            const [dash, tasks, git, cursor, activity] = await Promise.all([
+            const [dash, tasks, git, cursor, activity, figma] = await Promise.all([
                 fetch('/api/dashboard').then((r) => r.json()),
                 fetch('/api/tasks').then((r) => r.json()),
                 fetch('/api/git/status').then((r) => r.json()),
                 fetch('/api/cursor/status').then((r) => r.json()),
                 fetch('/api/activity?limit=15').then((r) => r.json()),
+                fetch('/api/figma/status').then((r) => r.json()),
             ]);
 
             const agents = dash.agents || [];
@@ -51,7 +52,7 @@
                     <div class="dash-int-row">
                         <span class="int-pill ${cursor.ok ? 'ok' : 'err'}">Cursor ${cursor.ok ? '✓' : '✗'}</span>
                         <span class="int-pill ${cursor.github_sync ? 'ok' : ''}">GitHub Sync</span>
-                        <span class="int-pill ${dash.figma_configured ? 'ok' : ''}">Figma</span>
+                        <span class="int-pill ${dash.figma_configured ? 'ok' : ''}">Figma${figma.user_handle ? ` · @${figma.user_handle}` : (figma.auth_method === 'pat' ? ' · PAT' : '')}</span>
                         <span class="int-pill ${dash.git_auto_sync ? 'ok' : ''}">Git Auto-Sync</span>
                     </div>
                     <p class="muted dash-repo">${cursor.repo_url || '—'}</p>

@@ -2,7 +2,7 @@ from datetime import datetime
 from agents.base_agent import BaseAgent
 from agents.react_preview import generate_react_preview, is_site_task
 from site_exporter import export_site_html
-from integrations.figma_client import parse_figma_url, get_client as get_figma_client
+from integrations.figma_client import parse_figma_url, get_client_async
 
 
 class FrontendDevAgent(BaseAgent):
@@ -173,7 +173,7 @@ class FrontendDevAgent(BaseAgent):
         try:
             figma_url = self._extract_figma_url(task_text)
             if figma_url:
-                client = get_figma_client()
+                client = await get_client_async()
                 if client.configured:
                     try:
                         figma_data = await client.import_design(figma_url)

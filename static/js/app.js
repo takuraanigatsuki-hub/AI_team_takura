@@ -55,7 +55,10 @@
         document.getElementById('dashboardView')?.classList.toggle('hidden', view !== 'dashboard');
 
         if (view === 'tasks') loadTasks();
-        if (view === 'design' && window.Integrations) Integrations.loadDefaultFigmaUrl();
+        if (view === 'design' && window.Integrations) {
+            Integrations.loadDefaultFigmaUrl();
+            Integrations.loadFigmaStatus();
+        }
         if (view === 'dashboard' && window.Dashboard) Dashboard.load();
 
         clearInterval(dashboardRefreshTimer);
@@ -831,8 +834,10 @@
         connect();
         switchView('studio');
         if (window.ReactPreview) ReactPreview.loadLatest();
-        if (window.Integrations) Integrations.loadCursorStatus();
-        if (window.UIEnhancements) UIEnhancements.init();
+        if (window.Integrations) {
+            Integrations.loadCursorStatus();
+            Integrations.loadFigmaStatus();
+        }
 
         document.getElementById('messageInput')?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {

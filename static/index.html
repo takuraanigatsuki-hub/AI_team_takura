@@ -84,6 +84,16 @@
                 <h2>🎨 Design · Figma</h2>
                 <p>Импортируйте макет — Соня создаст React Preview с цветами из Figma</p>
             </div>
+            <div class="figma-oauth-bar" id="figmaOAuthBar">
+                <div class="figma-account" id="figmaAccountInfo">
+                    <span class="figma-account-dot" id="figmaAccountDot"></span>
+                    <span id="figmaAccountLabel">Проверка…</span>
+                </div>
+                <div class="figma-oauth-actions">
+                    <button type="button" class="btn-primary btn-sm" id="figmaConnectBtn" onclick="Integrations.connectFigma()">Подключить Figma</button>
+                    <button type="button" class="btn-secondary btn-sm hidden" id="figmaDisconnectBtn" onclick="Integrations.disconnectFigma()">Отключить</button>
+                </div>
+            </div>
             <div class="design-import-row">
                 <input type="url" id="figmaUrlInput" class="design-input" value="https://www.figma.com/site/uYRfrETGR8pcwChwLtJ6Ua/Untitled?t=S7zOAy3vHRn3HWqR-0" placeholder="https://www.figma.com/design/…?node-id=…">
                 <button type="button" class="btn-primary" onclick="Integrations.importFigma()">Импорт</button>
@@ -92,7 +102,7 @@
                 <div class="panel-empty">
                     <div class="preview-empty-icon">🖼️</div>
                     <p>Вставьте ссылку на фрейм в Figma</p>
-                    <p class="muted">Нужен FIGMA_ACCESS_TOKEN в .env</p>
+                    <p class="muted">OAuth или FIGMA_ACCESS_TOKEN в .env</p>
                 </div>
             </div>
         </section>
@@ -345,7 +355,7 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="/static/js/studio.js?v=6"></script>
 <script src="/static/js/react-preview.js?v=2"></script>
-<script src="/static/js/integrations.js?v=2"></script>
+<script src="/static/js/integrations.js?v=3"></script>
 <script src="/static/js/ui-enhancements.js?v=2"></script>
 <script src="/static/js/dashboard.js?v=2"></script>
 <script src="/static/js/app.js?v=9"></script>
