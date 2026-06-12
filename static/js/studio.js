@@ -133,6 +133,16 @@
         screen.name = 'screen';
         group.add(screen);
 
+        const glow = new THREE.Mesh(
+            new THREE.RingGeometry(0.35, 0.42, 24),
+            new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0, side: THREE.DoubleSide })
+        );
+        glow.rotation.x = -Math.PI / 2;
+        glow.position.y = 0.02;
+        glow.visible = false;
+        glow.name = 'glow';
+        group.add(glow);
+
         group.add(createLabelSprite(emoji));
         group.userData.baseY = 0;
         group.userData.phase = Math.random() * Math.PI * 2;
@@ -260,8 +270,20 @@
 
         if (desk) desk.visible = inStudio;
         if (screen) {
-            screen.visible = inStudio && agent.status === 'working';
-            if (screen.material) screen.material.emissiveIntensity = agent.status === 'working' ? 1.0 : 0.3;
+            screen.visible = inStudio && (agent.status === 'working' || agent.status === 'thinking');
+            if (screen.material) {
+                const intensity = agent.status === 'working' ? 1.2 : agent.status === 'thinking' ? 0.8 : 0.3;
+                screen.material.emissiveIntensity = intensity;
+            }
+        }
+
+        const glow = mesh.getObjectByName('glow');
+        if (glow) {
+            const active = ['working', 'learning', 'thinking'].includes(agent.status);
+            glow.visible = active;
+            if (glow.material) {
+                glow.material.opacity = agent.status === 'working' ? 0.45 : 0.25;
+            }
         }
 
         mesh.userData.status = agent.status || 'idle';

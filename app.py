@@ -377,6 +377,40 @@ async def get_tasks():
     }
 
 
+@app.get("/api/dashboard")
+async def get_dashboard():
+    """Сводка для Dashboard: команда, знания, интеграции."""
+    import config as cfg_module
+    from integrations.local_git_sync import get_status as git_status
+
+    agents_data = []
+    total_knowledge = 0
+    for agent in room.agents.values():
+        state = agent.get_state()
+        agents_data.append({
+            "agent_id": agent.agent_id,
+            "name": agent.name,
+            "emoji": agent.emoji,
+            "status": agent.status,
+            "learned_count": len(agent.learned_topics),
+            "role": agent.role,
+        })
+        total_knowledge += len(agent.learned_topics)
+
+    git = git_status()
+    return {
+        "team_size": len(room.agents),
+        "agents": agents_data,
+        "total_knowledge": total_knowledge,
+        "task_stats": room.task_history.stats(),
+        "figma_configured": bool(cfg_module.config.get("figma_access_token")),
+        "git_auto_sync": cfg_module.config.get("git_auto_sync", True),
+        "cursor_enabled": cfg_module.config.get("cursor_enabled", False),
+        "cursor_repo_url": cfg_module.config.get("cursor_repo_url", ""),
+        "git": git,
+    }
+
+
 # ─── Git Auto-Sync ────────────────────────────────────────────
 
 @app.get("/api/git/status")

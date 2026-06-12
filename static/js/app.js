@@ -50,12 +50,11 @@
         document.getElementById('learningView').classList.toggle('hidden', view !== 'learning');
         document.getElementById('tasksView').classList.toggle('hidden', view !== 'tasks');
         document.getElementById('designView')?.classList.toggle('hidden', view !== 'design');
+        document.getElementById('dashboardView')?.classList.toggle('hidden', view !== 'dashboard');
 
         if (view === 'tasks') loadTasks();
-        if (view === 'design' && window.Integrations) {
-            Integrations.loadCursorStatus();
-            Integrations.loadDefaultFigmaUrl();
-        }
+        if (view === 'design' && window.Integrations) Integrations.loadDefaultFigmaUrl();
+        if (view === 'dashboard' && window.Dashboard) Dashboard.load();
 
         if (view === 'studio' && !studioInited) {
             initStudio();
@@ -280,6 +279,7 @@
                 break;
             case 'git_sync_done':
                 addSystemMessage(data.message || '📤 Изменения на GitHub');
+                if (window.UIEnhancements) UIEnhancements.onGitSync(data);
                 break;
             case 'direct_user_echo':
                 break;
@@ -298,6 +298,8 @@
         if (selectedAgent && agents[selectedAgent]) renderAgentDetail(agents[selectedAgent]);
         if (studioInited && window.StudioApp) StudioApp.updateAgents(agentsList);
         updateStudioLegend();
+        const working = agentsList.filter((a) => ['working', 'learning', 'thinking'].includes(a.status)).length;
+        if (window.UIEnhancements) UIEnhancements.updateAgentFooter(working);
     }
 
     function updateStudioLegend() {
@@ -728,6 +730,16 @@
         if (c) c.scrollTop = c.scrollHeight;
     }
 
+    window.applyTemplate = function (text) {
+        const input = document.getElementById('messageInput');
+        if (input) {
+            input.value = text;
+            input.focus();
+            input.dispatchEvent(new Event('input'));
+        }
+        setMsgType('task');
+    };
+
     // ─── Init ────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
         applyTheme(getPreferredTheme());
@@ -735,6 +747,7 @@
         switchView('studio');
         if (window.ReactPreview) ReactPreview.loadLatest();
         if (window.Integrations) Integrations.loadCursorStatus();
+        if (window.UIEnhancements) UIEnhancements.init();
 
         document.getElementById('messageInput')?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {

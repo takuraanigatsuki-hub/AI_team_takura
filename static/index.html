@@ -49,6 +49,7 @@
         <button type="button" class="view-tab" data-view="learning" onclick="switchView('learning')">Обучение</button>
         <button type="button" class="view-tab" data-view="design" onclick="switchView('design')">Design</button>
         <button type="button" class="view-tab" data-view="tasks" onclick="switchView('tasks')">Задачи</button>
+        <button type="button" class="view-tab" data-view="dashboard" onclick="switchView('dashboard')">Dashboard</button>
     </nav>
     <div class="header-actions">
         <div class="conn-pill">
@@ -110,6 +111,13 @@
                 </div>
             </div>
         </aside>
+    </div>
+
+    <!-- DASHBOARD VIEW -->
+    <div id="dashboardView" class="dashboard-layout hidden">
+        <div class="dashboard-panel" id="dashboardGrid">
+            <div class="dash-loading">Загрузка…</div>
+        </div>
     </div>
 
     <!-- TASKS VIEW -->
@@ -188,6 +196,12 @@
                     <button type="button" class="type-btn" id="typeChat" onclick="setMsgType('chat')" title="Только разговор, без выполнения">💬 Чат</button>
                 </div>
                 <button type="button" class="clear-btn" onclick="clearMessages()">Очистить</button>
+            </div>
+            <div class="quick-templates">
+                <button type="button" class="tpl-btn" onclick="applyTemplate('Сделай landing page для стартапа')">🌐 Landing</button>
+                <button type="button" class="tpl-btn" onclick="applyTemplate('Напиши REST API для задач')">⚙️ API</button>
+                <button type="button" class="tpl-btn" onclick="applyTemplate('Создай форму регистрации в React')">🎨 UI</button>
+                <button type="button" class="tpl-btn" onclick="applyTemplate('Напиши тесты для backend')">🧪 Tests</button>
             </div>
 
             <div class="messages" id="messages">
@@ -321,10 +335,12 @@
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="/static/js/studio.js?v=4"></script>
-<script src="/static/js/react-preview.js?v=1"></script>
-<script src="/static/js/integrations.js?v=1"></script>
-<script src="/static/js/app.js?v=6"></script>
+<script src="/static/js/studio.js?v=5"></script>
+<script src="/static/js/react-preview.js?v=2"></script>
+<script src="/static/js/integrations.js?v=2"></script>
+<script src="/static/js/ui-enhancements.js?v=1"></script>
+<script src="/static/js/dashboard.js?v=1"></script>
+<script src="/static/js/app.js?v=7"></script>
 
 <!-- PWA: регистрация Service Worker -->
 <script>
