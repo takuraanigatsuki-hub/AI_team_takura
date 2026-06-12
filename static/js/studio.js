@@ -959,6 +959,8 @@
         try {
             hideError();
             showLoading(true);
+            const loadEl = document.querySelector('#studioLoading span');
+            if (loadEl) loadEl.textContent = 'Загрузка CC0-моделей офиса…';
             canvasEl = canvas;
             onAgentClick = clickCallback;
             clock = new THREE.Clock();

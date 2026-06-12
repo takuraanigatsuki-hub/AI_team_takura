@@ -11,7 +11,7 @@
         'desk', 'chairDesk', 'computerScreen', 'computerKeyboard', 'computerMouse',
         'loungeSofa', 'loungeSofaLong', 'lampSquareFloor', 'lampSquareTable',
         'bookcaseClosedWide', 'bookcaseOpen', 'pottedPlant', 'plantSmall1',
-        'tableRound', 'televisionModern', 'sideTable',
+        'tableRound', 'televisionModern',
     ];
 
     const prototypes = {};
@@ -141,45 +141,45 @@
         root.name = 'officeProps';
 
         Object.values(slots).forEach(({ x, z }) => {
-            const desk = cloneProp('desk', x, 0, z + 0.35, 0, 0.01);
+            const desk = cloneProp('desk', x, 0, z + 0.35, 0, 1);
             if (desk) root.add(desk);
-            const chair = cloneProp('chairDesk', x, 0, z - 0.15, Math.PI, 0.01);
+            const chair = cloneProp('chairDesk', x, 0, z - 0.15, Math.PI, 1);
             if (chair) root.add(chair);
-            const screen = cloneProp('computerScreen', x, 0.78, z + 0.55, 0, 0.012);
+            const screen = cloneProp('computerScreen', x, 0.78, z + 0.55, 0, 1);
             if (screen) root.add(screen);
-            const kb = cloneProp('computerKeyboard', x, 0.76, z + 0.42, 0, 0.015);
+            const kb = cloneProp('computerKeyboard', x, 0.76, z + 0.42, 0, 1);
             if (kb) root.add(kb);
-            const mouse = cloneProp('computerMouse', x + 0.25, 0.76, z + 0.42, -0.4, 0.015);
+            const mouse = cloneProp('computerMouse', x + 0.25, 0.76, z + 0.42, -0.4, 1);
             if (mouse) root.add(mouse);
         });
 
         [[9, 5], [11, 5], [13, 5]].forEach(([x, z]) => {
-            const sofa = cloneProp('loungeSofa', x, 0, z, 0, 0.01);
+            const sofa = cloneProp('loungeSofa', x, 0, z, 0, 1);
             if (sofa) root.add(sofa);
         });
-        const sofaL = cloneProp('loungeSofaLong', 11, 0, 8, Math.PI / 2, 0.01);
+        const sofaL = cloneProp('loungeSofaLong', 11, 0, 8, Math.PI / 2, 1);
         if (sofaL) root.add(sofaL);
-        const tv = cloneProp('televisionModern', 11, 0.4, 3.2, Math.PI, 0.012);
+        const tv = cloneProp('televisionModern', 11, 0.4, 3.2, Math.PI, 1);
         if (tv) root.add(tv);
 
         [[-11.5, 8], [-10.2, 10], [-9, 12]].forEach(([x, z], i) => {
-            const shelf = cloneProp(i % 2 ? 'bookcaseOpen' : 'bookcaseClosedWide', x, 0, z, Math.PI / 2, 0.01);
+            const shelf = cloneProp(i % 2 ? 'bookcaseOpen' : 'bookcaseClosedWide', x, 0, z, Math.PI / 2, 1);
             if (shelf) root.add(shelf);
         });
-        const libTable = cloneProp('tableRound', -8, 0, 12, 0, 0.012);
+        const libTable = cloneProp('tableRound', -8, 0, 12, 0, 1);
         if (libTable) root.add(libTable);
-        const libLamp = cloneProp('lampSquareTable', -8, 0.72, 12, 0, 0.012);
+        const libLamp = cloneProp('lampSquareTable', -8, 0.72, 12, 0, 1);
         if (libLamp) root.add(libLamp);
 
         [[-8, -6], [6, -5], [14, 2], [-14, 4], [0, 6]].forEach(([x, z], i) => {
-            const plant = cloneProp(i % 2 ? 'pottedPlant' : 'plantSmall1', x, 0, z, Math.random() * 0.5, 0.012);
+            const plant = cloneProp(i % 2 ? 'pottedPlant' : 'plantSmall1', x, 0, z, Math.random() * 0.5, 1);
             if (plant) root.add(plant);
         });
         [[-2, 6], [11, 7], [-10, 9]].forEach(([x, z]) => {
-            const lamp = cloneProp('lampSquareFloor', x, 0, z, 0, 0.012);
+            const lamp = cloneProp('lampSquareFloor', x, 0, z, 0, 1);
             if (lamp) root.add(lamp);
         });
-        const meet = cloneProp('tableRound', 0, 0, 6, 0, 0.014);
+        const meet = cloneProp('tableRound', 0, 0, 6, 0, 1);
         if (meet) root.add(meet);
 
         scene.add(root);
@@ -190,7 +190,7 @@
             const group = new THREE.Group();
             group.userData.agentId = id;
             const model = soldierTemplate.clone(true);
-            model.scale.set(0.011, 0.011, 0.011);
+            model.scale.set(0.022, 0.022, 0.022);
             model.position.y = 0;
             model.traverse((c) => {
                 if (c.isMesh && c.material) {
