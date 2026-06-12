@@ -1200,25 +1200,50 @@ async def get_latest_site():
 
 
 @app.get("/api/tasks")
-async def get_tasks():
-    """Журнал задач: все, выполненные, активные"""
+async def get_tasks(request: Request):
+    """Журнал задач: свои задачи для пользователя, все — для admin."""
+    from room.message_filter import is_privileged
+    user = _current_user(request)
+    uid = user.get("id", "")
+    if is_privileged(user.get("role", "")):
+        return {
+            "stats": room.task_history.stats(),
+            "tasks": room.task_history.get_all()[:100],
+            "completed": room.task_history.get_completed()[:50],
+            "active": room.task_history.get_active()[:30],
+        }
+    tasks = room.task_history.get_for_user(uid, 100)
+    active_statuses = (
+        "submitted", "queued", "in_progress", "triaging",
+        "awaiting_approval", "revision_requested",
+    )
     return {
-        "stats": room.task_history.stats(),
-        "tasks": room.task_history.get_all()[:100],
-        "completed": room.task_history.get_completed()[:50],
-        "active": room.task_history.get_active()[:30],
+        "stats": room.task_history.stats_for_user(uid),
+        "tasks": tasks,
+        "completed": [t for t in tasks if t.get("status") == "completed"][:50],
+        "active": [t for t in tasks if t.get("status") in active_statuses][:30],
     }
 
 
 @app.get("/api/dashboard")
-async def get_dashboard():
+async def get_dashboard(request: Request):
     """Сводка для Dashboard: команда, знания, интеграции."""
     import config as cfg_module
     from integrations.local_git_sync import get_status as git_status
+    from room.message_filter import is_privileged, filter_agents_for_viewer
+
+    user = _optional_user(request)
+    viewer = {
+        "user_id": user.get("id", "") if user else "",
+        "role": user.get("role", "guest") if user else "guest",
+    }
+    privileged = is_privileged(viewer.get("role", ""))
 
     agents_data = []
     total_knowledge = 0
     for agent in room.agents.values():
+        if not privileged and agent.agent_id == "security":
+            continue
         state = agent.get_state()
         agents_data.append({
             "agent_id": agent.agent_id,
@@ -1230,25 +1255,38 @@ async def get_dashboard():
         })
         total_knowledge += len(agent.learned_topics)
 
-    git = git_status()
+    agents_data = filter_agents_for_viewer(agents_data, viewer)
+    git = git_status() if privileged else {}
+    task_stats = (
+        room.task_history.stats()
+        if privileged
+        else room.task_history.stats_for_user(viewer.get("user_id", ""))
+    )
     return {
-        "team_size": len(room.agents),
+        "team_size": len(agents_data),
         "agents": agents_data,
         "total_knowledge": total_knowledge,
-        "task_stats": room.task_history.stats(),
-        "figma_configured": _figma_is_configured(),
-        "git_auto_sync": cfg_module.config.get("git_auto_sync", True),
-        "cursor_enabled": cfg_module.config.get("cursor_enabled", False),
-        "cursor_repo_url": cfg_module.config.get("cursor_repo_url", ""),
+        "task_stats": task_stats,
+        "figma_configured": _figma_is_configured() if privileged else False,
+        "git_auto_sync": cfg_module.config.get("git_auto_sync", True) if privileged else False,
+        "cursor_enabled": cfg_module.config.get("cursor_enabled", False) if privileged else False,
+        "cursor_repo_url": cfg_module.config.get("cursor_repo_url", "") if privileged else "",
         "git": git,
     }
 
 
 @app.get("/api/activity")
-async def get_activity(limit: int = 30):
+async def get_activity(request: Request, limit: int = 30):
     """Последние события рабочего канала для ленты активности."""
+    from room.message_filter import filter_messages_for_viewer
+
+    user = _optional_user(request)
+    viewer = {
+        "user_id": user.get("id", "") if user else "",
+        "role": user.get("role", "guest") if user else "guest",
+    }
     items = []
-    for msg in reversed(room.work_history[-limit * 2:]):
+    for msg in reversed(filter_messages_for_viewer(room.work_history, viewer)[-limit * 2:]):
         msg_type = msg.get("type", "message")
         if msg_type in ("agents_state", "history", "task_history", "direct_user_echo"):
             continue
@@ -2323,7 +2361,11 @@ class TaskRevisionBody(BaseModel):
 
 
 @app.post("/api/tasks/{task_id}/approve")
-async def approve_task(task_id: str, body: TaskApprovalBody = TaskApprovalBody()):
+async def approve_task(task_id: str, request: Request, body: TaskApprovalBody = TaskApprovalBody()):
+    from room.message_filter import is_privileged
+    user = _current_user(request)
+    if not room.task_history.user_owns_task(task_id, user["id"], is_privileged(user.get("role"))):
+        raise HTTPException(status_code=403, detail="Нет доступа к этой задаче")
     ok = await room.approve_task(task_id, body.note or "")
     if not ok:
         raise HTTPException(status_code=400, detail="Task not awaiting approval")
@@ -2331,7 +2373,11 @@ async def approve_task(task_id: str, body: TaskApprovalBody = TaskApprovalBody()
 
 
 @app.post("/api/tasks/{task_id}/revision")
-async def request_task_revision(task_id: str, body: TaskRevisionBody):
+async def request_task_revision(task_id: str, request: Request, body: TaskRevisionBody):
+    from room.message_filter import is_privileged
+    user = _current_user(request)
+    if not room.task_history.user_owns_task(task_id, user["id"], is_privileged(user.get("role"))):
+        raise HTTPException(status_code=403, detail="Нет доступа к этой задаче")
     if not (body.feedback or "").strip():
         raise HTTPException(status_code=400, detail="Feedback required")
     ok = await room.request_task_revision(task_id, body.feedback.strip())
@@ -2341,15 +2387,24 @@ async def request_task_revision(task_id: str, body: TaskRevisionBody):
 
 
 @app.post("/api/tasks/cancel-all")
-async def cancel_all_tasks():
-    """Отменить все активные задачи и очистить очереди агентов."""
-    count = await room.cancel_all_tasks()
+async def cancel_all_tasks(request: Request):
+    """Отменить активные задачи (свои — пользователь, все — admin)."""
+    from room.message_filter import is_privileged
+    user = _current_user(request)
+    count = await room.cancel_all_tasks(
+        user_id=user.get("id", ""),
+        privileged=is_privileged(user.get("role")),
+    )
     return {"ok": True, "cancelled": count}
 
 
 @app.post("/api/tasks/clear")
-async def clear_tasks_history():
-    """Полностью очистить журнал задач."""
+async def clear_tasks_history(request: Request):
+    """Полностью очистить журнал задач (только admin)."""
+    from room.message_filter import is_privileged
+    user = _current_user(request)
+    if not is_privileged(user.get("role")):
+        raise HTTPException(status_code=403, detail="Только для администраторов")
     total = await room.clear_task_history()
     return {"ok": True, "cleared": total}
 
@@ -2614,13 +2669,20 @@ class TaskCommentBody(BaseModel):
 
 
 @app.get("/api/tasks/{task_id}/comments")
-async def get_task_comments(task_id: str):
+async def get_task_comments(task_id: str, request: Request):
+    from room.message_filter import is_privileged
+    user = _current_user(request)
+    if not room.task_history.user_owns_task(task_id, user["id"], is_privileged(user.get("role"))):
+        raise HTTPException(status_code=403, detail="Нет доступа к этой задаче")
     return {"comments": room.task_history.get_comments(task_id)}
 
 
 @app.post("/api/tasks/{task_id}/comments")
 async def add_task_comment(task_id: str, body: TaskCommentBody, request: Request):
+    from room.message_filter import is_privileged
     user = _current_user(request)
+    if not room.task_history.user_owns_task(task_id, user["id"], is_privileged(user.get("role"))):
+        raise HTTPException(status_code=403, detail="Нет доступа к этой задаче")
     text = (body.text or "").strip()
     if not text:
         raise HTTPException(status_code=400, detail="Text required")

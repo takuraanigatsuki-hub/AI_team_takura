@@ -60,6 +60,30 @@
         return ['owner', 'admin', 'tech_admin'].includes(user.role);
     }
 
+    function isPrivilegedUser(user) {
+        if (!user) return false;
+        if (user.is_owner) return true;
+        return ['owner', 'admin', 'tech_admin'].includes(user.role);
+    }
+
+    function filterAgentsForViewer(agents) {
+        if (isPrivilegedUser(window.Auth?.getUser())) return agents || [];
+        return (agents || []).filter((a) => (a.agent_id || '') !== 'security');
+    }
+
+    function shouldShowWsMessage(data) {
+        if (isPrivilegedUser(window.Auth?.getUser())) return true;
+        const hiddenTypes = new Set([
+            'security_alert', 'github_sync_started', 'github_sync_done',
+            'git_sync_done', 'cursor_progress',
+        ]);
+        if (hiddenTypes.has(data.type)) return false;
+        if ((data.agent_id || '').toLowerCase() === 'security') return false;
+        const text = (data.message || data.text || '').toLowerCase();
+        if (/github sync|git sync|security alert|threat:|ip заблок/.test(text)) return false;
+        return true;
+    }
+
     window.switchAgentLearningPanel = function (panel) {
         if (panel === 'design') agentLearningPanel = 'design';
         else if (panel === 'masha') agentLearningPanel = 'masha';
@@ -443,17 +467,24 @@
 
     function handleMessage(data) {
         if (window.FeaturePack) FeaturePack.onWsMessage(data);
+        if (!shouldShowWsMessage(data) && data.type !== 'agents_state' && data.type !== 'task_history' && data.type !== 'history') {
+            return;
+        }
         switch (data.type) {
             case 'agents_state':
-                updateAgents(data.agents);
+                updateAgents(filterAgentsForViewer(data.agents));
                 break;
             case 'history':
                 if (data.channel === 'learning') {
                     if (canViewAgentLearning(window.Auth?.getUser())) {
-                        data.messages.forEach((m) => addLearningMessage(m));
+                        data.messages.forEach((m) => {
+                            if (shouldShowWsMessage(m)) addLearningMessage(m);
+                        });
                     }
                 } else {
-                    data.messages.forEach((m) => addWorkMessage(m));
+                    data.messages.forEach((m) => {
+                        if (shouldShowWsMessage(m)) addWorkMessage(m);
+                    });
                 }
                 break;
             case 'user_message':

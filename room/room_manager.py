@@ -82,9 +82,9 @@ class RoomManager:
 
         meta = self.connection_meta[websocket]
         viewer = {"user_id": meta.get("user_id", ""), "role": meta.get("role", "guest")}
+        from room.message_filter import filter_messages_for_viewer, filter_agents_for_viewer
 
         if self.work_history:
-            from room.message_filter import filter_messages_for_viewer
             work_msgs = filter_messages_for_viewer(self.work_history[-100:], viewer)
             await websocket.send_text(json.dumps({
                 "type": "history",
@@ -101,7 +101,8 @@ class RoomManager:
 
         await websocket.send_text(json.dumps({
             "type": "agents_state",
-            "agents": [agent.get_state() for agent in self.agents.values()]
+            "agents": filter_agents_for_viewer(
+                [agent.get_state() for agent in self.agents.values()], viewer),
         }, ensure_ascii=False))
 
         await websocket.send_text(json.dumps(
@@ -255,19 +256,6 @@ class RoomManager:
                 continue
             try:
                 await connection.send_text(json.dumps(msg_copy, ensure_ascii=False))
-            except Exception:
-                disconnected.add(connection)
-        for conn in disconnected:
-            self.active_connections.discard(conn)
-
-    async def _send_to_clients_legacy(self, message: dict, exclude: WebSocket = None):
-        message_text = json.dumps(message, ensure_ascii=False)
-        disconnected = set()
-        for connection in self.active_connections:
-            if connection == exclude:
-                continue
-            try:
-                await connection.send_text(message_text)
             except Exception:
                 disconnected.add(connection)
         for conn in disconnected:
@@ -489,7 +477,12 @@ class RoomManager:
                     })
                     return
 
-            dup = self.task_history.find_active_duplicate(text)
+            uid = user.get("id", "") if user else ""
+            uname = (
+                user.get("name") or user.get("email", "User").split("@")[0]
+            ) if user else ""
+
+            dup = self.task_history.find_active_duplicate(text, uid)
             if dup:
                 await self.broadcast_work({
                     "type": "system",
@@ -503,7 +496,8 @@ class RoomManager:
                 return
 
             record_user_wish(text, target if target not in ("all", "pm") else None)
-            self._last_submitted_id = self.task_history.add_submitted(text, target, msg_type)
+            self._last_submitted_id = self.task_history.add_submitted(
+                text, target, msg_type, uid, uname)
             await self._broadcast_task_history()
 
             if target == "all":
@@ -592,13 +586,8 @@ class RoomManager:
             if self.active_connections:
                 await self.send_agents_state()
 
-    async def _broadcast_task_history(self):
-        await self.broadcast({
-            "type": "task_history",
-            "stats": self.task_history.stats(),
-            "tasks": self.task_history.get_all()[:80],
-            "timestamp": datetime.now().isoformat()
-        })
+    async def _broadcast_task_history(self, exclude: WebSocket = None):
+        await self._send_to_clients({"type": "task_history"}, exclude)
 
     def record_task_started(self, task_id: str):
         if task_id:
@@ -740,9 +729,12 @@ class RoomManager:
         await self._broadcast_task_history()
         return True
 
-    async def cancel_all_tasks(self) -> int:
-        """Отменить активные задачи и очистить очереди агентов."""
-        count = self.task_history.cancel_all_active()
+    async def cancel_all_tasks(self, user_id: str = "", privileged: bool = False) -> int:
+        """Отменить активные задачи (все — для admin, только свои — для пользователя)."""
+        if privileged:
+            count = self.task_history.cancel_all_active()
+        else:
+            count = self.task_history.cancel_active_for_user(user_id)
         for agent in self.agents.values():
             while not agent.task_queue.empty():
                 try:
