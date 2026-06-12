@@ -219,6 +219,41 @@ class AuthPasswordChange(BaseModel):
     new_password: str
 
 
+class SubscriptionUpgradeRequest(BaseModel):
+    tier: str
+
+
+class AdminBalanceRequest(BaseModel):
+    user_id: str
+    amount: int
+
+
+class AdminTierRequest(BaseModel):
+    user_id: str
+    tier: str
+
+
+def _current_user(request: Request):
+    from room.user_auth import get_user_from_token
+    user = get_user_from_token(_get_session_token(request))
+    if not user:
+        raise HTTPException(status_code=401, detail="Не авторизован")
+    return user
+
+
+def _require_feature(user: dict, feature: str):
+    from room.subscriptions import can_use_feature, access_denied_message
+    if not can_use_feature(user, feature):
+        raise HTTPException(status_code=403, detail=access_denied_message(feature, user))
+
+
+def _charge_or_forbid(user: dict, action: str):
+    from room.user_auth import charge_user_action
+    ok, msg = charge_user_action(user["id"], action)
+    if not ok:
+        raise HTTPException(status_code=402, detail=msg)
+
+
 def _set_session_cookie(response, token: str):
     from room.user_auth import SESSION_COOKIE, SESSION_DAYS
     response.set_cookie(
@@ -357,7 +392,99 @@ async def auth_profile_stats(request: Request):
         "has_project_brief": bool(mem.get("brief") or user.get("project_goal")),
         "member_since": user.get("created_at"),
         "setup_at": user.get("setup_at"),
+        "subscription": user.get("subscription"),
+        "access_level": user.get("access_level"),
     }
+
+
+@app.get("/api/subscription/plans")
+async def subscription_plans():
+    from room.subscriptions import list_plans_public, ACTION_COSTS
+    return {"plans": list_plans_public(), "action_costs": ACTION_COSTS}
+
+
+@app.get("/api/subscription/me")
+async def subscription_me(request: Request):
+    user = _current_user(request)
+    return {"subscription": user.get("subscription"), "role": user.get("role"), "access_level": user.get("access_level")}
+
+
+@app.get("/api/subscription/access")
+async def subscription_access(request: Request, view: str = "", feature: str = ""):
+    from room.subscriptions import can_access_view, can_use_feature, access_denied_message, get_action_cost
+    from room.user_auth import get_user_from_token
+
+    user = get_user_from_token(_get_session_token(request))
+    allowed = True
+    reason = ""
+    if view:
+        allowed = can_access_view(user, view)
+        if not allowed:
+            reason = access_denied_message(view, user)
+    elif feature:
+        allowed = can_use_feature(user, feature)
+        if not allowed:
+            reason = access_denied_message(feature, user)
+    return {
+        "allowed": allowed,
+        "reason": reason,
+        "cost": get_action_cost(feature) if feature else 0,
+        "subscription": (user or {}).get("subscription"),
+    }
+
+
+@app.post("/api/subscription/upgrade")
+async def subscription_upgrade(body: SubscriptionUpgradeRequest, request: Request):
+    """Демо-апгрейд тарифа (без оплаты — для тестирования). Owner может любой tier кроме owner."""
+    from room.subscriptions import set_subscription_tier, SUBSCRIPTION_PLANS
+    from room.user_auth import _load, _save_users, USERS_FILE, get_user_from_token
+
+    user = _current_user(request)
+    tier = body.tier.lower().strip()
+    if tier not in SUBSCRIPTION_PLANS or tier == "owner":
+        raise HTTPException(status_code=400, detail="Недоступный тариф")
+    if user.get("role") == "owner":
+        return {"ok": True, "message": "У владельца уже максимальный уровень Owner", "user": user}
+    cur_level = user.get("access_level", 1)
+    new_level = SUBSCRIPTION_PLANS[tier]["level"]
+    if new_level <= cur_level:
+        raise HTTPException(status_code=400, detail="Выберите тариф выше текущего")
+    set_subscription_tier(
+        user["id"],
+        tier,
+        users_loader=lambda: _load(USERS_FILE),
+        users_saver=_save_users,
+    )
+    updated = get_user_from_token(_get_session_token(request))
+    return {"ok": True, "user": updated, "message": f"Тариф обновлён до {SUBSCRIPTION_PLANS[tier]['name_ru']}"}
+
+
+@app.post("/api/admin/billing/topup")
+async def admin_billing_topup(body: AdminBalanceRequest, request: Request):
+    from room.user_auth import admin_add_balance
+
+    admin = _current_user(request)
+    if not admin.get("is_owner") and "manage_users" not in (admin.get("privileges") or []):
+        raise HTTPException(status_code=403, detail="Только владелец или админ")
+    try:
+        target = admin_add_balance(admin, body.user_id, body.amount)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True, "user": target}
+
+
+@app.post("/api/admin/billing/set-tier")
+async def admin_billing_set_tier(body: AdminTierRequest, request: Request):
+    from room.user_auth import admin_set_user_tier
+
+    admin = _current_user(request)
+    if not admin.get("is_owner"):
+        raise HTTPException(status_code=403, detail="Только владелец")
+    try:
+        target = admin_set_user_tier(admin, body.user_id, body.tier)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True, "user": target}
 
 
 @app.get("/api/agents")

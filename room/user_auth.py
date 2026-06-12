@@ -98,13 +98,19 @@ def _find_user(user_id: str) -> Optional[dict]:
 
 
 def _public_user(user: dict) -> dict:
+    from room.subscriptions import normalize_user_billing, public_subscription
+
+    user = normalize_user_billing(user)
     role = user.get("role", "member")
     privs = user.get("privileges") or _privileges_for_role(role)
+    if role == "owner":
+        user["subscription_tier"] = "owner"
     return {
         "id": user["id"],
         "email": user["email"],
         "name": user.get("name", ""),
         "role": role,
+        "role_label": _role_label(role),
         "privileges": privs,
         "is_owner": role == "owner",
         "setup_complete": bool(user.get("setup_complete")),
@@ -113,7 +119,47 @@ def _public_user(user: dict) -> dict:
         "project_goal": user.get("project_goal", ""),
         "created_at": user.get("created_at"),
         "setup_at": user.get("setup_at"),
+        "subscription": public_subscription(user),
+        "access_level": public_subscription(user)["level"],
     }
+
+
+def admin_set_user_tier(admin_user: dict, target_user_id: str, tier: str) -> dict:
+    if not has_privilege(admin_user, "manage_users") and admin_user.get("role") != "owner":
+        raise ValueError("Недостаточно прав")
+    from room.subscriptions import set_subscription_tier
+
+    set_subscription_tier(
+        target_user_id,
+        tier,
+        users_loader=lambda: _load(USERS_FILE),
+        users_saver=_save_users,
+    )
+    target = _find_user(target_user_id)
+    return _public_user(target) if target else {}
+
+
+def admin_add_balance(admin_user: dict, target_user_id: str, amount: int) -> dict:
+    if not has_privilege(admin_user, "manage_users") and admin_user.get("role") != "owner":
+        raise ValueError("Недостаточно прав")
+    from room.subscriptions import add_balance
+
+    add_balance(
+        target_user_id,
+        amount,
+        users_loader=lambda: _load(USERS_FILE),
+        users_saver=_save_users,
+    )
+    target = _find_user(target_user_id)
+    return _public_user(target) if target else {}
+
+
+def _role_label(role: str) -> str:
+    return {
+        "owner": "Владелец",
+        "admin": "Администратор",
+        "member": "Участник",
+    }.get(role or "member", role)
 
 
 def register(email: str, password: str, name: str = "") -> tuple[dict, str]:
@@ -126,6 +172,8 @@ def register(email: str, password: str, name: str = "") -> tuple[dict, str]:
         raise ValueError("Email уже зарегистрирован")
 
     salt, digest = _hash_password(password)
+    from room.subscriptions import initial_billing_for_register
+
     user = {
         "id": str(uuid.uuid4())[:12],
         "email": email,
@@ -136,6 +184,7 @@ def register(email: str, password: str, name: str = "") -> tuple[dict, str]:
         "setup_complete": False,
         "default_view": "dashboard",
         "created_at": datetime.now().isoformat(),
+        **initial_billing_for_register(),
     }
     users = _load(USERS_FILE)
     users.append(user)
@@ -284,6 +333,27 @@ def change_password(user_id: str, current_password: str, new_password: str) -> N
     _save_users(users)
 
 
+def charge_user_action(user_id: str, action: str) -> tuple[bool, str]:
+    """Проверка и списание кредитов. Owner — без списания."""
+    from room.subscriptions import check_balance, deduct_balance, normalize_user_billing
+
+    user = _find_user(user_id)
+    if not user:
+        return False, "Пользователь не найден"
+    normalize_user_billing(user)
+    ok, msg = check_balance(user, action)
+    if not ok:
+        return False, msg
+    ok, msg, _ = deduct_balance(
+        user_id,
+        action,
+        users_loader=lambda: _load(USERS_FILE),
+        users_saver=_save_users,
+        find_user=_find_user,
+    )
+    return ok, msg
+
+
 def ensure_owner(email: str, password: str, name: str = "Owner") -> dict:
     """Создать или обновить аккаунт владельца с полными привилегиями."""
     email = email.strip().lower()
@@ -297,12 +367,16 @@ def ensure_owner(email: str, password: str, name: str = "Owner") -> dict:
     users = _load(USERS_FILE)
     updated = None
 
+    from room.subscriptions import initial_billing_for_owner
+    owner_billing = initial_billing_for_owner()
+
     for u in users:
         if u.get("email") == email:
             u["password"] = pw
             u["role"] = "owner"
             u["privileges"] = list(ALL_PRIVILEGES)
             u["setup_complete"] = True
+            u.update(owner_billing)
             if name:
                 u["name"] = name.strip()[:80]
             u["updated_at"] = datetime.now().isoformat()
@@ -320,6 +394,7 @@ def ensure_owner(email: str, password: str, name: str = "Owner") -> dict:
             "setup_complete": True,
             "default_view": "dashboard",
             "created_at": datetime.now().isoformat(),
+            **owner_billing,
         }
         users.append(updated)
 
