@@ -335,6 +335,21 @@
         return mesh;
     }
 
+    function wallMaterial() {
+        if (global.StudioTextures) {
+            return StudioTextures.material('wall', { roughness: 0.88, metalness: 0.02 });
+        }
+        return new THREE.MeshStandardMaterial({ color: 0x323840, roughness: 0.88 });
+    }
+
+    function addWallBox(cx, cy, cz, ww, hh, dd, mat) {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(ww, hh, dd), mat);
+        m.position.set(cx, cy, cz);
+        m.receiveShadow = true;
+        scene.add(m);
+        return m;
+    }
+
     function buildRoom() {
         addCarpetFloor();
         addZoneFloor(0, -1.5, 8.2, 4.2, 0x343842, null);
@@ -345,104 +360,161 @@
         addZoneSign('ЛАУНЖ', 5.2, 1.55, 0x7a9888);
         addZoneSign('БИБЛИОТЕКА', -4.5, 1.55, 0x988878);
 
+        buildWalls();
         buildCeiling();
-        buildWindows();
         buildOfficeDecor();
         buildPartitions();
-        buildWalls();
         addAmbientParticles();
     }
 
     function addCarpetFloor() {
-        const baseMat = new THREE.MeshStandardMaterial({
-            color: 0x3a3e48,
-            roughness: 0.92,
-            metalness: 0.02,
-        });
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM.w, ROOM.d), baseMat);
+        const floorMat = global.StudioTextures
+            ? StudioTextures.material('carpet', { roughness: 0.94, metalness: 0.01 })
+            : new THREE.MeshStandardMaterial({ color: 0x3a3e48, roughness: 0.92, metalness: 0.02 });
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM.w, ROOM.d), floorMat);
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
         scene.add(floor);
-
-        const tileMat = new THREE.MeshStandardMaterial({ color: 0x404550, roughness: 0.9 });
-        for (let ix = -3; ix <= 3; ix++) {
-            for (let iz = -2; iz <= 2; iz++) {
-                if ((ix + iz) % 2 !== 0) continue;
-                const tile = new THREE.Mesh(new THREE.PlaneGeometry(1.85, 1.85), tileMat);
-                tile.rotation.x = -Math.PI / 2;
-                tile.position.set(ix * 1.9, 0.008, iz * 1.9 - 0.3);
-                tile.receiveShadow = true;
-                scene.add(tile);
-            }
-        }
     }
 
     function buildCeiling() {
-        const ceilMat = new THREE.MeshStandardMaterial({ color: 0x2a2e36, roughness: 0.95 });
-        const ceil = new THREE.Mesh(new THREE.PlaneGeometry(ROOM.w - 0.2, ROOM.d - 0.2), ceilMat);
-        ceil.rotation.x = Math.PI / 2;
-        ceil.position.y = ROOM.h;
-        scene.add(ceil);
+        const slabH = 0.16;
+        const slabY = ROOM.h - slabH / 2;
+        const ceilTex = global.StudioTextures ? StudioTextures.get('ceiling') : null;
+
+        const topMat = ceilTex
+            ? new THREE.MeshStandardMaterial({ map: ceilTex, roughness: 0.92, metalness: 0.02 })
+            : new THREE.MeshStandardMaterial({ color: 0xeceef2, roughness: 0.92 });
+        const sideMat = new THREE.MeshStandardMaterial({ color: 0xd8dce4, roughness: 0.9 });
+        const bottomMat = ceilTex
+            ? new THREE.MeshStandardMaterial({ map: ceilTex, roughness: 0.92, metalness: 0.02 })
+            : new THREE.MeshStandardMaterial({ color: 0xeceef2, roughness: 0.92 });
+
+        const slab = new THREE.Mesh(
+            new THREE.BoxGeometry(ROOM.w - 0.12, slabH, ROOM.d - 0.12),
+            [sideMat, sideMat, topMat, bottomMat, sideMat, sideMat]
+        );
+        slab.position.y = slabY;
+        slab.name = 'ceilingSlab';
+        scene.add(slab);
 
         const lightPositions = [
             [-2.5, -2], [0.5, -2], [3, -2],
             [-2.5, 0.5], [0.5, 0.5], [3, 0.5],
             [-4, 3.2], [5, 3.2],
         ];
-        lightPositions.forEach(([x, z]) => {
-            const housing = new THREE.Mesh(
-                new THREE.BoxGeometry(0.55, 0.03, 0.55),
-                new THREE.MeshStandardMaterial({ color: 0x1e2228, roughness: 0.5, metalness: 0.2 })
-            );
-            housing.position.set(x, ROOM.h - 0.04, z);
-            scene.add(housing);
-
-            const panel = new THREE.Mesh(
-                new THREE.PlaneGeometry(0.42, 0.42),
-                new THREE.MeshStandardMaterial({
-                    color: 0xfff8f0,
-                    emissive: 0xfff0d8,
-                    emissiveIntensity: 0.55,
-                    roughness: 0.35,
-                })
-            );
-            panel.rotation.x = Math.PI / 2;
-            panel.position.set(x, ROOM.h - 0.05, z);
-            scene.add(panel);
-
-            const spot = new THREE.PointLight(0xfff4e8, 0.22, 5.5);
-            spot.position.set(x, ROOM.h - 0.15, z);
-            scene.add(spot);
-        });
+        lightPositions.forEach(([x, z]) => addRecessedLight(x, z, slabY, slabH));
     }
 
-    function buildWindows() {
+    function addRecessedLight(x, z, slabY, slabH) {
+        const yFace = slabY - slabH / 2;
+        const trimMat = new THREE.MeshStandardMaterial({ color: 0xd0d4dc, roughness: 0.45, metalness: 0.15 });
+        const wellMat = new THREE.MeshStandardMaterial({ color: 0x1a1e24, roughness: 0.95 });
+        const panelMat = new THREE.MeshStandardMaterial({
+            color: 0xfff8f0,
+            emissive: 0xfff0d8,
+            emissiveIntensity: 0.5,
+            roughness: 0.4,
+        });
+
+        const trim = new THREE.Mesh(new THREE.RingGeometry(0.12, 0.2, 32), trimMat);
+        trim.rotation.x = -Math.PI / 2;
+        trim.position.set(x, yFace + 0.002, z);
+        scene.add(trim);
+
+        const well = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, slabH * 0.75, 20), wellMat);
+        well.position.set(x, slabY + slabH * 0.08, z);
+        scene.add(well);
+
+        const panel = new THREE.Mesh(new THREE.CircleGeometry(0.12, 32), panelMat);
+        panel.rotation.x = -Math.PI / 2;
+        panel.position.set(x, yFace + 0.001, z);
+        scene.add(panel);
+
+        const spot = new THREE.PointLight(0xfff4e8, 0.24, 5.5);
+        spot.position.set(x, yFace + 0.06, z);
+        scene.add(spot);
+    }
+
+    function buildWindowUnit(cx, bottom, top) {
+        const w = 1.85;
+        const h = top - bottom;
+        const cy = (bottom + top) / 2;
+        const fw = 0.055;
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0xe8eaef, roughness: 0.32, metalness: 0.72 });
+        const zGlass = -ROOM.hd + 0.03;
+        const zSky = -ROOM.hd - 0.45;
+
+        if (global.StudioTextures) {
+            const sky = new THREE.Mesh(
+                new THREE.PlaneGeometry(w - 0.12, h - 0.12),
+                new THREE.MeshBasicMaterial({ map: StudioTextures.get('sky') })
+            );
+            sky.position.set(cx, cy, zSky);
+            scene.add(sky);
+        }
+
         const glassMat = new THREE.MeshStandardMaterial({
-            color: 0xa8c8e8,
+            color: 0x9cb8d8,
             transparent: true,
-            opacity: 0.42,
+            opacity: 0.32,
             roughness: 0.04,
-            metalness: 0.15,
-            emissive: 0x446688,
-            emissiveIntensity: 0.18,
+            metalness: 0.25,
             side: THREE.DoubleSide,
         });
-        const frameMat = new THREE.MeshStandardMaterial({ color: 0x3a4048, roughness: 0.35, metalness: 0.55 });
-        for (let i = 0; i < 4; i++) {
-            const x = -4.5 + i * 3;
-            const pane = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.85), glassMat);
-            pane.position.set(x, 1.35, -ROOM.hd + 0.02);
+        const paneW = (w - 0.16) / 2;
+        const paneH = (h - 0.16) / 2;
+        [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]].forEach(([gx, gy]) => {
+            const pane = new THREE.Mesh(new THREE.PlaneGeometry(paneW - 0.02, paneH - 0.02), glassMat);
+            pane.position.set(cx + gx * (paneW + 0.02), cy + gy * (paneH + 0.02), zGlass);
             scene.add(pane);
-            const frame = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.95, 0.06), frameMat);
-            frame.position.set(x, 1.35, -ROOM.hd + 0.05);
-            scene.add(frame);
-        }
-        const sill = new THREE.Mesh(
-            new THREE.BoxGeometry(ROOM.w - 0.4, 0.08, 0.18),
-            new THREE.MeshStandardMaterial({ color: 0x454a54, roughness: 0.45 })
-        );
-        sill.position.set(0, 0.42, -ROOM.hd + 0.12);
+        });
+
+        const addFrame = (fx, fy, fz, ww, hh, fd) => {
+            const f = new THREE.Mesh(new THREE.BoxGeometry(ww, hh, fd), frameMat);
+            f.position.set(fx, fy, fz);
+            f.castShadow = true;
+            scene.add(f);
+        };
+        const fz = -ROOM.hd + 0.07;
+        addFrame(cx, top - fw / 2, fz, w + fw * 2, fw, 0.12);
+        addFrame(cx, bottom + fw / 2, fz, w + fw * 2, fw, 0.12);
+        addFrame(cx - w / 2 - fw / 2, cy, fz, fw, h, 0.12);
+        addFrame(cx + w / 2 + fw / 2, cy, fz, fw, h, 0.12);
+        addFrame(cx, cy, fz, 0.035, h - 0.08, 0.1);
+        addFrame(cx, cy, fz, w - 0.08, 0.035, 0.1);
+
+        const sillMat = global.StudioTextures
+            ? StudioTextures.material('concrete', { roughness: 0.55 })
+            : new THREE.MeshStandardMaterial({ color: 0x454a54, roughness: 0.45 });
+        const sill = new THREE.Mesh(new THREE.BoxGeometry(w + 0.22, 0.07, 0.24), sillMat);
+        sill.position.set(cx, bottom - 0.035, -ROOM.hd + 0.2);
+        sill.castShadow = true;
         scene.add(sill);
+    }
+
+    function buildNorthWallWithWindows() {
+        const wallMat = wallMaterial();
+        const z = -ROOM.hd + 0.08;
+        const t = 0.16;
+        const h = ROOM.h;
+        const winBot = 0.9;
+        const winTop = 2.35;
+        const spanL = -5.275;
+        const spanR = 5.275;
+        const spanW = spanR - spanL;
+        const midX = (spanL + spanR) / 2;
+
+        addWallBox(midX, winBot / 2, z, spanW, winBot, t, wallMat);
+        addWallBox(midX, winTop + (h - winTop) / 2, z, spanW, h - winTop, t, wallMat);
+        addWallBox(-ROOM.hw + (ROOM.hw + spanL) / 2, h / 2, z, ROOM.hw + spanL, h, t, wallMat);
+        addWallBox(ROOM.hw - (ROOM.hw - spanR) / 2, h / 2, z, ROOM.hw - spanR, h, t, wallMat);
+
+        [[-3.425, -2.375], [-0.525, 0.525], [2.375, 3.425]].forEach(([l, r]) => {
+            addWallBox((l + r) / 2, (winBot + winTop) / 2, z, r - l, winTop - winBot, t, wallMat);
+        });
+
+        [-4.35, -1.45, 1.45, 4.35].forEach((cx) => buildWindowUnit(cx, winBot, winTop));
     }
 
     function buildOfficeDecor() {
@@ -450,18 +522,20 @@
             new THREE.BoxGeometry(2.4, 1.1, 0.04),
             new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: 0.88 })
         ), false, true);
-        board.position.set(0, 1.45, -ROOM.hd + 0.22);
+        board.position.set(-ROOM.hw + 0.2, 1.45, -0.5);
+        board.rotation.y = Math.PI / 2;
         const boardFrame = new THREE.Mesh(
             new THREE.BoxGeometry(2.55, 1.22, 0.03),
             new THREE.MeshStandardMaterial({ color: 0x3a4048, metalness: 0.25, roughness: 0.5 })
         );
-        boardFrame.position.set(0, 1.45, -ROOM.hd + 0.18);
+        boardFrame.position.set(-ROOM.hw + 0.16, 1.45, -0.5);
+        boardFrame.rotation.y = Math.PI / 2;
         scene.add(boardFrame);
 
-        const credenza = new THREE.Mesh(
-            new THREE.BoxGeometry(1.8, 0.75, 0.45),
-            new THREE.MeshStandardMaterial({ color: 0x4a4038, roughness: 0.55 })
-        );
+        const credenzaMat = global.StudioTextures
+            ? StudioTextures.material('wood', { roughness: 0.58 })
+            : new THREE.MeshStandardMaterial({ color: 0x4a4038, roughness: 0.55 });
+        const credenza = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.75, 0.45), credenzaMat);
         credenza.position.set(-5.8, 0.375, -3.8);
         credenza.castShadow = true;
         credenza.receiveShadow = true;
@@ -629,13 +703,17 @@
     }
 
     function buildWalls() {
-        const wallMat = new THREE.MeshStandardMaterial({ color: 0x323840, roughness: 0.88 });
+        const wallMat = wallMaterial();
         const trimMat = new THREE.MeshStandardMaterial({ color: 0x454a54, roughness: 0.7 });
         const { hw, hd, h, w, d } = ROOM;
-        [[0, h / 2, -hd, w, h, 0.16], [0, h / 2, hd, w, h, 0.16],
+
+        buildNorthWallWithWindows();
+
+        [[0, h / 2, hd, w, h, 0.16],
          [-hw, h / 2, 0, 0.16, h, d], [hw, h / 2, 0, 0.16, h, d]].forEach(([x, y, z, ww, hh, dd]) => {
-            addProp(new THREE.Mesh(new THREE.BoxGeometry(ww, hh, dd), wallMat), false, true).position.set(x, y, z);
+            addWallBox(x, y, z, ww, hh, dd, wallMat);
         });
+
         const baseboardMat = new THREE.MeshStandardMaterial({ color: 0x252830 });
         [[0, 0.06, -hd + 0.1, w - 0.2, 0.1, 0.08], [0, 0.06, hd - 0.1, w - 0.2, 0.1, 0.08]].forEach(([x, y, z, ww, hh, dd]) => {
             addProp(new THREE.Mesh(new THREE.BoxGeometry(ww, hh, dd), baseboardMat), false, true).position.set(x, y, z);
@@ -985,7 +1063,7 @@
                 controls = new THREE.OrbitControls(camera, canvas);
                 controls.enableDamping = true;
                 controls.dampingFactor = 0.08;
-                controls.maxPolarAngle = Math.PI / 2.08;
+                controls.maxPolarAngle = Math.PI / 2.35;
                 controls.minDistance = 3.5;
                 controls.maxDistance = 16;
                 controls.target.set(0, 0.5, 0);
