@@ -16,8 +16,27 @@
     function canAccess(user) {
         if (!user) return false;
         if (user.is_owner || user.role === 'owner') return true;
+        if (user.role === 'admin' || user.role === 'tech_admin') return true;
         const p = user.privileges || [];
         return p.includes('admin') || p.includes('manage_users') || p.includes('manage_settings');
+    }
+
+    function roleBadgeFor(user) {
+        if (global.Auth?.roleBadgeHtml) return global.Auth.roleBadgeHtml(user);
+        return `<span class="role-badge role-user">👤 ${esc(user?.role_label || 'Пользователь')}</span>`;
+    }
+
+    function roleOptionsHtml(selected, isOwner) {
+        const opts = [
+            ['member', '👤 Пользователь'],
+            ['support', '💬 Поддержка'],
+            ['admin', '🛡 Админ'],
+            ['tech_admin', '⚙ Тех. админ'],
+        ];
+        if (isOwner) opts.push(['owner', '👑 Владелец']);
+        return opts.map(([val, label]) =>
+            `<option value="${val}" ${selected === val ? 'selected' : ''}>${label}</option>`
+        ).join('');
     }
 
     function canManageUsers(user) {
@@ -119,15 +138,13 @@
                     <strong>${esc(u.name)}</strong><br>
                     <span class="muted">${esc(u.email)}</span>
                 </td>
-                <td>${esc(u.role_label)}</td>
+                <td>${roleBadgeFor(u)}</td>
                 <td>${esc(sub.tier_emoji || '')} ${esc(sub.tier_name || '')}<br><span class="muted">ур. ${sub.level || 1}</span></td>
                 <td><strong>${esc(sub.balance_display ?? sub.balance ?? '0')}</strong></td>
                 <td class="admin-user-actions">
                     ${readonly ? '<span class="ss-badge warn">👑 Owner</span>' : `
                     <select class="design-input input-sm" id="role-${esc(u.id)}" onchange="AdminPanel.saveUser('${esc(u.id)}','role')">
-                        <option value="member" ${u.role === 'member' ? 'selected' : ''}>member</option>
-                        <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>admin</option>
-                        ${isOwner ? `<option value="owner" ${u.role === 'owner' ? 'selected' : ''}>owner</option>` : ''}
+                        ${roleOptionsHtml(u.role, isOwner)}
                     </select>
                     ${isOwner ? `<select class="design-input input-sm" id="tier-${esc(u.id)}" onchange="AdminPanel.saveUser('${esc(u.id)}','tier')">
                         ${(plans || []).map((p) =>

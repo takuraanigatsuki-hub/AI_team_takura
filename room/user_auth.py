@@ -34,7 +34,30 @@ ALL_PRIVILEGES = [
 ROLE_PRIVILEGES = {
     "owner": ALL_PRIVILEGES,
     "admin": [p for p in ALL_PRIVILEGES if p != "manage_users"],
+    "tech_admin": [
+        "admin",
+        "manage_settings",
+        "manage_integrations",
+        "manage_telegram",
+        "deploy",
+        "backup",
+        "pipeline",
+        "all_views",
+        "skip_setup",
+    ],
+    "support": [
+        "view_link",
+        "all_views",
+    ],
     "member": [],
+}
+
+ROLE_LABELS = {
+    "owner": "Владелец",
+    "admin": "Админ",
+    "tech_admin": "Тех. админ",
+    "support": "Поддержка",
+    "member": "Пользователь",
 }
 
 
@@ -154,8 +177,11 @@ def _public_user(user: dict) -> dict:
         "name": user.get("name", ""),
         "role": role,
         "role_label": _role_label(role),
+        "role_badge": role,
         "privileges": privs,
         "is_owner": role == "owner",
+        "is_tech_admin": role == "tech_admin",
+        "is_support": role == "support",
         "setup_complete": bool(user.get("setup_complete")),
         "default_view": user.get("default_view", "dashboard"),
         "theme": user.get("theme", "dark"),
@@ -198,11 +224,22 @@ def admin_add_balance(admin_user: dict, target_user_id: str, amount: int) -> dic
 
 
 def _role_label(role: str) -> str:
-    return {
-        "owner": "Владелец",
-        "admin": "Администратор",
-        "member": "Участник",
-    }.get(role or "member", role)
+    return ROLE_LABELS.get(role or "member", role)
+
+
+def can_access_admin(user: dict | None) -> bool:
+    if not user:
+        return False
+    if user.get("is_owner") or user.get("role") == "owner":
+        return True
+    role = user.get("role", "member")
+    if role in ("admin", "tech_admin"):
+        return True
+    return (
+        has_privilege(user, "manage_users")
+        or has_privilege(user, "manage_settings")
+        or has_privilege(user, "admin")
+    )
 
 
 def register(email: str, password: str, name: str = "") -> tuple[dict, str]:

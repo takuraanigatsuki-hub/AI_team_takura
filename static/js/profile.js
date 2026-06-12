@@ -35,7 +35,13 @@
     }
 
     function roleLabel(role) {
-        return { owner: 'Владелец', admin: 'Администратор', member: 'Участник' }[role] || role;
+        return {
+            owner: 'Владелец',
+            admin: 'Админ',
+            tech_admin: 'Тех. админ',
+            support: 'Поддержка',
+            member: 'Пользователь',
+        }[role] || role;
     }
 
     function canAccessView(user, view) {
@@ -115,10 +121,9 @@
                         <h2>${esc(user.name || 'Пользователь')}</h2>
                         <p class="muted">${esc(user.email)}</p>
                         <div class="ss-badges" style="margin-top:10px">
-                            <span class="ss-badge">${roleLabel(user.role)}</span>
+                            ${global.Auth?.roleBadgeHtml ? global.Auth.roleBadgeHtml(user) : `<span class="ss-badge">${roleLabel(user.role)}</span>`}
                             <span class="ss-badge">${esc(user.subscription?.tier_emoji || '')} ${esc(user.subscription?.tier_name || 'Free')}</span>
                             <span class="ss-badge">ур. ${user.access_level || 1}</span>
-                            ${user.is_owner ? '<span class="ss-badge warn">👑 Owner</span>' : ''}
                         </div>
                         <p class="muted profile-hint" style="margin-top:8px">Баланс: <strong>${esc(user.subscription?.balance_display ?? '—')}</strong> кредитов</p>
                     </div>

@@ -42,6 +42,35 @@
         location.href = '/';
     }
 
+    function roleBadgeHtml(user) {
+        if (!user) return '';
+        const role = user.role || 'member';
+        const labels = {
+            owner: '👑 Владелец',
+            admin: '🛡 Админ',
+            tech_admin: '⚙ Тех. админ',
+            support: '💬 Поддержка',
+            member: '👤 Пользователь',
+        };
+        const cls = {
+            owner: 'role-badge role-owner',
+            admin: 'role-badge role-admin',
+            tech_admin: 'role-badge role-tech',
+            support: 'role-badge role-support',
+            member: 'role-badge role-user',
+        };
+        const text = user.role_label || labels[role] || labels.member;
+        return `<span class="${cls[role] || cls.member}" title="${escape(text)}">${labels[role] || labels.member}</span>`;
+    }
+
+    function canAccessAdmin(user) {
+        if (!user) return false;
+        if (user.is_owner || user.role === 'owner') return true;
+        if (user.role === 'admin' || user.role === 'tech_admin') return true;
+        const p = user.privileges || [];
+        return p.includes('admin') || p.includes('manage_users') || p.includes('manage_settings');
+    }
+
     function updateHeader() {
         const el = document.getElementById('userMenu');
         if (!el) return;
@@ -55,11 +84,11 @@
         const sub = currentUser.subscription || {};
         const bal = sub.balance_display != null ? sub.balance_display : (sub.balance ?? '—');
         const tierShort = sub.tier_emoji ? `${sub.tier_emoji}` : '';
-        const ownerBadge = currentUser.is_owner ? '<span class="hdr-owner" title="Владелец">👑 Owner</span>' : '';
-        const adminBtn = (currentUser.is_owner || (currentUser.privileges || []).includes('manage_users'))
+        const roleBadge = roleBadgeHtml(currentUser);
+        const adminBtn = canAccessAdmin(currentUser)
             ? `<button type="button" class="hdr-btn hdr-accent-purple" onclick="switchView('admin')" title="Admin">🛡</button>` : '';
         el.innerHTML = `
-            ${ownerBadge}
+            ${roleBadge}
             <span class="hdr-balance" title="Баланс · ${sub.tier_name || 'Free'}">${tierShort} ${bal} кр.</span>
             ${adminBtn}
             <button type="button" class="hdr-btn" onclick="switchView('profile')" title="Личный кабинет">👤 ${name}</button>
@@ -71,5 +100,5 @@
         return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     }
 
-    global.Auth = { fetchMe, getUser, isLoggedIn, logout, updateHeader };
+    global.Auth = { fetchMe, getUser, isLoggedIn, logout, updateHeader, roleBadgeHtml, canAccessAdmin };
 })(window);
