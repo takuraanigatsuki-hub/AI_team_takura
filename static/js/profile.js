@@ -267,6 +267,7 @@
             { id: 'profile', label: '👤 Профиль' },
             { id: 'subscription', label: '💎 Подписка' },
             { id: 'settings', label: '⚙️ Настройки' },
+            { id: 'workspaces', label: '🏢 Workspaces', show: true },
             { id: 'security', label: '🔒 Безопасность' },
             { id: 'activity', label: '📈 Активность' },
         ];
@@ -424,6 +425,12 @@
             return;
         }
 
+        if (activeTab === 'workspaces') {
+            el.innerHTML = '<div class="dash-loading">Загрузка workspaces…</div>';
+            renderWorkspaces(user, el);
+            return;
+        }
+
         if (activeTab === 'security') {
             el.innerHTML = `
                 <form class="profile-form" id="profilePasswordForm" onsubmit="ProfileCabinet.changePassword(event)">
@@ -501,8 +508,32 @@
         activeTab = tab;
         renderTabs();
         if (tab === 'subscription' && !plans) loadPlans().then(renderContent);
+        else if (tab === 'workspaces') renderContent();
         else if (tab === 'overview' || tab === 'activity' || tab === 'profile') loadStats().then(renderContent);
         else renderContent();
+    }
+
+    async function renderWorkspaces(user, el) {
+        try {
+            const r = await fetch('/api/workspaces/active', { credentials: 'same-origin' });
+            const d = r.ok ? await r.json() : { workspaces: [], active_id: '' };
+            const list = d.workspaces || [];
+            el.innerHTML = `
+                <section class="pf-panel">
+                    <div class="pf-panel-head">
+                        <h3>🏢 Командные workspace</h3>
+                        <button type="button" class="btn-primary btn-sm" onclick="Workspaces.showCreate();setTimeout(()=>ProfileCabinet.switchTab('workspaces'),800)">+ Создать</button>
+                    </div>
+                    <p class="muted">Изолированные комнаты для разных проектов или команд.</p>
+                    ${list.length ? list.map((w) => `
+                        <article class="ucard ucard-row" style="margin-top:10px">
+                            <div><strong>${esc(w.name)}</strong><br><small class="muted">${esc(w.description || '')}</small></div>
+                            <button type="button" class="btn-secondary btn-xs" onclick="Workspaces.switchTo('${esc(w.id)}')">${w.id === d.active_id ? '✓ Активен' : 'Выбрать'}</button>
+                        </article>`).join('') : '<p class="muted">Пока нет workspace — создайте первый.</p>'}
+                </section>`;
+        } catch (_) {
+            el.innerHTML = '<p class="muted">Ошибка загрузки</p>';
+        }
     }
 
     async function upgrade(tier) {

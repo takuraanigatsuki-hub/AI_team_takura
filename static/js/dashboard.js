@@ -24,7 +24,9 @@
         if (!grid) return;
         grid.innerHTML = '<div class="dash-loading">Загрузка…</div>';
         try {
-            const [dash, tasks, git, cursor, activity, figma, llmUsage, telegram, layoutRes, sec] = await Promise.all([
+            const user = global.Auth?.getUser?.();
+            const admin = global.UIAccess?.canAccessConsole?.(user);
+            const fetches = [
                 fetch('/api/dashboard').then((r) => r.json()),
                 fetch('/api/tasks').then((r) => r.json()),
                 fetch('/api/git/status').then((r) => r.json()),
@@ -34,8 +36,14 @@
                 fetch('/api/llm/usage').then((r) => r.json()).catch(() => ({})),
                 fetch('/api/telegram/status').then((r) => r.json()).catch(() => ({})),
                 fetch('/api/dashboard/layout', { credentials: 'same-origin' }).then((r) => r.json()).catch(() => layout),
-                fetch('/api/security/dashboard', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : {}).catch(() => ({})),
-            ]);
+            ];
+            if (admin) {
+                fetches.push(fetch('/api/security/dashboard', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : {}).catch(() => ({})));
+            }
+            const results = await Promise.all(fetches);
+            const [dash, tasks, git, cursor, activity, figma, llmUsage, telegram, layoutRes, sec] = [
+                results[0], results[1], results[2], results[3], results[4], results[5], results[6], results[7], results[8], results[9] || {},
+            ];
             layout = layoutRes.widgets ? layoutRes : layout;
             data = { dash, tasks, git, cursor, activity, figma, llmUsage, telegram, sec };
             render(grid);
@@ -148,11 +156,12 @@
 
     function renderSecurity() {
         const st = data.sec?.stats || {};
+        const admin = global.UIAccess?.canAccessConsole?.(global.Auth?.getUser());
         return `<div class="sec-kpis" style="grid-template-columns:repeat(2,1fr)">
             <article class="ucard ucard-kpi"><span class="ucard-kpi-val">${st.blocked_now || 0}</span><span>IP blocked</span></article>
             <article class="ucard ucard-kpi"><span class="ucard-kpi-val">${st.total_events || 0}</span><span>Events</span></article>
         </div>
-        <button type="button" class="btn-secondary btn-sm" onclick="switchView('admin');AdminPanel?.switchSection?.('security')">🛡 Подробнее</button>`;
+        ${admin ? '<button type="button" class="btn-secondary btn-sm" onclick="switchView(\'admin\');AdminPanel?.switchSection?.(\'security\')">🛡 Подробнее</button>' : ''}`;
     }
 
     function renderActions() {

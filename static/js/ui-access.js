@@ -70,4 +70,8 @@
         applyMenuVisibility,
         filterCommands,
     };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (global.Auth?.getUser) UIAccess.applyMenuVisibility(global.Auth.getUser());
+    });
 })(window);

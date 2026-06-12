@@ -729,8 +729,11 @@
 <div class="modal-overlay" id="settingsModal" onclick="if(event.target===this)hideSettings()">
     <div class="modal modal-wide">
         <h2>⚙️ Настройки</h2>
-        <div class="settings-grid">
-            <div id="settingsLearningSection" class="hidden">
+        <div id="settingsUserHint" class="hidden settings-user-hint">
+            <p>Тема, профиль и подписка — в <button type="button" class="link-btn" onclick="hideSettings();switchView('profile')">👤 Кабинете</button>.</p>
+        </div>
+        <div class="settings-grid" id="settingsGrid">
+            <div id="settingsLearningSection" class="hidden" data-ui="learning-settings">
                 <h3 class="settings-section-title">Обучение агентов</h3>
                 <div class="form-group">
                     <label>Интервал мин (сек)</label>
@@ -864,7 +867,7 @@
 <script src="/static/js/investor-portal.js?v=1"></script>
 <script src="/static/js/security-dashboard.js?v=1"></script>
 <script src="/static/js/task-templates.js?v=1"></script>
-<script src="/static/js/app.js?v=35"></script>
+        document.getElementById('app.js?v=36"></script>
 
 <!-- PWA: регистрация Service Worker -->
 <script>

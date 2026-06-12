@@ -87,7 +87,7 @@
 
     function getCommands() {
         const go = (v) => () => sw(v);
-        return [
+        const all = [
             { label: '🎮 3D Студия', run: go('studio') },
             { label: '💬 Рабочий чат', run: go('chat') },
             { label: '📚 Обучение', run: go('learning') },
@@ -118,6 +118,7 @@
             { label: '📄 Export чата', run: exportChat },
             { label: '⌨️ Горячие клавиши', run: showShortcutsModal },
         ];
+        return global.UIAccess?.filterCommands ? UIAccess.filterCommands(all) : all;
     }
 
     function setupChrome() {

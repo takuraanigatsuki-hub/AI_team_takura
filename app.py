@@ -828,11 +828,11 @@ async def admin_update_site(body: AdminSiteUpdate, request: Request):
 
 @app.post("/api/admin/console")
 async def admin_console(body: AdminConsoleRequest, request: Request):
-    from room.user_auth import can_manage_site, can_manage_users
+    from room.user_auth import can_access_admin
 
     admin = _current_user(request)
-    if not (can_manage_site(admin) or can_manage_users(admin)):
-        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    if not can_access_admin(admin):
+        raise HTTPException(status_code=403, detail="Консоль доступна только администраторам")
 
     action = (body.action or "").strip().lower()
     text = (body.text or "").strip()

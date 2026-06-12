@@ -33,8 +33,56 @@ body.sidebar-collapsed .sb-group-label { display: none; }
     flex: 1;
     margin-left: var(--sidebar-w);
     min-width: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
     transition: margin-left .2s ease;
 }
+
+body.has-sidebar .header {
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border, rgba(255,255,255,.08));
+}
+
+body.has-sidebar .main {
+    flex: 1;
+    min-height: 0;
+}
+
+/* Скрываем дублирующую навигацию — sidebar основной */
+body.has-sidebar .header-legacy-nav {
+    display: none !important;
+}
+
+body.has-sidebar .logo-text p {
+    display: none;
+}
+
+body.has-sidebar .status-footer {
+    margin-left: var(--sidebar-w);
+    transition: margin-left .2s ease;
+}
+
+body.sidebar-collapsed .status-footer {
+    margin-left: var(--sidebar-collapsed-w);
+}
+
+.settings-user-hint {
+    padding: 16px 0 8px;
+    font-size: 14px;
+    color: var(--text-muted, #888);
+}
+
+.link-btn {
+    background: none;
+    border: none;
+    color: var(--accent, #6c63ff);
+    cursor: pointer;
+    font: inherit;
+    text-decoration: underline;
+    padding: 0;
+}
+
 
 body.sidebar-collapsed .app-content-wrap { margin-left: var(--sidebar-collapsed-w); }
 

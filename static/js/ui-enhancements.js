@@ -32,7 +32,7 @@
                 <span id="footerAgents">Агенты: …</span>
                 <span class="footer-spacer"></span>
                 <span id="footerRepo" class="muted"></span>
-                <button type="button" class="footer-link" onclick="UIEnhancements.syncNow()">📤 Sync</button>`;
+                <button type="button" class="footer-link hidden" id="footerSyncBtn" data-ui="admin-tools" onclick="UIEnhancements.syncNow()">📤 Sync</button>`;
             document.body.appendChild(f);
         }
     }

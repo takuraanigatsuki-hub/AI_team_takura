@@ -15,11 +15,13 @@
             applyUserTheme(currentUser);
             if (window.AdminPanel) AdminPanel.updateNavVisibility(currentUser);
             updateNavVisibility(currentUser);
+            if (window.UIAccess) UIAccess.applyMenuVisibility(currentUser);
             if (window.Workspaces) Workspaces.load();
             return currentUser;
         } catch (_) {
             currentUser = null;
             updateHeader();
+            if (window.UIAccess) UIAccess.applyMenuVisibility(null);
             return null;
         }
     }
@@ -95,6 +97,7 @@
         document.getElementById('agentLearningNavTab')?.classList.toggle('hidden', !showLearning);
         document.getElementById('investorNavTab')?.classList.toggle('hidden', !showInvestor);
         if (window.SidebarNav) SidebarNav.render();
+        if (window.UIAccess) UIAccess.applyMenuVisibility(user);
     }
 
     function updateHeader() {

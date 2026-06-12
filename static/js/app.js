@@ -1303,7 +1303,13 @@
     window.showSettings = async function () {
         document.getElementById('settingsModal').classList.add('show');
         const user = window.Auth?.getUser();
-        document.getElementById('settingsLearningSection')?.classList.toggle('hidden', !canViewAgentLearning(user));
+        const admin = window.UIAccess?.canAccessConsole?.(user);
+        const learning = window.Auth?.canViewAgentLearning?.(user);
+        if (window.UIAccess) UIAccess.applyMenuVisibility(user);
+        document.getElementById('settingsUserHint')?.classList.toggle('hidden', admin || learning);
+        document.getElementById('settingsGrid')?.classList.toggle('hidden', !admin && !learning);
+        document.getElementById('settingsLearningSection')?.classList.toggle('hidden', !learning);
+        if (!admin && !learning) return;
         try {
             const resp = await fetch('/api/config');
             if (resp.ok) {

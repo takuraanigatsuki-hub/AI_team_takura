@@ -64,8 +64,8 @@
         const nav = document.getElementById('adminNav');
         if (!nav) return;
         const items = [
-            { id: 'console', label: '🖥 Консоль AI & Cursor', show: true },
-            { id: 'security', label: '🛡 Security', show: true },
+            { id: 'console', label: '🖥 Консоль AI & Cursor', show: global.UIAccess?.canAccessConsole?.(user) ?? canAccess(user) },
+            { id: 'security', label: '🛡 Security', show: canAccess(user) },
             { id: 'flags', label: '🚩 Feature Flags', show: canManageSite(user) },
             { id: 'users', label: '👥 Пользователи', show: canManageUsers(user) },
             { id: 'site', label: '🌐 Сайт и настройки', show: canManageSite(user) },
