@@ -232,6 +232,55 @@ def _pick_colors(patterns: dict, count: int = 5) -> list[str]:
     return merged[:count]
 
 
+async def remember_figma_from_import(agent, figma_result: dict, source_url: str) -> dict:
+    """Запомнить макет после импорта — паттерны + knowledge без повторного API."""
+    patterns = _merge_patterns(figma_result, source_url)
+    summary = figma_result.get("summary") or {}
+    frames = summary.get("frames") or []
+    frame_names = ", ".join(f.get("name", "") for f in frames[:4] if f.get("name"))
+
+    knowledge = {
+        "topic": f"Figma: {summary.get('file_name', 'макет')}",
+        "title": summary.get("file_name", "Figma import"),
+        "summary": (
+            f"Импорт и запоминание: {len(summary.get('colors', []))} цветов, "
+            f"фреймы: {frame_names or '—'}."
+        ),
+        "url": source_url,
+        "source": "figma",
+        "keywords": ["figma", "design", "ui", "import"] + (summary.get("colors") or [])[:3],
+        "timestamp": datetime.now().isoformat(),
+        "figma_data": {
+            "colors": summary.get("colors", [])[:8],
+            "css_tokens": figma_result.get("css_tokens", ""),
+        },
+    }
+    agent.learned_topics.append(knowledge)
+    if len(agent.learned_topics) > 200:
+        agent.learned_topics = agent.learned_topics[-200:]
+    agent._persist_knowledge()
+
+    if agent.room_manager:
+        await agent.room_manager.broadcast_learning({
+            "type": "figma_study",
+            "agent_id": agent.agent_id,
+            "agent_name": agent.name,
+            "agent_emoji": agent.emoji,
+            "message": (
+                f"🎨 **Запомнила макет** · «{summary.get('file_name')}»\n"
+                f"Цвета: {', '.join(summary.get('colors', [])[:5]) or '—'}\n"
+                f"Фреймы: {frame_names or '—'}"
+            ),
+            "file_name": summary.get("file_name"),
+            "colors": summary.get("colors", [])[:8],
+            "preview_url": figma_result.get("preview_url"),
+            "url": source_url,
+            "patterns_total": len(patterns.get("studied", [])),
+            "timestamp": datetime.now().isoformat(),
+        })
+    return knowledge
+
+
 async def study_reference_file(agent, url: str) -> Optional[dict]:
     from integrations.figma_client import get_client_async, parse_figma_url, is_figma_api_url
     from integrations.figma_rate_limit import FigmaRateLimitError, is_in_cooldown
