@@ -304,50 +304,78 @@ def _app_url() -> str:
     return os.environ.get("APP_PUBLIC_URL") or f"http://localhost:{port}"
 
 
-async def _submit_task(room, text: str, target: str = "all", source: str = "Telegram"):
-    await room.handle_user_message({
+async def _typing(chat_id: str):
+    await _api("sendChatAction", chat_id=str(chat_id), action="typing")
+
+
+def _match_reply_button(text: str) -> Optional[str]:
+    text = (text or "").strip()
+    if text in REPLY_BUTTONS:
+        return REPLY_BUTTONS[text]
+    for label, action in REPLY_BUTTONS.items():
+        if label.replace(" ", "") == text.replace(" ", ""):
+            return action
+    return None
+
+
+def _submit_task_background(room, text: str, target: str = "all", source: str = "Telegram"):
+    """Задача в фоне — не блокирует polling и другие кнопки."""
+    payload = {
         "type": "task",
         "text": f"[{source}] {text}" if not text.startswith("[") else text,
         "target": target,
-    })
+    }
+
+    async def _run():
+        try:
+            await room.handle_user_message(payload)
+        except Exception as e:
+            print(f"Telegram task error: {e}")
+
+    asyncio.create_task(_run())
 
 
 async def _run_action(chat_id: str, action: str, room, message_id: int = None):
     """Выполняет cmd:* / task:* / mode:*."""
-    if action.startswith("cmd:"):
-        await _handle_command(chat_id, action.split(":", 1)[1], room, message_id)
-    elif action.startswith("task:"):
-        key = action.split(":", 1)[1]
-        tpl = QUICK_TASKS.get(key)
-        if tpl:
-            target, task_text = tpl
-            await _submit_task(room, task_text, target)
-            msg = f"✅ Задача отправлена → {target}\n\n{task_text[:120]}"
-            if message_id:
-                await _edit_or_send(chat_id, message_id, msg)
-            else:
-                await send_message(chat_id, msg, reply_markup=main_reply_keyboard())
-    elif action.startswith("mode:"):
-        if action.split(":", 1)[1] == "task":
-            _pending[str(chat_id)] = {"mode": "task", "target": "all"}
+    await _typing(chat_id)
+    try:
+        if action.startswith("cmd:"):
+            await _handle_command(chat_id, action.split(":", 1)[1], room, message_id)
+        elif action.startswith("task:"):
+            key = action.split(":", 1)[1]
+            tpl = QUICK_TASKS.get(key)
+            if tpl:
+                target, task_text = tpl
+                msg = f"✅ Задача принята → {target}\n\n{task_text[:120]}\n\n⏳ Команда работает…"
+                if message_id:
+                    await _edit_or_send(chat_id, message_id, msg)
+                else:
+                    await send_message(chat_id, msg, reply_markup=main_reply_keyboard())
+                _submit_task_background(room, task_text, target)
+        elif action.startswith("mode:"):
+            if action.split(":", 1)[1] == "task":
+                _pending[str(chat_id)] = {"mode": "task", "target": "all"}
+                await send_message(
+                    chat_id,
+                    "💬 Напишите задачу следующим сообщением.\nИли выберите агента:",
+                    reply_markup=main_reply_keyboard(),
+                )
+                await send_message(
+                    chat_id,
+                    "Кому отправить?",
+                    reply_markup=target_inline_keyboard(),
+                )
+        elif action.startswith("target:"):
+            target = action.split(":", 1)[1]
+            _pending[str(chat_id)] = {"mode": "task", "target": target}
             await send_message(
                 chat_id,
-                "💬 Напишите задачу следующим сообщением.\nИли выберите агента:",
+                f"✏️ Напишите задачу для: {target}",
                 reply_markup=main_reply_keyboard(),
             )
-            await send_message(
-                chat_id,
-                "Кому отправить?",
-                reply_markup=target_inline_keyboard(),
-            )
-    elif action.startswith("target:"):
-        target = action.split(":", 1)[1]
-        _pending[str(chat_id)] = {"mode": "task", "target": target}
-        await send_message(
-            chat_id,
-            f"✏️ Напишите задачу для: {target}",
-            reply_markup=main_reply_keyboard(),
-        )
+    except Exception as e:
+        print(f"Telegram action error [{action}]: {e}")
+        await send_message(chat_id, f"❌ Ошибка: {e}", reply_markup=main_reply_keyboard())
 
 
 async def _handle_command(chat_id: str, cmd: str, room, message_id: int = None):
@@ -382,15 +410,21 @@ async def _handle_command(chat_id: str, cmd: str, room, message_id: int = None):
             text = f"❌ Deploy: {e}"
         html_body = _esc(text)
     elif cmd == "sync":
-        try:
-            from integrations.local_git_sync import sync_changes_async
-            result = await sync_changes_async("telegram: manual sync")
-            text = f"📤 Git Sync: {result.get('action', 'none')}"
-            if result.get("commit"):
-                text += f"\nCommit: {result.get('commit')}"
-        except Exception as e:
-            text = f"❌ Sync: {e}"
+        text = "📤 Git Sync запущен…"
         html_body = _esc(text)
+
+        async def _do_sync():
+            try:
+                from integrations.local_git_sync import sync_changes_async
+                result = await sync_changes_async("telegram: manual sync")
+                sync_text = f"📤 Git Sync: {result.get('action', 'none')}"
+                if result.get("commit"):
+                    sync_text += f"\nCommit: {result.get('commit')}"
+                await send_message(chat_id, sync_text, reply_markup=main_reply_keyboard())
+            except Exception as e:
+                await send_message(chat_id, f"❌ Sync: {e}", reply_markup=main_reply_keyboard())
+
+        asyncio.create_task(_do_sync())
     else:
         text = "Неизвестная команда"
         html_body = _esc(text)
@@ -401,10 +435,24 @@ async def _handle_command(chat_id: str, cmd: str, room, message_id: int = None):
         await send_message(chat_id, text, reply_markup=main_reply_keyboard(), html_text=html_body)
 
 
-async def handle_update(update: dict, room):
+async def _safe_handle_update(update: dict, room):
     global _room
     _room = room
+    msg = update.get("message") or update.get("edited_message") or {}
+    cb = update.get("callback_query", {})
+    chat_id = (msg.get("chat") or cb.get("message", {}).get("chat") or {}).get("id")
+    try:
+        await _handle_update_inner(update, room)
+    except Exception as e:
+        print(f"Telegram handle_update error: {e}")
+        if chat_id:
+            try:
+                await send_message(chat_id, f"❌ Ошибка бота: {e}", reply_markup=main_reply_keyboard())
+            except Exception:
+                pass
 
+
+async def _handle_update_inner(update: dict, room):
     if update.get("callback_query"):
         cb = update["callback_query"]
         chat_id = cb["message"]["chat"]["id"]
@@ -412,7 +460,7 @@ async def handle_update(update: dict, room):
         data = cb.get("data", "")
         if not _is_allowed(chat_id):
             _register_chat(chat_id, cb.get("from", {}).get("username", ""), cb.get("from", {}).get("first_name", ""))
-        await _answer_callback(cb["id"])
+        await _answer_callback(cb["id"], "⏳")
         await _run_action(chat_id, data, room, msg_id)
         return
 
@@ -424,6 +472,10 @@ async def handle_update(update: dict, room):
     chat_id = chat.get("id")
     text = (message.get("text") or "").strip()
     user = message.get("from", {})
+
+    if text.startswith("/ping"):
+        await send_message(chat_id, "🏓 pong — бот работает", reply_markup=main_reply_keyboard())
+        return
 
     if text.startswith("/start"):
         _register_chat(chat_id, user.get("username", ""), user.get("first_name", ""))
@@ -447,8 +499,10 @@ async def handle_update(update: dict, room):
     if not _is_allowed(chat_id):
         _register_chat(chat_id, user.get("username", ""), user.get("first_name", ""))
 
-    if text in REPLY_BUTTONS:
-        await _run_action(chat_id, REPLY_BUTTONS[text], room)
+    action = _match_reply_button(text)
+    if action:
+        print(f"Telegram button: {text!r} -> {action}")
+        await _run_action(chat_id, action, room)
         return
 
     if text.startswith("/help"):
@@ -469,12 +523,16 @@ async def handle_update(update: dict, room):
 
     pending = _pending.pop(str(chat_id), {})
     target = pending.get("target", "all")
-    await _submit_task(room, text, target)
     await send_message(
         chat_id,
-        f"✅ Задача принята → {target}\n\n{text[:200]}",
+        f"✅ Задача принята → {target}\n\n{text[:200]}\n\n⏳ Команда работает…",
         reply_markup=main_reply_keyboard(),
     )
+    _submit_task_background(room, text, target)
+
+
+async def handle_update(update: dict, room):
+    await _safe_handle_update(update, room)
 
 
 async def _prepare_bot():
@@ -524,10 +582,7 @@ async def polling_loop(room, stop_event: asyncio.Event):
             for upd in data.get("result", []):
                 offset = upd["update_id"] + 1
                 _save_offset(offset)
-                try:
-                    await handle_update(upd, room)
-                except Exception as e:
-                    print(f"Telegram update error: {e}")
+                asyncio.create_task(_safe_handle_update(upd, room))
         except asyncio.CancelledError:
             break
         except Exception as e:
