@@ -1,10 +1,20 @@
 """Генерация runnable React-кода для live preview Сони."""
 import re
 import random
+from pathlib import Path
+
+_COMPONENTS_DIR = Path(__file__).resolve().parent.parent / "static" / "components"
 
 
 def _esc(s: str) -> str:
     return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ")[:80]
+
+
+def _load_component(filename: str) -> str:
+    path = _COMPONENTS_DIR / filename
+    if path.is_file():
+        return path.read_text(encoding="utf-8")
+    return ""
 
 
 def is_site_task(task: str) -> bool:
@@ -26,7 +36,7 @@ def generate_react_preview(task: str) -> dict:
         return {"title": "Форма входа", "code": _LOGIN_FORM.format(task=_esc(task))}
 
     if any(w in t for w in ["регистрац", "register", "signup", "sign up"]):
-        return {"title": "Регистрация", "code": _REGISTER_FORM.format(task=_esc(task))}
+        return {"title": "Регистрация", "code": _build_register_form(task)}
 
     if any(w in t for w in ["кнопк", "button", "btn"]):
         return {"title": "Интерактивная кнопка", "code": _BUTTON.format(task=_esc(task))}
@@ -66,10 +76,31 @@ const styles = {
   card: { background: '#fff', borderRadius: 16, padding: 28, boxShadow: '0 20px 60px rgba(0,0,0,0.25)', maxWidth: 420, width: '100%' },
   title: { margin: '0 0 8px', fontSize: 22, fontWeight: 700, color: '#1a1c22' },
   sub: { margin: '0 0 20px', fontSize: 13, color: '#6b7280' },
-  btn: { padding: '10px 20px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#6c63ff,#4f7df3)', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 14 },
-  input: { width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e4ea', marginBottom: 12, fontSize: 14, boxSizing: 'border-box' },
+  btn: { padding: '10px 20px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#6c63ff,#4f7df3)', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 14, width: '100%', marginTop: 8 },
+  input: { width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e4ea', marginBottom: 4, fontSize: 14, boxSizing: 'border-box' },
+  badge: { display: 'inline-block', background: 'rgba(108,99,255,0.12)', color: '#6c63ff', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, marginBottom: 12 },
+  label: { display: 'block', fontSize: 12, color: '#6b7280', margin: '12px 0 4px' },
+  fieldError: { margin: '0 0 8px', fontSize: 12, color: '#dc2626' },
+  serverError: { margin: '8px 0', padding: '10px 12px', background: '#fef2f2', borderRadius: 8, fontSize: 13, color: '#dc2626' },
+  inputError: { borderColor: '#fca5a5' },
+  btnDisabled: { opacity: 0.7, cursor: 'not-allowed' },
+  btnLink: { display: 'inline-block', textAlign: 'center', textDecoration: 'none', marginTop: 16 },
+  successIcon: { width: 48, height: 48, borderRadius: '50%', background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, marginBottom: 16 },
+  footer: { marginTop: 20, fontSize: 13, color: '#6b7280', textAlign: 'center' },
+  link: { color: '#6c63ff', textDecoration: 'none', fontWeight: 600 },
 };
+const task = "{task}";
 """
+
+_REGISTER_STYLES = _COMMON_STYLES
+
+
+def _build_register_form(task: str) -> str:
+    component = _load_component("RegistrationForm.jsx")
+    if component:
+        body = re.sub(r"^/\*\*.*?\*/\s*", "", component, count=1, flags=re.DOTALL).strip()
+        return _REGISTER_STYLES.format(task=_esc(task)) + "\n" + body
+    return _REGISTER_FORM.format(task=_esc(task))
 
 _BUTTON = _COMMON_STYLES + """
 function App() {
