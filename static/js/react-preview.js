@@ -145,7 +145,8 @@ try {
         }
     }
 
-    function renderPreview(data) {
+    function renderPreview(data, opts = {}) {
+        const autoOpen = opts.autoOpen !== false;
         const iframe = $('reactPreviewFrame');
         const codeEl = $('reactPreviewCode');
         const titleEl = $('reactPreviewTitle');

@@ -24,7 +24,7 @@
     function getPreferredTheme() {
         const saved = localStorage.getItem(THEME_KEY);
         if (saved === 'light' || saved === 'dark') return saved;
-        return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        return 'dark';
     }
 
     function applyTheme(theme) {
@@ -1172,6 +1172,7 @@
         applyTheme(getPreferredTheme());
         fetch('/api/config').then((r) => r.json()).then((cfg) => {
             if (cfg.auto_theme && window.AutoTheme) AutoTheme.start();
+            else if (window.AutoTheme) AutoTheme.stop?.();
         }).catch(() => {});
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission().catch(() => {});

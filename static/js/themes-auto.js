@@ -1,11 +1,16 @@
-/** Auto theme по времени суток + studio lighting */
+/** Auto theme по времени суток — только если пользователь не выбрал тему вручную */
 (function (global) {
+    let timer = null;
+
     function hourTheme() {
         const h = new Date().getHours();
         return (h >= 7 && h < 19) ? 'light' : 'dark';
     }
 
     function apply() {
+        const saved = localStorage.getItem('ai-team-room-theme');
+        if (saved === 'light' || saved === 'dark') return;
+
         const theme = hourTheme();
         const html = document.documentElement;
         const current = html.getAttribute('data-theme') || 'dark';
@@ -18,9 +23,17 @@
     }
 
     function start() {
+        stop();
         apply();
-        setInterval(apply, 5 * 60 * 1000);
+        timer = setInterval(apply, 5 * 60 * 1000);
     }
 
-    global.AutoTheme = { start, apply, hourTheme };
+    function stop() {
+        if (timer) {
+            clearInterval(timer);
+            timer = null;
+        }
+    }
+
+    global.AutoTheme = { start, stop, apply, hourTheme };
 })(window);
