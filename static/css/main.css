@@ -878,3 +878,27 @@ body::before {
 .chat-search:focus { outline: none; width: 180px; border-color: var(--accent); }
 .message.search-hidden { display: none !important; }
 .filter-btn.export-btn { margin-left: auto; border-color: var(--accent); color: var(--accent); }
+
+/* ─── Active agents pill ─── */
+.active-pill {
+    font-size: 10px; padding: 3px 8px; border-radius: 12px;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text-muted);
+}
+.active-pill.has-active {
+    background: rgba(94, 207, 138, 0.12); border-color: var(--green); color: var(--green);
+}
+
+/* ─── Welcome actions ─── */
+.welcome-actions {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px;
+}
+
+/* ─── Task action buttons ─── */
+.task-actions { margin-left: auto; display: flex; gap: 4px; }
+.task-act-btn {
+    border: none; background: var(--surface-2); border-radius: 6px;
+    padding: 2px 6px; cursor: pointer; font-size: 11px; opacity: 0.7;
+    transition: opacity var(--transition), background var(--transition);
+}
+.task-act-btn:hover { opacity: 1; background: var(--accent-soft); }
+.task-item-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; width: 100%; }

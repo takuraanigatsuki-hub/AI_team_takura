@@ -175,6 +175,26 @@
         buildRestRoom();
         buildLibrary();
         buildWalls();
+        addAmbientParticles();
+    }
+
+    function addAmbientParticles() {
+        const count = 120;
+        const positions = new Float32Array(count * 3);
+        for (let i = 0; i < count; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * 34;
+            positions[i * 3 + 1] = 0.5 + Math.random() * 8;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 26;
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const mat = new THREE.PointsMaterial({
+            color: 0x7aa2ff, size: 0.08, transparent: true, opacity: 0.45,
+            blending: THREE.AdditiveBlending, depthWrite: false,
+        });
+        const points = new THREE.Points(geo, mat);
+        points.name = 'ambientParticles';
+        scene.add(points);
     }
 
     function addZoneFloor(x, z, w, d, color) {
@@ -317,6 +337,8 @@
         if (!renderer || !scene || !camera) return;
 
         const t = clock.getElapsedTime();
+        const particles = scene.getObjectByName('ambientParticles');
+        if (particles) particles.rotation.y = t * 0.015;
         Object.values(agentMeshes).forEach((mesh) => {
             const status = mesh.userData.status || 'idle';
             const phase = mesh.userData.phase;

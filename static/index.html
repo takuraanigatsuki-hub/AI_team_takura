@@ -56,6 +56,7 @@
             <div class="conn-dot" id="connDot"></div>
             <span id="connText">Подключение</span>
         </div>
+        <span class="active-pill" id="activeAgentsPill" title="Агенты в работе">—</span>
         <button type="button" class="cursor-toggle-btn" onclick="Integrations.toggleCursorPanel()" title="Cursor SDK">
             ⚡ Cursor <span class="integration-badge" id="cursorBadge">…</span>
         </button>
@@ -211,6 +212,11 @@
                     <div class="welcome-icon">💬</div>
                     <h2>Рабочий чат</h2>
                     <p>Задачи, планы Виктора и результаты работы. Обучение — во вкладке «Обучение».</p>
+                    <div class="welcome-actions">
+                        <button type="button" class="btn-primary" onclick="switchView('chat');applyTemplate('Сделай landing page для стартапа')">🌐 Landing</button>
+                        <button type="button" class="btn-secondary" onclick="switchView('chat');applyTemplate('Напиши REST API для задач')">⚙️ API</button>
+                        <button type="button" class="btn-secondary" onclick="switchView('dashboard')">📊 Dashboard</button>
+                    </div>
                 </div>
             </div>
 
@@ -337,12 +343,12 @@
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="/static/js/studio.js?v=5"></script>
+<script src="/static/js/studio.js?v=6"></script>
 <script src="/static/js/react-preview.js?v=2"></script>
 <script src="/static/js/integrations.js?v=2"></script>
 <script src="/static/js/ui-enhancements.js?v=2"></script>
 <script src="/static/js/dashboard.js?v=2"></script>
-<script src="/static/js/app.js?v=8"></script>
+<script src="/static/js/app.js?v=9"></script>
 
 <!-- PWA: регистрация Service Worker -->
 <script>

@@ -41,6 +41,8 @@
     };
 
     // ─── Views ───────────────────────────────────────────
+    let dashboardRefreshTimer = null;
+
     window.switchView = function (view) {
         document.querySelectorAll('.view-tab').forEach((t) => {
             t.classList.toggle('active', t.dataset.view === view);
@@ -55,6 +57,13 @@
         if (view === 'tasks') loadTasks();
         if (view === 'design' && window.Integrations) Integrations.loadDefaultFigmaUrl();
         if (view === 'dashboard' && window.Dashboard) Dashboard.load();
+
+        clearInterval(dashboardRefreshTimer);
+        if (view === 'dashboard') {
+            dashboardRefreshTimer = setInterval(() => {
+                if (window.Dashboard) Dashboard.load();
+            }, 30000);
+        }
 
         if (view === 'studio' && !studioInited) {
             initStudio();
@@ -215,8 +224,12 @@
     function setConnStatus(ok) {
         const dot = document.getElementById('connDot');
         const text = document.getElementById('connText');
+        const wasOk = dot?.classList.contains('connected');
         if (dot) dot.className = 'conn-dot' + (ok ? ' connected' : '');
         if (text) text.textContent = ok ? 'Онлайн' : 'Оффлайн';
+        if (window.UIEnhancements && wasOk !== ok) {
+            UIEnhancements.toast(ok ? '🟢 Подключено к комнате' : '🔴 Соединение потеряно — переподключение…', ok ? 'success' : 'error');
+        }
     }
 
     function handleMessage(data) {
@@ -300,6 +313,11 @@
         updateStudioLegend();
         const working = agentsList.filter((a) => ['working', 'learning', 'thinking'].includes(a.status)).length;
         if (window.UIEnhancements) UIEnhancements.updateAgentFooter(working);
+        const pill = document.getElementById('activeAgentsPill');
+        if (pill) {
+            pill.textContent = working ? `${working} активны` : 'все свободны';
+            pill.className = 'active-pill' + (working ? ' has-active' : '');
+        }
     }
 
     function updateStudioLegend() {
@@ -546,6 +564,7 @@
             </div>
             <button class="action-btn" onclick="openPrivateChat('${a.agent_id}')">Личный чат с ${a.name}</button>
             ${a.agent_id === 'frontend' ? `<button class="action-btn secondary" onclick="openSonyaPreview()">⚛️ React Preview</button>` : ''}
+            ${a.agent_id === 'cursor' ? `<button class="action-btn secondary" onclick="Integrations.toggleCursorPanel()">⚡ Cursor Panel</button>` : ''}
             <button class="action-btn secondary" onclick="sendToAgent('${a.agent_id}')">Задача в общий чат</button>`;
     }
 
@@ -621,6 +640,27 @@
         if (window.UIEnhancements) UIEnhancements.toast('📥 Задачи экспортированы', 'success');
     };
 
+    window.copyTaskByIndex = function (idx) {
+        const text = taskHistory[idx]?.task || '';
+        if (!text) return;
+        navigator.clipboard?.writeText(text).then(() => {
+            if (window.UIEnhancements) UIEnhancements.toast('📋 Скопировано', 'success');
+        }).catch(() => {});
+    };
+
+    window.rerunTaskByIndex = function (idx) {
+        const text = taskHistory[idx]?.task || '';
+        if (!text) return;
+        const input = document.getElementById('messageInput');
+        if (input) {
+            input.value = text;
+            input.focus();
+            setMsgType('task');
+        }
+        switchView('chat');
+        if (window.UIEnhancements) UIEnhancements.toast('↻ Задача готова к отправке', 'info');
+    };
+
     function renderTasks() {
         const list = document.getElementById('tasksList');
         if (!list) return;
@@ -641,6 +681,7 @@
         }
 
         list.innerHTML = items.map((t) => {
+            const globalIdx = taskHistory.indexOf(t);
             const agent = t.agent_emoji && t.agent_name
                 ? `${t.agent_emoji} ${t.agent_name}` : (t.target === 'all' ? '👥 Команда' : t.target || '—');
             const time = t.completed_at || t.started_at || t.created_at;
@@ -657,6 +698,10 @@
                     <div class="task-item-header">
                         <span class="task-status ${t.status}">${STATUS_LABELS[t.status] || t.status}</span>
                         <span class="task-meta">${agent} · ${timeStr}</span>
+                        <span class="task-actions">
+                            <button type="button" class="task-act-btn" onclick="copyTaskByIndex(${globalIdx})" title="Копировать">📋</button>
+                            <button type="button" class="task-act-btn" onclick="rerunTaskByIndex(${globalIdx})" title="Повторить">↻</button>
+                        </span>
                     </div>
                     <div class="task-text">${escapeHtml(t.task || '')}</div>
                     ${response}
