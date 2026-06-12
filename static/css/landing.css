@@ -56,7 +56,17 @@ a { color: inherit; text-decoration: none; }
 }
 .lp-nav a { color: var(--lp-muted); font-size: 13px; font-weight: 500; transition: color 0.2s; white-space: nowrap; }
 .lp-nav a:hover { color: var(--lp-text); }
-<<<<<<< HEAD
+
+.lp-nav-toggle {
+    display: none;
+    background: transparent;
+    border: 1px solid var(--lp-border);
+    color: var(--lp-text);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 18px;
+    cursor: pointer;
+}
 
 .lp-header-right {
     justify-self: end;
@@ -70,19 +80,6 @@ a { color: inherit; text-decoration: none; }
     flex-wrap: nowrap;
     justify-content: flex-end;
 }
-=======
-.lp-nav-toggle {
-    display: none;
-    background: transparent;
-    border: 1px solid var(--lp-border);
-    color: var(--lp-text);
-    border-radius: 8px;
-    padding: 6px 12px;
-    font-size: 18px;
-    cursor: pointer;
-}
-.lp-header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
->>>>>>> origin/main
 
 .lp-btn-ghost, .lp-btn-primary, .lp-btn-accent {
     border: none; border-radius: 8px; padding: 8px 16px;
@@ -383,7 +380,15 @@ a { color: inherit; text-decoration: none; }
     .lp-header-right { grid-column: 2; }
     .lp-hero { grid-template-columns: 1fr; }
     .lp-hero-visual { order: -1; }
-<<<<<<< HEAD
+    .lp-nav-toggle { display: block; }
+    .lp-nav {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        gap: 12px;
+        padding-top: 8px;
+    }
+    .lp-nav.open { display: flex; }
 }
 
 @media (max-width: 520px) {
@@ -789,16 +794,5 @@ a { color: inherit; text-decoration: none; }
     .lp-figma-score { flex-direction: row; padding: 16px 0; }
     .lp-guided-grid { grid-template-columns: 1fr; }
     .lp-demo-kanban { grid-template-columns: repeat(2, 1fr); }
-=======
     .lp-steps { grid-template-columns: 1fr; }
-    .lp-nav-toggle { display: block; }
-    .lp-nav {
-        display: none;
-        width: 100%;
-        flex-direction: column;
-        gap: 12px;
-        padding-top: 8px;
-    }
-    .lp-nav.open { display: flex; }
->>>>>>> origin/main
 }

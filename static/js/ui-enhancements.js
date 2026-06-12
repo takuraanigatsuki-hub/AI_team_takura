@@ -160,15 +160,11 @@
     }
 
     function toggleShortcutsHelp() {
-<<<<<<< HEAD
         if (global.FeaturePack?.showShortcutsModal) {
             global.FeaturePack.showShortcutsModal();
             return;
         }
-        toast('Ctrl+1-6 вкладки · Ctrl+K палитра · Ctrl+G поиск · Enter+Ctrl отправить', 'info', 6000);
-=======
-        toast('Ctrl+1-6 вкладки · Ctrl+K палитра · Ctrl+Shift+F поиск · Enter+Ctrl отправить', 'info', 6000);
->>>>>>> origin/main
+        toast('Ctrl+1-6 вкладки · Ctrl+K палитра · Ctrl+G/Ctrl+Shift+F поиск · Enter+Ctrl отправить', 'info', 6000);
     }
 
     function bindKeyboard() {

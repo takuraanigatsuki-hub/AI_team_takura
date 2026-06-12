@@ -1208,12 +1208,8 @@
             Integrations.loadFigmaStatus();
         }
         if (window.UIEnhancements) UIEnhancements.init();
-<<<<<<< HEAD
         if (window.FeaturePack) FeaturePack.init();
-=======
         if (window.SiteSearch) SiteSearch.init();
-        if (window.AdminPanel && user) AdminPanel.updateNavVisibility(user);
->>>>>>> origin/main
         if (window.PipelineUI) PipelineUI.load();
         if (window.StudioMinimap) StudioMinimap.init();
         if (window.SonyaStudio) SonyaStudio.init();
