@@ -233,7 +233,7 @@
         const panel = document.getElementById('featureFlagsPanel');
         if (!panel) return;
         try {
-            const r = await fetch('/api/feature-flags');
+            const r = await fetch('/api/feature-flags', { credentials: 'same-origin' });
             const d = await r.json();
             const flags = d.flags || {};
             panel.innerHTML = Object.entries(flags).map(([k, v]) =>
@@ -258,12 +258,12 @@
         const tasks = [];
         if (canManageUsers(user)) {
             tasks.push(fetch('/api/admin/users', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : { users: [] }).then((d) => { users = d.users || []; }));
-            tasks.push(fetch('/api/subscription/plans').then((r) => r.ok ? r.json() : { plans: [] }).then((d) => { plans = d.plans || []; }));
+            tasks.push(fetch('/api/subscription/plans', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : { plans: [] }).then((d) => { plans = d.plans || []; }));
         }
         if (canManageSite(user)) {
             tasks.push(fetch('/api/admin/site', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : null).then((d) => { siteInfo = d; }));
         }
-        tasks.push(fetch('/api/agents').then((r) => r.ok ? r.json() : { agents: [] }).then((d) => { agents = d.agents || []; }));
+        tasks.push(fetch('/api/agents', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : { agents: [] }).then((d) => { agents = d.agents || []; }));
         await Promise.all(tasks);
     }
 

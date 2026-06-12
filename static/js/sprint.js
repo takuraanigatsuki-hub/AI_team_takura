@@ -6,6 +6,15 @@
         el.innerHTML = '<div class="dash-loading">Загрузка…</div>';
         try {
             const r = await fetch('/api/sprint', { credentials: 'same-origin' });
+            if (!r.ok) {
+                if (r.status === 401) {
+                    el.innerHTML = `<div class="tasks-empty tasks-guest"><div class="tasks-empty-icon">🔐</div>
+                        <h3>Sprint — войдите</h3><p class="muted">У каждого пользователя свой спринт и backlog</p>
+                        <a href="/?auth=login" class="btn-primary btn-sm">Войти</a></div>`;
+                    return;
+                }
+                throw new Error('HTTP ' + r.status);
+            }
             const d = await r.json();
             if (d.guest) {
                 el.innerHTML = `<div class="tasks-empty tasks-guest"><div class="tasks-empty-icon">🔐</div>

@@ -575,7 +575,7 @@
                 break;
             case 'site_ready':
                 addResultReadyMessage(data);
-                fetch('/api/agents/frontend/preview').then((r) => r.json()).then((d) => {
+                fetch('/api/agents/frontend/preview', { credentials: 'same-origin' }).then((r) => r.json()).then((d) => {
                     if (d.preview && window.ReactPreview) {
                         ReactPreview.onMessage({
                             ...d.preview,
@@ -631,7 +631,7 @@
             case 'result_ready':
                 addResultReadyMessage(data);
                 if (data.open_preview && window.ReactPreview) {
-                    fetch('/api/agents/frontend/preview').then((r) => r.json()).then((d) => {
+                    fetch('/api/agents/frontend/preview', { credentials: 'same-origin' }).then((r) => r.json()).then((d) => {
                         if (d.preview) ReactPreview.onMessage({ ...d.preview, is_site: data.is_site, site_url: data.site_url });
                     }).catch(() => {});
                 }

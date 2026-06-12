@@ -131,7 +131,7 @@
 
     async function load() {
         try {
-            const r = await fetch('/api/pipeline');
+            const r = await fetch('/api/pipeline', { credentials: 'same-origin' });
             if (r.ok) {
                 const d = await r.json();
                 if (d.pipeline) render(d.pipeline);

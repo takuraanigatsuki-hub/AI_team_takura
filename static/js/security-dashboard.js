@@ -14,6 +14,10 @@
         el.innerHTML = '<div class="dash-loading">Загрузка security…</div>';
         try {
             const r = await fetch('/api/security/dashboard', { credentials: 'same-origin' });
+            if (r.status === 403 || r.status === 401) {
+                el.innerHTML = '<div class="panel-empty">🔒 Доступ только для администратора</div>';
+                return cache;
+            }
             if (!r.ok) throw new Error('HTTP ' + r.status);
             cache = await r.json();
             render(el);
