@@ -1617,18 +1617,23 @@
 
         connect();
 
-        let startView = viewParam || (user?.default_view) || 'studio';
+        let startView = viewParam || (user?.default_view) || 'tasks';
         const allowedViews = ['studio', 'chat', 'agent-learning', 'learning', 'design', 'masha', 'sonya-studio', 'tasks', 'projects', 'kanban', 'sprint', 'timeline', 'dashboard', 'profile', 'admin', 'investor'];
         if (!allowedViews.includes(startView)) {
-            startView = 'studio';
+            startView = 'tasks';
         }
         if (startView === 'admin' && !window.AdminPanel?.canAccess?.(user)) {
-            startView = 'profile';
+            startView = user ? 'tasks' : 'tasks';
         }
         if (AGENT_LEARNING_VIEWS.has(startView) && !canViewAgentLearning(user)) {
-            startView = 'studio';
+            startView = 'tasks';
+        }
+        if (user?.role === 'investor' && !viewParam) {
+            startView = 'investor';
         }
         switchView(startView);
+
+        if (window.UICore) UICore.initMobileNav();
 
         if (window.Auth) Auth.updateNavVisibility(user);
         if (window.AdminPanel && user) AdminPanel.updateNavVisibility(user);

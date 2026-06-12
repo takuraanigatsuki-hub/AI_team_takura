@@ -6,17 +6,15 @@
     const sw = (view) => { if (global.switchView) global.switchView(view); };
 
     const VIEWS = [
-        { id: 'studio', label: '🎮 3D Студия' },
+        { id: 'tasks', label: '📋 Inbox' },
         { id: 'chat', label: '💬 Чат' },
-        { id: 'learning', label: '📚 Обучение' },
-        { id: 'design', label: '🎨 Дизайн-лаб' },
-        { id: 'sonya-studio', label: '✨ Studio' },
-        { id: 'tasks', label: '📋 Задачи' },
-        { id: 'projects', label: '📦 Проекты' },
         { id: 'kanban', label: '📌 Kanban' },
+        { id: 'dashboard', label: '📊 Dashboard' },
+        { id: 'projects', label: '📦 Проекты' },
+        { id: 'studio', label: '🎮 3D Студия' },
+        { id: 'sonya-studio', label: '✨ Studio' },
         { id: 'sprint', label: '🏃 Sprint' },
         { id: 'timeline', label: '⏱ Timeline' },
-        { id: 'dashboard', label: '📊 Dashboard' },
         { id: 'profile', label: '👤 Кабинет' },
     ];
 
@@ -24,7 +22,7 @@
     let notifications = [];
     let unreadCount = 0;
     let sessionStart = Date.now();
-    let currentView = 'studio';
+    let currentView = 'tasks';
     let dailyGoal = { target: 5, done: 0, _last: 0 };
     let konamiStep = 0;
     const KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
@@ -88,19 +86,18 @@
     function getCommands() {
         const go = (v) => () => sw(v);
         const all = [
-            { label: '🎮 3D Студия', run: go('studio') },
+            { label: '📋 Inbox', run: go('tasks') },
             { label: '💬 Рабочий чат', run: go('chat') },
-            { label: '📚 Обучение', run: go('learning') },
-            { label: '🎨 Дизайн-лаб', run: go('design') },
-            { label: '✨ Sonya Studio', run: go('sonya-studio') },
-            { label: '📋 Задачи', run: go('tasks') },
-            { label: '📦 Проекты', run: go('projects') },
             { label: '📌 Kanban', run: go('kanban') },
+            { label: '📊 Dashboard', run: go('dashboard') },
+            { label: '📋 Новая задача', run: () => { go('chat')(); if (global.setMsgType) setMsgType('task'); document.getElementById('messageInput')?.focus(); } },
+            { label: '📋 Шаблон задачи', run: () => { go('tasks')(); global.TaskTemplates?.showPicker?.(); } },
+            { label: '📦 Проекты', run: go('projects') },
             { label: '🏃 Sprint', run: go('sprint') },
             { label: '⏱ Timeline', run: go('timeline') },
-            { label: '📊 Dashboard', run: go('dashboard') },
+            { label: '🎮 3D Студия', run: go('studio') },
+            { label: '✨ Sonya Studio', run: go('sonya-studio') },
             { label: '👤 Кабинет', run: go('profile') },
-            { label: '📋 Новая задача', run: () => { go('chat')(); if (global.setMsgType) setMsgType('task'); document.getElementById('messageInput')?.focus(); } },
             { label: '🎯 PM — спринт', run: () => quickTask('pm', 'Спланируй спринт на неделю') },
             { label: '🎨 Landing page', run: () => quickTask('frontend', 'Сделай современный landing page') },
             { label: '⚙️ REST API', run: () => quickTask('backend', 'Создай REST API для основных сущностей') },
@@ -494,7 +491,7 @@
         bindOffline();
         bindKeyboard();
         hookViewSwitch();
-        updateFabVisibility('studio');
+        updateFabVisibility('tasks');
         syncServerNotifications();
         setInterval(syncServerNotifications, 15000);
         setInterval(() => updateFooterMeta({ total: 1, completed: dailyGoal._last }), 60000);

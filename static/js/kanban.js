@@ -65,23 +65,9 @@
         if (!el) return;
         el.innerHTML = COLS.map((col) => {
             const items = columns[col.id] || [];
-            const cards = items.map((t) => {
-                const prio = t.priority || 'medium';
-                return `
-                <div class="kb-card priority-${prio}" draggable="true"
-                     data-task-id="${escape(t.id || '')}"
-                     ondragstart="KanbanUI.onDragStart(event)"
-                     ondragover="KanbanUI.onDragOver(event)"
-                     ondrop="KanbanUI.onDrop(event)">
-                    <div class="kb-head">
-                        <span class="kb-prio" title="Сменить приоритет"
-                              onclick="event.stopPropagation();KanbanUI.cyclePriority('${escape(t.id)}','${prio}')">${PRIO_LABELS[prio] || prio}</span>
-                        <span class="kb-status">${col.id}</span>
-                    </div>
-                    <div class="kb-title" onclick="switchView('tasks')">${escape(t.text || t.task || '—').slice(0, 60)}</div>
-                    <div class="kb-meta">${t.agent_emoji || ''} ${t.agent_name || t.agent_id || ''}</div>
-                </div>`;
-            }).join('');
+            const cards = items.map((t) => (global.UICore
+                ? UICore.renderKanbanCard(t)
+                : '')).join('');
             return `<div class="kb-col" data-col="${col.id}"><div class="kb-col-head">${col.title} <span>${items.length}</span></div>${cards || '<div class="kb-empty">—</div>'}</div>`;
         }).join('');
     }

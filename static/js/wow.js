@@ -9,10 +9,13 @@
     // ─── Presence ───
     function updatePresence(data) {
         const el = document.getElementById('presencePill');
-        if (!el) return;
         const n = data.count || 0;
-        el.textContent = n <= 1 ? '👤 вы' : `👥 ${n} в комнате`;
-        el.title = (data.visitors || []).map((v) => v.name).join(', ');
+        const text = n <= 1 ? '👤 вы' : `👥 ${n} в комнате`;
+        if (el) {
+            el.textContent = text;
+            el.title = (data.visitors || []).map((v) => v.name).join(', ');
+        }
+        if (global.UICore) UICore.updateHeaderContext({ presence: n > 1 ? `${n} в комнате` : '' });
     }
 
     // ─── Standup ───
