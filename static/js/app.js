@@ -1310,6 +1310,11 @@
 
     window.cancelAllTasks = async function () {
         if (!confirm('Отменить все активные задачи и очистить очереди агентов?')) return;
+        const user = window.Auth?.getUser?.();
+        if (!user && ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'task_cancel_all' }));
+            return;
+        }
         try {
             const r = await fetch('/api/tasks/cancel-all', { method: 'POST', credentials: 'same-origin' });
             if (r.ok) {

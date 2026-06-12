@@ -476,6 +476,19 @@ class RoomManager:
                 })
             return
 
+        if msg_type == "task_cancel_all":
+            uid, _ = self._actor_identity(user, connection_meta)
+            from room.message_filter import is_privileged
+            privileged = bool(user and is_privileged(user.get("role", "")))
+            count = await self.cancel_all_tasks(user_id=uid, privileged=privileged)
+            await self._broadcast_task_history()
+            await self.broadcast_work({
+                "type": "system",
+                "message": f"🛑 Отменено активных задач: {count}",
+                "timestamp": datetime.now().isoformat(),
+            })
+            return
+
         target = data.get("target", "all")
         raw_text = data.get("text", "")
 

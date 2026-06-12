@@ -401,7 +401,11 @@ body.sidebar-collapsed .sb-badge {
 .task-card.priority-low { border-left: 3px solid rgba(255, 255, 255, 0.15); }
 .task-prio { font-size: 14px; margin-right: auto; }
 .task-card-top { gap: 6px; }
-.task-card.in_progress { border-color: rgba(59, 130, 246, 0.35); }
+.task-card.awaiting_approval {
+    border-color: rgba(255, 165, 2, 0.45);
+    box-shadow: 0 0 0 1px rgba(255, 165, 2, 0.12), 0 4px 20px rgba(255, 165, 2, 0.08);
+}
+.task-approval { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .task-card.completed { opacity: 0.92; }
 
 /* Sprint progress */
