@@ -831,8 +831,11 @@ async def figma_import(request: FigmaImportRequest):
     if not parsed:
         raise HTTPException(status_code=400, detail="Некорректная ссылка Figma")
 
+    from integrations.figma_fixtures import get_fixture
+
     client = await get_client_async()
-    if not client.configured:
+    has_fixture = bool(get_fixture(parsed["file_key"]))
+    if not client.configured and not has_fixture:
         raise HTTPException(
             status_code=400,
             detail="Figma не подключена. Нажмите «Подключить Figma» или добавьте FIGMA_ACCESS_TOKEN в .env",
