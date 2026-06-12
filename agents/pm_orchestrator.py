@@ -1,4 +1,3 @@
-import random
 from agents.base_agent import BaseAgent
 from room.task_routing import classify_task_kind
 

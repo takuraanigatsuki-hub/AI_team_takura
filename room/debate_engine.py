@@ -12,9 +12,13 @@ DEBATE_PAIRS = [
 
 
 async def maybe_start_debate(task_text: str, assignments: dict, agents: dict, room_manager) -> bool:
+    from room.task_routing import should_run_architecture_debate
+
+    if not should_run_architecture_debate(task_text):
+        return False
     if "architect" not in assignments or "reviewer" not in assignments:
         return False
-    if random.random() > 0.6:
+    if random.random() > 0.45:
         return False
 
     architect = agents.get("architect")

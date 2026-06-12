@@ -104,27 +104,34 @@ def get_capabilities(agent_id: str) -> dict:
 
 
 def detect_artifact_type(agent_id: str, task_text: str) -> str:
+    from room.task_routing import classify_task_kind
+
     t = task_text.lower()
+    kind = classify_task_kind(task_text)
     caps = get_capabilities(agent_id)
 
-    if agent_id == "presenter" or any(w in t for w in ["презентац", "slides", "pitch", "слайд", "deck"]):
+    if kind == "presentation" or agent_id == "presenter":
         return "presentation"
-    if agent_id == "modeler" or any(w in t for w in ["3d", "3д", "three.js", "threejs", "модел", "glb", "gltf", "blender"]):
+    if kind == "model_3d" or agent_id == "modeler":
         return "model_3d"
-    if agent_id == "frontend" or any(w in t for w in ["ui", "react", "landing", "сайт", "интерфейс", "верст"]):
+    if kind == "table":
+        return "table"
+    if kind == "site" or (agent_id == "frontend" and kind == "ui"):
         return "ui"
-    if agent_id in ("backend", "cursor") or any(w in t for w in ["api", "backend", "endpoint", "сервер"]):
+    if kind == "api" or agent_id in ("backend", "cursor"):
         return "code"
-    if agent_id == "architect" or any(w in t for w in ["архитектур", "diagram", "c4", "adr"]):
+    if kind == "architecture" or agent_id == "architect":
         return "architecture"
-    if agent_id == "qa" or any(w in t for w in ["тест", "test", "pytest", "playwright"]):
+    if kind == "tests" or agent_id == "qa":
         return "tests"
-    if agent_id == "doc_writer" or any(w in t for w in ["readme", "документ", "guide"]):
+    if kind == "document" or agent_id == "doc_writer":
         return "document"
-    if agent_id == "devops" or any(w in t for w in ["docker", "k8s", "deploy", "ci/cd"]):
+    if kind == "infra" or agent_id == "devops":
         return "infra"
     if agent_id == "reviewer":
         return "review"
     if agent_id == "pm":
         return "plan"
+    if agent_id == "frontend" or any(w in t for w in ["ui", "react", "landing", "сайт", "интерфейс", "верст"]):
+        return "ui"
     return caps.get("outputs", ["project"])[0]

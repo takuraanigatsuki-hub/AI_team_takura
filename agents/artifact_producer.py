@@ -84,6 +84,27 @@ async def produce_artifact(agent, task_text: str, response: str, revision_of: st
         content = preview_html
         files = {"scene.html": preview_html, "scene.js": "// Three.js scene for: " + task_text[:100]}
 
+    elif art_type == "table":
+        preview_html = f"""<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
+<title>{_esc(title)}</title>
+<style>
+body{{margin:0;font-family:Inter,Segoe UI,sans-serif;background:#f6f7f9;padding:24px}}
+h1{{font-size:20px;margin:0 0 8px}}
+p{{color:#6b7280;font-size:13px;margin:0 0 16px}}
+table{{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06)}}
+th,td{{padding:12px 16px;text-align:left;border-bottom:1px solid #e5e7eb;font-size:14px}}
+th{{background:#f3f4f6;font-weight:600}}
+</style></head><body>
+<h1>{_esc(title)}</h1><p>{_esc(task[:120])}</p>
+<table><thead><tr><th>#</th><th>Название</th><th>Значение</th><th>Статус</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Строка A</td><td>100</td><td>OK</td></tr>
+<tr><td>2</td><td>Строка B</td><td>250</td><td>OK</td></tr>
+<tr><td>3</td><td>Строка C</td><td>75</td><td>Pending</td></tr>
+</tbody></table></body></html>"""
+        content = preview_html
+        files = {"table.html": preview_html}
+
     elif art_type in ("code", "api", "tests", "infra"):
         lang = "python" if agent.agent_id in ("backend", "qa", "devops") else "typescript"
         if "```" not in content:

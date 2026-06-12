@@ -1,7 +1,7 @@
 """Генерация runnable React-кода для live preview Сони."""
 import re
-import random
 from integrations.figma_client import parse_figma_url
+from room.task_routing import classify_task_kind
 
 
 def _esc(s: str) -> str:
@@ -117,8 +117,33 @@ const focusRing = { outline: '2px solid ' + ds.colors.primary, outlineOffset: 2 
     return out
 
 
+def _apply_learned_palette(preview: dict) -> dict:
+    """Подставить цвета из Design Lab (figma_learning), если есть."""
+    try:
+        from integrations.figma_learning import load_patterns
+        patterns = load_patterns() or {}
+        colors = (patterns.get("colors") or [])[:6]
+        if not colors:
+            return preview
+        primary = colors[0]
+        secondary = colors[1] if len(colors) > 1 else primary
+        accent = colors[2] if len(colors) > 2 else secondary
+        code = preview.get("code", "")
+        for old in ("#4f7df3", "#6c63ff", "#667eea", "#764ba2"):
+            code = code.replace(old, primary)
+        code = code.replace("#10b981", accent)
+        code = code.replace("#f59e0b", secondary)
+        out = dict(preview)
+        out["code"] = code
+        out["learned_palette"] = colors[:4]
+        return out
+    except Exception:
+        return preview
+
+
 def generate_react_preview(task: str) -> dict:
     preview = _match_preview_template(task)
+    preview = _apply_learned_palette(preview)
     if is_production_polish_task(task):
         preview = polish_preview(preview, task)
     return preview
@@ -126,7 +151,7 @@ def generate_react_preview(task: str) -> dict:
 
 def _match_preview_template(task: str) -> dict:
     t = task.lower()
-    title = task[:60] if task else "Компонент"
+    kind = classify_task_kind(task)
 
     if is_figma_import_task(task):
         figma_url = _extract_figma_url(task)
@@ -142,8 +167,11 @@ def _match_preview_template(task: str) -> dict:
                 }
                 return generate_react_from_figma(figma_stub, task=task)
 
-    if is_site_task(task):
+    if kind == "site" or is_site_task(task):
         return {"title": "Готовый сайт", "code": _fmt(_WEBSITE, task), "is_site": True}
+
+    if kind == "table" or any(w in t for w in ["таблиц", "table", "excel", "spreadsheet", "csv", "data grid"]):
+        return {"title": "Таблица данных", "code": _fmt(_TABLE, task)}
 
     if any(w in t for w in ["логин", "login", "авториз", "вход", "sign in"]):
         return {"title": "Форма входа", "code": _fmt(_LOGIN_FORM, task)}
@@ -154,7 +182,7 @@ def _match_preview_template(task: str) -> dict:
     if any(w in t for w in ["кнопк", "button", "btn"]):
         return {"title": "Интерактивная кнопка", "code": _fmt(_BUTTON, task)}
 
-    if any(w in t for w in ["todo", "список дел", "задач", "чеклист", "checklist"]):
+    if any(w in t for w in ["todo", "список дел", "чеклист", "checklist", "todo-лист", "todo list"]):
         return {"title": "Todo-лист", "code": _fmt(_TODO, task)}
 
     if any(w in t for w in ["счётчик", "счетчик", "counter", "клик"]):
@@ -162,9 +190,6 @@ def _match_preview_template(task: str) -> dict:
 
     if any(w in t for w in ["карточ", "card", "товар", "product"]):
         return {"title": "Карточка", "code": _fmt(_CARD, task)}
-
-    if any(w in t for w in ["таблиц", "table", "данн", "data grid"]):
-        return {"title": "Таблица данных", "code": _fmt(_TABLE, task)}
 
     if any(w in t for w in ["модал", "modal", "диалог", "popup", "попап"]):
         return {"title": "Модальное окно", "code": _fmt(_MODAL, task)}
@@ -178,9 +203,7 @@ def _match_preview_template(task: str) -> dict:
     if any(w in t for w in ["форм", "form", "input", "поле"]):
         return {"title": "Форма", "code": _fmt(_GENERIC_FORM, task)}
 
-    palettes = [_HERO, _CARD, _COUNTER, _BUTTON, _TODO]
-    pick = random.choice(palettes)
-    return {"title": "UI компонент", "code": _fmt(pick, task)}
+    return {"title": "UI компонент", "code": _fmt(_CARD, task)}
 
 
 _COMMON_STYLES = """
@@ -485,7 +508,8 @@ function App() {
             padding: '12px 28px', fontWeight: 700, cursor: 'pointer', fontSize: 15
           }}>Подробнее</button>
           <button style={{
-            background: 'transparent', color: '#fff', border: '2px solid rgba(255,255,255,0.5)',
+            background: 'rgba(255,255,255,0.18)', color: '#fff',
+            border: '2px solid rgba(255,255,255,0.45)',
             borderRadius: 10, padding: '12px 28px', fontWeight: 600, cursor: 'pointer', fontSize: 15
           }}>Связаться</button>
         </div>

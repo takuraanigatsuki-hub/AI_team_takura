@@ -3,6 +3,7 @@ from typing import Optional
 
 from agents.base_agent import BaseAgent
 from agents.react_preview import generate_react_preview, is_site_task, apply_figma_tokens
+from room.task_routing import should_emit_react_preview, should_export_site
 from site_exporter import export_site_html
 from integrations.figma_client import parse_figma_url, get_client_async
 
@@ -118,8 +119,10 @@ class FrontendDevAgent(BaseAgent):
         return preview
 
     async def _emit_preview(self, task_text: str):
+        if not should_emit_react_preview(task_text):
+            return
         preview = self._build_preview(task_text)
-        if preview.get("is_site") or is_site_task(task_text):
+        if preview.get("is_site") or should_export_site(task_text):
             try:
                 site_path = export_site_html(preview["code"], task_text, preview["title"])
                 preview["site_path"] = site_path
@@ -182,8 +185,9 @@ class FrontendDevAgent(BaseAgent):
             return
 
         response = await self._build_response(text)
-        await self._emit_preview(text)
-        response += f"\n\n🖥️ **React Preview** обновлён — смотрите панель «{self.last_preview['title']}»."
+        if should_emit_react_preview(text):
+            await self._emit_preview(text)
+            response += f"\n\n🖥️ **React Preview** обновлён — смотрите панель «{self.last_preview['title']}»."
         await self._save_direct_reply(response)
 
     async def _save_direct_reply(self, reply: str, status: str = "idle"):
