@@ -106,7 +106,13 @@ async def lifespan(app: FastAPI):
     print("🚀 AI Team Room запущен!")
     print("📡 Открой браузер: http://localhost:8000")
 
+    from integrations.telegram_bot import start_bot
+    await start_bot(room)
+
     yield  # Приложение работает
+
+    from integrations.telegram_bot import stop_bot
+    await stop_bot()
 
     # Остановка
     state_task.cancel()
@@ -1059,17 +1065,16 @@ async def vercel_deploy_endpoint():
 
 @app.post("/api/telegram/webhook")
 async def telegram_webhook(payload: dict):
-    """Telegram Bot webhook → задача команде."""
-    message = payload.get("message") or payload.get("edited_message") or {}
-    text = (message.get("text") or "").strip()
-    if not text or text.startswith("/"):
-        return {"ok": True, "skipped": True}
-    await room.handle_user_message({
-        "type": "task",
-        "text": f"[Telegram] {text}",
-        "target": "all",
-    })
+    """Telegram Bot webhook → управление командой."""
+    from integrations.telegram_bot import handle_update
+    await handle_update(payload, room)
     return {"ok": True}
+
+
+@app.get("/api/telegram/status")
+async def telegram_status():
+    from integrations.telegram_bot import bot_status
+    return bot_status()
 
 
 # ─── Power Pack API ─────────────────────────────────────────

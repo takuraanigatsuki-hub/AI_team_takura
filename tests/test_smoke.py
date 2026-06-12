@@ -113,3 +113,10 @@ def test_power_pack_endpoints(client):
     r = client.get("/api/mentions/aliases")
     assert r.status_code == 200
     assert "aliases" in r.json()
+
+
+def test_telegram_status(client):
+    r = client.get("/api/telegram/status")
+    assert r.status_code == 200
+    data = r.json()
+    assert "configured" in data

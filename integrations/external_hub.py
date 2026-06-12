@@ -19,18 +19,21 @@ def integration_status() -> dict:
     }
 
 
-async def send_telegram(text: str) -> Optional[dict]:
+async def send_telegram(text: str, chat_id: str = None) -> Optional[dict]:
     token = _cfg("telegram_bot_token", "TELEGRAM_BOT_TOKEN")
-    chat_id = _cfg("telegram_chat_id", "TELEGRAM_CHAT_ID")
-    if not token or not chat_id:
+    if not token:
         return None
-    import httpx
-    async with httpx.AsyncClient(timeout=20.0) as client:
-        r = await client.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            json={"chat_id": chat_id, "text": text[:4000], "parse_mode": "Markdown"},
-        )
-        return r.json() if r.status_code == 200 else {"error": r.text[:200]}
+    from integrations.telegram_bot import send_message, _default_chat_id, _load_chats
+    cid = chat_id or _default_chat_id()
+    if not cid:
+        chats = _load_chats()
+        cid = chats[0]["chat_id"] if chats else ""
+    if not cid:
+        return None
+    result = await send_message(cid, text, parse_mode="Markdown")
+    if not result.get("ok"):
+        result = await send_message(cid, text)
+    return result
 
 
 async def create_jira_issue(summary: str, description: str) -> Optional[dict]:
