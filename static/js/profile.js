@@ -277,7 +277,7 @@
             el.innerHTML = `
                 <div class="panel-empty">
                     <p>Войдите в аккаунт, чтобы открыть личный кабинет.</p>
-                    <a href="/?auth=login" class="btn-primary btn-sm">Войти</a>
+                    <a href="/login" class="btn-primary btn-sm">Войти</a>
                 </div>`;
             return;
         }

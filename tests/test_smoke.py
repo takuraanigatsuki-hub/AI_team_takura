@@ -21,6 +21,15 @@ def test_index(client):
     assert "Регистрация" in r.text or "registration" in r.text.lower() or "btnRegister" in r.text
 
 
+def test_login_page(client):
+    r = client.get("/login")
+    assert r.status_code == 200
+    assert "Вход" in r.text
+    assert 'id="loginForm"' in r.text
+    assert 'id="loginEmail"' in r.text
+    assert 'id="loginPassword"' in r.text
+
+
 def test_startup_landing(client):
     r = client.get("/startup")
     assert r.status_code == 200
