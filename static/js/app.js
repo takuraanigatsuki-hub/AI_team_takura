@@ -616,6 +616,7 @@
                 break;
             case 'cursor_progress':
             case 'cursor_run_done':
+                if (!isPrivilegedUser(window.Auth?.getUser())) break;
                 if (window.Integrations) Integrations.onCursorMessage(data);
                 addAgentMessage({ ...data, type: data.type, message: data.message || '' });
                 break;
@@ -643,15 +644,20 @@
                 break;
             case 'github_sync_started':
             case 'github_sync_done':
-                addLinkMessage(data.message || '🔗 GitHub Sync', data.pr_url || data.branch_url);
+            case 'git_sync_done':
+                if (!isPrivilegedUser(window.Auth?.getUser())) break;
+                if (data.type !== 'git_sync_done') {
+                    addLinkMessage(data.message || '🔗 GitHub Sync', data.pr_url || data.branch_url);
+                } else {
+                    addLinkMessage(data.message || '📤 Изменения на GitHub', data.commit_url);
+                }
                 if (window.Integrations) Integrations.onCursorMessage(data);
                 if (data.type === 'github_sync_done' && window.SoundFX) SoundFX.gitPush();
+                if (data.type === 'git_sync_done') {
+                    if (window.UIEnhancements) UIEnhancements.onGitSync(data);
+                    if (window.SoundFX) SoundFX.gitPush();
+                }
                 notifyPush('GitHub Sync', data.message || 'Синхронизация завершена');
-                break;
-            case 'git_sync_done':
-                addLinkMessage(data.message || '📤 Изменения на GitHub', data.commit_url);
-                if (window.UIEnhancements) UIEnhancements.onGitSync(data);
-                if (window.SoundFX) SoundFX.gitPush();
                 break;
             case 'direct_user_echo':
                 break;
@@ -663,6 +669,7 @@
                         if (window.SonyaDesignLab) SonyaDesignLab.loadLab();
                     } else if (data.agent_id) addLearningAgentMessage(data);
                 } else if (data.agent_id) {
+                    if ((data.agent_id || '').toLowerCase() === 'security' && !isPrivilegedUser(window.Auth?.getUser())) break;
                     addAgentMessage(data);
                     onAgentEffects(data);
                     if (data.type === 'task_done') notifyPush(data.agent_name || 'Агент', String(data.message || '').slice(0, 80));

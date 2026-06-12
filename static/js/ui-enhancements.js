@@ -51,6 +51,11 @@
 
     async function refreshFooter() {
         ensureContainers();
+        const admin = window.UIAccess?.canAccessConsole?.(window.Auth?.getUser());
+        ['footerGit', 'footerGithub', 'footerRepo'].forEach((id) => {
+            document.getElementById(id)?.classList.toggle('hidden', !admin);
+        });
+        if (!admin) return;
         try {
             const [gitR, cursorR, cfgR] = await Promise.all([
                 fetch('/api/git/status'),

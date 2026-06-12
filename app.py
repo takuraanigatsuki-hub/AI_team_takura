@@ -1203,7 +1203,15 @@ async def get_latest_site():
 async def get_tasks(request: Request):
     """Журнал задач: свои задачи для пользователя, все — для admin."""
     from room.message_filter import is_privileged
-    user = _current_user(request)
+    user = _optional_user(request)
+    empty = {
+        "stats": {"total": 0, "completed": 0, "active": 0, "awaiting_approval": 0, "failed": 0, "cancelled": 0},
+        "tasks": [],
+        "completed": [],
+        "active": [],
+    }
+    if not user:
+        return empty
     uid = user.get("id", "")
     if is_privileged(user.get("role", "")):
         return {
@@ -2410,7 +2418,11 @@ async def clear_tasks_history(request: Request):
 
 
 @app.patch("/api/tasks/{task_id}/priority")
-async def update_task_priority(task_id: str, body: TaskPriorityUpdate):
+async def update_task_priority(task_id: str, body: TaskPriorityUpdate, request: Request):
+    from room.message_filter import is_privileged
+    user = _current_user(request)
+    if not room.task_history.user_owns_task(task_id, user["id"], is_privileged(user.get("role"))):
+        raise HTTPException(status_code=403, detail="Нет доступа к этой задаче")
     ok = room.task_history.set_priority(task_id, body.priority)
     if not ok:
         raise HTTPException(status_code=404, detail="Task not found")

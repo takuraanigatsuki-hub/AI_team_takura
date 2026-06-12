@@ -57,7 +57,8 @@
     }
 
     function render(grid) {
-        const order = layout.widgets || Object.keys(WIDGETS);
+        const admin = global.UIAccess?.canAccessConsole?.(global.Auth?.getUser());
+        const order = (layout.widgets || Object.keys(WIDGETS)).filter((id) => admin || id !== 'security');
         grid.innerHTML = `
             <div class="dash-toolbar">
                 <span class="muted">Перетащите виджеты для изменения порядка</span>
