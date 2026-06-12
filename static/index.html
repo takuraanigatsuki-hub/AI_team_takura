@@ -31,8 +31,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/main.css?v=26">
-    <link rel="stylesheet" href="/static/css/feature-pack.css?v=2">
+    <link rel="stylesheet" href="/static/css/main.css?v=27">
+    <link rel="stylesheet" href="/static/css/feature-pack.css?v=3">
 </head>
 <body>
 
@@ -55,51 +55,43 @@
         </div>
         <div class="header-actions">
             <details class="header-dropdown">
-                <summary class="hdr-btn hdr-accent-yellow">⚡ AI & Cursor <span class="integration-badge" id="cursorBadge">…</span></summary>
-                <div class="dropdown-menu">
-                    <button type="button" class="dropdown-item" onclick="Integrations.toggleCursorPanel()">⚡ Cursor SDK</button>
+                <summary class="hdr-btn" title="AI, инструменты, голос">⋯ Меню</summary>
+                <div class="dropdown-menu dropdown-menu-wide">
+                    <div class="dropdown-section-label">AI & Cursor</div>
+                    <button type="button" class="dropdown-item" onclick="Integrations.toggleCursorPanel()">⚡ Cursor SDK <span class="integration-badge" id="cursorBadgeMenu">…</span></button>
                     <button type="button" class="dropdown-item" onclick="switchView('admin'); AdminPanel?.focusConsole?.()">🖥 Консоль</button>
                     <button type="button" class="dropdown-item" onclick="PowerPack.runPipeline()">⚡ Pipeline</button>
                     <button type="button" class="dropdown-item" onclick="ReactPreview.toggle()">🎨 React Preview</button>
-                </div>
-            </details>
-            <details class="header-dropdown">
-                <summary class="hdr-btn">🛠 Инструменты</summary>
-                <div class="dropdown-menu">
+                    <div class="dropdown-section-label">Инструменты</div>
                     <button type="button" class="dropdown-item" onclick="WowFeatures.showStandup()">📊 Standup</button>
                     <button type="button" class="dropdown-item" onclick="PowerPack.showMemory()">🧠 Project memory</button>
-                    <button type="button" class="dropdown-item" onclick="PowerPack.runPipeline()">⚡ Pipeline</button>
                     <button type="button" class="dropdown-item" onclick="PowerPack.downloadBackup()">📦 Backup</button>
                     <button type="button" class="dropdown-item" onclick="PowerPack.createViewLink()">🔗 View-link</button>
                     <button type="button" class="dropdown-item" onclick="WowFeatures.deployNow()">🚀 Deploy</button>
-                </div>
-            </details>
-            <details class="header-dropdown">
-                <summary class="hdr-btn">🎙 Голос</summary>
-                <div class="dropdown-menu">
+                    <div class="dropdown-section-label">Голос</div>
                     <button type="button" class="dropdown-item" onclick="VoiceRoom.readStandup()">🔊 Standup TTS</button>
-                    <button type="button" class="dropdown-item" onclick="PowerPack.voiceStandupRound()">🎙️ Voice round</button>
+                    <button type="button" class="dropdown-item" onclick="PowerPack.voiceStandupRound()">🎙 Voice round</button>
                     <button type="button" class="dropdown-item" onclick="VoiceRoom.startListening()">🎤 Голосовая задача</button>
-                </div>
-            </details>
-            <details class="header-dropdown">
-                <summary class="hdr-btn hdr-icon" title="Поиск и команды">⌘</summary>
-                <div class="dropdown-menu">
+                    <div class="dropdown-divider"></div>
                     <button type="button" class="dropdown-item" onclick="FeaturePack?.openGlobalSearch?.()">🔍 Поиск <kbd>Ctrl+G</kbd></button>
                     <button type="button" class="dropdown-item" onclick="FeaturePack?.openCommandPalette?.()">⌘ Команды <kbd>Ctrl+K</kbd></button>
                     <button type="button" class="dropdown-item" onclick="FeaturePack?.showShortcutsModal?.()">⌨️ Горячие клавиши</button>
-                    <button type="button" class="dropdown-item" onclick="FeaturePack?.toggleNotifyPanel?.()">🔔 Уведомления</button>
                     <button type="button" class="dropdown-item" onclick="FeaturePack?.toggleFocusMode?.()">🎯 Фокус-режим</button>
                 </div>
             </details>
             <button type="button" class="hdr-btn hdr-icon fp-notify-btn" id="fpNotifyBtn" title="Уведомления" onclick="FeaturePack?.toggleNotifyPanel?.()">🔔<span class="fp-notify-badge" id="fpNotifyBadge" style="display:none">0</span></button>
-            <button type="button" class="hdr-btn hidden" id="pwaInstallBtn" onclick="installPWA()" title="Установить приложение">📲</button>
-            <button type="button" class="hdr-btn" onclick="showSettings()" title="Настройки">⚙️</button>
-            <div class="user-menu" id="userMenu">
-                <a href="/" class="hdr-btn">На сайт</a>
-                <a href="/?auth=login" class="hdr-btn">Вход</a>
-            </div>
+            <button type="button" class="hdr-btn hdr-icon" title="Команды (Ctrl+K)" onclick="FeaturePack?.openCommandPalette?.()">⌘</button>
+            <button type="button" class="hdr-btn hdr-icon hidden" id="pwaInstallBtn" onclick="installPWA()" title="Установить приложение">📲</button>
+            <button type="button" class="hdr-btn hdr-icon" onclick="showSettings()" title="Настройки">⚙️</button>
             <button type="button" class="hdr-btn hdr-icon" id="themeToggle" onclick="toggleTheme()" title="Тема">☀️</button>
+            <details class="header-dropdown header-dropdown-account">
+                <summary class="hdr-btn hdr-icon" title="Аккаунт">👤</summary>
+                <div class="dropdown-menu">
+                    <a href="/" class="dropdown-item">На сайт</a>
+                    <a href="/?auth=login" class="dropdown-item">Вход</a>
+                    <button type="button" class="dropdown-item" onclick="switchView('profile')">👤 Кабинет</button>
+                </div>
+            </details>
         </div>
     </div>
     <div class="header-row header-row-nav">
@@ -125,12 +117,17 @@
                     <button type="button" class="view-tab" data-view="tasks" onclick="switchView('tasks')">📋 Задачи</button>
                     <button type="button" class="view-tab" data-view="projects" onclick="switchView('projects')">📦 Проекты</button>
                     <button type="button" class="view-tab" data-view="kanban" onclick="switchView('kanban')">📌 Kanban</button>
-                    <button type="button" class="view-tab" data-view="sprint" onclick="switchView('sprint')">🏃 Sprint</button>
-                    <button type="button" class="view-tab" data-view="timeline" onclick="switchView('timeline')">⏱ Timeline</button>
                     <button type="button" class="view-tab" data-view="dashboard" onclick="switchView('dashboard')">📊 Dashboard</button>
+                    <details class="nav-more-dropdown">
+                        <summary class="view-tab view-tab-more" title="Ещё разделы">⋯</summary>
+                        <div class="nav-more-menu">
+                            <button type="button" class="dropdown-item" onclick="switchView('sprint')">🏃 Sprint</button>
+                            <button type="button" class="dropdown-item" onclick="switchView('timeline')">⏱ Timeline</button>
+                        </div>
+                    </details>
                 </div>
             </div>
-            <div class="nav-group nav-group-account">
+            <div class="nav-group nav-group-account fp-hide-mobile">
                 <span class="nav-group-label">Аккаунт</span>
                 <div class="view-tabs">
                     <button type="button" class="view-tab" data-view="profile" onclick="switchView('profile')">👤 Кабинет</button>
@@ -152,10 +149,13 @@
         <div id="studioError" class="studio-error" style="display:none"></div>
         <div class="studio-overlay">
             <div class="studio-hud studio-hud-left">
-                <div class="studio-hint">🖱️ Вращение · zoom · клик — чат · компактный open-plan офис (~14×10 м)</div>
+                <div class="studio-hint">🖱 вращение · zoom · клик — чат</div>
             </div>
             <div class="studio-hud studio-hud-right">
-                <div class="studio-legend" id="studioLegend"></div>
+                <details class="studio-agents-dropdown">
+                    <summary class="studio-agents-btn">👥 Агенты</summary>
+                    <div class="studio-agents-list" id="studioLegend"></div>
+                </details>
             </div>
         </div>
         <aside class="studio-minimap-panel" aria-label="Карта команды">
@@ -465,12 +465,17 @@
                 <button type="button" class="tpl-btn" onclick="applyTemplate('Напиши REST API для задач')">⚙️ API</button>
                 <button type="button" class="tpl-btn" onclick="applyTemplate('Создай форму регистрации в React')">🎨 UI</button>
                 <button type="button" class="tpl-btn" onclick="applyTemplate('Напиши тесты для backend')">🧪 Tests</button>
-                <button type="button" class="tpl-btn" onclick="applyProjectTemplate('saas')">📊 SaaS</button>
-                <button type="button" class="tpl-btn" onclick="applyProjectTemplate('ecommerce')">🛒 Shop</button>
-                <button type="button" class="tpl-btn" onclick="applyProjectTemplate('admin')">🛡️ Admin</button>
-                <button type="button" class="tpl-btn" onclick="PowerPack.applyTemplate('pitch')">📽️ Pitch</button>
-                <button type="button" class="tpl-btn" onclick="PowerPack.applyTemplate('3d-hero')">🧊 3D</button>
-                <button type="button" class="tpl-btn" onclick="PowerPack.applyTemplate('docker-ci')">🔧 CI</button>
+                <details class="tpl-more-dropdown">
+                    <summary class="tpl-btn tpl-more">⋯ ещё</summary>
+                    <div class="tpl-more-menu">
+                        <button type="button" class="dropdown-item" onclick="applyProjectTemplate('saas')">📊 SaaS</button>
+                        <button type="button" class="dropdown-item" onclick="applyProjectTemplate('ecommerce')">🛒 Shop</button>
+                        <button type="button" class="dropdown-item" onclick="applyProjectTemplate('admin')">🛡 Admin</button>
+                        <button type="button" class="dropdown-item" onclick="PowerPack.applyTemplate('pitch')">📽 Pitch</button>
+                        <button type="button" class="dropdown-item" onclick="PowerPack.applyTemplate('3d-hero')">🧊 3D</button>
+                        <button type="button" class="dropdown-item" onclick="PowerPack.applyTemplate('docker-ci')">🔧 CI</button>
+                    </div>
+                </details>
                 </div>
             </div>
 
@@ -666,8 +671,8 @@
 <script src="/static/js/studio.js?v=20"></script>
 <script src="/static/js/react-preview.js?v=4"></script>
 <script src="/static/js/integrations.js?v=6"></script>
-<script src="/static/js/ui-enhancements.js?v=3"></script>
-<script src="/static/js/feature-pack.js?v=2"></script>
+<script src="/static/js/ui-enhancements.js?v=4"></script>
+<script src="/static/js/feature-pack.js?v=3"></script>
 <script src="/static/js/dashboard.js?v=2"></script>
 <script src="/static/js/agent-activity.js?v=1"></script>
 <script src="/static/js/auth.js?v=6"></script>

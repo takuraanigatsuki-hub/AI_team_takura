@@ -103,21 +103,16 @@
     }
 
     function updateCursorBadge() {
-        const badge = document.getElementById('cursorBadge');
-        if (!badge) return;
-        if (cursorStatus?.github_sync && cursorStatus?.repo_url) {
-            badge.textContent = 'GitHub ✓';
-            badge.className = 'integration-badge active github';
-        } else if (cursorStatus?.ok) {
-            badge.textContent = 'SDK ✓';
-            badge.className = 'integration-badge active';
-        } else if (cursorStatus?.configured) {
-            badge.textContent = 'ошибка';
-            badge.className = 'integration-badge error';
-        } else {
-            badge.textContent = 'off';
-            badge.className = 'integration-badge';
-        }
+        const text = (() => {
+            if (cursorStatus?.github_sync && cursorStatus?.repo_url) return { t: 'GitHub ✓', c: 'integration-badge active github' };
+            if (cursorStatus?.ok) return { t: 'SDK ✓', c: 'integration-badge active' };
+            if (cursorStatus?.configured) return { t: 'ошибка', c: 'integration-badge error' };
+            return { t: 'off', c: 'integration-badge' };
+        })();
+        document.querySelectorAll('#cursorBadge, #cursorBadgeMenu').forEach((badge) => {
+            badge.textContent = text.t;
+            badge.className = text.c;
+        });
     }
 
     function renderCursorPanel() {
