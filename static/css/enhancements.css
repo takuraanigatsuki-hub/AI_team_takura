@@ -400,3 +400,12 @@ body.sidebar-collapsed .sb-badge {
     padding: 40px 20px;
     color: var(--text-muted, #888);
 }
+
+.status-chip-action {
+    cursor: pointer;
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+    font: inherit;
+}
+.status-chip-action:hover { background: rgba(245, 158, 11, 0.22); }
