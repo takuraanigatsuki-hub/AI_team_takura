@@ -125,7 +125,7 @@ def _apply_primary_owner(raw: dict) -> dict:
     if not raw.get("setup_complete"):
         raw["setup_complete"] = True
         changed = True
-    if (changed) {
+    if changed:
         raw["updated_at"] = datetime.now().isoformat()
         users = _load(USERS_FILE)
         for i, u in enumerate(users):
