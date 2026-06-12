@@ -43,8 +43,10 @@
         ensureContainers();
         const el = document.createElement('div');
         el.className = `toast toast-${type} animate-in`;
+        el.setAttribute('role', type === 'error' || type === 'warn' ? 'alert' : 'status');
         el.textContent = message;
         document.getElementById('toastContainer').appendChild(el);
+        if (global.UICore?.announceLive) UICore.announceLive(message);
         setTimeout(() => {
             el.classList.add('toast-out');
             setTimeout(() => el.remove(), 300);

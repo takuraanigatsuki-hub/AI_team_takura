@@ -75,8 +75,8 @@
         const paletteEl = el('dlPalette');
         const statsEl = el('dlStats');
         const discoveryEl = el('dlDiscoveryStatus');
-        if (studiedEl) studiedEl.innerHTML = '<div class="panel-empty">Загрузка…</div>';
-        if (discoveryEl) discoveryEl.innerHTML = '<div class="panel-empty">Загрузка статуса…</div>';
+        if (studiedEl) studiedEl.innerHTML = global.UICore ? UICore.loadingState('', { compact: true }) : '<div class="panel-empty">Загрузка…</div>';
+        if (discoveryEl) discoveryEl.innerHTML = global.UICore ? UICore.loadingState('Загрузка статуса…', { compact: true }) : '<div class="panel-empty">Загрузка статуса…</div>';
         try {
             cache = await fetchDesignLab();
             renderStats(statsEl, cache);
@@ -87,12 +87,16 @@
             renderDiscovery(cache.discovery || {});
             updateAgentBadge(cache.agent);
         } catch (e) {
-            const msg = escape(e.message || 'Ошибка загрузки');
+            const msg = e.message || 'Ошибка загрузки';
             if (studiedEl) {
-                studiedEl.innerHTML = `<div class="panel-error">${msg}<br><small class="muted">Перезапустите сервер (python main.py) и обновите страницу Ctrl+F5</small></div>`;
+                studiedEl.innerHTML = global.UICore
+                    ? UICore.errorState(`${msg}. Перезапустите сервер и обновите Ctrl+F5`, { retryOnclick: 'SonyaDesignLab.load()' })
+                    : `<div class="panel-error">${escape(msg)}<br><small class="muted">Перезапустите сервер (python main.py) и обновите страницу Ctrl+F5</small></div>`;
             }
             if (discoveryEl) {
-                discoveryEl.innerHTML = `<div class="panel-error">${msg}</div>`;
+                discoveryEl.innerHTML = global.UICore
+                    ? UICore.errorState(msg, { compact: true })
+                    : `<div class="panel-error">${escape(msg)}</div>`;
             }
         }
     }
@@ -117,7 +121,7 @@
     function renderStudied(container, items) {
         if (!container) return;
         if (!items.length) {
-            container.innerHTML = '<div class="panel-empty">Пока пусто — Соня найдёт макеты сама или вставьте ссылку Figma</div>';
+            container.innerHTML = global.UICore ? UICore.inlineEmpty('Пока пусто — Соня найдёт макеты сама или вставьте ссылку Figma') : '<div class="panel-empty">Пока пусто — Соня найдёт макеты сама или вставьте ссылку Figma</div>';
             return;
         }
         container.innerHTML = items.slice(0, 12).map((s) => {

@@ -1,20 +1,5 @@
-/* UI Core — design tokens, header context, mobile tabs, unified empty states */
-
-:root {
-    --space-1: 4px;
-    --space-2: 8px;
-    --space-3: 12px;
-    --space-4: 16px;
-    --space-5: 24px;
-    --space-6: 32px;
-    --elev-1: 0 2px 8px rgba(0, 0, 0, 0.12);
-    --elev-2: 0 8px 24px rgba(0, 0, 0, 0.18);
-    --elev-3: 0 16px 48px rgba(0, 0, 0, 0.28);
-    --semantic-success: var(--green);
-    --semantic-warning: #ffa502;
-    --semantic-danger: var(--red);
-    --semantic-info: var(--accent);
-}
+/* UI Core — header context, mobile tabs, unified empty states */
+/* Design tokens live in main.css :root */
 
 .header-status-compact {
     display: flex;
@@ -83,6 +68,21 @@
     border-top-color: var(--accent);
     border-radius: 50%;
     animation: uiSpin 0.7s linear infinite;
+}
+.ui-loading-ring.sm {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    display: inline-block;
+    vertical-align: middle;
+}
+.ui-loading-inline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    font-size: 12px;
 }
 @keyframes uiSpin { to { transform: rotate(360deg); } }
 .ui-error .ui-empty-icon { color: var(--semantic-danger); }

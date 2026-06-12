@@ -14,10 +14,24 @@
     --glow-purple: 0 0 20px rgba(157, 78, 221, 0.35);
     --glow-gold: 0 0 18px rgba(232, 184, 74, 0.3);
     --glow-cyan: 0 0 16px rgba(86, 207, 225, 0.25);
-    --header-h: 96px;
+    --header-h: 56px;
     --empire-gold: #e8b84a;
     --empire-purple: #9d4edd;
     --empire-neon: #c77dff;
+    /* Design system tokens (shared with ui-core) */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --elev-1: 0 2px 8px rgba(0, 0, 0, 0.12);
+    --elev-2: 0 8px 24px rgba(0, 0, 0, 0.18);
+    --elev-3: 0 16px 48px rgba(0, 0, 0, 0.28);
+    --semantic-success: var(--green);
+    --semantic-warning: #ffa502;
+    --semantic-danger: var(--red);
+    --semantic-info: var(--accent);
 }
 
 [data-theme="dark"] {
@@ -1419,7 +1433,7 @@ a.dropdown-item {
 }
 
 @media (max-width: 900px) {
-    :root { --header-h: 108px; }
+    :root { --header-h: 72px; }
     .agent-detail { display: none; }
     .sidebar { width: 200px; }
     #reactPreviewPanel { width: 100vw; }
@@ -1429,7 +1443,7 @@ a.dropdown-item {
     .hdr-btn { padding: 5px 9px; font-size: 10px; min-height: 30px; }
 }
 @media (max-width: 640px) {
-    :root { --header-h: 132px; }
+    :root { --header-h: 96px; }
     .sidebar { display: none; }
     .header-status { flex: 1 1 100%; order: 10; }
     .header-actions { flex: 1 1 100%; justify-content: flex-start; }

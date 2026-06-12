@@ -57,7 +57,13 @@
         </div>`;
     }
 
-    function loadingState(text = 'Загрузка…') {
+    function loadingState(text = 'Загрузка…', opts = {}) {
+        if (opts.compact) {
+            return `<div class="ui-loading-inline" aria-busy="true" role="status">
+                <span class="ui-loading-ring sm" aria-hidden="true"></span>
+                <span class="muted">${esc(text)}</span>
+            </div>`;
+        }
         return `<div class="ui-empty ui-loading" aria-busy="true" role="status">
             <div class="ui-loading-ring" aria-hidden="true"></div>
             <p class="muted">${esc(text)}</p>
