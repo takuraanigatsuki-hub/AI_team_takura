@@ -9,7 +9,11 @@
         try {
             const r = await fetch(`/api/timeline/replay?hours=${h}`, { credentials: 'same-origin' });
             if (r.status === 401) {
-                if (el) el.innerHTML = '<div class="panel-empty">Войдите, чтобы видеть свою активность</div>';
+                if (el) {
+                    el.innerHTML = `<div class="tasks-empty tasks-guest"><div class="tasks-empty-icon">⏱</div>
+                        <h3>Timeline</h3><p class="muted">Войдите для полной ленты. Задачи из чата — во вкладке «Задачи».</p>
+                        <a href="/?auth=login" class="btn-primary btn-sm">Войти</a></div>`;
+                }
                 return;
             }
             if (!r.ok) throw new Error('HTTP ' + r.status);

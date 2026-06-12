@@ -109,8 +109,10 @@
         if (!currentUser) {
             if (summary) summary.textContent = '👤';
             el.innerHTML = `
+                <div class="dropdown-section-label">Гостевая сессия</div>
                 <a href="/" class="dropdown-item">На сайт</a>
                 <a href="/?auth=login" class="dropdown-item">Вход</a>
+                <a href="/?auth=register" class="dropdown-item">Регистрация</a>
                 <button type="button" class="dropdown-item" onclick="switchView('profile')">👤 Кабинет</button>`;
             return;
         }

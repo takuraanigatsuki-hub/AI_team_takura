@@ -393,6 +393,8 @@ body.sidebar-collapsed .sb-badge {
 }
 .tasks-empty-icon { font-size: 2.5rem; opacity: 0.85; }
 .tasks-empty h3 { margin: 0; font-size: 1.1rem; }
+.task-guest-hint { font-size: 12px; margin-top: 8px; }
+.task-guest-hint a { color: var(--accent); }
 .task-card.priority-urgent { border-left: 3px solid #ef4444; }
 .task-card.priority-high { border-left: 3px solid #f97316; }
 .task-card.priority-medium { border-left: 3px solid rgba(108, 99, 255, 0.5); }

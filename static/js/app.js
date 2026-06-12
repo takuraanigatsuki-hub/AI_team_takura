@@ -1389,11 +1389,14 @@
                 ? `<a href="${escapeHtml(t.preview_url)}" target="_blank" rel="noopener" class="task-link-btn">👁 Preview</a>` : '';
             const siteLink = t.status === 'awaiting_approval'
                 ? `<a href="/api/sites/latest" target="_blank" rel="noopener" class="task-link-btn">🌐 Сайт</a>` : '';
-            const approvalBtns = t.status === 'awaiting_approval' ? `
-                <div class="task-approval">
+            const approvalBtns = t.status === 'awaiting_approval'
+                ? (user
+                    ? `<div class="task-approval">
                     <button type="button" class="btn-primary btn-sm" onclick="approveTask('${escapeHtml(t.id)}')">✓ Принять</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="requestTaskRevision('${escapeHtml(t.id)}')">✎ Правки</button>
-                </div>` : '';
+                </div>`
+                    : `<p class="muted task-guest-hint"><a href="/?auth=login">Войдите</a>, чтобы принять или отправить на правки</p>`)
+                : '';
             const response = t.response
                 ? `<div class="task-response">${escapeHtml(t.response.slice(0, 500))}${t.response.length > 500 ? '…' : ''}</div>`
                 : '';
