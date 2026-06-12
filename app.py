@@ -415,9 +415,13 @@ async def auth_change_password(body: AuthPasswordChange, request: Request):
 
 @app.get("/api/auth/profile/stats")
 async def auth_profile_stats(request: Request):
-    from room.user_auth import get_user_from_token
+    from datetime import datetime, timedelta
+    from room.user_auth import get_user_from_token, _load, SESSIONS_FILE
     from integrations.sonya_studio import list_projects
     from room.project_memory import get_memory
+    from room.artifact_store import stats as artifact_stats, list_all as list_artifacts
+    from integrations.llm_usage import get_stats as llm_stats
+    from integrations.figma_learning import get_studio_stats
 
     user = get_user_from_token(_get_session_token(request))
     if not user:
@@ -426,17 +430,104 @@ async def auth_profile_stats(request: Request):
     th = room.task_history.stats()
     mem = get_memory() or {}
     projects = list_projects()
+    all_tasks = room.task_history.get_all()
+    week_ago = datetime.now() - timedelta(days=7)
+    tasks_week = 0
+    agent_usage = {}
+    for t in room.task_history.tasks:
+        created = t.get("created_at")
+        if created:
+            try:
+                if datetime.fromisoformat(created) >= week_ago:
+                    tasks_week += 1
+            except ValueError:
+                pass
+        aid = t.get("agent_id") or t.get("target")
+        if aid:
+            agent_usage[aid] = agent_usage.get(aid, 0) + 1
+
+    total = th.get("total") or 0
+    completed = th.get("completed") or 0
+    success_rate = round(completed / total * 100) if total else 0
+
+    sessions_raw = _load(SESSIONS_FILE)
+    active_sessions = 0
+    if isinstance(sessions_raw, dict):
+        active_sessions = sum(
+            1 for s in sessions_raw.values() if s.get("user_id") == user.get("id")
+        )
+
+    member_since = user.get("created_at")
+    days_member = 0
+    if member_since:
+        try:
+            days_member = max(0, (datetime.now() - datetime.fromisoformat(member_since)).days)
+        except ValueError:
+            pass
+
+    sub = user.get("subscription") or {}
+    llm = llm_stats()
+    arts = artifact_stats()
+    figma = get_studio_stats()
+    top_agents = sorted(agent_usage.items(), key=lambda x: -x[1])[:5]
+
+    def _task_row(t):
+        return {
+            "id": t.get("id"),
+            "task": (t.get("task") or "")[:140],
+            "status": t.get("status"),
+            "agent_name": t.get("agent_name"),
+            "agent_emoji": t.get("agent_emoji"),
+            "sender": t.get("sender"),
+            "created_at": t.get("created_at"),
+            "completed_at": t.get("completed_at"),
+        }
+
     return {
-        "tasks_total": th.get("total", 0),
-        "tasks_completed": th.get("completed", 0),
+        "tasks_total": total,
+        "tasks_completed": completed,
         "tasks_active": th.get("active", 0),
+        "tasks_failed": th.get("failed", 0),
+        "tasks_week": tasks_week,
+        "success_rate": success_rate,
         "sonya_projects": len(projects),
         "sonya_published": sum(1 for p in projects if p.get("status") == "published"),
+        "sonya_draft": sum(1 for p in projects if p.get("status") != "published"),
+        "artifacts_total": arts.get("total", 0),
+        "artifacts_by_type": arts.get("by_type", {}),
+        "llm_requests": llm.get("total_requests", 0),
+        "llm_tokens_in": llm.get("total_input_tokens", 0),
+        "llm_tokens_out": llm.get("total_output_tokens", 0),
+        "llm_cost_usd": llm.get("estimated_cost_usd", 0),
+        "llm_cost_rub": llm.get("estimated_cost_rub", 0),
+        "figma_patterns": figma.get("studied_count", 0),
+        "figma_portfolio": figma.get("portfolio_count", 0),
+        "agents_online": sum(1 for a in room.agents.values() if a.get_state().get("status") != "offline"),
+        "agents_total": len(room.agents),
+        "top_agents": [{"id": k, "count": v} for k, v in top_agents],
         "has_project_brief": bool(mem.get("brief") or user.get("project_goal")),
-        "member_since": user.get("created_at"),
+        "project_goals_count": len(mem.get("goals") or []),
+        "project_constraints_count": len(mem.get("constraints") or []),
+        "memory_updated_at": mem.get("updated_at"),
+        "member_since": member_since,
+        "days_member": days_member,
         "setup_at": user.get("setup_at"),
-        "subscription": user.get("subscription"),
+        "updated_at": user.get("updated_at"),
+        "active_sessions": active_sessions,
+        "views_unlocked_count": len(sub.get("views_unlocked") or []),
+        "subscription": sub,
         "access_level": user.get("access_level"),
+        "recent_tasks": [_task_row(t) for t in all_tasks[:12]],
+        "recent_projects": [
+            {
+                "id": p.get("id"),
+                "title": p.get("title"),
+                "status": p.get("status"),
+                "updated_at": p.get("updated_at"),
+            }
+            for p in projects[:6]
+        ],
+        "recent_artifacts": list_artifacts(limit=6),
     }
 
 

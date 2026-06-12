@@ -2,7 +2,7 @@
  * Личный кабинет пользователя — профиль, настройки, безопасность, активность
  */
 (function (global) {
-    let activeTab = 'profile';
+    let activeTab = 'overview';
     let stats = null;
     let plans = null;
     let actionCosts = null;
@@ -44,7 +44,173 @@
         }[role] || role;
     }
 
-    function canAccessView(user, view) {
+    function fmtDateTime(iso) {
+        if (!iso) return '—';
+        try {
+            return new Date(iso).toLocaleString('ru', {
+                day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+            });
+        } catch (_) {
+            return iso.slice(0, 16).replace('T', ' ');
+        }
+    }
+
+    function statusLabel(st) {
+        return {
+            completed: '✅ Готово',
+            in_progress: '⏳ В работе',
+            queued: '📋 В очереди',
+            submitted: '📤 Отправлено',
+            failed: '❌ Ошибка',
+        }[st] || st;
+    }
+
+    function statusClass(st) {
+        return {
+            completed: 'ok',
+            in_progress: 'active',
+            queued: 'pending',
+            submitted: 'pending',
+            failed: 'err',
+        }[st] || '';
+    }
+
+    function kpiCard(icon, value, label, hint) {
+        return `
+        <article class="pf-kpi">
+            <span class="pf-kpi-icon">${icon}</span>
+            <div class="pf-kpi-body">
+                <div class="pf-kpi-val">${esc(value)}</div>
+                <div class="pf-kpi-label">${esc(label)}</div>
+                ${hint ? `<div class="pf-kpi-hint">${esc(hint)}</div>` : ''}
+            </div>
+        </article>`;
+    }
+
+    function progressBar(pct, label) {
+        const p = Math.min(100, Math.max(0, Number(pct) || 0));
+        return `
+        <div class="pf-progress">
+            <div class="pf-progress-head"><span>${esc(label)}</span><strong>${p}%</strong></div>
+            <div class="pf-progress-track"><div class="pf-progress-fill" style="width:${p}%"></div></div>
+        </div>`;
+    }
+
+    function renderTimeline(tasks) {
+        if (!tasks?.length) {
+            return '<p class="muted pf-empty">Задач пока нет — отправьте первую в рабочем чате.</p>';
+        }
+        return `<ul class="pf-timeline">${tasks.map((t) => `
+            <li class="pf-timeline-item ${statusClass(t.status)}">
+                <div class="pf-timeline-dot"></div>
+                <div class="pf-timeline-body">
+                    <div class="pf-timeline-top">
+                        <span class="pf-timeline-status">${statusLabel(t.status)}</span>
+                        <time class="muted">${fmtDateTime(t.completed_at || t.created_at)}</time>
+                    </div>
+                    <p class="pf-timeline-text">${esc(t.task)}</p>
+                    ${t.agent_name ? `<span class="pf-timeline-agent">${esc(t.agent_emoji || '🤖')} ${esc(t.agent_name)}</span>` : ''}
+                </div>
+            </li>`).join('')}</ul>`;
+    }
+
+    function renderOverview(user) {
+        const s = stats || {};
+        const sub = user.subscription || {};
+        const bal = sub.balance_display ?? sub.balance ?? '0';
+        const tier = `${sub.tier_emoji || ''} ${sub.tier_name || 'Free'}`.trim();
+        const roleBadge = global.Auth?.roleBadgeHtml
+            ? global.Auth.roleBadgeHtml(user)
+            : `<span class="role-badge role-user">${roleLabel(user.role)}</span>`;
+
+        return `
+        <div class="pf-overview">
+            <header class="pf-hero">
+                <div class="pf-hero-left">
+                    <div class="profile-avatar pf-hero-avatar">${esc((user.name || user.email || '?')[0]).toUpperCase()}</div>
+                    <div>
+                        <p class="pf-hero-greet">Добро пожаловать,</p>
+                        <h2 class="pf-hero-name">${esc(user.name || 'Пользователь')}</h2>
+                        <p class="muted pf-hero-email">${esc(user.email)}</p>
+                        <div class="pf-hero-badges">${roleBadge}
+                            <span class="ss-badge">${esc(tier)}</span>
+                            <span class="ss-badge">ур. ${user.access_level || sub.level || 1}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="pf-hero-stats">
+                    <div class="pf-hero-stat"><span class="pf-hero-stat-val">${esc(bal)}</span><span class="muted">кредитов</span></div>
+                    <div class="pf-hero-stat"><span class="pf-hero-stat-val">${s.days_member ?? 0}</span><span class="muted">дней в команде</span></div>
+                    <div class="pf-hero-stat"><span class="pf-hero-stat-val">${s.active_sessions ?? 1}</span><span class="muted">сессий</span></div>
+                </div>
+            </header>
+
+            <div class="pf-kpi-grid">
+                ${kpiCard('📋', s.tasks_total ?? 0, 'Задач всего', `+${s.tasks_week ?? 0} за 7 дней`)}
+                ${kpiCard('✅', s.tasks_completed ?? 0, 'Выполнено', `${s.success_rate ?? 0}% успех`)}
+                ${kpiCard('⏳', s.tasks_active ?? 0, 'В работе', `${s.tasks_failed ?? 0} ошибок`)}
+                ${kpiCard('🤖', s.llm_requests ?? 0, 'AI запросов', `${((s.llm_tokens_in || 0) + (s.llm_tokens_out || 0)).toLocaleString('ru')} токенов`)}
+                ${kpiCard('✨', s.sonya_projects ?? 0, 'Studio', `${s.sonya_published ?? 0} опубл.`)}
+                ${kpiCard('📦', s.artifacts_total ?? 0, 'Артефакты', `${s.agents_total ?? 0} агентов`)}
+            </div>
+
+            <div class="pf-split">
+                <section class="pf-panel">
+                    <div class="pf-panel-head"><h3>📈 Последняя активность</h3>
+                        <button type="button" class="btn-secondary btn-sm" onclick="ProfileCabinet.switchTab('activity')">Все →</button>
+                    </div>
+                    ${renderTimeline(s.recent_tasks)}
+                </section>
+                <section class="pf-panel">
+                    <div class="pf-panel-head"><h3>💎 Аккаунт и доступ</h3></div>
+                    ${progressBar(s.success_rate, 'Успешность задач')}
+                    ${progressBar(sub.unlimited ? 100 : Math.min(100, ((s.views_unlocked_count || 0) / 12) * 100), 'Открыто вкладок')}
+                    <ul class="profile-meta-list pf-account-list">
+                        <li><span>Тариф</span><strong>${esc(tier)}</strong></li>
+                        <li><span>Баланс</span><strong>${esc(bal)} кр.</strong></li>
+                        <li><span>Brief проекта</span><strong>${s.has_project_brief ? '✓ задан' : '— не задан'}</strong></li>
+                        <li><span>Цели / ограничения</span><strong>${s.project_goals_count ?? 0} / ${s.project_constraints_count ?? 0}</strong></li>
+                        <li><span>Участник с</span><strong>${fmtDate(s.member_since || user.created_at)}</strong></li>
+                        <li><span>Настройка</span><strong>${user.setup_complete ? fmtDate(s.setup_at || user.setup_at) : 'не пройдена'}</strong></li>
+                    </ul>
+                </section>
+            </div>
+
+            <div class="pf-split">
+                <section class="pf-panel">
+                    <div class="pf-panel-head"><h3>✨ Studio проекты</h3>
+                        <button type="button" class="btn-secondary btn-sm" onclick="switchView('sonya-studio')">Открыть</button>
+                    </div>
+                    ${(s.recent_projects || []).length ? `<ul class="pf-mini-list">${(s.recent_projects || []).map((p) => `
+                        <li><span>${esc(p.title || 'Без названия')}</span>
+                            <span class="pf-mini-meta">${esc(p.status || 'draft')} · ${fmtDate(p.updated_at)}</span></li>`).join('')}</ul>`
+                        : '<p class="muted pf-empty">Studio проектов пока нет.</p>'}
+                </section>
+                <section class="pf-panel">
+                    <div class="pf-panel-head"><h3>🧠 AI & команда</h3></div>
+                    <ul class="profile-meta-list">
+                        <li><span>LLM стоимость</span><strong>~$${s.llm_cost_usd ?? 0} · ${s.llm_cost_rub ?? 0} ₽</strong></li>
+                        <li><span>Figma паттерны</span><strong>${s.figma_patterns ?? 0} изучено · ${s.figma_portfolio ?? 0} в портфолио</strong></li>
+                        <li><span>Агенты онлайн</span><strong>${s.agents_online ?? 0} / ${s.agents_total ?? 0}</strong></li>
+                        <li><span>ID аккаунта</span><strong class="pf-mono">${esc(user.id)}</strong></li>
+                        <li><span>Обновлён</span><strong>${fmtDateTime(s.updated_at || user.updated_at)}</strong></li>
+                    </ul>
+                    ${(s.top_agents || []).length ? `
+                    <p class="pf-sub-label muted">Топ агентов по задачам</p>
+                    <div class="pf-chips">${(s.top_agents || []).map((a) =>
+                        `<span class="pf-chip">${esc(a.id)} · ${a.count}</span>`).join('')}</div>` : ''}
+                </section>
+            </div>
+
+            <div class="profile-quick-links pf-quick-bar">
+                <button type="button" class="btn-primary btn-sm" onclick="switchView('chat')">💬 Чат</button>
+                <button type="button" class="btn-secondary btn-sm" onclick="switchView('studio')">🎮 3D</button>
+                <button type="button" class="btn-secondary btn-sm" onclick="switchView('tasks')">📋 Задачи</button>
+                <button type="button" class="btn-secondary btn-sm" onclick="switchView('dashboard')">📊 Dashboard</button>
+                ${canAdmin(user) ? '<button type="button" class="btn-secondary btn-sm" onclick="switchView(\'admin\')">🛡 Admin</button>' : ''}
+            </div>
+        </div>`;
+    }
         const sub = user?.subscription;
         if (!sub) return true;
         if (sub.unlimited || user.is_owner) return true;
