@@ -50,7 +50,7 @@
         let lastErr = null;
         for (const url of urls) {
             try {
-                const r = await fetch(url);
+                const r = await fetch(url, { credentials: 'same-origin' });
                 if (r.ok) {
                     return normalizeLabPayload(await r.json());
                 }
@@ -252,7 +252,7 @@
     async function discoverScan() {
         toast('🔄 Сканирую Figma-проекты…', 'info');
         try {
-            const r = await fetch('/api/figma/studio/discover?scan_only=true', { method: 'POST' });
+            const r = await fetch('/api/figma/studio/discover?scan_only=true', { method: 'POST', credentials: 'same-origin' });
             const data = await r.json();
             if (!r.ok) throw new Error(data.detail || 'Ошибка сканирования');
             const added = data.scan?.added || 0;
@@ -266,7 +266,7 @@
     async function discoverStudy() {
         toast('🔍 Соня ищет и изучает макет…', 'info');
         try {
-            const r = await fetch('/api/figma/studio/discover', { method: 'POST' });
+            const r = await fetch('/api/figma/studio/discover', { method: 'POST', credentials: 'same-origin' });
             const data = await r.json();
             if (!r.ok) throw new Error(data.detail || 'Ошибка');
             if (data.studied) {
@@ -310,6 +310,7 @@
             for (const endpoint of studyEndpoints) {
                 const r = await fetch(endpoint, {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url }),
                 });
@@ -321,6 +322,7 @@
             if (!data?.ok && lastErr) {
                 const rImport = await fetch('/api/figma/import', {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url }),
                 });
@@ -368,6 +370,7 @@
         try {
             const r = await fetch('/api/figma/import', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url }),
             });
@@ -387,7 +390,7 @@
 
     async function triggerStudy() {
         try {
-            const r = await fetch('/api/figma/studio/trigger?action=study', { method: 'POST' });
+            const r = await fetch('/api/figma/studio/trigger?action=study', { method: 'POST', credentials: 'same-origin' });
             const data = await r.json();
             if (!r.ok) throw new Error(data.detail || 'Ошибка');
             toast('📚 Соня ушла в библиотеку изучать дизайн…', 'info');

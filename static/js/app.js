@@ -1149,8 +1149,9 @@
     async function loadTasks() {
         const user = window.Auth?.getUser?.();
         if (!user) {
-            taskStats = { total: 0, completed: 0, active: 0, awaiting_approval: 0 };
-            taskHistory = [];
+            if (!taskHistory.length) {
+                taskStats = { total: 0, completed: 0, active: 0, awaiting_approval: 0 };
+            }
             updateTaskBadges();
             renderTasks();
             return;
@@ -1320,7 +1321,7 @@
         if (!list) return;
 
         const user = window.Auth?.getUser?.();
-        if (!user) {
+        if (!user && !taskHistory.length) {
             document.getElementById('statCompleted').textContent = '0';
             document.getElementById('statActive').textContent = '0';
             document.getElementById('statTotal').textContent = '0';
@@ -1328,9 +1329,9 @@
             if (awEl) awEl.textContent = '0';
             list.innerHTML = `
                 <div class="tasks-empty tasks-guest">
-                    <div class="tasks-empty-icon">🔐</div>
-                    <h3>Войдите, чтобы видеть свои задачи</h3>
-                    <p class="muted">Каждый пользователь видит только свои задачи и историю</p>
+                    <div class="tasks-empty-icon">💬</div>
+                    <h3>Гостевая сессия</h3>
+                    <p class="muted">Отправьте задачу в чат — она появится здесь. Войдите, чтобы сохранить историю между визитами.</p>
                     <a href="/?auth=login" class="btn-primary btn-sm">Войти</a>
                 </div>`;
             return;
