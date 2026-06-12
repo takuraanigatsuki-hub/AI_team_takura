@@ -166,6 +166,7 @@
         document.getElementById('investorView')?.classList.toggle('hidden', view !== 'investor');
 
         if (window.SidebarNav) SidebarNav.setActive(view);
+        if (window.UICore) UICore.setMobileTabActive(view);
         if (view === 'tasks') loadTasks();
         if (view === 'projects' && window.ProjectsUI) ProjectsUI.load();
         if (view === 'kanban' && window.KanbanUI) KanbanUI.refresh();
@@ -485,6 +486,12 @@
         if (window.UIEnhancements && wasOk && !ok) {
             UIEnhancements.toast('🔴 Соединение потеряно — переподключение…', 'error');
         }
+        if (window.UICore) {
+            UICore.updateHeaderContext({
+                online: ok,
+                reconnecting: !ok && mode === 'reconnecting',
+            });
+        }
         if (ok && window.SoundFX) SoundFX.connect();
     }
 
@@ -782,8 +789,9 @@
         const pill = document.getElementById('activeAgentsPill');
         if (pill) {
             pill.textContent = working ? `${working} активны` : 'все свободны';
-            pill.className = 'status-chip' + (working ? ' has-active' : '');
+            pill.className = 'status-chip header-legacy-chip fp-show-mobile' + (working ? ' has-active' : '');
         }
+        if (window.UICore) UICore.updateHeaderContext({ agentsWorking: working });
     }
 
     function updateStudioLegend() {
@@ -1140,12 +1148,13 @@
         if (window.SidebarNav) SidebarNav.updateBadges({ awaiting });
         document.title = awaiting > 0
             ? `(${awaiting}) AI Team Room`
-            : 'AI Team Room — 3D Studio';
+            : 'AI Team Room — Inbox';
         const chip = document.getElementById('awaitingChip');
         if (chip) {
             chip.classList.toggle('hidden', awaiting <= 0);
             chip.textContent = awaiting > 0 ? `⏳ ${awaiting} на проверке` : '';
         }
+        if (window.UICore) UICore.updateHeaderContext({ taskStats: { ...taskStats, awaiting_approval: awaiting } });
     }
 
     function updateTaskHistory(data) {
@@ -1358,13 +1367,15 @@
             document.getElementById('statTotal').textContent = '0';
             const awEl = document.getElementById('statAwaiting');
             if (awEl) awEl.textContent = '0';
-            list.innerHTML = `
-                <div class="tasks-empty tasks-guest">
-                    <div class="tasks-empty-icon">💬</div>
-                    <h3>Гостевая сессия</h3>
-                    <p class="muted">Отправьте задачу в чат — она появится здесь. Войдите, чтобы сохранить историю между визитами.</p>
-                    <a href="/?auth=login" class="btn-primary btn-sm">Войти</a>
-                </div>`;
+            list.innerHTML = window.UICore ? UICore.emptyState({
+                icon: '💬',
+                title: 'Гостевая сессия',
+                text: 'Отправьте задачу в чат — она появится здесь. Войдите, чтобы сохранить историю между визитами.',
+                primaryLabel: 'В чат',
+                primaryOnclick: "switchView('chat')",
+                secondaryLabel: 'Войти',
+                secondaryHref: '/?auth=login',
+            }) : '';
             return;
         }
 
@@ -1394,58 +1405,20 @@
             const msg = taskFilter === 'all' && !taskSearchQuery
                 ? 'Задач пока нет — отправьте первую в чате'
                 : 'Нет задач в этой категории';
-            list.innerHTML = `<div class="tasks-empty"><div class="tasks-empty-icon">📋</div><p>${msg}</p>
-                <button type="button" class="btn-primary btn-sm" onclick="switchView('chat')">+ Новая задача</button></div>`;
+            list.innerHTML = window.UICore ? UICore.emptyState({
+                icon: '📋',
+                title: msg,
+                text: '',
+                primaryLabel: '+ Новая задача',
+                primaryOnclick: "switchView('chat')",
+            }) : `<div class="tasks-empty"><p>${msg}</p></div>`;
             return;
         }
 
-        list.innerHTML = items.map((t) => {
-            const agent = t.agent_emoji && t.agent_name
-                ? `${t.agent_emoji} ${t.agent_name}` : (t.target === 'all' ? '👥 Команда' : t.target || '—');
-            const time = t.completed_at || t.awaiting_since || t.started_at || t.created_at;
-            const timeStr = time ? formatTime(time) : '';
-            const prio = t.priority || 'medium';
-            const prioBadge = PRIO_LABELS[prio] || '';
-            const previewLink = t.preview_url
-                ? `<a href="${escapeHtml(t.preview_url)}" target="_blank" rel="noopener" class="task-link-btn">👁 Preview</a>` : '';
-            const siteLink = t.status === 'awaiting_approval'
-                ? `<a href="/api/sites/latest" target="_blank" rel="noopener" class="task-link-btn">🌐 Сайт</a>` : '';
-            const approvalBtns = t.status === 'awaiting_approval' ? `
-                <div class="task-approval">
-                    <button type="button" class="btn-primary btn-sm" onclick="approveTask('${escapeHtml(t.id)}')">✓ Принять</button>
-                    <button type="button" class="btn-secondary btn-sm" onclick="requestTaskRevision('${escapeHtml(t.id)}')">✎ Правки</button>
-                </div>` : '';
-            const response = t.response
-                ? `<div class="task-response">${escapeHtml(t.response.slice(0, 500))}${t.response.length > 500 ? '…' : ''}</div>`
-                : '';
-            const tid = escapeHtml(t.id);
-            return `
-                <article class="task-card ${t.status} priority-${prio}">
-                    <div class="task-card-top">
-                        <span class="task-status-pill ${t.status}">${STATUS_LABELS[t.status] || t.status}</span>
-                        <span class="task-prio" title="Приоритет: ${prio}">${prioBadge}</span>
-                        <span class="task-meta">${agent} · ${timeStr}</span>
-                    </div>
-                    <p class="task-card-text">${escapeHtml(t.task || '')}</p>
-                    ${response}
-                    <div class="task-card-actions">
-                        ${previewLink}${siteLink}
-                        <button type="button" class="task-act-btn" onclick="copyTaskById('${tid}')" title="Копировать">📋</button>
-                        <button type="button" class="task-act-btn" onclick="rerunTaskById('${tid}')" title="Повторить">↻</button>
-                    </div>
-                    ${approvalBtns}
-                    <div class="task-comments" id="task-comments-${tid}">
-                        ${(t.comments || []).map((c) =>
-                            `<div class="task-comment"><strong>${escapeHtml(c.user_name)}</strong>: ${escapeHtml(c.text)} <small>${formatTime(c.created_at)}</small></div>`
-                        ).join('')}
-                    </div>
-                    <div class="task-comment-form">
-                        <input type="text" class="design-input task-comment-input" placeholder="Комментарий…" id="task-comment-input-${tid}"
-                            onkeydown="if(event.key==='Enter')addTaskComment('${tid}')">
-                        <button type="button" class="btn-secondary btn-xs" onclick="addTaskComment('${tid}')">💬</button>
-                    </div>
-                </article>`;
-        }).join('');
+        const fmt = formatTime;
+        list.innerHTML = items.map((t) =>
+            (window.UICore ? UICore.renderTaskCard(t, { formatTimeFn: fmt }) : '')
+        ).join('');
     }
 
     window.setMsgType = function (type) {

@@ -217,6 +217,7 @@
         updateHeaderContext,
         setMobileTabActive,
         initMobileNav,
+        updateMobileBadges,
         STATUS_LABELS,
         PRIO_LABELS,
     };

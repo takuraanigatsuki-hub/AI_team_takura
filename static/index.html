@@ -32,6 +32,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css?v=43">
+    <link rel="stylesheet" href="/static/css/feature-pack.css?v=4">
     <link rel="stylesheet" href="/static/css/enhancements.css?v=14">
     <link rel="stylesheet" href="/static/css/ui-core.css?v=1">
 </head>
@@ -65,15 +66,19 @@
                 <p>3D студия · команда</p>
             </div>
         </a>
-        <div class="header-status">
-            <div class="conn-pill" title="WebSocket">
+        <div class="header-context" id="headerContext" title="Статус команды">
+            <span class="ctx-dot" id="headerContextDot"></span>
+            <span id="headerContextText">Подключение…</span>
+        </div>
+        <div class="header-status header-status-compact">
+            <button type="button" class="status-chip status-chip-action hidden" id="awaitingChip" title="Задачи на проверке" onclick="switchView('tasks');filterTasks('awaiting')">⏳</button>
+            <span class="status-chip header-legacy-chip fp-show-mobile" id="activeAgentsPill" title="Агенты в работе">—</span>
+            <span class="status-chip header-legacy-chip fp-hide-mobile" id="presencePill" title="В комнате">👤 …</span>
+            <span class="status-chip" id="workspaceSwitcher" title="Workspace"></span>
+            <div class="conn-pill header-legacy-chip fp-show-mobile" title="WebSocket">
                 <div class="conn-dot" id="connDot"></div>
                 <span id="connText">Подключение</span>
             </div>
-            <span class="status-chip" id="activeAgentsPill" title="Агенты в работе">—</span>
-            <button type="button" class="status-chip status-chip-action hidden" id="awaitingChip" title="Задачи на проверке" onclick="switchView('tasks');filterTasks('awaiting')">⏳</button>
-            <span class="status-chip fp-hide-mobile" id="presencePill" title="В комнате">👤 …</span>
-            <span class="status-chip" id="workspaceSwitcher" title="Workspace"></span>
         </div>
         <div class="header-actions">
             <details class="header-dropdown">
@@ -828,6 +833,14 @@
     </div>
 </aside>
 
+<nav class="mobile-tab-bar" id="mobileTabBar" aria-label="Быстрая навигация">
+    <button type="button" class="mtab active" data-view="tasks"><span class="mtab-icon">📋</span>Inbox<span class="mtab-badge" id="mobileTabBadge" style="display:none">0</span></button>
+    <button type="button" class="mtab" data-view="chat"><span class="mtab-icon">💬</span>Чат</button>
+    <button type="button" class="mtab" data-view="kanban"><span class="mtab-icon">📌</span>Board</button>
+    <button type="button" class="mtab" data-view="dashboard"><span class="mtab-icon">📊</span>Hub</button>
+    <button type="button" class="mtab" id="mobileTabMore"><span class="mtab-icon">⌘</span>Ещё</button>
+</nav>
+
 <script src="/static/vendor/three.min.js"></script>
 <script src="/static/vendor/OrbitControls.js"></script>
 <script src="/static/js/sounds.js?v=2"></script>
@@ -867,7 +880,8 @@
 <script src="/static/js/sonya-studio.js?v=4"></script>
 <script src="/static/js/chat-commands.js?v=2"></script>
 <script src="/static/js/masha-learning-lab.js?v=4"></script>
-<script src="/static/js/sidebar-nav.js?v=3"></script>
+<script src="/static/js/ui-core.js?v=1"></script>
+<script src="/static/js/sidebar-nav.js?v=4"></script>
 <script src="/static/js/investor-portal.js?v=2"></script>
 <script src="/static/js/security-dashboard.js?v=2"></script>
 <script src="/static/js/task-templates.js?v=2"></script>
