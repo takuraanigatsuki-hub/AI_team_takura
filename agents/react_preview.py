@@ -1,16 +1,32 @@
 """Генерация runnable React-кода для live preview Сони."""
 import re
 import random
+from integrations.figma_client import parse_figma_url
 
 
 def _esc(s: str) -> str:
     return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ")[:80]
 
 
-def _inject_task(template: str, task: str) -> str:
-    """Подставляет задачу без str.format — в шаблонах много JSX `{...}`."""
+def _fmt(template: str, task: str) -> str:
+    """Подставить task без конфликта с JSX-фигурными скобками."""
     return template.replace("{task}", _esc(task))
 
+
+def _extract_figma_url(task: str) -> str:
+    for word in task.split():
+        if "figma.com" in word:
+            return word.strip("()[]<>\"'")
+    return ""
+
+
+def is_figma_import_task(task: str) -> bool:
+    t = task.lower()
+    if "figma.com" not in task:
+        return False
+    return any(w in t for w in [
+        "figma", "импорт", "import", "макет", "design", "создай react", "react ui",
+    ])
 
 def is_site_task(task: str) -> bool:
     t = task.lower()
@@ -20,11 +36,114 @@ def is_site_task(task: str) -> bool:
     ])
 
 
+def is_production_polish_task(task: str) -> bool:
+    t = task.lower()
+    return any(w in t for w in [
+        "production-ready", "production ready", "production ui",
+        "продакшн", "production-ready ui", "до production",
+    ])
+
+
+def apply_figma_tokens(preview: dict, figma_data: dict) -> dict:
+    """Подставить цвета из Figma в сгенерированный React-код."""
+    if not figma_data:
+        return preview
+    summary = figma_data.get("summary") or {}
+    colors = summary.get("colors") or figma_data.get("colors") or []
+    if not colors:
+        return preview
+
+    primary = colors[0]
+    secondary = colors[1] if len(colors) > 1 else primary
+    accent = colors[2] if len(colors) > 2 else secondary
+
+    code = preview.get("code", "")
+    for old in ("#4f7df3", "#6c63ff", "#667eea", "#764ba2"):
+        code = code.replace(old, primary)
+    code = code.replace("#10b981", accent)
+    code = code.replace("#f59e0b", secondary)
+
+    tokens_block = f"""
+/* Figma design tokens */
+const figmaTokens = {{
+  primary: '{primary}',
+  secondary: '{secondary}',
+  accent: '{accent}',
+}};
+"""
+    if "figmaTokens" not in code:
+        code = tokens_block + code
+
+    out = dict(preview)
+    out["code"] = code
+    out["figma_applied"] = True
+    out["title"] = preview.get("title", "UI") + " · Figma"
+    return out
+
+
+def polish_preview(preview: dict, task: str = "") -> dict:
+    """Production-ready polish: design tokens and shared styling helpers."""
+    code = preview.get("code", "")
+    if not code.strip():
+        return preview
+
+    polish_header = """
+/* Production-ready design system */
+const ds = {
+  colors: {
+    primary: '#6c63ff',
+    primaryHover: '#5a52e0',
+    surface: '#ffffff',
+    surfaceMuted: '#f6f7f9',
+    text: '#1a1c22',
+    textMuted: '#6b7280',
+    border: '#e2e4ea',
+    success: '#059669',
+    danger: '#ef4444',
+  },
+  radius: { sm: 8, md: 12, lg: 16 },
+  shadow: '0 4px 24px rgba(0,0,0,0.08)',
+  font: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+};
+const focusRing = { outline: '2px solid ' + ds.colors.primary, outlineOffset: 2 };
+"""
+    if "const ds = {" not in code:
+        code = polish_header + code
+
+    out = dict(preview)
+    out["code"] = code
+    out["polished"] = True
+    out["title"] = "Production UI · " + preview.get("title", "Компонент")
+    return out
+
+
 def generate_react_preview(task: str) -> dict:
+    preview = _match_preview_template(task)
+    if is_production_polish_task(task):
+        preview = polish_preview(preview, task)
+    return preview
+
+
+def _match_preview_template(task: str) -> dict:
     t = task.lower()
     title = task[:60] if task else "Компонент"
 
+    if is_figma_import_task(task):
+        figma_url = _extract_figma_url(task)
+        parsed = parse_figma_url(figma_url) if figma_url else None
+        if parsed:
+            from integrations.figma_react import generate_react_from_figma, resolve_component_for_file
+
+            if resolve_component_for_file(parsed["file_key"]):
+                figma_stub = {
+                    "file_key": parsed["file_key"],
+                    "url": figma_url,
+                    "summary": {"file_name": "Untitled", "colors": [], "fonts": [], "frames": []},
+                }
+                return generate_react_from_figma(figma_stub, task=task)
+
     if is_site_task(task):
+<<<<<<< HEAD
         return {"title": "Готовый сайт", "code": _inject_task(_WEBSITE, task), "is_site": True}
 
     if any(w in t for w in ["логин", "login", "авториз", "вход", "sign in"]):
@@ -63,6 +182,46 @@ def generate_react_preview(task: str) -> dict:
     palettes = [_HERO, _CARD, _COUNTER, _BUTTON, _TODO]
     pick = random.choice(palettes)
     return {"title": "UI компонент", "code": _inject_task(pick, task)}
+=======
+        return {"title": "Готовый сайт", "code": _fmt(_WEBSITE, task), "is_site": True}
+
+    if any(w in t for w in ["логин", "login", "авториз", "вход", "sign in"]):
+        return {"title": "Форма входа", "code": _fmt(_LOGIN_FORM, task)}
+
+    if any(w in t for w in ["регистрац", "register", "signup", "sign up"]):
+        return {"title": "Регистрация", "code": _fmt(_REGISTER_FORM, task)}
+
+    if any(w in t for w in ["кнопк", "button", "btn"]):
+        return {"title": "Интерактивная кнопка", "code": _fmt(_BUTTON, task)}
+
+    if any(w in t for w in ["todo", "список дел", "задач", "чеклист", "checklist"]):
+        return {"title": "Todo-лист", "code": _fmt(_TODO, task)}
+
+    if any(w in t for w in ["счётчик", "счетчик", "counter", "клик"]):
+        return {"title": "Счётчик", "code": _fmt(_COUNTER, task)}
+
+    if any(w in t for w in ["карточ", "card", "товар", "product"]):
+        return {"title": "Карточка", "code": _fmt(_CARD, task)}
+
+    if any(w in t for w in ["таблиц", "table", "данн", "data grid"]):
+        return {"title": "Таблица данных", "code": _fmt(_TABLE, task)}
+
+    if any(w in t for w in ["модал", "modal", "диалог", "popup", "попап"]):
+        return {"title": "Модальное окно", "code": _fmt(_MODAL, task)}
+
+    if any(w in t for w in ["дашборд", "dashboard", "панел", "аналитик", "статистик"]):
+        return {"title": "Дашборд", "code": _fmt(_DASHBOARD, task)}
+
+    if any(w in t for w in ["навигац", "navbar", "меню", "header", "шапк"]):
+        return {"title": "Навигация", "code": _fmt(_NAVBAR, task)}
+
+    if any(w in t for w in ["форм", "form", "input", "поле"]):
+        return {"title": "Форма", "code": _fmt(_GENERIC_FORM, task)}
+
+    palettes = [_HERO, _CARD, _COUNTER, _BUTTON, _TODO]
+    pick = random.choice(palettes)
+    return {"title": "UI компонент", "code": _fmt(pick, task)}
+>>>>>>> origin/main
 
 
 _COMMON_STYLES = """

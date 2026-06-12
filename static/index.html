@@ -493,29 +493,40 @@
 <div id="privateChatsContainer"></div>
 
 <!-- React Preview — Соня -->
-<aside id="reactPreviewPanel">
+<aside id="reactPreviewPanel" role="complementary" aria-label="React Preview" aria-hidden="true">
     <div class="preview-header">
-        <span>🎨</span>
+        <span aria-hidden="true">🎨</span>
         <h2 id="reactPreviewTitle">React Preview</h2>
         <span class="preview-badge" id="reactPreviewBadge">ожидание</span>
-        <button type="button" class="icon-btn" onclick="ReactPreview.close()" title="Закрыть">×</button>
+        <button type="button" class="icon-btn preview-close-btn" onclick="ReactPreview.close()" title="Закрыть (Esc)" aria-label="Закрыть панель">×</button>
     </div>
     <div class="preview-body" id="reactPreviewBody">
         <div class="preview-empty" id="reactPreviewEmpty">
-            <div class="preview-empty-icon">⚛️</div>
+            <div class="preview-empty-icon" aria-hidden="true">⚛️</div>
             <div>Дайте Соне задачу с UI</div>
-            <div style="font-size:11px">Например: «сделай форму логина» или «кнопку с анимацией»</div>
+            <div class="preview-empty-hint">Например: «сделай форму логина» или «кнопку с анимацией»</div>
         </div>
         <div id="reactPreviewContent" style="display:none; flex:1; flex-direction:column; min-height:0;">
             <div class="preview-toolbar">
-                <button type="button" class="btn-secondary btn-sm" onclick="WowFeatures.toggleCompare()">⇔ Figma Compare</button>
-                <button type="button" class="btn-secondary btn-sm" onclick="WowFeatures.improveFromFigma()">🎨 Доработать по Figma</button>
-                <button type="button" class="btn-secondary btn-sm" onclick="WowFeatures.deployNow()">🚀 Deploy</button>
+                <div class="preview-viewport-group" role="group" aria-label="Размер экрана">
+                    <button type="button" class="preview-viewport-btn" data-preview-viewport="mobile" aria-pressed="false" title="Mobile 375px" onclick="ReactPreview.setViewport('mobile')">📱</button>
+                    <button type="button" class="preview-viewport-btn" data-preview-viewport="tablet" aria-pressed="false" title="Tablet 768px" onclick="ReactPreview.setViewport('tablet')">📲</button>
+                    <button type="button" class="preview-viewport-btn active" data-preview-viewport="desktop" aria-pressed="true" title="Desktop" onclick="ReactPreview.setViewport('desktop')">🖥</button>
+                    <span class="preview-viewport-label" id="reactPreviewViewportLabel">100%</span>
+                </div>
+                <div class="preview-toolbar-actions">
+                    <button type="button" class="btn-secondary btn-sm" onclick="ReactPreview.refresh()" title="Обновить preview">↻</button>
+                    <button type="button" class="btn-secondary btn-sm" id="reactPreviewFullscreenBtn" onclick="ReactPreview.toggleFullscreen()" title="Полный экран" aria-pressed="false">⛶</button>
+                    <button type="button" class="btn-secondary btn-sm" onclick="WowFeatures.toggleCompare()">⇔ Compare</button>
+                    <button type="button" class="btn-secondary btn-sm" onclick="WowFeatures.improveFromFigma()">🎨 Figma</button>
+                    <button type="button" class="btn-secondary btn-sm" onclick="WowFeatures.deployNow()">🚀 Deploy</button>
+                </div>
             </div>
             <div class="preview-task">
                 <span id="reactPreviewTaskText"></span>
-                <a id="siteOpenLink" href="/api/sites/latest" target="_blank" class="site-open-link" style="display:none">🌐 Открыть сайт в новой вкладке</a>
+                <a id="siteOpenLink" href="/api/sites/latest" target="_blank" rel="noopener" class="site-open-link" style="display:none">🌐 Открыть сайт</a>
             </div>
+            <div id="reactPreviewError" class="preview-error-banner" hidden role="alert"></div>
             <div id="figmaSplitView" class="figma-split">
                 <div class="split-figma">
                     <div class="split-label">Figma</div>
@@ -525,11 +536,22 @@
                 <div class="split-react">
                     <div class="split-label">React Preview</div>
                     <div class="preview-frame-wrap">
-                        <iframe id="reactPreviewFrame" title="React Preview" sandbox="allow-scripts allow-same-origin"></iframe>
+                        <div id="reactPreviewViewport" class="preview-viewport" data-viewport="desktop">
+                            <iframe id="reactPreviewFrame" title="React component preview" sandbox="allow-scripts allow-same-origin"></iframe>
+                            <div id="reactPreviewLoading" class="preview-loading-overlay" aria-live="polite">
+                                <span class="preview-loading-spinner"></span>
+                                <span>Компиляция…</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="preview-code-wrap">
+            <div id="reactPreviewResize" class="preview-resize-handle" title="Потяните для изменения высоты кода" aria-hidden="true"></div>
+            <div id="reactPreviewCodeWrap" class="preview-code-wrap">
+                <div class="preview-code-header">
+                    <span class="split-label">Исходный код</span>
+                    <button type="button" class="btn-secondary btn-sm" onclick="ReactPreview.copyCode()">📋 Копировать</button>
+                </div>
                 <pre id="reactPreviewCode"></pre>
             </div>
         </div>
@@ -619,8 +641,8 @@
 <script src="/static/js/voice.js?v=1"></script>
 <script src="/static/js/minimap.js?v=3"></script>
 <script src="/static/js/themes-auto.js?v=1"></script>
-    <script src="/static/js/studio.js?v=13"></script>
-<script src="/static/js/react-preview.js?v=3"></script>
+<script src="/static/js/studio.js?v=13"></script>
+<script src="/static/js/react-preview.js?v=4"></script>
 <script src="/static/js/integrations.js?v=6"></script>
 <script src="/static/js/ui-enhancements.js?v=2"></script>
 <script src="/static/js/dashboard.js?v=2"></script>

@@ -347,6 +347,9 @@
             };
             renderFigmaResult(normalized);
             if (window.WowFeatures) WowFeatures.setLastFigma(normalized);
+            if (window.ReactPreview) {
+                ReactPreview.loadLatest().then(() => ReactPreview.open());
+            }
         },
     };
 })(window);
