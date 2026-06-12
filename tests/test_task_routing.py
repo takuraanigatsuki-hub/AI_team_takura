@@ -51,7 +51,7 @@ def test_accounting_table_routing():
     assert classify_task_kind(t) == "table"
     pm = PMOrchestratorAgent()
     a = pm._analyze_and_assign(t, {})
-    assert set(a.keys()) == {"frontend", "reviewer"}
+    assert set(a.keys()) == {"frontend", "evaluator"}
     preview = generate_react_preview(t)
     assert preview["title"] == "Бухгалтерская таблица"
     assert "Дебет" in preview["code"]
