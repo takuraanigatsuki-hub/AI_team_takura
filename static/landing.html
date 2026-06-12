@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/landing.css?v=2">
+    <link rel="stylesheet" href="/static/css/landing.css?v=3">
     <link rel="icon" href="/static/icons/icon-192.png">
 </head>
 <body>
@@ -17,21 +17,23 @@
         <span class="lp-logo-mark">🤖</span>
         <span class="lp-logo-text">AI Team Room</span>
     </a>
-    <nav class="lp-nav">
+    <nav class="lp-nav" aria-label="Разделы">
         <a href="#features">Возможности</a>
         <a href="#team">Команда</a>
         <a href="#pricing">Старт</a>
     </nav>
-    <div class="lp-header-actions" id="lpAuthGuest">
-        <button type="button" class="lp-btn-ghost" id="btnLogin">Вход</button>
-        <button type="button" class="lp-btn-primary" id="btnRegister">Регистрация</button>
-        <button type="button" class="lp-btn-accent" id="btnDashboard">Dashboard →</button>
-    </div>
-    <div class="lp-header-actions lp-user-bar hidden" id="lpAuthUser">
-        <span class="lp-user-pill" id="lpUserPill">👤 …</span>
-        <a href="/app?view=profile" class="lp-btn-ghost">👤 Кабинет</a>
-        <a href="/app" class="lp-btn-accent" id="lpBtnWorkspace">Рабочая область →</a>
-        <button type="button" class="lp-btn-ghost" id="btnLogout">Выход</button>
+    <div class="lp-header-right">
+        <div class="lp-header-actions" id="lpAuthGuest">
+            <button type="button" class="lp-btn-ghost lp-btn-sm" id="btnLogin">Вход</button>
+            <button type="button" class="lp-btn-primary lp-btn-sm" id="btnRegister">Регистрация</button>
+            <button type="button" class="lp-btn-accent lp-btn-sm" id="btnDashboard">Dashboard</button>
+        </div>
+        <div class="lp-header-actions lp-user-bar hidden" id="lpAuthUser">
+            <span class="lp-user-pill" id="lpUserPill">👤 …</span>
+            <a href="/app?view=profile" class="lp-btn-ghost lp-btn-sm">Кабинет</a>
+            <a href="/app" class="lp-btn-accent lp-btn-sm" id="lpBtnWorkspace">В приложение</a>
+            <button type="button" class="lp-btn-ghost lp-btn-sm" id="btnLogout">Выход</button>
+        </div>
     </div>
 </header>
 
