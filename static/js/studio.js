@@ -64,9 +64,10 @@
 
     let initialized = false;
     let onCanvasClickBound = null;
+    let uiIds = { loading: 'studioLoading', error: 'studioError' };
 
     function showError(msg) {
-        const el = document.getElementById('studioError');
+        const el = document.getElementById(uiIds.error);
         if (el) {
             el.textContent = msg;
             el.style.display = 'flex';
@@ -75,7 +76,7 @@
     }
 
     function hideError() {
-        const el = document.getElementById('studioError');
+        const el = document.getElementById(uiIds.error);
         if (el) el.style.display = 'none';
     }
 
@@ -96,7 +97,7 @@
     }
 
     function showLoading(show) {
-        const el = document.getElementById('studioLoading');
+        const el = document.getElementById(uiIds.loading);
         if (el) el.classList.toggle('hidden', !show);
     }
 
@@ -1007,7 +1008,9 @@
         renderer.setSize(width, height, false);
     }
 
-    function init(canvas, clickCallback) {
+    function init(canvas, clickCallback, options) {
+        options = options || {};
+        if (options.uiIds) uiIds = { ...uiIds, ...options.uiIds };
         if (!canvas) {
             showError('Canvas не найден');
             return false;
@@ -1030,7 +1033,7 @@
         try {
             hideError();
             showLoading(true);
-            const loadEl = document.querySelector('#studioLoading span');
+            const loadEl = document.querySelector(`#${uiIds.loading} span`);
             if (loadEl) loadEl.textContent = 'Загрузка офиса…';
             canvasEl = canvas;
             onAgentClick = clickCallback;
@@ -1059,6 +1062,10 @@
                 controls.minDistance = 3.5;
                 controls.maxDistance = 16;
                 controls.target.set(0, 0.5, 0);
+                if (options.autoOrbit) {
+                    controls.autoRotate = true;
+                    controls.autoRotateSpeed = 0.45;
+                }
             } else {
                 console.warn('[Studio] OrbitControls недоступен — fallback-управление');
                 controls = createFallbackControls(camera, canvas);
@@ -1217,6 +1224,21 @@
         flyProgress = 0;
     }
 
+    function flyCameraIntro() {
+        if (!camera || !controls) return;
+        camera.position.set(0, 14, 18);
+        controls.target.set(0, 0.5, 0);
+        flyTarget = { tx: 0, ty: 7.5, tz: 9.5, cx: 0, cz: 0 };
+        flyProgress = 0.02;
+    }
+
+    function setAutoOrbit(on) {
+        if (controls) {
+            controls.autoRotate = !!on;
+            controls.autoRotateSpeed = 0.45;
+        }
+    }
+
     function updateAgents(agentsList) {
         if (!agentsList || !Object.keys(agentMeshes).length) return;
         agentsList.forEach((agent) => {
@@ -1285,7 +1307,7 @@
 
     global.StudioApp = {
         init, wake, updateAgents, resize, setTheme, destroy, setPipelineHighlight,
-        showSpeechBubble, burstConfetti, flyToAgent, setDayNight, pulseScreen,
+        showSpeechBubble, burstConfetti, flyToAgent, flyCameraIntro, setAutoOrbit, setDayNight, pulseScreen,
         isReady: () => initialized,
     };
 })(window);
