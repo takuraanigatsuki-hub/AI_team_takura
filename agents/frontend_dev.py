@@ -1,7 +1,7 @@
 from datetime import datetime
 import random
 from agents.base_agent import BaseAgent
-from agents.react_preview import generate_react_preview, is_site_task
+from agents.react_preview import generate_react_preview, is_site_task, apply_figma_tokens
 from site_exporter import export_site_html
 from integrations.figma_client import parse_figma_url, get_client_async
 
@@ -107,6 +107,8 @@ class FrontendDevAgent(BaseAgent):
 
     def _build_preview(self, task_text: str) -> dict:
         preview = generate_react_preview(task_text)
+        if self.last_figma:
+            preview = apply_figma_tokens(preview, self.last_figma)
         preview["task"] = task_text
         preview["timestamp"] = datetime.now().isoformat()
         self.last_preview = preview

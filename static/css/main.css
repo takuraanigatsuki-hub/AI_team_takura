@@ -816,6 +816,8 @@ a.hdr-btn:hover { color: var(--text); }
     color: var(--text-muted);
 }
 .preview-badge.live { background: rgba(94, 207, 138, 0.15); color: var(--green); }
+.preview-badge.loading { background: rgba(122, 162, 255, 0.15); color: var(--accent); animation: previewPulse 1.2s ease infinite; }
+@keyframes previewPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 
 .preview-body {
     flex: 1;
@@ -850,21 +852,96 @@ a.hdr-btn:hover { color: var(--text); }
 .preview-frame-wrap {
     flex: 1;
     min-height: 200px;
-    background: #fff;
+    background: #e8eaef;
     border-bottom: 1px solid var(--border);
+    overflow: auto;
+    padding: 12px;
+}
+.preview-viewport {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 200px;
+    background: #fff;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    overflow: hidden;
+    transition: max-width 0.25s ease;
+}
+.preview-viewport[data-viewport="mobile"],
+.preview-viewport[data-viewport="tablet"] {
+    border: 1px solid var(--border);
 }
 #reactPreviewFrame {
     width: 100%;
     height: 100%;
+    min-height: 200px;
     border: none;
     display: block;
     background: #fff;
 }
-.preview-code-wrap {
-    height: 180px;
+.preview-loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.88);
+    font-size: 12px;
+    color: var(--text-muted);
+    z-index: 2;
+}
+.preview-loading-overlay.visible { display: flex; }
+.preview-loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: previewSpin 0.7s linear infinite;
+}
+@keyframes previewSpin { to { transform: rotate(360deg); } }
+.preview-error-banner {
+    margin: 0 12px 8px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: var(--red, #ef4444);
+    font-size: 11px;
     flex-shrink: 0;
-    overflow: auto;
+}
+.preview-code-wrap {
+    height: 200px;
+    flex-shrink: 0;
+    overflow: hidden;
     background: var(--code-bg);
+    display: flex;
+    flex-direction: column;
+    min-height: 100px;
+}
+.preview-code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.preview-resize-handle {
+    height: 6px;
+    flex-shrink: 0;
+    cursor: row-resize;
+    background: var(--surface-2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+}
+.preview-resize-handle:hover,
+.preview-resize-handle.dragging {
+    background: color-mix(in srgb, var(--accent) 25%, var(--surface-2));
 }
 #reactPreviewCode {
     margin: 0;
@@ -875,6 +952,8 @@ a.hdr-btn:hover { color: var(--text); }
     color: var(--text);
     white-space: pre-wrap;
     word-break: break-word;
+    flex: 1;
+    overflow: auto;
 }
 
 .preview-empty {
@@ -890,6 +969,13 @@ a.hdr-btn:hover { color: var(--text); }
     gap: 8px;
 }
 .preview-empty-icon { font-size: 40px; opacity: 0.5; }
+.preview-empty-hint { font-size: 11px; opacity: 0.85; }
+
+#reactPreviewPanel.fullscreen {
+    width: 100vw;
+    z-index: 300;
+}
+#reactPreviewPanel.fullscreen .preview-frame-wrap { min-height: 50vh; }
 
 .agent-preview-btn {
     margin-top: 4px;
@@ -1075,7 +1161,49 @@ body.has-pipeline .main { padding-top: 56px; }
 body.has-pipeline .header { box-shadow: 0 2px 20px rgba(0,0,0,0.15); }
 
 /* ─── Figma Split ─── */
-.preview-toolbar { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.preview-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+}
+.preview-viewport-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.preview-viewport-btn {
+    width: 30px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+    transition: border-color 0.15s, background 0.15s;
+}
+.preview-viewport-btn:hover { border-color: var(--accent); }
+.preview-viewport-btn.active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.preview-viewport-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    min-width: 36px;
+    text-align: center;
+}
+.preview-toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
 .figma-split { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .figma-split.active { flex-direction: row; }
 .figma-split .split-figma { display: none; flex: 1; min-width: 0; padding: 8px; border-right: 1px solid var(--border); }
