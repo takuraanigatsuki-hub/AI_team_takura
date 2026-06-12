@@ -44,7 +44,12 @@ LEARNING_TOPICS = {
         "Next.js 15 features",
         "WebAssembly frontend",
         "Vite build optimization",
-        "Tailwind CSS tips"
+        "Tailwind CSS tips",
+        "Figma auto layout best practices",
+        "Figma design tokens and variables",
+        "Figma component variants",
+        "UI design systems 2025",
+        "Figma to React workflow",
     ],
     "qa": [
         "test automation best practices",
@@ -132,6 +137,9 @@ SOURCE_LABELS = {
     "arxiv": "arXiv",
     "gutenberg": "Project Gutenberg",
     "internal": "Внутренняя база",
+    "figma": "🎨 Figma",
+    "figma_web": "🎨 Figma",
+    "figma_portfolio": "✨ Portfolio",
 }
 
 LOCATION_LABELS = {

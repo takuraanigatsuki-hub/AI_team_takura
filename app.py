@@ -77,7 +77,14 @@ async def lifespan(app: FastAPI):
 
     from integrations.local_git_sync import auto_sync_loop, sync_changes_async
     git_interval = cfg_module.config.get("git_sync_interval_sec", 60)
+    figma_studio_task = None
     git_sync_task = asyncio.create_task(auto_sync_loop(room, interval=git_interval))
+    if cfg_module.config.get("figma_study_enabled", True):
+        from integrations.figma_learning import sonya_figma_studio_loop
+        fmin = cfg_module.config.get("figma_study_interval_min", 12)
+        fmax = cfg_module.config.get("figma_study_interval_max", 25)
+        figma_studio_task = asyncio.create_task(sonya_figma_studio_loop(room, fmin, fmax))
+        print(f"🎨 Sonya Figma Studio: включён (каждые {fmin}-{fmax} мин)")
 
     if cfg_module.config.get("git_auto_sync", True):
         print("📤 Git Auto-Sync: включён (commit + push каждые "
@@ -98,6 +105,8 @@ async def lifespan(app: FastAPI):
     state_task.cancel()
     github_poll_task.cancel()
     git_sync_task.cancel()
+    if figma_studio_task:
+        figma_studio_task.cancel()
     try:
         from integrations.local_git_sync import sync_changes_async
         import config as cfg_module
@@ -617,6 +626,43 @@ async def figma_disconnect():
     from integrations.figma_oauth import clear_token_store
     clear_token_store()
     return {"ok": True}
+
+
+@app.get("/api/figma/studio")
+async def figma_studio_stats():
+    from integrations.figma_learning import get_studio_stats, load_portfolio
+    stats = get_studio_stats()
+    frontend = room.agents.get("frontend")
+    if frontend:
+        state = frontend.get_state()
+        stats["agent"] = {
+            "figma_studies": state.get("figma_studies", 0),
+            "figma_creations": state.get("figma_creations", 0),
+            "status": frontend.status,
+        }
+    stats["portfolio"] = load_portfolio()[:20]
+    return stats
+
+
+@app.post("/api/figma/studio/trigger")
+async def figma_studio_trigger(action: str = "study"):
+    """Ручной запуск обучения/создания Сони в Figma."""
+    from integrations.figma_learning import run_figma_study_session, run_figma_create_session
+    from integrations.figma_oauth import is_figma_connected
+
+    if not is_figma_connected():
+        raise HTTPException(status_code=400, detail="Figma не подключена")
+
+    frontend = room.agents.get("frontend")
+    if not frontend:
+        raise HTTPException(status_code=404, detail="Соня не найдена")
+
+    if action == "create":
+        ok = await run_figma_create_session(frontend)
+    else:
+        ok = await run_figma_study_session(frontend)
+    await room.send_agents_state()
+    return {"ok": ok, "action": action}
 
 
 @app.post("/api/figma/import")

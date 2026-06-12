@@ -246,6 +246,56 @@
         } catch (_) {}
     }
 
+    async function loadSonyaStudio() {
+        const el = document.getElementById('sonyaStudioPanel');
+        if (!el) return;
+        try {
+            const resp = await fetch('/api/figma/studio');
+            if (!resp.ok) throw new Error('Ошибка загрузки');
+            const data = await resp.json();
+            const portfolio = (data.portfolio || []).slice(0, 5);
+            el.innerHTML = `
+                <div class="studio-stats">
+                    <div class="studio-stat"><span>${data.studied_count || 0}</span><small>изучено</small></div>
+                    <div class="studio-stat"><span>${data.portfolio_count || 0}</span><small>проектов</small></div>
+                    <div class="studio-stat"><span>${data.patterns_colors || 0}</span><small>цветов</small></div>
+                </div>
+                <p class="muted studio-hint">Соня самостоятельно изучает Figma-макеты и создаёт свои UI в React Preview.</p>
+                <div class="studio-actions">
+                    <button type="button" class="btn-secondary btn-sm" onclick="Integrations.triggerSonyaStudy()">📚 Изучить макет</button>
+                    <button type="button" class="btn-primary btn-sm" onclick="Integrations.triggerSonyaCreate()">✨ Новый проект</button>
+                </div>
+                ${portfolio.length ? `<div class="studio-portfolio">${portfolio.map((p) => `
+                    <div class="portfolio-item">
+                        <strong>${p.title || 'Проект'}</strong>
+                        <div class="color-row">${(p.colors || []).slice(0, 4).map((c) => `<span class="color-swatch" style="background:${c}"></span>`).join('')}</div>
+                        <small class="muted">${p.inspiration ? `↳ ${p.inspiration}` : ''}</small>
+                    </div>`).join('')}</div>` : '<p class="muted">Портfolio пуст — Соня скоро создаст первый проект</p>'}`;
+        } catch (e) {
+            el.innerHTML = `<div class="panel-error">${e.message}</div>`;
+        }
+    }
+
+    async function triggerSonyaStudy() {
+        try {
+            const resp = await fetch('/api/figma/studio/trigger?action=study', { method: 'POST' });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.detail || 'Ошибка');
+            if (window.UIEnhancements) UIEnhancements.toast('📚 Соня изучает Figma…', 'info');
+            setTimeout(loadSonyaStudio, 3000);
+        } catch (e) { alert(e.message); }
+    }
+
+    async function triggerSonyaCreate() {
+        try {
+            const resp = await fetch('/api/figma/studio/trigger?action=create', { method: 'POST' });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.detail || 'Ошибка');
+            if (window.UIEnhancements) UIEnhancements.toast('✨ Соня создаёт проект…', 'info');
+            setTimeout(loadSonyaStudio, 4000);
+        } catch (e) { alert(e.message); }
+    }
+
     handleFigmaOAuthReturn();
 
     global.Integrations = {
@@ -253,6 +303,9 @@
         loadFigmaStatus,
         connectFigma,
         disconnectFigma,
+        loadSonyaStudio,
+        triggerSonyaStudy,
+        triggerSonyaCreate,
         runCursor,
         importFigma,
         loadDefaultFigmaUrl,

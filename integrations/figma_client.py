@@ -9,7 +9,7 @@ from urllib.parse import unquote, urlparse, parse_qs
 import httpx
 
 FIGMA_URL_RE = re.compile(
-    r"figma\.com/(?:design|file|site|proto|board|deck|slides)/([a-zA-Z0-9]+)(?:/[^?]*)?",
+    r"figma\.com/(?:design|file|site|proto|board|deck|slides|community/file)/([a-zA-Z0-9]+)(?:/[^?]*)?",
     re.IGNORECASE,
 )
 
@@ -26,6 +26,8 @@ def parse_figma_url(url: str) -> Optional[dict]:
     qs = parse_qs(parsed.query)
     path_parts = parsed.path.strip("/").split("/")
     file_type = path_parts[1] if len(path_parts) >= 2 else "design"
+    if path_parts[:2] == ["community", "file"]:
+        file_type = "community"
     node_raw = qs.get("node-id", [""])[0]
     node_id = unquote(node_raw).replace("-", ":") if node_raw else None
     return {

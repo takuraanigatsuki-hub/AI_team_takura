@@ -27,6 +27,10 @@ _defaults = {
     "figma_client_secret": "",
     "figma_redirect_uri": "",
     "figma_default_url": "https://www.figma.com/site/uYRfrETGR8pcwChwLtJ6Ua/Untitled?t=S7zOAy3vHRn3HWqR-0",
+    "figma_study_enabled": True,
+    "figma_study_interval_min": 12,
+    "figma_study_interval_max": 25,
+    "figma_reference_urls": [],
 }
 
 

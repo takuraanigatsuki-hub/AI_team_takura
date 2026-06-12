@@ -4,7 +4,7 @@
 (function () {
     const THEME_KEY = 'ai-team-room-theme';
     const AGENT_ORDER = ['pm', 'architect', 'backend', 'frontend', 'qa', 'reviewer', 'doc_writer', 'devops', 'cursor'];
-    const LEARNING_TYPES = new Set(['learning', 'learning_result', 'reflection', 'rest']);
+    const LEARNING_TYPES = new Set(['learning', 'learning_result', 'reflection', 'rest', 'figma_study']);
 
     let ws = null;
     let msgType = 'task';
@@ -58,6 +58,7 @@
         if (view === 'design' && window.Integrations) {
             Integrations.loadDefaultFigmaUrl();
             Integrations.loadFigmaStatus();
+            Integrations.loadSonyaStudio();
         }
         if (view === 'dashboard' && window.Dashboard) Dashboard.load();
 
@@ -288,6 +289,11 @@
                 if (window.Integrations) Integrations.onFigmaMessage(data);
                 addSystemMessage(data.message || `🎨 Figma: ${data.title || 'импорт'}`);
                 break;
+            case 'figma_portfolio':
+                if (window.UIEnhancements) UIEnhancements.toast(`✨ ${data.title || 'Новый проект'}`, 'success');
+                if (window.Integrations) Integrations.loadSonyaStudio();
+                addAgentMessage({ ...data, type: 'figma_portfolio', message: data.message || '' });
+                break;
             case 'github_sync_started':
             case 'github_sync_done':
                 addSystemMessage(data.message || '🔗 GitHub Sync');
@@ -301,7 +307,10 @@
                 break;
             default:
                 if (data.channel === 'learning' || LEARNING_TYPES.has(data.type)) {
-                    if (data.agent_id) addLearningAgentMessage(data);
+                    if (data.type === 'figma_study') {
+                        addLearningAgentMessage({ ...data, type: 'figma_study', message: data.message || '' });
+                        if (window.Integrations) Integrations.loadSonyaStudio();
+                    } else if (data.agent_id) addLearningAgentMessage(data);
                 } else if (data.agent_id) {
                     addAgentMessage(data);
                 }
@@ -424,6 +433,7 @@
             learning_result: 'находка',
             reflection: 'размышление',
             rest: 'отдых',
+            figma_study: 'Figma',
         }[type] || 'обучение');
     }
 
@@ -558,6 +568,7 @@
                 <div class="detail-section-title">Статистика</div>
                 <p>Изучено: <strong>${a.learned_count || 0}</strong></p>
                 <p>Задач: <strong>${a.memory_count || 0}</strong></p>
+                ${a.agent_id === 'frontend' ? `<p>Figma макетов: <strong>${a.figma_studied_count || 0}</strong></p><p>Своих проектов: <strong>${a.figma_portfolio_count || 0}</strong></p>` : ''}
                 <p>Личных сообщений: <strong>${a.direct_chat_count || 0}</strong></p>
                 <p>Источники: <strong>${escapeHtml(sources)}</strong></p>
             </div>

@@ -720,6 +720,25 @@ body::before {
 .btn-sm { padding: 6px 12px; font-size: 12px; }
 .hidden { display: none !important; }
 .design-import-row { display: flex; gap: 10px; margin-bottom: 20px; }
+
+/* ─── Sonya Figma Studio ─── */
+.sonya-studio { margin-bottom: 8px; }
+.studio-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+.studio-stat {
+    text-align: center; padding: 10px 6px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--surface-2);
+}
+.studio-stat span { display: block; font-size: 18px; font-weight: 700; color: var(--accent); }
+.studio-stat small { font-size: 10px; color: var(--text-muted); }
+.studio-hint { font-size: 11px; margin-bottom: 10px; line-height: 1.4; }
+.studio-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.studio-portfolio { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; }
+.portfolio-item {
+    padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+    background: var(--surface);
+}
+.portfolio-item strong { font-size: 11px; display: block; margin-bottom: 4px; }
+.portfolio-item .color-row { margin: 4px 0; }
 .design-input {
     flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
     background: var(--surface-2); color: var(--text); font-family: inherit; font-size: 13px; outline: none;

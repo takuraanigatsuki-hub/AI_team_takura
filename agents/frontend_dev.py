@@ -1,4 +1,5 @@
 from datetime import datetime
+import random
 from agents.base_agent import BaseAgent
 from agents.react_preview import generate_react_preview, is_site_task
 from site_exporter import export_site_html
@@ -22,6 +23,41 @@ class FrontendDevAgent(BaseAgent):
         )
         self.last_preview = None
         self.last_figma = None
+        self.figma_studies = 0
+        self.figma_creations = 0
+
+    async def _learn(self):
+        if not self.task_queue.empty():
+            return
+
+        import config as cfg_module
+        from integrations.figma_oauth import is_figma_connected
+
+        if cfg_module.config.get("figma_study_enabled", True) and is_figma_connected():
+            if random.random() < 0.55:
+                from integrations.figma_learning import run_figma_study_session, run_figma_create_session
+
+                self.status = "learning"
+                self.location = "library"
+                action = random.choices(["study", "create"], weights=[0.72, 0.28])[0]
+                try:
+                    if action == "create":
+                        ok = await run_figma_create_session(self)
+                        if ok:
+                            self.figma_creations += 1
+                    else:
+                        ok = await run_figma_study_session(self)
+                        if ok:
+                            self.figma_studies += 1
+                finally:
+                    self.location = "studio"
+                    self.status = "idle"
+                    if self.room_manager:
+                        await self.room_manager.send_agents_state()
+                await self._interruptible_sleep(self._learning_delay())
+                return
+
+        await super()._learn()
 
     async def apply_figma_design(self, figma_result: dict):
         """Применить импортированный макет Figma."""
@@ -220,4 +256,13 @@ class FrontendDevAgent(BaseAgent):
         state["has_preview"] = self.last_preview is not None
         state["preview_title"] = self.last_preview.get("title") if self.last_preview else None
         state["has_figma"] = self.last_figma is not None
+        state["figma_studies"] = self.figma_studies
+        state["figma_creations"] = self.figma_creations
+        try:
+            from integrations.figma_learning import get_studio_stats
+            stats = get_studio_stats()
+            state["figma_portfolio_count"] = stats.get("portfolio_count", 0)
+            state["figma_studied_count"] = stats.get("studied_count", 0)
+        except Exception:
+            pass
         return state

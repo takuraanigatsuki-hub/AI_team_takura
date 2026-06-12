@@ -7,7 +7,7 @@ from fastapi import WebSocket
 from task_history import TaskHistory
 
 LEARNING_TYPES = frozenset({
-    "learning", "learning_result", "reflection", "rest"
+    "learning", "learning_result", "reflection", "rest", "figma_study"
 })
 
 WORK_TYPES = frozenset({
@@ -15,6 +15,7 @@ WORK_TYPES = frozenset({
     "assignment", "orchestrating", "pm_plan", "message", "site_ready",
     "react_preview", "cursor_progress", "cursor_run_done", "figma_import",
     "github_sync_started", "github_sync_done", "git_sync_done",
+    "figma_portfolio",
 })
 
 
