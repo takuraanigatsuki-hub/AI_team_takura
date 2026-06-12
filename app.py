@@ -4,7 +4,7 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, Response
 from pydantic import BaseModel
 
 from room.room_manager import RoomManager
@@ -985,11 +985,10 @@ async def sonya_project_handoff_download(project_id: str):
     if not result:
         raise HTTPException(status_code=404, detail="Проект не найден")
     filename, data = result
-    import io
-    return FileResponse(
-        io.BytesIO(data),
+    return Response(
+        content=data,
         media_type="application/zip",
-        filename=filename,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

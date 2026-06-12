@@ -65,8 +65,8 @@ def test_handoff_zip_download(client):
     assert {"handoff.json", "tokens.css", "App.jsx", "README.txt"}.issubset(names)
 
 
-@pytest.mark.asyncio
-async def test_notify_studio_respects_config(monkeypatch):
+def test_notify_studio_respects_config(monkeypatch):
+    import asyncio
     import config as cfg
     from integrations.sonya_studio_notify import notify_studio
 
@@ -77,11 +77,11 @@ async def test_notify_studio_respects_config(monkeypatch):
         called.append(text)
 
     monkeypatch.setattr("integrations.telegram_bot.notify_task", fake_notify)
-    await notify_studio("comment", project_title="T", project_id="proj-1", author="A", text="Hi")
+    asyncio.run(notify_studio("comment", project_title="T", project_id="proj-1", author="A", text="Hi"))
     assert called == []
 
     monkeypatch.setitem(cfg.config, "telegram_notify_studio", True)
     monkeypatch.setitem(cfg.config, "telegram_notify_tasks", True)
-    await notify_studio("project", project_title="New", project_id="proj-2")
+    asyncio.run(notify_studio("project", project_title="New", project_id="proj-2"))
     assert len(called) == 1
     assert "Studio" in called[0]
