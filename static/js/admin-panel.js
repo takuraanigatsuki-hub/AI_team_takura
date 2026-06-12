@@ -217,8 +217,41 @@
             return;
         }
         if (activeSection === 'console') el.innerHTML = renderConsole(user);
+        else if (activeSection === 'security') {
+            el.innerHTML = '<div class="admin-section-head"><h2>🛡 Security Dashboard</h2><p class="muted">Угрозы · блокировки · audit log</p></div><div id="securityDashboard"></div>';
+            if (window.SecurityDashboard) SecurityDashboard.load();
+        }
+        else if (activeSection === 'flags') {
+            el.innerHTML = '<div class="admin-section-head"><h2>🚩 Feature Flags</h2><p class="muted">Включение функций платформы</p></div><div id="featureFlagsPanel"><div class="dash-loading">Загрузка…</div></div>';
+            loadFeatureFlags();
+        }
         else if (activeSection === 'users') el.innerHTML = renderUsersTable(user);
         else if (activeSection === 'site') el.innerHTML = renderSite(user);
+    }
+
+    async function loadFeatureFlags() {
+        const panel = document.getElementById('featureFlagsPanel');
+        if (!panel) return;
+        try {
+            const r = await fetch('/api/feature-flags');
+            const d = await r.json();
+            const flags = d.flags || {};
+            panel.innerHTML = Object.entries(flags).map(([k, v]) =>
+                `<label class="ml-check" style="display:block;margin:8px 0">
+                    <input type="checkbox" ${v ? 'checked' : ''} onchange="AdminPanel.toggleFlag('${k}', this.checked)"> ${esc(k)}
+                </label>`
+            ).join('');
+        } catch (_) {
+            panel.innerHTML = '<p class="muted">Ошибка загрузки</p>';
+        }
+    }
+
+    async function toggleFlag(name, value) {
+        await fetch('/api/admin/feature-flags', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, value }),
+        });
     }
 
     async function loadData(user) {
@@ -358,5 +391,6 @@
         clearLog,
         focusConsole,
         updateNavVisibility,
+        toggleFlag,
     };
 })(window);

@@ -24,6 +24,7 @@ AGENT_META = {
     "presenter": ("📽️", "Ника"),
     "modeler": ("🧊", "Зоя"),
     "evaluator": ("🎓", "Маша"),
+    "security": ("🛡", "Олег"),
 }
 
 

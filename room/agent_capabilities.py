@@ -97,6 +97,14 @@ AGENT_CAPABILITIES = {
         "can_present": True,
         "can_3d": False,
     },
+    "security": {
+        "label": "Безопасность",
+        "outputs": ["audit", "security_report", "incident"],
+        "skills": ["OWASP", "threat detection", "DevSecOps", "incident response"],
+        "can_code": True,
+        "can_present": False,
+        "can_3d": False,
+    },
 }
 
 

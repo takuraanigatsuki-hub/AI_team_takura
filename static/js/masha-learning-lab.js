@@ -37,7 +37,23 @@
         });
         el('mashaTabEvals')?.classList.toggle('hidden', tab !== 'evals');
         el('mashaTabTasks')?.classList.toggle('hidden', tab !== 'tasks');
+        el('mashaTabSkills')?.classList.toggle('hidden', tab !== 'skills');
         el('mashaTabProjects')?.classList.toggle('hidden', tab !== 'projects');
+        if (tab === 'skills') renderSkillMatrix();
+    }
+
+    async function renderSkillMatrix() {
+        const box = el('mashaSkillMatrix');
+        if (!box) return;
+        try {
+            const r = await fetch('/api/learning/skill-matrix');
+            const d = await r.json();
+            box.innerHTML = (d.agents || []).map((a) =>
+                `<div class="skill-bar-row"><span>${a.emoji} ${esc(a.name)}</span><div class="skill-bar"><div class="skill-bar-fill" style="width:${(a.average || 0) * 10}%"></div></div><strong>${a.average}/10 <small class="muted">(${a.count})</small></strong></div>`
+            ).join('') || '<p class="muted">Пока нет оценок — Маша оценит после задач</p>';
+        } catch (_) {
+            box.innerHTML = '<p class="muted">Ошибка загрузки</p>';
+        }
     }
 
     function setLoading(on) {

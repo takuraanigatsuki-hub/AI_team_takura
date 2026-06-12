@@ -46,7 +46,7 @@ def get_flags() -> dict:
 
 
 def is_enabled(name: str) -> bool:
-    return bool(_load().get(name, DEFAULT_FLAGS.get(name, False))
+    return bool(_load().get(name, DEFAULT_FLAGS.get(name, False)))
 
 
 def set_flag(name: str, value: bool, admin_user: Optional[dict] = None) -> dict:
