@@ -136,6 +136,7 @@
                 <button type="button" class="filter-btn active" data-filter="all" onclick="filterTasks('all')">Все</button>
                 <button type="button" class="filter-btn" data-filter="completed" onclick="filterTasks('completed')">Выполненные</button>
                 <button type="button" class="filter-btn" data-filter="active" onclick="filterTasks('active')">Активные</button>
+                <button type="button" class="filter-btn export-btn" onclick="exportTasks()" title="Скачать JSON">📥 Export</button>
             </div>
             <div class="tasks-list" id="tasksList">
                 <div class="tasks-empty">Задач пока нет — отправьте первую в чате</div>
@@ -196,6 +197,7 @@
                     <button type="button" class="type-btn" id="typeChat" onclick="setMsgType('chat')" title="Только разговор, без выполнения">💬 Чат</button>
                 </div>
                 <button type="button" class="clear-btn" onclick="clearMessages()">Очистить</button>
+                <input type="search" id="chatSearch" class="chat-search" placeholder="Поиск…" oninput="filterChatMessages(this.value)">
             </div>
             <div class="quick-templates">
                 <button type="button" class="tpl-btn" onclick="applyTemplate('Сделай landing page для стартапа')">🌐 Landing</button>
@@ -339,8 +341,8 @@
 <script src="/static/js/react-preview.js?v=2"></script>
 <script src="/static/js/integrations.js?v=2"></script>
 <script src="/static/js/ui-enhancements.js?v=1"></script>
-<script src="/static/js/dashboard.js?v=1"></script>
-<script src="/static/js/app.js?v=7"></script>
+<script src="/static/js/dashboard.js?v=2"></script>
+<script src="/static/js/app.js?v=8"></script>
 
 <!-- PWA: регистрация Service Worker -->
 <script>

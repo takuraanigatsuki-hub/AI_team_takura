@@ -8,11 +8,12 @@
         grid.innerHTML = '<div class="dash-loading">Загрузка…</div>';
 
         try {
-            const [dash, tasks, git, cursor] = await Promise.all([
+            const [dash, tasks, git, cursor, activity] = await Promise.all([
                 fetch('/api/dashboard').then((r) => r.json()),
                 fetch('/api/tasks').then((r) => r.json()),
                 fetch('/api/git/status').then((r) => r.json()),
                 fetch('/api/cursor/status').then((r) => r.json()),
+                fetch('/api/activity?limit=15').then((r) => r.json()),
             ]);
 
             const agents = dash.agents || [];
@@ -56,6 +57,19 @@
                     <p class="muted dash-repo">${cursor.repo_url || '—'}</p>
                 </div>
                 <div class="dash-section">
+                    <h3>Последняя активность</h3>
+                    <div class="activity-feed">${(activity.items || []).length ? (activity.items || []).map((ev) => `
+                        <div class="activity-item">
+                            <span class="activity-emoji">${ev.agent_emoji || activityIcon(ev.type)}</span>
+                            <div class="activity-body">
+                                <strong>${ev.agent_name || activityLabel(ev.type)}</strong>
+                                <p>${escapeDash(ev.message)}</p>
+                                <small>${ev.timestamp ? new Date(ev.timestamp).toLocaleString('ru') : ''}</small>
+                            </div>
+                        </div>`).join('') : '<p class="muted">Пока нет событий</p>'}
+                    </div>
+                </div>
+                <div class="dash-section">
                     <h3>Команда</h3>
                     <div class="dash-agents">${agents.map((a) => `
                         <div class="dash-agent" onclick="selectAgent('${a.agent_id}');switchView('chat')">
@@ -82,6 +96,25 @@
         } catch (e) {
             grid.innerHTML = `<div class="panel-error">Ошибка: ${e.message}</div>`;
         }
+    }
+
+    function escapeDash(s) {
+        return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function activityIcon(type) {
+        return ({
+            system: '🔔', task_done: '✅', task_received: '📋', error: '❌',
+            github_sync_started: '🔗', github_sync_done: '✓', git_sync_done: '📤',
+            cursor_progress: '⚡', figma_import: '🎨',
+        }[type] || '💬');
+    }
+
+    function activityLabel(type) {
+        return ({
+            system: 'Система', task_done: 'Задача', task_received: 'Задача',
+            github_sync_started: 'GitHub', github_sync_done: 'GitHub', git_sync_done: 'Git Sync',
+        }[type] || 'Событие');
     }
 
     global.Dashboard = { load };

@@ -342,6 +342,8 @@
         const div = document.createElement('div');
         const extraClass = data.type === 'pm_plan' ? ' pm-plan' : (data.type === 'assignment' ? ' assignment' : '');
         div.className = `message ${data.type || ''}${extraClass}`;
+        const searchText = `${data.agent_name || ''} ${data.message || ''}`.toLowerCase();
+        div.dataset.searchText = searchText;
         div.innerHTML = `
             <div class="msg-avatar">${data.agent_emoji || '🤖'}</div>
             <div class="msg-body">
@@ -354,6 +356,10 @@
             </div>`;
         document.getElementById('messages').appendChild(div);
         scrollToBottom('messages');
+        if (data.type === 'task_done' && window.UIEnhancements) {
+            UIEnhancements.toast(`✅ ${data.agent_name || 'Агент'}: задача выполнена`, 'success');
+        }
+        applyChatSearchFilter();
     }
 
     function addPlanMessage(data) {
@@ -404,6 +410,7 @@
         removeWelcome('messages');
         const div = document.createElement('div');
         div.className = 'message user-msg';
+        div.dataset.searchText = `вы ${text} ${target}`.toLowerCase();
         div.innerHTML = `
             <div class="msg-avatar">👤</div>
             <div class="msg-body">
@@ -415,16 +422,38 @@
             </div>`;
         document.getElementById('messages').appendChild(div);
         scrollToBottom('messages');
+        applyChatSearchFilter();
     }
 
     function addSystemMessage(text) {
         removeWelcome('messages');
         const div = document.createElement('div');
         div.className = 'message system';
+        div.dataset.searchText = String(text).toLowerCase();
         div.innerHTML = `<div class="msg-body"><div class="msg-text">${escapeHtml(text)}</div></div>`;
         document.getElementById('messages').appendChild(div);
         scrollToBottom('messages');
+        applyChatSearchFilter();
     }
+
+    let chatSearchQuery = '';
+
+    function applyChatSearchFilter() {
+        const q = chatSearchQuery;
+        document.querySelectorAll('#messages .message').forEach((el) => {
+            if (!q) {
+                el.classList.remove('search-hidden');
+                return;
+            }
+            const text = el.dataset.searchText || el.textContent.toLowerCase();
+            el.classList.toggle('search-hidden', !text.includes(q));
+        });
+    }
+
+    window.filterChatMessages = function (query) {
+        chatSearchQuery = query.trim().toLowerCase();
+        applyChatSearchFilter();
+    };
 
     function renderAgents() {
         const list = document.getElementById('agentsList');
@@ -579,6 +608,17 @@
             b.classList.toggle('active', b.dataset.filter === filter);
         });
         renderTasks();
+    };
+
+    window.exportTasks = function () {
+        const payload = { exported_at: new Date().toISOString(), stats: taskStats, tasks: taskHistory };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `ai-team-tasks-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        if (window.UIEnhancements) UIEnhancements.toast('📥 Задачи экспортированы', 'success');
     };
 
     function renderTasks() {

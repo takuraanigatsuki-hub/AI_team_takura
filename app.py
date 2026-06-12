@@ -411,6 +411,30 @@ async def get_dashboard():
     }
 
 
+@app.get("/api/activity")
+async def get_activity(limit: int = 30):
+    """Последние события рабочего канала для ленты активности."""
+    items = []
+    for msg in reversed(room.work_history[-limit * 2:]):
+        msg_type = msg.get("type", "message")
+        if msg_type in ("agents_state", "history", "task_history", "direct_user_echo"):
+            continue
+        preview = (msg.get("message") or msg.get("text") or "")[:120]
+        if not preview and msg_type not in ("github_sync_started", "github_sync_done", "git_sync_done"):
+            continue
+        items.append({
+            "type": msg_type,
+            "message": preview,
+            "agent_id": msg.get("agent_id"),
+            "agent_name": msg.get("agent_name"),
+            "agent_emoji": msg.get("agent_emoji"),
+            "timestamp": msg.get("timestamp"),
+        })
+        if len(items) >= limit:
+            break
+    return {"items": items, "count": len(items)}
+
+
 # ─── Git Auto-Sync ────────────────────────────────────────────
 
 @app.get("/api/git/status")

@@ -852,3 +852,33 @@ body::before {
 @media (max-width: 768px) {
     .dash-cards { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ─── Activity feed ─── */
+.activity-feed { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
+.activity-item {
+    display: flex; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--surface);
+}
+.activity-emoji { font-size: 18px; flex-shrink: 0; }
+.activity-body strong { font-size: 12px; display: block; margin-bottom: 2px; }
+.activity-body p { font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-bottom: 4px; }
+.activity-body small { font-size: 10px; color: var(--text-muted); opacity: 0.8; }
+
+/* ─── Chat search ─── */
+.chat-search {
+    margin-left: auto; padding: 5px 10px; border-radius: 16px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text); font-size: 11px; font-family: inherit;
+    width: 140px; transition: width var(--transition), border-color var(--transition);
+}
+.chat-search:focus { outline: none; width: 180px; border-color: var(--accent); }
+.message.search-hidden { display: none !important; }
+.filter-btn.export-btn { margin-left: auto; border-color: var(--accent); color: var(--accent); }
+
+/* ─── Header glow ─── */
+.logo-mark {
+    animation: logoGlow 4s ease-in-out infinite;
+}
+@keyframes logoGlow {
+    0%, 100% { filter: drop-shadow(0 0 6px rgba(108, 99, 255, 0.4)); }
+    50% { filter: drop-shadow(0 0 14px rgba(94, 207, 138, 0.5)); }
+}
