@@ -43,6 +43,20 @@
 
     // ─── Views ───────────────────────────────────────────
     let dashboardRefreshTimer = null;
+    let agentLearningPanel = 'learning';
+
+    const AGENT_LEARNING_VIEWS = new Set(['agent-learning', 'learning', 'design']);
+
+    function canViewAgentLearning(user) {
+        if (!user) return false;
+        if (user.can_view_agent_learning) return true;
+        return ['owner', 'admin', 'tech_admin'].includes(user.role);
+    }
+
+    window.switchAgentLearningPanel = function (panel) {
+        agentLearningPanel = panel === 'design' ? 'design' : 'learning';
+        switchView('agent-learning');
+    };
 
     window.switchView = function (view) {
         const user = window.Auth?.getUser();
@@ -53,6 +67,18 @@
                 else alert(msg);
                 switchView('profile');
                 return;
+            }
+        } else if (AGENT_LEARNING_VIEWS.has(view)) {
+            if (!canViewAgentLearning(user)) {
+                const msg = 'Обучение агентов доступно только администраторам';
+                if (window.UIEnhancements) UIEnhancements.toast(msg, 'warn');
+                else alert(msg);
+                switchView('studio');
+                return;
+            }
+            if (view === 'learning' || view === 'design') {
+                agentLearningPanel = view === 'design' ? 'design' : 'learning';
+                view = 'agent-learning';
             }
         } else if (user && window.ProfileCabinet && !ProfileCabinet.canAccessView(user, view)) {
             const sub = user.subscription || {};
@@ -65,16 +91,23 @@
         }
 
         document.querySelectorAll('.view-tab').forEach((t) => {
-            t.classList.toggle('active', t.dataset.view === view);
+            const v = t.dataset.view;
+            const active = v === view || (view === 'agent-learning' && v === 'agent-learning');
+            t.classList.toggle('active', active);
         });
         document.querySelectorAll('.main > [id$="View"]').forEach((el) => {
             el.classList.remove('view-enter');
         });
+        const isAgentLearning = view === 'agent-learning';
+        document.getElementById('agentLearningSubnav')?.classList.toggle('hidden', !isAgentLearning);
+        document.getElementById('alTabLearning')?.classList.toggle('active', isAgentLearning && agentLearningPanel === 'learning');
+        document.getElementById('alTabDesign')?.classList.toggle('active', isAgentLearning && agentLearningPanel === 'design');
+
         document.getElementById('studioView').classList.toggle('hidden', view !== 'studio');
         document.getElementById('chatView').classList.toggle('hidden', view !== 'chat');
-        document.getElementById('learningView').classList.toggle('hidden', view !== 'learning');
+        document.getElementById('learningView').classList.toggle('hidden', !isAgentLearning || agentLearningPanel !== 'learning');
         document.getElementById('tasksView').classList.toggle('hidden', view !== 'tasks');
-        document.getElementById('designView')?.classList.toggle('hidden', view !== 'design');
+        document.getElementById('designView')?.classList.toggle('hidden', !isAgentLearning || agentLearningPanel !== 'design');
         document.getElementById('sonyaStudioView')?.classList.toggle('hidden', view !== 'sonya-studio');
         document.getElementById('dashboardView')?.classList.toggle('hidden', view !== 'dashboard');
         document.getElementById('kanbanView')?.classList.toggle('hidden', view !== 'kanban');
@@ -89,7 +122,7 @@
         if (view === 'kanban' && window.KanbanUI) KanbanUI.refresh();
         if (view === 'sprint' && window.SprintUI) SprintUI.load();
         if (view === 'timeline' && window.TimelineUI) TimelineUI.load(1);
-        if (view === 'design' && window.SonyaDesignLab) {
+        if (isAgentLearning && agentLearningPanel === 'design' && window.SonyaDesignLab) {
             SonyaDesignLab.load();
         }
         if (view === 'sonya-studio' && window.SonyaStudio) SonyaStudio.load();
@@ -335,7 +368,9 @@
                 break;
             case 'history':
                 if (data.channel === 'learning') {
-                    data.messages.forEach((m) => addLearningMessage(m));
+                    if (canViewAgentLearning(window.Auth?.getUser())) {
+                        data.messages.forEach((m) => addLearningMessage(m));
+                    }
                 } else {
                     data.messages.forEach((m) => addWorkMessage(m));
                 }
@@ -446,6 +481,7 @@
                 break;
             default:
                 if (data.channel === 'learning' || LEARNING_TYPES.has(data.type)) {
+                    if (!canViewAgentLearning(window.Auth?.getUser())) break;
                     if (data.type === 'figma_study') {
                         addLearningAgentMessage({ ...data, type: 'figma_study', message: data.message || '' });
                         if (window.SonyaDesignLab) SonyaDesignLab.loadLab();
@@ -926,6 +962,8 @@
 
     window.showSettings = async function () {
         document.getElementById('settingsModal').classList.add('show');
+        const user = window.Auth?.getUser();
+        document.getElementById('settingsLearningSection')?.classList.toggle('hidden', !canViewAgentLearning(user));
         try {
             const resp = await fetch('/api/config');
             if (resp.ok) {
