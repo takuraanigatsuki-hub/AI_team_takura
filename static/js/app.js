@@ -330,6 +330,7 @@
     }
 
     function handleMessage(data) {
+        if (window.FeaturePack) FeaturePack.onWsMessage(data);
         switch (data.type) {
             case 'agents_state':
                 updateAgents(data.agents);
@@ -797,6 +798,7 @@
     function updateTaskHistory(data) {
         if (data.stats) taskStats = data.stats;
         if (data.tasks) taskHistory = data.tasks;
+        if (window.FeaturePack && data.stats) FeaturePack.onTaskStats(data.stats);
         renderTasks();
     }
 
@@ -1067,6 +1069,7 @@
             Integrations.loadFigmaStatus();
         }
         if (window.UIEnhancements) UIEnhancements.init();
+        if (window.FeaturePack) FeaturePack.init();
         if (window.AdminPanel && user) AdminPanel.updateNavVisibility(user);
         if (window.PipelineUI) PipelineUI.load();
         if (window.StudioMinimap) StudioMinimap.init();

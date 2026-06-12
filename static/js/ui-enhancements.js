@@ -109,6 +109,10 @@
     }
 
     function toggleCommandPalette() {
+        if (global.FeaturePack?.openCommandPalette) {
+            global.FeaturePack.openCommandPalette();
+            return;
+        }
         let pal = document.getElementById('commandPalette');
         if (pal) {
             pal.remove();
@@ -155,7 +159,11 @@
     }
 
     function toggleShortcutsHelp() {
-        toast('Ctrl+1-6 вкладки · Ctrl+K палитра · Enter+Ctrl отправить', 'info', 6000);
+        if (global.FeaturePack?.showShortcutsModal) {
+            global.FeaturePack.showShortcutsModal();
+            return;
+        }
+        toast('Ctrl+1-6 вкладки · Ctrl+K палитра · Ctrl+G поиск · Enter+Ctrl отправить', 'info', 6000);
     }
 
     function bindKeyboard() {
