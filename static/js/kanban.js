@@ -9,14 +9,41 @@
     const PRIOS = ['low', 'medium', 'high', 'urgent'];
     const PRIO_LABELS = { urgent: '🔴', high: '🟠', medium: '🟡', low: '⚪' };
 
+    function columnsFromWsTasks(tasks) {
+        const cols = { submitted: [], in_progress: [], completed: [], failed: [] };
+        const inbox = new Set(['submitted', 'queued', 'triaging', 'awaiting_approval', 'revision_requested']);
+        tasks.filter((t) => !t.parent_id).forEach((t) => {
+            const item = {
+                id: t.id,
+                text: t.task,
+                task: t.task,
+                priority: t.priority,
+                agent_emoji: t.agent_emoji,
+                agent_name: t.agent_name,
+                agent_id: t.agent_id,
+            };
+            if (t.status === 'completed') cols.completed.push(item);
+            else if (t.status === 'failed' || t.status === 'cancelled') cols.failed.push(item);
+            else if (t.status === 'in_progress') cols.in_progress.push(item);
+            else if (inbox.has(t.status)) cols.submitted.push(item);
+            else cols.in_progress.push(item);
+        });
+        return cols;
+    }
+
     async function refresh() {
         const el = document.getElementById('kanbanBoard');
         if (!el) return;
         const user = global.Auth?.getUser?.();
         if (!user) {
-            el.innerHTML = `<div class="tasks-empty tasks-guest"><div class="tasks-empty-icon">🔐</div>
-                <h3>Войдите для Kanban</h3><p class="muted">Доска показывает только ваши задачи</p>
-                <a href="/?auth=login" class="btn-primary btn-sm">Войти</a></div>`;
+            const snap = global.AITeamTasks?.getSnapshot?.();
+            if (snap?.tasks?.length) {
+                render(columnsFromWsTasks(snap.tasks));
+                return;
+            }
+            el.innerHTML = `<div class="tasks-empty tasks-guest"><div class="tasks-empty-icon">💬</div>
+                <h3>Гостевая сессия</h3><p class="muted">Отправьте задачу в чат — доска заполнится автоматически</p>
+                <button type="button" class="btn-primary btn-sm" onclick="switchView('chat')">В чат</button></div>`;
             return;
         }
         try {

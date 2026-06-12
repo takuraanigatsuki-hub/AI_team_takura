@@ -1724,4 +1724,8 @@
             };
         });
     }
+
+    global.AITeamTasks = {
+        getSnapshot: () => ({ stats: { ...taskStats }, tasks: taskHistory.slice() }),
+    };
 })();
