@@ -368,7 +368,7 @@
         addZoneSign('БИБЛИОТЕКА', -4.5, 1.55, 0x988878);
 
         buildWalls();
-        buildCeiling();
+        buildOverheadLights();
         buildOfficeDecor();
         buildPartitions();
         addAmbientParticles();
@@ -384,63 +384,22 @@
         scene.add(floor);
     }
 
-    function buildCeiling() {
-        const slabH = 0.16;
-        const slabY = ROOM.h - slabH / 2;
-        const ceilTex = global.StudioTextures ? StudioTextures.get('ceiling') : null;
-
-        const topMat = ceilTex
-            ? new THREE.MeshStandardMaterial({ map: ceilTex, roughness: 0.92, metalness: 0.02 })
-            : new THREE.MeshStandardMaterial({ color: 0xeceef2, roughness: 0.92 });
-        const sideMat = new THREE.MeshStandardMaterial({ color: 0xd8dce4, roughness: 0.9 });
-        const bottomMat = ceilTex
-            ? new THREE.MeshStandardMaterial({ map: ceilTex, roughness: 0.92, metalness: 0.02 })
-            : new THREE.MeshStandardMaterial({ color: 0xeceef2, roughness: 0.92 });
-
-        const slab = new THREE.Mesh(
-            new THREE.BoxGeometry(ROOM.w - 0.12, slabH, ROOM.d - 0.12),
-            [sideMat, sideMat, topMat, bottomMat, sideMat, sideMat]
-        );
-        slab.position.y = slabY;
-        slab.name = 'ceilingSlab';
-        scene.add(slab);
-
+    function buildOverheadLights() {
+        const y = ROOM.h - 0.08;
         const lightPositions = [
             [-2.5, -2], [0.5, -2], [3, -2],
             [-2.5, 0.5], [0.5, 0.5], [3, 0.5],
             [-4, 3.2], [5, 3.2],
         ];
-        lightPositions.forEach(([x, z]) => addRecessedLight(x, z, slabY, slabH));
-    }
-
-    function addRecessedLight(x, z, slabY, slabH) {
-        const yFace = slabY - slabH / 2;
-        const trimMat = new THREE.MeshStandardMaterial({ color: 0xd0d4dc, roughness: 0.45, metalness: 0.15 });
-        const panelMat = new THREE.MeshStandardMaterial({
-            color: 0xfff8f0,
-            emissive: 0xfff0d8,
-            emissiveIntensity: 0.85,
-            roughness: 0.4,
+        lightPositions.forEach(([x, z]) => {
+            const spot = new THREE.SpotLight(0xfff4e8, 0.55, 18, Math.PI / 3.4, 0.5, 1);
+            spot.position.set(x, y, z);
+            spot.castShadow = false;
+            spot.target.position.set(x, 0, z);
+            scene.add(spot);
+            scene.add(spot.target);
+            ceilingLights.push(spot);
         });
-
-        const trim = new THREE.Mesh(new THREE.RingGeometry(0.12, 0.2, 32), trimMat);
-        trim.rotation.x = -Math.PI / 2;
-        trim.position.set(x, yFace + 0.002, z);
-        scene.add(trim);
-
-        const panel = new THREE.Mesh(new THREE.CircleGeometry(0.12, 32), panelMat);
-        panel.rotation.x = -Math.PI / 2;
-        panel.position.set(x, yFace + 0.001, z);
-        panel.name = 'lightPanel';
-        scene.add(panel);
-
-        const spot = new THREE.SpotLight(0xfff4e8, 0.55, 18, Math.PI / 3.4, 0.5, 1);
-        spot.position.set(x, yFace + 0.05, z);
-        spot.castShadow = false;
-        spot.target.position.set(x, 0, z);
-        scene.add(spot);
-        scene.add(spot.target);
-        ceilingLights.push(spot);
     }
 
     function buildWindowUnit(cx, bottom, top) {
@@ -962,12 +921,6 @@
         if (libLightPt) libLightPt.intensity = isDay ? 0.2 : 0.34;
         ceilingLights.forEach((l) => {
             l.intensity = isDay ? 0.55 : 0.78;
-        });
-        const panelIntensity = isDay ? 0.85 : 1.05;
-        scene?.traverse((obj) => {
-            if (obj.name === 'lightPanel' && obj.material) {
-                obj.material.emissiveIntensity = panelIntensity;
-            }
         });
     }
 
