@@ -5,6 +5,7 @@ from agents.react_preview import (
     is_site_task,
     is_production_polish_task,
     is_figma_import_task,
+    is_figma_refine_task,
     apply_figma_tokens,
     polish_preview,
 )
@@ -12,6 +13,7 @@ from integrations.figma_client import parse_figma_url
 from integrations.figma_react import (
     build_launchkit_code,
     generate_react_from_figma,
+    refine_react_from_figma,
     resolve_component_for_file,
 )
 
@@ -105,3 +107,31 @@ def test_figma_task_preview_without_api():
     assert result["title"] == "LaunchKit · Figma → React"
     assert result["is_site"] is True
     assert "LaunchKit" in result["code"]
+
+
+def test_figma_refine_task_detection():
+    task = "Доработай React UI точнее по импортированному Figma-макету: цвета, spacing, типографика"
+    assert is_figma_refine_task(task) is True
+
+
+def test_refine_launchkit_uses_tokens_and_spacing():
+    figma_result = {
+        "file_key": "uYRfrETGR8pcwChwLtJ6Ua",
+        "url": FIGMA_URL,
+        "summary": {
+            "file_name": "Untitled",
+            "colors": ["#6c63ff", "#56cfe1", "#0b0d12", "#e8eaef", "#8b93a7"],
+            "fonts": ["Inter 800"],
+            "frames": [{"name": "Hero"}],
+        },
+    }
+    task = "Доработай React UI точнее по импортированному Figma-макету: цвета, spacing, типографика"
+    preview = refine_react_from_figma(figma_result, task=task)
+    assert preview["figma_refined"] is True
+    assert preview["title"] == "LaunchKit · Figma (refined)"
+    assert "tokens.space" in preview["code"]
+    assert "fontSize.hero" in preview["code"]
+    assert "statItem" in preview["code"]
+    assert "gridTemplateColumns: '1fr 1fr'" in preview["code"]
+    assert "#6c63ff" in preview["code"]
+    assert "'Inter'" in preview["code"]

@@ -44,6 +44,21 @@ def is_production_polish_task(task: str) -> bool:
     ])
 
 
+def is_figma_refine_task(task: str) -> bool:
+    t = task.lower()
+    return any(w in t for w in [
+        "точнее по импортированному figma",
+        "точнее по figma",
+        "по импортированному figma-макету",
+        "по импортированному figma макету",
+        "figma-макету: цвета",
+        "figma макету: цвета",
+        "доработай react ui",
+        "refine figma",
+        "figma refine",
+    ]) and any(w in t for w in ["figma", "макет", "design", "дизайн"])
+
+
 def apply_figma_tokens(preview: dict, figma_data: dict) -> dict:
     """Подставить цвета из Figma в сгенерированный React-код."""
     if not figma_data:

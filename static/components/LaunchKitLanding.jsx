@@ -71,9 +71,9 @@ function App() {
             <button type="button" style={styles.btnXlOutline} onClick={() => scrollTo('features')}>Смотреть демо</button>
           </div>
           <div style={styles.stats}>
-            <div><strong style={styles.statValue}>2 400+</strong><span style={styles.statLabel}>стартапов</span></div>
-            <div><strong style={styles.statValue}>98%</strong><span style={styles.statLabel}>uptime</span></div>
-            <div><strong style={styles.statValue}>3×</strong><span style={styles.statLabel}>быстрее запуск</span></div>
+            <div style={styles.statItem}><strong style={styles.statValue}>2 400+</strong><span style={styles.statLabel}>стартапов</span></div>
+            <div style={styles.statItem}><strong style={styles.statValue}>98%</strong><span style={styles.statLabel}>uptime</span></div>
+            <div style={styles.statItem}><strong style={styles.statValue}>3×</strong><span style={styles.statLabel}>быстрее запуск</span></div>
           </div>
         </div>
 

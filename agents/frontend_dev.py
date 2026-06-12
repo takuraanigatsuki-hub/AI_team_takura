@@ -109,9 +109,33 @@ class FrontendDevAgent(BaseAgent):
         ]
 
     def _build_preview(self, task_text: str) -> dict:
-        preview = generate_react_preview(task_text)
-        if self.last_figma:
-            preview = apply_figma_tokens(preview, self.last_figma)
+        from agents.react_preview import is_figma_refine_task
+        from integrations.figma_react import refine_react_from_figma, build_launchkit_code
+
+        if is_figma_refine_task(task_text):
+            if self.last_figma:
+                preview = refine_react_from_figma(self.last_figma, task_text)
+            elif self.last_preview and self.last_preview.get("figma_file_key"):
+                stub = {
+                    "file_key": self.last_preview["figma_file_key"],
+                    "url": self.last_preview.get("figma_url"),
+                    "summary": {
+                        "file_name": self.last_preview.get("title", "Figma"),
+                        "colors": self.last_preview.get("colors", []),
+                    },
+                }
+                preview = refine_react_from_figma(stub, task_text)
+            else:
+                preview = {
+                    "title": "LaunchKit · Figma (refined)",
+                    "code": build_launchkit_code(task_text),
+                    "is_site": True,
+                    "figma_refined": True,
+                }
+        else:
+            preview = generate_react_preview(task_text)
+            if self.last_figma:
+                preview = apply_figma_tokens(preview, self.last_figma)
         preview["task"] = task_text
         preview["timestamp"] = datetime.now().isoformat()
         self.last_preview = preview
