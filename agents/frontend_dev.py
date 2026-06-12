@@ -61,13 +61,42 @@ class FrontendDevAgent(BaseAgent):
 
     async def apply_figma_design(self, figma_result: dict):
         """Применить импортированный макет Figma."""
+        from integrations.figma_react import generate_react_from_figma
+
         self.last_figma = figma_result
         summary = figma_result.get("summary", {})
         task_text = f"UI по макету Figma: {summary.get('file_name', 'Design')}"
         colors = summary.get("colors", [])
         color_hint = ", ".join(colors[:5]) if colors else ""
         enhanced = f"{task_text}. Цвета: {color_hint}. Адаптивный React-компонент."
-        await self._emit_preview(enhanced)
+
+        preview = generate_react_from_figma(figma_result, task=enhanced)
+        preview["task"] = enhanced
+        preview["timestamp"] = datetime.now().isoformat()
+        self.last_preview = preview
+
+        if preview.get("is_site"):
+            try:
+                site_path = export_site_html(preview["code"], enhanced, preview["title"])
+                preview["site_path"] = site_path
+                preview["site_url"] = "/api/sites/latest"
+            except Exception:
+                pass
+
+        if self.room_manager:
+            await self.room_manager.broadcast_work({
+                "type": "react_preview",
+                "agent_id": self.agent_id,
+                "agent_name": self.name,
+                "agent_emoji": self.emoji,
+                "title": preview["title"],
+                "code": preview["code"],
+                "task": enhanced,
+                "timestamp": preview["timestamp"],
+                "is_site": preview.get("is_site", False),
+                "site_url": preview.get("site_url"),
+                "figma_file_key": preview.get("figma_file_key"),
+            })
         if self.room_manager:
             await self.room_manager.broadcast_work({
                 "type": "figma_import",
