@@ -1,0 +1,536 @@
+/* Feature Pack v2 — 50+ визуальных улучшений */
+
+:root {
+    --fp-accent: var(--accent);
+    --fp-glow: var(--glow-purple);
+    --fp-space: 12px;
+}
+
+/* 1 Ambient background mesh */
+body.fp-ambient::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+        radial-gradient(ellipse 80% 50% at 10% 0%, rgba(157, 78, 221, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 10%, rgba(122, 162, 255, 0.1), transparent 50%),
+        radial-gradient(ellipse 50% 30% at 50% 100%, rgba(94, 207, 138, 0.06), transparent 45%);
+    animation: fpAmbientShift 18s ease-in-out infinite alternate;
+}
+@keyframes fpAmbientShift {
+    0% { opacity: 0.85; transform: scale(1); }
+    100% { opacity: 1; transform: scale(1.03); }
+}
+
+/* 2 Scroll progress */
+#fpScrollProgress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0%;
+    z-index: 9999;
+    background: var(--gradient-accent);
+    box-shadow: var(--glow-purple);
+    transition: width 0.1s linear;
+}
+
+/* 3 Header glass + glow */
+.header.fp-glass {
+    backdrop-filter: blur(16px) saturate(1.2);
+    border-bottom: 1px solid transparent;
+    border-image: var(--gradient-border) 1;
+}
+.header.fp-glass .view-tab.active {
+    box-shadow: var(--glow-purple);
+    animation: fpTabPulse 2.5s ease-in-out infinite;
+}
+@keyframes fpTabPulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(199, 125, 255, 0.25); }
+    50% { box-shadow: 0 0 18px rgba(199, 125, 255, 0.45); }
+}
+
+/* 4 Live clock chip */
+.fp-clock {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+}
+
+/* 5 Task progress ring */
+.fp-progress-ring {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: conic-gradient(var(--green) var(--fp-pct, 0%), var(--border) 0);
+    display: grid;
+    place-items: center;
+    font-size: 8px;
+    font-weight: 700;
+}
+.fp-progress-ring span {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--surface);
+    display: grid;
+    place-items: center;
+}
+
+/* 6 Notification bell */
+.fp-notify-btn {
+    position: relative;
+    border: none;
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: var(--transition);
+}
+.fp-notify-btn:hover { background: var(--accent-soft); transform: scale(1.05); }
+.fp-notify-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--red);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+}
+
+/* 7 Stats ticker */
+.fp-ticker-wrap {
+    overflow: hidden;
+    max-width: 220px;
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.fp-ticker {
+    display: flex;
+    gap: 24px;
+    animation: fpTicker 22s linear infinite;
+    white-space: nowrap;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+@keyframes fpTicker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+.fp-ticker span { display: inline-flex; align-items: center; gap: 4px; }
+
+/* 8 Breadcrumb */
+.fp-breadcrumb {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 4px 12px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+}
+.fp-breadcrumb strong { color: var(--accent); }
+
+/* 9 FAB quick task */
+.fp-fab {
+    position: fixed;
+    bottom: 48px;
+    right: 20px;
+    z-index: 800;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: none;
+    background: var(--gradient-accent);
+    color: #fff;
+    font-size: 22px;
+    cursor: pointer;
+    box-shadow: 0 8px 28px rgba(108, 99, 255, 0.45);
+    transition: var(--transition-spring);
+}
+.fp-fab:hover { transform: scale(1.08) rotate(90deg); }
+.fp-fab.hidden { display: none; }
+
+/* 10 View enter animation */
+.main > [id$="View"].fp-view-enter {
+    animation: fpViewIn 0.35s ease-out;
+}
+@keyframes fpViewIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* 11 Focus mode */
+body.fp-focus .chat-sidebar,
+body.fp-focus .learning-sidebar,
+body.fp-focus .studio-minimap-panel {
+    opacity: 0.35;
+    pointer-events: none;
+    filter: blur(1px);
+    transition: var(--transition);
+}
+
+/* 12 Compact density */
+body.fp-compact .message { padding: 6px 10px; font-size: 13px; }
+body.fp-compact .agent-card { padding: 8px; }
+body.fp-compact .header { --header-h: 88px; }
+
+/* 13 Accent presets */
+[data-fp-accent="cyan"] { --accent: #56cfe1; --fp-glow: var(--glow-cyan); }
+[data-fp-accent="gold"] { --accent: #e8b84a; --fp-glow: var(--glow-gold); }
+[data-fp-accent="green"] { --accent: #5ecf8a; }
+[data-fp-accent="pink"] { --accent: #ff6b9d; }
+
+/* 14 Ripple */
+.fp-ripple-host { position: relative; overflow: hidden; }
+.fp-ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.35);
+    transform: scale(0);
+    animation: fpRipple 0.6s ease-out;
+    pointer-events: none;
+}
+@keyframes fpRipple {
+    to { transform: scale(4); opacity: 0; }
+}
+
+/* 15 Global search */
+.fp-search-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: var(--overlay);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 12vh;
+    animation: fpFadeIn 0.2s ease;
+}
+.fp-search-box {
+    width: min(560px, 92vw);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+}
+.fp-search-box input {
+    width: 100%;
+    padding: 16px 18px;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 16px;
+    outline: none;
+}
+.fp-search-results { max-height: 360px; overflow-y: auto; border-top: 1px solid var(--border); }
+.fp-search-item {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+    font-size: 13px;
+}
+.fp-search-item:hover, .fp-search-item.active { background: var(--accent-soft); }
+.fp-search-item small { color: var(--text-muted); margin-left: auto; }
+
+/* 16 Notification panel */
+.fp-notify-panel {
+    position: fixed;
+    top: calc(var(--header-h) + 8px);
+    right: 16px;
+    width: min(360px, 92vw);
+    max-height: 420px;
+    overflow-y: auto;
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+    z-index: 9000;
+    animation: fpSlideDown 0.25s ease;
+}
+@keyframes fpSlideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: none; }
+}
+.fp-notify-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 13px;
+}
+.fp-notify-item {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    line-height: 1.45;
+    cursor: pointer;
+}
+.fp-notify-item:hover { background: var(--surface-2); }
+.fp-notify-item.unread { border-left: 3px solid var(--accent); }
+.fp-notify-time { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+
+/* 17 Quick mention bar */
+.fp-mention-bar {
+    display: flex;
+    gap: 6px;
+    padding: 6px 12px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+}
+.fp-mention-chip {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    font-size: 11px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.fp-mention-chip:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+/* 18 Workspace mode badge */
+.fp-mode-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* 19 Session timer */
+.fp-session { font-size: 10px; color: var(--text-muted); font-family: var(--mono); }
+
+/* 20 LLM cost chip */
+.fp-cost-chip {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(232, 184, 74, 0.15);
+    color: var(--yellow);
+    border: 1px solid rgba(232, 184, 74, 0.3);
+}
+
+/* 21 Offline banner */
+.fp-offline {
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    right: 0;
+    z-index: 8500;
+    padding: 8px;
+    text-align: center;
+    background: var(--red);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    animation: fpSlideDown 0.3s ease;
+}
+
+/* 22 Tip of the day */
+.fp-tip-bar {
+    padding: 8px 14px;
+    background: linear-gradient(90deg, var(--accent-soft), transparent);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.fp-tip-bar button {
+    margin-left: auto;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 16px;
+}
+
+/* 23 Pinned agents */
+.agent-card.fp-pinned { border-color: var(--yellow); box-shadow: var(--glow-gold); }
+.fp-pin-icon { font-size: 10px; margin-left: 4px; }
+
+/* 24 Shimmer skeleton */
+.fp-skeleton {
+    background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%);
+    background-size: 200% 100%;
+    animation: fpShimmer 1.2s infinite;
+    border-radius: var(--radius-sm);
+    min-height: 12px;
+}
+@keyframes fpShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* 25 Shortcuts modal */
+.fp-shortcuts-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10001;
+    background: var(--overlay);
+    display: grid;
+    place-items: center;
+    padding: 20px;
+}
+.fp-shortcuts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    max-width: 640px;
+    width: 100%;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+}
+.fp-shortcut-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 6px 8px;
+    border-radius: var(--radius-sm);
+}
+.fp-shortcut-row:hover { background: var(--surface-2); }
+.fp-shortcut-row kbd {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+}
+
+/* 26 Feature badge */
+.fp-feature-badge {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: var(--gradient-accent);
+    color: #fff;
+    font-weight: 700;
+}
+
+/* 27 Integration dots */
+.fp-int-dots { display: flex; gap: 4px; align-items: center; }
+.fp-int-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+}
+.fp-int-dot.ok { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.fp-int-dot.warn { background: var(--yellow); }
+
+/* 28 Particles canvas */
+#fpParticles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+}
+
+/* 29 Cinematic bars (studio) */
+body.fp-cinematic .studio-view::before,
+body.fp-cinematic .studio-view::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 8vh;
+    background: #000;
+    z-index: 5;
+    pointer-events: none;
+}
+body.fp-cinematic .studio-view::before { top: 0; }
+body.fp-cinematic .studio-view::after { bottom: 0; }
+
+/* 30 Daily goal widget */
+.fp-daily-goal {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+}
+.fp-daily-goal-bar {
+    width: 48px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.fp-daily-goal-bar i {
+    display: block;
+    height: 100%;
+    background: var(--green);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+}
+
+/* 31–50 utility classes */
+.fp-glass-card {
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+.fp-neon-text {
+    text-shadow: 0 0 12px rgba(199, 125, 255, 0.5);
+}
+.fp-hover-lift {
+    transition: var(--transition);
+}
+.fp-hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+@keyframes fpFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (max-width: 720px) {
+    .fp-ticker-wrap { display: none; }
+    .fp-fab { bottom: 56px; right: 12px; width: 46px; height: 46px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.fp-ambient::before,
+    .fp-ticker,
+    .header.fp-glass .view-tab.active { animation: none; }
+    .main > [id$="View"].fp-view-enter { animation: none; }
+}
