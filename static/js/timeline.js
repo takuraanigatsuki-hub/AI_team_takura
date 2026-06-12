@@ -8,6 +8,11 @@
         if (el) el.innerHTML = '<div class="dash-loading">Загрузка…</div>';
         try {
             const r = await fetch(`/api/timeline/replay?hours=${h}`, { credentials: 'same-origin' });
+            if (r.status === 401) {
+                if (el) el.innerHTML = '<div class="panel-empty">Войдите, чтобы видеть свою активность</div>';
+                return;
+            }
+            if (!r.ok) throw new Error('HTTP ' + r.status);
             const d = await r.json();
             events = d.events || [];
             render(d);

@@ -73,7 +73,7 @@ class RoomManager:
         self.connection_meta[websocket] = {
             "id": vid,
             "name": name,
-            "user_id": user.get("id") if user else "",
+            "user_id": user.get("id") if user else vid,
             "role": user.get("role", "guest") if user else "guest",
             "readonly": readonly,
             "view_token": view_token,
@@ -413,7 +413,19 @@ class RoomManager:
             agent.status = "idle"
             agent.location = "studio"
 
-    async def handle_user_message(self, data: dict, user=None):
+    def _actor_identity(self, user=None, connection_meta=None) -> tuple:
+        """user_id и display name отправителя (в т.ч. guest-N для анонимов)."""
+        if user:
+            uid = user.get("id", "")
+            uname = user.get("name") or user.get("email", "User").split("@")[0]
+        elif connection_meta:
+            uid = connection_meta.get("user_id") or connection_meta.get("id", "")
+            uname = connection_meta.get("name", "Guest")
+        else:
+            uid, uname = "", ""
+        return uid, uname
+
+    async def handle_user_message(self, data: dict, user=None, connection_meta=None):
         msg_type = data.get("type", "task")
         target = data.get("target", "all")
         raw_text = data.get("text", "")
@@ -477,10 +489,7 @@ class RoomManager:
                     })
                     return
 
-            uid = user.get("id", "") if user else ""
-            uname = (
-                user.get("name") or user.get("email", "User").split("@")[0]
-            ) if user else ""
+            uid, uname = self._actor_identity(user, connection_meta)
 
             dup = self.task_history.find_active_duplicate(text, uid)
             if dup:
@@ -540,10 +549,7 @@ class RoomManager:
 
         elif msg_type == "chat":
             record_user_wish(text, target if target not in ("all", None) else "pm")
-            uid = user.get("id", "") if user else ""
-            uname = (
-                user.get("name") or user.get("email", "User").split("@")[0]
-            ) if user else ""
+            uid, uname = self._actor_identity(user, connection_meta)
             if target == "all":
                 pm = self.agents.get("pm")
                 if pm:
@@ -561,10 +567,7 @@ class RoomManager:
 
         elif msg_type == "direct_chat":
             agent = self.agents.get(target)
-            uid = user.get("id", "") if user else ""
-            uname = (
-                user.get("name") or user.get("email", "User").split("@")[0]
-            ) if user else ""
+            uid, uname = self._actor_identity(user, connection_meta)
             if agent:
                 await agent.handle_direct_chat(text, user_id=uid, user_name=uname)
             else:

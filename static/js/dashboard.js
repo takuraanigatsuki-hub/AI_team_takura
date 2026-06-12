@@ -170,10 +170,14 @@
 
     function renderActivity() {
         const items = data.activity?.items || [];
-        if (!items.length) return '<p class="muted">Пока нет событий</p>';
-        return `<div class="activity-feed">${items.map((ev) =>
-            `<div class="activity-item"><span>${ev.agent_emoji || '💬'}</span><div><strong>${esc(ev.agent_name || '')}</strong><p>${esc(ev.message)}</p></div></div>`
-        ).join('')}</div>`;
+        if (!items.length) return '<p class="muted panel-empty">Пока нет событий — отправьте задачу в чат</p>';
+        return `<div class="activity-feed">${items.slice(0, 12).map((ev) => {
+            const ts = (ev.timestamp || '').slice(11, 16);
+            return `<div class="activity-item"><span class="activity-emoji">${ev.agent_emoji || '💬'}</span>
+                <div class="activity-body"><strong>${esc(ev.agent_name || 'Система')}</strong>
+                <p>${esc(ev.message)}</p></div>
+                ${ts ? `<time class="activity-time">${ts}</time>` : ''}</div>`;
+        }).join('')}</div>`;
     }
 
     function renderAgents() {

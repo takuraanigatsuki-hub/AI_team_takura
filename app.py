@@ -2866,13 +2866,15 @@ async def websocket_endpoint(websocket: WebSocket):
                     continue
             try:
                 message = json.loads(data)
-                await room.handle_user_message(message, user=user)
+                meta = room.connection_meta.get(websocket, {})
+                await room.handle_user_message(message, user=user, connection_meta=meta)
             except json.JSONDecodeError:
+                meta = room.connection_meta.get(websocket, {})
                 await room.handle_user_message({
                     "type": "task",
                     "text": data,
                     "target": "all"
-                }, user=user)
+                }, user=user, connection_meta=meta)
     except WebSocketDisconnect:
         await room.disconnect(websocket)
     except Exception:
