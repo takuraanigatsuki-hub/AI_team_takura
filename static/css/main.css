@@ -445,6 +445,14 @@ a.dropdown-item {
     text-overflow: ellipsis;
 }
 
+.status-chip.status-chip-action {
+    cursor: pointer;
+    border-color: rgba(255, 165, 2, 0.45);
+    color: #ffa502;
+}
+.status-chip.status-chip-action:hover {
+    background: rgba(255, 165, 2, 0.12);
+}
 .status-chip.has-active,
 #activeAgentsPill.has-active {
     background: rgba(94, 207, 138, 0.12);

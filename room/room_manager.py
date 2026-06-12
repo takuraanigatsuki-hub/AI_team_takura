@@ -427,6 +427,55 @@ class RoomManager:
 
     async def handle_user_message(self, data: dict, user=None, connection_meta=None):
         msg_type = data.get("type", "task")
+
+        if msg_type == "task_approve":
+            uid, _ = self._actor_identity(user, connection_meta)
+            task_id = data.get("task_id", "")
+            if not task_id or not self.task_history.user_owns_task(task_id, uid, False):
+                await self.broadcast_work({
+                    "type": "error",
+                    "message": "🔒 Нет доступа к этой задаче",
+                    "timestamp": datetime.now().isoformat(),
+                })
+                return
+            if await self.approve_task(task_id, data.get("note", "") or ""):
+                await self._broadcast_task_history()
+            else:
+                await self.broadcast_work({
+                    "type": "error",
+                    "message": "Задача не ждёт подтверждения",
+                    "timestamp": datetime.now().isoformat(),
+                })
+            return
+
+        if msg_type == "task_revision":
+            uid, _ = self._actor_identity(user, connection_meta)
+            task_id = data.get("task_id", "")
+            feedback = (data.get("feedback") or "").strip()
+            if not task_id or not self.task_history.user_owns_task(task_id, uid, False):
+                await self.broadcast_work({
+                    "type": "error",
+                    "message": "🔒 Нет доступа к этой задаче",
+                    "timestamp": datetime.now().isoformat(),
+                })
+                return
+            if not feedback:
+                await self.broadcast_work({
+                    "type": "error",
+                    "message": "Укажите текст правок",
+                    "timestamp": datetime.now().isoformat(),
+                })
+                return
+            if await self.request_task_revision(task_id, feedback):
+                await self._broadcast_task_history()
+            else:
+                await self.broadcast_work({
+                    "type": "error",
+                    "message": "Задача не ждёт подтверждения",
+                    "timestamp": datetime.now().isoformat(),
+                })
+            return
+
         target = data.get("target", "all")
         raw_text = data.get("text", "")
 

@@ -608,6 +608,12 @@
                 } else {
                     addSystemMessage(data.message || '');
                 }
+                if (window.UIEnhancements) {
+                    UIEnhancements.toast(
+                        data.type === 'task_approved' ? '✅ Задача принята' : '✎ Отправлено на доработку',
+                        data.type === 'task_approved' ? 'success' : 'info',
+                    );
+                }
                 loadTasks();
                 break;
             case 'role_triage':
@@ -1234,6 +1240,11 @@
     };
 
     window.approveTask = async function (taskId) {
+        const user = window.Auth?.getUser?.();
+        if (!user && ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'task_approve', task_id: taskId, note: '' }));
+            return;
+        }
         try {
             const r = await fetch(`/api/tasks/${taskId}/approve`, {
                 method: 'POST',
@@ -1254,6 +1265,11 @@
     window.requestTaskRevision = async function (taskId) {
         const feedback = prompt('Что исправить?');
         if (!feedback?.trim()) return;
+        const user = window.Auth?.getUser?.();
+        if (!user && ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'task_revision', task_id: taskId, feedback: feedback.trim() }));
+            return;
+        }
         try {
             const r = await fetch(`/api/tasks/${taskId}/revision`, {
                 method: 'POST',
@@ -1389,14 +1405,11 @@
                 ? `<a href="${escapeHtml(t.preview_url)}" target="_blank" rel="noopener" class="task-link-btn">👁 Preview</a>` : '';
             const siteLink = t.status === 'awaiting_approval'
                 ? `<a href="/api/sites/latest" target="_blank" rel="noopener" class="task-link-btn">🌐 Сайт</a>` : '';
-            const approvalBtns = t.status === 'awaiting_approval'
-                ? (user
-                    ? `<div class="task-approval">
+            const approvalBtns = t.status === 'awaiting_approval' ? `
+                <div class="task-approval">
                     <button type="button" class="btn-primary btn-sm" onclick="approveTask('${escapeHtml(t.id)}')">✓ Принять</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="requestTaskRevision('${escapeHtml(t.id)}')">✎ Правки</button>
-                </div>`
-                    : `<p class="muted task-guest-hint"><a href="/?auth=login">Войдите</a>, чтобы принять или отправить на правки</p>`)
-                : '';
+                </div>` : '';
             const response = t.response
                 ? `<div class="task-response">${escapeHtml(t.response.slice(0, 500))}${t.response.length > 500 ? '…' : ''}</div>`
                 : '';
