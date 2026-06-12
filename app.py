@@ -163,9 +163,6 @@ async def app_spa():
     return HTMLResponse("<h1>Static files not found</h1>")
 
 
-    return HTMLResponse("<h1>Static files not found</h1>")
-
-
 # ─── Auth API ───────────────────────────────────────────────
 
 class AuthRegister(BaseModel):
