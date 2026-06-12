@@ -52,10 +52,14 @@ def test_sonya_project_lifecycle(client):
 
 
 def test_sonya_create_by_agent(client):
-    r = client.post("/api/sonya/projects/create-new")
-    assert r.status_code == 200
-    assert r.json()["ok"] is True
-    assert r.json()["project"]["id"]
+    for path in ("/api/sonya/studio/create", "/api/sonya/projects/create-new"):
+        r = client.post(path)
+        assert r.status_code == 200, path
+        data = r.json()
+        assert data["ok"] is True
+        assert data["project"]["id"]
+        assert data["project"]["current_version"]["react_code"]
+        break
 
 
 def test_studio_store_offline():

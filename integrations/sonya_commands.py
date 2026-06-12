@@ -60,6 +60,13 @@ def match_studio_intent(text: str) -> Optional[dict]:
     ):
         return {"action": "create", "title": "", "task": raw}
 
+    if re.search(
+        r"^(создай|сделай|сгенерируй|запусти)\s+.*"
+        r"(проект|макет|landing|лендинг|dashboard|дашборд|форм|интерфейс|ui|кнопк|hero|компонент)",
+        tl,
+    ):
+        return {"action": "create", "title": _extract_title(raw), "task": raw}
+
     if re.search(r"^(создай|сделай|сгенерируй|запусти)\s+(новый\s+)?(ui\s+)?(проект|макет|landing|лендинг)", tl):
         return {"action": "create", "title": _extract_title(raw), "task": raw}
 

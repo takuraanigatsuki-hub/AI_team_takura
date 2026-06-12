@@ -1,4 +1,6 @@
 from datetime import datetime
+from typing import Optional
+
 from agents.base_agent import BaseAgent
 from agents.react_preview import generate_react_preview, is_site_task
 from site_exporter import export_site_html
@@ -135,7 +137,7 @@ class FrontendDevAgent(BaseAgent):
             })
 
         reply = await self._maybe_handle_studio_command(text)
-        if reply:
+        if reply is not None:
             self.direct_chat.append({
                 "role": "agent",
                 "text": reply,
@@ -200,7 +202,15 @@ class FrontendDevAgent(BaseAgent):
             "task_received"
         )
 
-        if await self._maybe_handle_studio_command(task_text, task_id=task_id, sender=sender):
+        if await self._maybe_handle_studio_command(task_text, task_id=task_id, sender=sender) is not None:
+            if self.room_manager:
+                await self.room_manager._broadcast_task_history()
+            self.status = "idle"
+            self.current_task = None
+            return
+
+        response = ""
+        try:
             figma_url = self._extract_figma_url(task_text)
             if figma_url:
                 from integrations.figma_client import is_figma_api_url
@@ -283,7 +293,7 @@ class FrontendDevAgent(BaseAgent):
         *,
         task_id: str = None,
         sender: str = "Пользователь",
-    ) -> bool:
+    ) -> Optional[str]:
         from integrations.sonya_commands import match_studio_intent
         from integrations.sonya_studio import (
             create_studio_project,
@@ -294,7 +304,7 @@ class FrontendDevAgent(BaseAgent):
 
         intent = match_studio_intent(text)
         if not intent:
-            return False
+            return None
 
         action = intent["action"]
 
@@ -309,7 +319,7 @@ class FrontendDevAgent(BaseAgent):
                     "open_view": "sonya-studio",
                     "timestamp": datetime.now().isoformat(),
                 })
-            return True
+            return msg
 
         if action == "create":
             title = intent.get("title") or ""
@@ -322,15 +332,13 @@ class FrontendDevAgent(BaseAgent):
             await self._broadcast_work(response, "task_done")
             if self.room_manager and task_id:
                 self.room_manager.record_task_completed(task_id, response, self.name, self.emoji)
-            return True
+            return response
 
         projects = list_projects()
         if not projects:
-            await self._broadcast_work(
-                "📭 В Studio пока нет проектов. Скажите «создай новый проект» или нажмите 🎨 Соня.",
-                "message",
-            )
-            return True
+            msg = "📭 В Studio пока нет проектов. Скажите «создай новый проект» или нажмите 🎨 Соня."
+            await self._broadcast_work(msg, "message")
+            return msg
 
         pid = projects[0]["id"]
 
@@ -344,9 +352,11 @@ class FrontendDevAgent(BaseAgent):
                 await self._broadcast_work(response, "task_done")
                 if self.room_manager and task_id:
                     self.room_manager.record_task_completed(task_id, response, self.name, self.emoji)
+                return response
             except ValueError as e:
-                await self._broadcast_work(f"ℹ️ {e}", "message")
-            return True
+                msg = f"ℹ️ {e}"
+                await self._broadcast_work(msg, "message")
+                return msg
 
         if action == "publish":
             pub = publish_project(pid)
@@ -370,6 +380,6 @@ class FrontendDevAgent(BaseAgent):
                         "handoff": handoff,
                         "timestamp": handoff.get("published_at"),
                     })
-            return True
+                return response
 
-        return False
+        return None
