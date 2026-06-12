@@ -241,7 +241,7 @@ async def auth_logout(request: Request):
 
 
 @app.get("/api/auth/me")
-async def auth_me(request):
+async def auth_me(request: Request):
     from room.user_auth import get_user_from_token
     user = get_user_from_token(_get_session_token(request))
     if not user:
