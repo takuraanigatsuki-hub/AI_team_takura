@@ -13,6 +13,37 @@ SESSIONS_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "sessions.
 SESSION_COOKIE = "ai_team_session"
 SESSION_DAYS = 30
 
+ALL_PRIVILEGES = [
+    "admin",
+    "manage_users",
+    "manage_settings",
+    "manage_integrations",
+    "manage_telegram",
+    "deploy",
+    "backup",
+    "pipeline",
+    "view_link",
+    "all_views",
+    "skip_setup",
+]
+
+ROLE_PRIVILEGES = {
+    "owner": ALL_PRIVILEGES,
+    "admin": [p for p in ALL_PRIVILEGES if p != "manage_users"],
+    "member": [],
+}
+
+
+def _privileges_for_role(role: str) -> list[str]:
+    return list(ROLE_PRIVILEGES.get(role or "member", []))
+
+
+def has_privilege(user: dict | None, privilege: str) -> bool:
+    if not user:
+        return False
+    privs = user.get("privileges") or _privileges_for_role(user.get("role", "member"))
+    return privilege in privs or "admin" in privs
+
 
 def _load(path: str) -> list | dict:
     if os.path.exists(path):
@@ -67,10 +98,15 @@ def _find_user(user_id: str) -> Optional[dict]:
 
 
 def _public_user(user: dict) -> dict:
+    role = user.get("role", "member")
+    privs = user.get("privileges") or _privileges_for_role(role)
     return {
         "id": user["id"],
         "email": user["email"],
         "name": user.get("name", ""),
+        "role": role,
+        "privileges": privs,
+        "is_owner": role == "owner",
         "setup_complete": bool(user.get("setup_complete")),
         "default_view": user.get("default_view", "dashboard"),
         "created_at": user.get("created_at"),
@@ -92,6 +128,8 @@ def register(email: str, password: str, name: str = "") -> tuple[dict, str]:
         "email": email,
         "name": (name or email.split("@")[0]).strip()[:80],
         "password": f"{salt}:{digest}",
+        "role": "member",
+        "privileges": [],
         "setup_complete": False,
         "default_view": "dashboard",
         "created_at": datetime.now().isoformat(),
@@ -187,5 +225,48 @@ def complete_setup(user_id: str, *, name: str = "", goal: str = "",
             break
     if not updated:
         raise ValueError("Пользователь не найден")
+    _save_users(users)
+    return _public_user(updated)
+
+
+def ensure_owner(email: str, password: str, name: str = "Owner") -> dict:
+    """Создать или обновить аккаунт владельца с полными привилегиями."""
+    email = email.strip().lower()
+    if not email or "@" not in email:
+        raise ValueError("Некорректный email")
+    if len(password) < 6:
+        raise ValueError("Пароль минимум 6 символов")
+
+    salt, digest = _hash_password(password)
+    pw = f"{salt}:{digest}"
+    users = _load(USERS_FILE)
+    updated = None
+
+    for u in users:
+        if u.get("email") == email:
+            u["password"] = pw
+            u["role"] = "owner"
+            u["privileges"] = list(ALL_PRIVILEGES)
+            u["setup_complete"] = True
+            if name:
+                u["name"] = name.strip()[:80]
+            u["updated_at"] = datetime.now().isoformat()
+            updated = u
+            break
+
+    if not updated:
+        updated = {
+            "id": str(uuid.uuid4())[:12],
+            "email": email,
+            "name": (name or email.split("@")[0]).strip()[:80],
+            "password": pw,
+            "role": "owner",
+            "privileges": list(ALL_PRIVILEGES),
+            "setup_complete": True,
+            "default_view": "dashboard",
+            "created_at": datetime.now().isoformat(),
+        }
+        users.append(updated)
+
     _save_users(users)
     return _public_user(updated)

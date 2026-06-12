@@ -47,6 +47,17 @@ async def lifespan(app: FastAPI):
 
     room.task_history.cleanup_stale(max_minutes=30)
 
+    owner_email = os.environ.get("OWNER_EMAIL", "").strip()
+    owner_password = os.environ.get("OWNER_PASSWORD", "").strip()
+    if owner_email and owner_password:
+        from room.user_auth import ensure_owner
+        owner = ensure_owner(
+            owner_email,
+            owner_password,
+            os.environ.get("OWNER_NAME", "Owner"),
+        )
+        print(f"👑 Owner account ready: {owner['email']}")
+
     # Запускаем агентов
     await room.start_all_agents()
 

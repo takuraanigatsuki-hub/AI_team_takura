@@ -61,6 +61,20 @@ def test_auth_register_login(client):
     assert r5.status_code == 200
 
 
+def test_ensure_owner(client):
+    import uuid
+    from room.user_auth import ensure_owner, login
+    email = f"owner-{uuid.uuid4().hex[:8]}@example.com"
+    user = ensure_owner(email, "ownerpass1", "Boss")
+    assert user["role"] == "owner"
+    assert user["is_owner"] is True
+    assert user["setup_complete"] is True
+    assert "admin" in user["privileges"]
+    assert "manage_users" in user["privileges"]
+    u2, _ = login(email, "ownerpass1")
+    assert u2["role"] == "owner"
+
+
 def test_agents(client):
     r = client.get("/api/agents")
     assert r.status_code == 200
