@@ -1,6 +1,5 @@
-# Подготовка переменных окружения для MCP (.cursor/mcp.json)
-# Запуск: .\tools\setup-mcp-env.ps1
-# Затем перезапустите Cursor (Settings → MCP → Reload)
+# MCP env helper for .cursor/mcp.json
+# Run: powershell -ExecutionPolicy Bypass -File tools/setup-mcp-env.ps1
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
@@ -8,7 +7,7 @@ $envFile = Join-Path $root ".env"
 
 if (-not (Test-Path $envFile)) {
     Copy-Item (Join-Path $root ".env.example") $envFile
-    Write-Host "Создан .env из .env.example — заполните токены и запустите снова." -ForegroundColor Yellow
+    Write-Host "Created .env from .env.example - fill tokens and run again."
     exit 1
 }
 
@@ -28,16 +27,11 @@ function Read-DotEnv($path) {
 
 $envMap = Read-DotEnv $envFile
 
-$defaults = @{
-    SQLITE_DB_PATH = (Join-Path $root "data\ai_team.sqlite")
-}
-
-foreach ($key in $defaults.Keys) {
-    if (-not $envMap[$key]) {
-        $envMap[$key] = $defaults[$key]
-        Add-Content $envFile "`n$key=$($defaults[$key])"
-        Write-Host "Добавлено в .env: $key=$($defaults[$key])"
-    }
+$sqliteDefault = Join-Path $root "data\ai_team.sqlite"
+if (-not $envMap["SQLITE_DB_PATH"]) {
+    Add-Content $envFile "`nSQLITE_DB_PATH=$sqliteDefault"
+    $envMap["SQLITE_DB_PATH"] = $sqliteDefault
+    Write-Host "Added SQLITE_DB_PATH=$sqliteDefault"
 }
 
 $mcpKeys = @(
@@ -47,16 +41,23 @@ $mcpKeys = @(
     "JIRA_URL", "JIRA_TOKEN", "JIRA_EMAIL"
 )
 
-Write-Host "`nMCP — статус переменных в .env:" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "MCP env status (.env):"
 foreach ($key in $mcpKeys) {
-    $val = $envMap[$key]
-    if ($val) {
-        Write-Host "  [OK]  $key"
+    if ($envMap[$key]) {
+        Write-Host "  [ok] $key"
     } else {
-        Write-Host "  [--]  $key (не задан — сервер может быть жёлтым в Cursor)"
+        Write-Host "  [--] $key (optional)"
     }
 }
 
-Write-Host "`nOAuth при первом использовании: linear, vercel, atlassian-jira, sentry" -ForegroundColor Gray
-Write-Host "Docker MCP требует: uv (pip install uv) или Docker Desktop" -ForegroundColor Gray
-Write-Host "Перезагрузите MCP: Cursor → Settings → Tools & MCP → Refresh" -ForegroundColor Green
+Write-Host ""
+Write-Host "OAuth on first use: linear, vercel, atlassian-jira, sentry"
+Write-Host "Docker MCP needs: uv (pip install uv) or Docker Desktop"
+Write-Host "Syncing .env values to Windows User environment (for Cursor MCP)..."
+foreach ($key in $mcpKeys) {
+    if ($envMap[$key]) {
+        [Environment]::SetEnvironmentVariable($key, $envMap[$key], "User")
+    }
+}
+Write-Host "Done. Restart Cursor fully (Settings -> Tools and MCP -> Refresh)."
