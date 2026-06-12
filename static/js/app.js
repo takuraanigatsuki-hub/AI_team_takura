@@ -302,23 +302,62 @@
 
     function makeDraggable(el) {
         const header = el.querySelector('[data-drag]');
-        let ox, oy, dragging = false;
+        if (!header) return;
+
+        let dragging = false;
+        let startX = 0;
+        let startY = 0;
+        let startLeft = 0;
+        let startTop = 0;
+
+        const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+        const onMouseMove = (e) => {
+            if (!dragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            const w = el.offsetWidth;
+            const h = el.offsetHeight;
+            const left = clamp(startLeft + dx, 8, window.innerWidth - w - 8);
+            const top = clamp(startTop + dy, 8, window.innerHeight - h - 8);
+            el.style.left = `${left}px`;
+            el.style.top = `${top}px`;
+        };
+
+        const onMouseUp = () => {
+            dragging = false;
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
 
         header.addEventListener('mousedown', (e) => {
-            if (e.target.tagName === 'BUTTON') return;
+            if (e.button !== 0 || e.target.tagName === 'BUTTON') return;
+            e.preventDefault();
+
+            const rect = el.getBoundingClientRect();
             dragging = true;
-            ox = e.clientX - el.offsetLeft;
-            oy = e.clientY - el.offsetTop;
+            startX = e.clientX;
+            startY = e.clientY;
+            startLeft = rect.left;
+            startTop = rect.top;
+
+            if (el.parentElement?.id === 'privateChatsContainer') {
+                document.body.appendChild(el);
+            }
+
             el.style.position = 'fixed';
-        });
+            el.style.left = `${startLeft}px`;
+            el.style.top = `${startTop}px`;
+            el.style.width = `${rect.width}px`;
+            el.style.right = 'auto';
+            el.style.bottom = 'auto';
+            el.style.margin = '0';
+            el.style.zIndex = '350';
+            el.classList.add('private-chat-floating');
 
-        document.addEventListener('mousemove', (e) => {
-            if (!dragging) return;
-            el.style.left = `${e.clientX - ox}px`;
-            el.style.top = `${e.clientY - oy}px`;
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
         });
-
-        document.addEventListener('mouseup', () => { dragging = false; });
     }
 
     // ─── WebSocket ───────────────────────────────────────
