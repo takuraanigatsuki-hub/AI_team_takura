@@ -61,6 +61,7 @@ def parse_retry_after(resp) -> float:
 async def throttle() -> None:
     import config as cfg
 
+    global _last_request_at
     min_interval = float(cfg.config.get("figma_api_min_interval_sec", 2.5))
     async with _lock:
         if is_in_cooldown():
@@ -69,5 +70,4 @@ async def throttle() -> None:
         wait = min_interval - (now - _last_request_at)
         if wait > 0:
             await asyncio.sleep(wait)
-        global _last_request_at
         _last_request_at = time.time()
