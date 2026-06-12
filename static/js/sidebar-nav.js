@@ -83,6 +83,21 @@
         });
     }
 
+    function updateBadges(counts = {}) {
+        document.querySelectorAll('.sb-item[data-view="tasks"] .sb-badge').forEach((b) => b.remove());
+        const n = counts.awaiting || 0;
+        if (n > 0) {
+            const btn = document.querySelector('.sb-item[data-view="tasks"]');
+            if (btn) {
+                const badge = document.createElement('span');
+                badge.className = 'sb-badge';
+                badge.textContent = n > 99 ? '99+' : String(n);
+                badge.title = 'Ждут вашего решения';
+                btn.appendChild(badge);
+            }
+        }
+    }
+
     function setDensity(mode) {
         document.documentElement.setAttribute('data-density', mode);
         localStorage.setItem('ai-team-density', mode);
@@ -118,6 +133,6 @@
         });
     }
 
-    global.SidebarNav = { render, setActive, init, setDensity, onNavClick, closeMobileSidebar };
+    global.SidebarNav = { render, setActive, init, setDensity, onNavClick, closeMobileSidebar, updateBadges };
     document.addEventListener('DOMContentLoaded', init);
 })(window);

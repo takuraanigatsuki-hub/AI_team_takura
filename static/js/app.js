@@ -1093,21 +1093,41 @@
         completed: '✓ готово',
         failed: 'ошибка',
     };
+    const PRIO_LABELS = { urgent: '🔴', high: '🟠', medium: '🟡', low: '⚪' };
+
+    function updateTaskBadges() {
+        const awaiting = taskStats.awaiting_approval
+            || taskHistory.filter((t) => t.status === 'awaiting_approval' && !t.parent_id).length;
+        if (window.SidebarNav) SidebarNav.updateBadges({ awaiting });
+        document.title = awaiting > 0
+            ? `(${awaiting}) AI Team Room`
+            : 'AI Team Room — 3D Studio';
+    }
 
     function updateTaskHistory(data) {
         if (data.stats) taskStats = data.stats;
         if (data.tasks) taskHistory = data.tasks;
         if (window.FeaturePack && data.stats) FeaturePack.onTaskStats(data.stats);
+        updateTaskBadges();
         renderTasks();
     }
 
     async function loadTasks() {
+        const user = window.Auth?.getUser?.();
+        if (!user) {
+            taskStats = { total: 0, completed: 0, active: 0, awaiting_approval: 0 };
+            taskHistory = [];
+            updateTaskBadges();
+            renderTasks();
+            return;
+        }
         try {
-            const resp = await fetch('/api/tasks');
+            const resp = await fetch('/api/tasks', { credentials: 'same-origin' });
             if (resp.ok) {
                 const data = await resp.json();
                 taskStats = data.stats || taskStats;
                 taskHistory = data.tasks || [];
+                updateTaskBadges();
                 renderTasks();
             }
         } catch (_) {}
@@ -1137,16 +1157,18 @@
         if (window.UIEnhancements) UIEnhancements.toast('📥 Задачи экспортированы', 'success');
     };
 
-    window.copyTaskByIndex = function (idx) {
-        const text = taskHistory[idx]?.task || '';
+    window.copyTaskById = function (taskId) {
+        const t = taskHistory.find((x) => x.id === taskId);
+        const text = t?.task || '';
         if (!text) return;
         navigator.clipboard?.writeText(text).then(() => {
             if (window.UIEnhancements) UIEnhancements.toast('📋 Скопировано', 'success');
         }).catch(() => {});
     };
 
-    window.rerunTaskByIndex = function (idx) {
-        const text = taskHistory[idx]?.task || '';
+    window.rerunTaskById = function (taskId) {
+        const t = taskHistory.find((x) => x.id === taskId);
+        const text = t?.task || '';
         if (!text) return;
         const input = document.getElementById('messageInput');
         if (input) {
@@ -1156,6 +1178,14 @@
         }
         switchView('chat');
         if (window.UIEnhancements) UIEnhancements.toast('↻ Задача готова к отправке', 'info');
+    };
+
+    window.copyTaskByIndex = function (idx) {
+        copyTaskById(taskHistory[idx]?.id);
+    };
+
+    window.rerunTaskByIndex = function (idx) {
+        rerunTaskById(taskHistory[idx]?.id);
     };
 
     window.approveTask = async function (taskId) {

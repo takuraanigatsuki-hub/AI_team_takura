@@ -5,13 +5,15 @@
     const SHORTCUTS = [
         { keys: 'Ctrl+1', action: () => switchView('studio'), label: '3D Студия' },
         { keys: 'Ctrl+2', action: () => switchView('chat'), label: 'Рабочий чат' },
-        { keys: 'Ctrl+3', action: () => {
+        { keys: 'Ctrl+3', action: () => switchView('tasks'), label: 'Задачи' },
+        { keys: 'Ctrl+4', action: () => switchView('dashboard'), label: 'Dashboard' },
+        { keys: 'Ctrl+5', action: () => switchView('profile'), label: 'Кабинет' },
+        { keys: 'Ctrl+Shift+L', action: () => {
             if (global.Auth?.canViewAgentLearning?.(global.Auth.getUser())) switchView('agent-learning');
-        }, label: 'Обучение агентов (admin)' },
-        { keys: 'Ctrl+4', action: () => switchView('tasks'), label: 'Задачи' },
-        { keys: 'Ctrl+5', action: () => switchView('dashboard'), label: 'Dashboard' },
+        }, label: 'Обучение (admin)' },
         { keys: 'Ctrl+K', action: () => toggleCommandPalette(), label: 'Командная палитра' },
-        { keys: 'Ctrl+Shift+F', action: () => { if (window.SiteSearch) SiteSearch.open(); }, label: 'Поиск по сайту' },
+        { keys: 'Ctrl+G', action: () => { if (global.FeaturePack?.openGlobalSearch) FeaturePack.openGlobalSearch(); }, label: 'Глобальный поиск' },
+        { keys: 'Ctrl+Shift+F', action: () => { if (global.SiteSearch) SiteSearch.open(); }, label: 'Поиск по сайту' },
         { keys: 'Ctrl+/', action: () => toggleShortcutsHelp(), label: 'Справка' },
     ];
 
@@ -174,9 +176,14 @@
 
     function bindKeyboard() {
         document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key >= '1' && e.key <= '6') {
+            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'l') {
                 e.preventDefault();
-                const views = ['studio', 'chat', 'tasks', 'dashboard'];
+                if (global.Auth?.canViewAgentLearning?.(global.Auth.getUser())) switchView('agent-learning');
+                return;
+            }
+            if (e.ctrlKey && !e.shiftKey && e.key >= '1' && e.key <= '5') {
+                e.preventDefault();
+                const views = ['studio', 'chat', 'tasks', 'dashboard', 'profile'];
                 switchView(views[+e.key - 1]);
             }
             if (e.ctrlKey && e.key === 'k') {
@@ -187,7 +194,11 @@
                 e.preventDefault();
                 toggleShortcutsHelp();
             }
-            if (e.ctrlKey && e.key === 'f') {
+            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') {
+                e.preventDefault();
+                if (global.SiteSearch) SiteSearch.open();
+            }
+            if (e.ctrlKey && !e.shiftKey && e.key === 'f') {
                 e.preventDefault();
                 switchView('chat');
                 document.getElementById('chatSearch')?.focus();

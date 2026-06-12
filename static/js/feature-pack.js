@@ -262,7 +262,9 @@
         m.className = 'fp-shortcuts-modal';
         m.onclick = (e) => { if (e.target === m) m.remove(); };
         const rows = [
-            ['Ctrl+1…6', 'Вкладки'], ['Ctrl+K', 'Команды'], ['Ctrl+G', 'Поиск'],
+            ['Ctrl+1', '3D Студия'], ['Ctrl+2', 'Чат'], ['Ctrl+3', 'Задачи'],
+            ['Ctrl+4', 'Dashboard'], ['Ctrl+5', 'Кабинет'], ['Ctrl+Shift+L', 'Обучение (admin)'],
+            ['Ctrl+K', 'Команды'], ['Ctrl+G', 'Глобальный поиск'], ['Ctrl+Shift+F', 'Поиск по сайту'],
             ['Ctrl+F', 'Поиск в чате'], ['Ctrl+Enter', 'Отправить'], ['Alt+←/→', 'Вкладки'],
             ['F', 'Фокус-режим'],
         ];
