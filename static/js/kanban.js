@@ -10,6 +10,15 @@
     const PRIO_LABELS = { urgent: '🔴', high: '🟠', medium: '🟡', low: '⚪' };
 
     async function refresh() {
+        const el = document.getElementById('kanbanBoard');
+        if (!el) return;
+        const user = global.Auth?.getUser?.();
+        if (!user) {
+            el.innerHTML = `<div class="tasks-empty tasks-guest"><div class="tasks-empty-icon">🔐</div>
+                <h3>Войдите для Kanban</h3><p class="muted">Доска показывает только ваши задачи</p>
+                <a href="/?auth=login" class="btn-primary btn-sm">Войти</a></div>`;
+            return;
+        }
         try {
             const r = await fetch('/api/kanban', { credentials: 'same-origin' });
             if (!r.ok) {

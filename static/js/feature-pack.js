@@ -408,6 +408,12 @@
 
     function onTaskStats(stats) {
         updateFooterMeta(stats);
+        const awaiting = stats?.awaiting_approval || 0;
+        if (awaiting > (onTaskStats._lastAwaiting || 0)) {
+            pushNotify('⏳ Виктор ждёт решения', `Задач на проверке: ${awaiting}`);
+            if (window.UIEnhancements) UIEnhancements.toast('⏳ Есть задачи на вашем решении', 'info');
+        }
+        onTaskStats._lastAwaiting = awaiting;
         if (stats?.completed > dailyGoal._last) {
             pushNotify('Задача выполнена', `Всего: ${stats.completed}`);
         }

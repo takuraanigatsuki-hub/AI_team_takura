@@ -17,11 +17,13 @@
             updateNavVisibility(currentUser);
             if (window.UIAccess) UIAccess.applyMenuVisibility(currentUser);
             if (window.Workspaces) Workspaces.load();
+            document.dispatchEvent(new CustomEvent('auth:updated', { detail: currentUser }));
             return currentUser;
         } catch (_) {
             currentUser = null;
             updateHeader();
             if (window.UIAccess) UIAccess.applyMenuVisibility(null);
+            document.dispatchEvent(new CustomEvent('auth:updated', { detail: null }));
             return null;
         }
     }

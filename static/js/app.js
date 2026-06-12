@@ -1285,6 +1285,23 @@
         const list = document.getElementById('tasksList');
         if (!list) return;
 
+        const user = window.Auth?.getUser?.();
+        if (!user) {
+            document.getElementById('statCompleted').textContent = '0';
+            document.getElementById('statActive').textContent = '0';
+            document.getElementById('statTotal').textContent = '0';
+            const awEl = document.getElementById('statAwaiting');
+            if (awEl) awEl.textContent = '0';
+            list.innerHTML = `
+                <div class="tasks-empty tasks-guest">
+                    <div class="tasks-empty-icon">🔐</div>
+                    <h3>Войдите, чтобы видеть свои задачи</h3>
+                    <p class="muted">Каждый пользователь видит только свои задачи и историю</p>
+                    <a href="/?auth=login" class="btn-primary btn-sm">Войти</a>
+                </div>`;
+            return;
+        }
+
         const awaiting = taskStats.awaiting_approval || taskHistory.filter((t) => t.status === 'awaiting_approval').length;
         document.getElementById('statCompleted').textContent = taskStats.completed || 0;
         document.getElementById('statActive').textContent = taskStats.active || 0;
@@ -1292,7 +1309,7 @@
         const awEl = document.getElementById('statAwaiting');
         if (awEl) awEl.textContent = awaiting;
 
-        let items = taskHistory;
+        let items = taskHistory.filter((t) => !t.parent_id);
         if (taskFilter === 'completed') items = items.filter((t) => t.status === 'completed');
         if (taskFilter === 'awaiting') items = items.filter((t) => t.status === 'awaiting_approval');
         if (taskFilter === 'active') {
@@ -1308,7 +1325,11 @@
         }
 
         if (!items.length) {
-            list.innerHTML = '<div class="tasks-empty">Нет задач в этой категории</div>';
+            const msg = taskFilter === 'all' && !taskSearchQuery
+                ? 'Задач пока нет — отправьте первую в чате'
+                : 'Нет задач в этой категории';
+            list.innerHTML = `<div class="tasks-empty"><div class="tasks-empty-icon">📋</div><p>${msg}</p>
+                <button type="button" class="btn-primary btn-sm" onclick="switchView('chat')">+ Новая задача</button></div>`;
             return;
         }
 
@@ -1317,12 +1338,13 @@
                 ? `${t.agent_emoji} ${t.agent_name}` : (t.target === 'all' ? '👥 Команда' : t.target || '—');
             const time = t.completed_at || t.awaiting_since || t.started_at || t.created_at;
             const timeStr = time ? formatTime(time) : '';
+            const prio = t.priority || 'medium';
+            const prioBadge = PRIO_LABELS[prio] || '';
             const previewLink = t.preview_url
                 ? `<a href="${escapeHtml(t.preview_url)}" target="_blank" rel="noopener" class="task-link-btn">👁 Preview</a>` : '';
-            const siteLink = (!t.parent_id && t.status === 'awaiting_approval')
+            const siteLink = t.status === 'awaiting_approval'
                 ? `<a href="/api/sites/latest" target="_blank" rel="noopener" class="task-link-btn">🌐 Сайт</a>` : '';
-            const isTopLevel = !t.parent_id;
-            const approvalBtns = t.status === 'awaiting_approval' && isTopLevel ? `
+            const approvalBtns = t.status === 'awaiting_approval' ? `
                 <div class="task-approval">
                     <button type="button" class="btn-primary btn-sm" onclick="approveTask('${escapeHtml(t.id)}')">✓ Принять</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="requestTaskRevision('${escapeHtml(t.id)}')">✎ Правки</button>
@@ -1330,29 +1352,31 @@
             const response = t.response
                 ? `<div class="task-response">${escapeHtml(t.response.slice(0, 500))}${t.response.length > 500 ? '…' : ''}</div>`
                 : '';
+            const tid = escapeHtml(t.id);
             return `
-                <article class="task-card ${t.status}">
+                <article class="task-card ${t.status} priority-${prio}">
                     <div class="task-card-top">
                         <span class="task-status-pill ${t.status}">${STATUS_LABELS[t.status] || t.status}</span>
+                        <span class="task-prio" title="Приоритет: ${prio}">${prioBadge}</span>
                         <span class="task-meta">${agent} · ${timeStr}</span>
                     </div>
                     <p class="task-card-text">${escapeHtml(t.task || '')}</p>
                     ${response}
                     <div class="task-card-actions">
                         ${previewLink}${siteLink}
-                        <button type="button" class="task-act-btn" onclick="copyTaskByIndex(${taskHistory.indexOf(t)})" title="Копировать">📋</button>
-                        <button type="button" class="task-act-btn" onclick="rerunTaskByIndex(${taskHistory.indexOf(t)})" title="Повторить">↻</button>
+                        <button type="button" class="task-act-btn" onclick="copyTaskById('${tid}')" title="Копировать">📋</button>
+                        <button type="button" class="task-act-btn" onclick="rerunTaskById('${tid}')" title="Повторить">↻</button>
                     </div>
                     ${approvalBtns}
-                    <div class="task-comments" id="task-comments-${escapeHtml(t.id)}">
+                    <div class="task-comments" id="task-comments-${tid}">
                         ${(t.comments || []).map((c) =>
                             `<div class="task-comment"><strong>${escapeHtml(c.user_name)}</strong>: ${escapeHtml(c.text)} <small>${formatTime(c.created_at)}</small></div>`
                         ).join('')}
                     </div>
                     <div class="task-comment-form">
-                        <input type="text" class="design-input task-comment-input" placeholder="Комментарий…" id="task-comment-input-${escapeHtml(t.id)}"
-                            onkeydown="if(event.key==='Enter')addTaskComment('${escapeHtml(t.id)}')">
-                        <button type="button" class="btn-secondary btn-xs" onclick="addTaskComment('${escapeHtml(t.id)}')">💬</button>
+                        <input type="text" class="design-input task-comment-input" placeholder="Комментарий…" id="task-comment-input-${tid}"
+                            onkeydown="if(event.key==='Enter')addTaskComment('${tid}')">
+                        <button type="button" class="btn-secondary btn-xs" onclick="addTaskComment('${tid}')">💬</button>
                     </div>
                 </article>`;
         }).join('');
@@ -1580,6 +1604,8 @@
         if (window.PipelineUI) PipelineUI.load();
         if (window.StudioMinimap) StudioMinimap.init();
         if (window.SonyaStudio) SonyaStudio.init();
+
+        document.addEventListener('auth:updated', () => loadTasks());
 
         const needsSetup = user && !user.setup_complete;
         if (needsSetup || setupParam === '1') {
