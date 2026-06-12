@@ -73,27 +73,30 @@
 
     function updateHeader() {
         const el = document.getElementById('userMenu');
+        const summary = document.getElementById('userMenuSummary');
         if (!el) return;
         if (!currentUser) {
+            if (summary) summary.textContent = '👤';
             el.innerHTML = `
-                <a href="/" class="hdr-btn">На сайт</a>
-                <a href="/?auth=login" class="hdr-btn">Вход</a>`;
+                <a href="/" class="dropdown-item">На сайт</a>
+                <a href="/?auth=login" class="dropdown-item">Вход</a>
+                <button type="button" class="dropdown-item" onclick="switchView('profile')">👤 Кабинет</button>`;
             return;
         }
         const name = escape(currentUser.name || currentUser.email.split('@')[0]);
         const sub = currentUser.subscription || {};
         const bal = sub.balance_display != null ? sub.balance_display : (sub.balance ?? '—');
         const tierShort = sub.tier_emoji ? `${sub.tier_emoji}` : '';
-        const roleBadge = roleBadgeHtml(currentUser);
         const adminBtn = canAccessAdmin(currentUser)
-            ? `<button type="button" class="hdr-btn hdr-accent-purple" onclick="switchView('admin')" title="Admin">🛡</button>` : '';
+            ? `<button type="button" class="dropdown-item" onclick="switchView('admin')">🛡 Admin</button>` : '';
+        if (summary) summary.textContent = name.slice(0, 1).toUpperCase();
         el.innerHTML = `
-            ${roleBadge}
-            <span class="hdr-balance" title="Баланс · ${sub.tier_name || 'Free'}">${tierShort} ${bal} кр.</span>
+            <div class="dropdown-section-label">${name} · ${tierShort} ${bal} кр.</div>
+            <button type="button" class="dropdown-item" onclick="switchView('profile')">👤 Кабинет</button>
             ${adminBtn}
-            <button type="button" class="hdr-btn" onclick="switchView('profile')" title="Личный кабинет">👤 ${name}</button>
-            <button type="button" class="hdr-btn" onclick="Auth.logout()">Выход</button>
-            <a href="/" class="hdr-btn hdr-icon user-home" title="Главный сайт">🏠</a>`;
+            <button type="button" class="dropdown-item" onclick="Auth.logout()">Выход</button>
+            <div class="dropdown-divider"></div>
+            <a href="/" class="dropdown-item">На сайт</a>`;
     }
 
     function escape(s) {

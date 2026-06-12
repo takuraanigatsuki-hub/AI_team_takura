@@ -85,11 +85,10 @@
             <button type="button" class="hdr-btn hdr-icon" onclick="showSettings()" title="Настройки">⚙️</button>
             <button type="button" class="hdr-btn hdr-icon" id="themeToggle" onclick="toggleTheme()" title="Тема">☀️</button>
             <details class="header-dropdown header-dropdown-account">
-                <summary class="hdr-btn hdr-icon" title="Аккаунт">👤</summary>
-                <div class="dropdown-menu">
+                <summary class="hdr-btn hdr-icon" id="userMenuSummary" title="Аккаунт">👤</summary>
+                <div class="dropdown-menu" id="userMenu">
                     <a href="/" class="dropdown-item">На сайт</a>
                     <a href="/?auth=login" class="dropdown-item">Вход</a>
-                    <button type="button" class="dropdown-item" onclick="switchView('profile')">👤 Кабинет</button>
                 </div>
             </details>
         </div>
@@ -670,12 +669,12 @@
 <script src="/static/js/studio-models.js?v=3"></script>
 <script src="/static/js/studio.js?v=20"></script>
 <script src="/static/js/react-preview.js?v=4"></script>
-<script src="/static/js/integrations.js?v=6"></script>
+<script src="/static/js/integrations.js?v=7"></script>
 <script src="/static/js/ui-enhancements.js?v=4"></script>
 <script src="/static/js/feature-pack.js?v=3"></script>
 <script src="/static/js/dashboard.js?v=2"></script>
 <script src="/static/js/agent-activity.js?v=1"></script>
-<script src="/static/js/auth.js?v=6"></script>
+<script src="/static/js/auth.js?v=7"></script>
 <script src="/static/js/profile.js?v=5"></script>
 <script src="/static/js/admin-panel.js?v=2"></script>
 <script src="/static/js/setup-wizard.js?v=1"></script>

@@ -14,7 +14,7 @@
     --glow-purple: 0 0 20px rgba(157, 78, 221, 0.35);
     --glow-gold: 0 0 18px rgba(232, 184, 74, 0.3);
     --glow-cyan: 0 0 16px rgba(86, 207, 225, 0.25);
-    --header-h: 104px;
+    --header-h: 96px;
     --empire-gold: #e8b84a;
     --empire-purple: #9d4edd;
     --empire-neon: #c77dff;
@@ -821,7 +821,7 @@ a.dropdown-item {
 .minimap-legend .dot-rest { background: #c792ea; }
 
 @media (max-width: 720px) {
-    .studio-hud-right { display: none; }
+    .studio-hud-left .studio-hint { font-size: 9px; padding: 5px 8px; }
     .studio-minimap-panel {
         right: 10px;
         bottom: 10px;
@@ -1345,7 +1345,7 @@ a.dropdown-item {
 }
 
 @media (max-width: 900px) {
-    :root { --header-h: 118px; }
+    :root { --header-h: 108px; }
     .agent-detail { display: none; }
     .sidebar { width: 200px; }
     #reactPreviewPanel { width: 100vw; }
@@ -1355,7 +1355,7 @@ a.dropdown-item {
     .hdr-btn { padding: 5px 9px; font-size: 10px; min-height: 30px; }
 }
 @media (max-width: 640px) {
-    :root { --header-h: 148px; }
+    :root { --header-h: 132px; }
     .sidebar { display: none; }
     .header-status { flex: 1 1 100%; order: 10; }
     .header-actions { flex: 1 1 100%; justify-content: flex-start; }
@@ -1751,6 +1751,25 @@ body.has-pipeline .header { box-shadow: 0 2px 20px rgba(0,0,0,0.15); }
     flex-shrink: 0;
 }
 .tpl-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+.tpl-more-dropdown { position: relative; flex-shrink: 0; }
+.tpl-more-dropdown summary { list-style: none; cursor: pointer; }
+.tpl-more-dropdown summary::-webkit-details-marker { display: none; }
+.tpl-more-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 150px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px;
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28);
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
 
 @media (max-width: 768px) {
     .dash-cards { grid-template-columns: repeat(2, 1fr); }
