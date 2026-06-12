@@ -438,7 +438,7 @@ async def _study_figma_web(agent) -> bool:
 
 async def run_figma_create_session(agent) -> bool:
     from integrations.sonya_studio import run_studio_create_session
-    return await run_studio_create_session(agent)
+    return (await run_studio_create_session(agent)) is not None
 
 
 async def sonya_figma_studio_loop(room_manager, interval_min: int = 12, interval_max: int = 28) -> None:
@@ -476,7 +476,8 @@ async def sonya_figma_studio_loop(room_manager, interval_min: int = 12, interval
             ok = False
             if action == "create":
                 from integrations.sonya_studio import run_studio_create_session
-                ok = await run_studio_create_session(frontend)
+                project = await run_studio_create_session(frontend)
+                ok = project is not None
                 if ok:
                     frontend.figma_creations = getattr(frontend, "figma_creations", 0) + 1
             else:

@@ -60,7 +60,24 @@ def _find_project(store: dict, project_id: str) -> Optional[dict]:
     return None
 
 
-def _public_project(p: dict, *, include_versions: bool = True) -> dict:
+def _version_public(v: dict, *, include_code: bool = False) -> dict:
+    if not v:
+        return {}
+    out = {
+        "id": v["id"],
+        "version_num": v.get("version_num", 1),
+        "title": v.get("title", ""),
+        "task": v.get("task", ""),
+        "colors": v.get("colors", []),
+        "created_at": v.get("created_at"),
+        "created_by": v.get("created_by", "sonya"),
+    }
+    if include_code:
+        out["react_code"] = v.get("react_code", "")
+    return out
+
+
+def _public_project(p: dict, *, include_versions: bool = True, include_react_code: bool = False) -> dict:
     versions = p.get("versions", [])
     current = next((v for v in versions if v.get("id") == p.get("current_version_id")), None)
     if not current and versions:
@@ -79,21 +96,10 @@ def _public_project(p: dict, *, include_versions: bool = True) -> dict:
         "figma_handoff": p.get("figma_handoff"),
         "version_count": len(versions),
         "open_comments": sum(1 for c in p.get("comments", []) if c.get("status") == "open"),
-        "current_version": current,
+        "current_version": _version_public(current, include_code=include_react_code) if current else None,
     }
     if include_versions:
-        out["versions"] = [
-            {
-                "id": v["id"],
-                "version_num": v.get("version_num", 1),
-                "title": v.get("title", ""),
-                "task": v.get("task", ""),
-                "colors": v.get("colors", []),
-                "created_at": v.get("created_at"),
-                "created_by": v.get("created_by", "sonya"),
-            }
-            for v in versions
-        ]
+        out["versions"] = [_version_public(v, include_code=False) for v in versions]
         out["comments"] = p.get("comments", [])
     return out
 
@@ -107,7 +113,7 @@ def list_projects() -> list:
 def get_project(project_id: str) -> Optional[dict]:
     store = _load_store()
     p = _find_project(store, project_id)
-    return _public_project(p) if p else None
+    return _public_project(p, include_react_code=True) if p else None
 
 
 def create_project(
@@ -169,7 +175,7 @@ def create_project(
     }
     store.setdefault("projects", []).insert(0, project)
     _save_store(store)
-    return _public_project(project)
+    return _public_project(project, include_react_code=True)
 
 
 def add_version(
@@ -212,7 +218,7 @@ def add_version(
     if p.get("status") == "published":
         p["status"] = "review"
     _save_store(store)
-    return _public_project(p)
+    return _public_project(p, include_react_code=True)
 
 
 def add_comment(
@@ -377,7 +383,7 @@ def publish_project(project_id: str, *, figma_url: str = "") -> Optional[dict]:
     p["figma_handoff"] = handoff
     p["updated_at"] = ts
     _save_store(store)
-    return _public_project(p)
+    return _public_project(p, include_react_code=True)
 
 
 def _colors_to_css(colors: list) -> str:
@@ -452,9 +458,11 @@ async def create_studio_project(agent, *, title: str = "", theme: str = "") -> d
     return project
 
 
-async def run_studio_create_session(agent) -> bool:
+async def run_studio_create_session(agent) -> Optional[dict]:
+    """Создаёт проект в Studio. Возвращает project или None при ошибке."""
     try:
-        await create_studio_project(agent)
-        return True
-    except Exception:
-        return False
+        return await create_studio_project(agent)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("Studio create failed: %s", e)
+        return None
