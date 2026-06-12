@@ -31,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/main.css?v=26">
+    <link rel="stylesheet" href="/static/css/main.css?v=27">
 </head>
 <body>
 
@@ -81,6 +81,7 @@
                     <button type="button" class="dropdown-item" onclick="VoiceRoom.startListening()">🎤 Голосовая задача</button>
                 </div>
             </details>
+            <button type="button" class="hdr-btn" onclick="SiteSearch.open()" title="Поиск (Ctrl+Shift+F)">🔍</button>
             <button type="button" class="hdr-btn" onclick="showSettings()" title="Настройки">⚙️</button>
             <div class="user-menu" id="userMenu">
                 <a href="/" class="hdr-btn">На сайт</a>
@@ -324,6 +325,7 @@
                 <button type="button" class="filter-btn active" data-filter="all" onclick="filterTasks('all')">Все</button>
                 <button type="button" class="filter-btn" data-filter="completed" onclick="filterTasks('completed')">Выполненные</button>
                 <button type="button" class="filter-btn" data-filter="active" onclick="filterTasks('active')">Активные</button>
+                <input type="search" id="tasksSearch" class="chat-search tasks-search" placeholder="Поиск задач…" oninput="filterTasksSearch(this.value)">
                 <button type="button" class="filter-btn export-btn" onclick="exportTasks()" title="Скачать JSON">📥 Export</button>
             </div>
             <div class="tasks-list" id="tasksList">
@@ -341,6 +343,7 @@
             </div>
             <div class="tasks-stats" id="projectsStats"></div>
             <div class="projects-toolbar">
+                <input type="search" id="projectsSearch" class="chat-search projects-search" placeholder="Поиск проектов…" oninput="ProjectsUI.setSearch(this.value)">
                 <button type="button" class="btn-secondary btn-sm" onclick="PowerPack.compareProjects()">⇔ Сравнить</button>
             </div>
             <div class="projects-filters">
@@ -391,6 +394,7 @@
                 <span class="toolbar-label">📚 Чат обучения</span>
                 <span class="learning-hint">Агенты делятся находками из Wikipedia, GitHub, Хабра и других источников</span>
                 <button type="button" class="clear-btn" onclick="clearLearningMessages()">Очистить</button>
+                <input type="search" id="learningSearch" class="chat-search" placeholder="Поиск…" oninput="filterLearningMessages(this.value)">
             </div>
             <div class="messages learning-messages" id="learningMessages">
                 <div class="welcome" data-learning-welcome>
@@ -648,7 +652,8 @@
 <script src="/static/js/studio.js?v=20"></script>
 <script src="/static/js/react-preview.js?v=4"></script>
 <script src="/static/js/integrations.js?v=6"></script>
-<script src="/static/js/ui-enhancements.js?v=2"></script>
+<script src="/static/js/ui-enhancements.js?v=3"></script>
+<script src="/static/js/search.js?v=1"></script>
 <script src="/static/js/dashboard.js?v=2"></script>
 <script src="/static/js/agent-activity.js?v=1"></script>
 <script src="/static/js/auth.js?v=6"></script>

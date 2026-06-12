@@ -34,6 +34,9 @@ def test_app_spa(client):
     r = client.get("/app")
     assert r.status_code == 200
     assert "view-tab" in r.text or "3D Студия" in r.text
+    assert "search.js" in r.text
+    assert 'id="siteSearchInput"' not in r.text  # overlay created dynamically
+    assert 'onclick="SiteSearch.open()"' in r.text
 
 
 def test_auth_register_login(client):
@@ -119,6 +122,18 @@ def test_projects(client):
     r = client.get("/api/projects")
     assert r.status_code == 200
     assert "projects" in r.json()
+
+
+def test_search(client):
+    r = client.get("/api/search?q=")
+    assert r.status_code == 200
+    data = r.json()
+    assert "results" in data
+    assert data["count"] == 0
+
+    r2 = client.get("/api/search?q=test")
+    assert r2.status_code == 200
+    assert "results" in r2.json()
 
 
 def test_integrations_status(client):
