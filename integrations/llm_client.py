@@ -35,6 +35,16 @@ async def chat(messages: list, max_tokens: int = 800) -> str:
         if resp.status_code != 200:
             raise RuntimeError(f"LLM {resp.status_code}: {resp.text[:300]}")
         data = resp.json()
+        try:
+            from integrations.llm_usage import record_usage
+            usage = data.get("usage") or {}
+            record_usage(
+                input_tokens=usage.get("prompt_tokens", 0),
+                output_tokens=usage.get("completion_tokens", 0),
+                model=cfg["model"],
+            )
+        except Exception:
+            pass
         return data["choices"][0]["message"]["content"]
 
 

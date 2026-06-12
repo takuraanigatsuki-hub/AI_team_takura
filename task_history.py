@@ -54,6 +54,7 @@ class TaskHistory:
             "created_at": datetime.now().isoformat(),
             "started_at": None,
             "completed_at": None,
+            "priority": "medium",
         })
         self._save()
         return task_id
@@ -156,3 +157,13 @@ class TaskHistory:
                     self._try_complete_parent(t["parent_id"])
         if changed:
             self._save()
+
+    def set_priority(self, task_id: str, priority: str) -> bool:
+        t = self._find(task_id)
+        if not t:
+            return False
+        if priority not in ("urgent", "high", "medium", "low"):
+            priority = "medium"
+        t["priority"] = priority
+        self._save()
+        return True

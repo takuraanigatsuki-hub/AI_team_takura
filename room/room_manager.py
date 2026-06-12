@@ -200,6 +200,14 @@ class RoomManager:
         if not text.strip():
             return
 
+        from room.mention_parser import parse_mentions
+        text, mention_target = parse_mentions(text)
+        if mention_target:
+            target = mention_target
+
+        if not text.strip():
+            return
+
         await self.broadcast_work({
             "type": "user_message",
             "message": text,

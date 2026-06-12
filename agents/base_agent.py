@@ -1070,6 +1070,17 @@ class BaseAgent:
                 base += f" | Источники: {', '.join(sources_used[:4])}"
         return base
 
+    def _system_with_memory(self) -> str:
+        base = f"Ты {self.name}, {self.role}. {self.description}\nОтвечай на русском."
+        try:
+            from room.project_memory import context_for_prompt
+            ctx = context_for_prompt()
+            if ctx:
+                base += f"\n\n{ctx}"
+        except Exception:
+            pass
+        return base
+
     async def _build_response(self, task_text: str) -> str:
         knowledge = self._find_relevant_knowledge(task_text)
         try:
@@ -1077,7 +1088,7 @@ class BaseAgent:
             if is_configured():
                 streamed = ""
                 messages = [
-                    {"role": "system", "content": f"Ты {self.name}, {self.role}. {self.description}\nОтвечай на русском."},
+                    {"role": "system", "content": self._system_with_memory()},
                     {"role": "user", "content": f"Задача: {task_text}"},
                 ]
                 if self.room_manager:
