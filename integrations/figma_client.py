@@ -21,6 +21,10 @@ FIGMA_URL_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Типы ссылок, которые REST API Figma не открывает как /v1/files/{key}
+UNSUPPORTED_API_TYPES = frozenset({"site", "proto", "board", "deck", "slides"})
+SUPPORTED_API_TYPES = frozenset({"design", "file", "community"})
+
 
 def parse_figma_url(url: str) -> Optional[dict]:
     """Извлекает file_key и node_id из ссылки Figma."""
@@ -32,10 +36,13 @@ def parse_figma_url(url: str) -> Optional[dict]:
     file_key = m.group(1)
     parsed = urlparse(url)
     qs = parse_qs(parsed.query)
-    path_parts = parsed.path.strip("/").split("/")
-    file_type = path_parts[1] if len(path_parts) >= 2 else "design"
-    if path_parts[:2] == ["community", "file"]:
+    path_parts = [p for p in parsed.path.strip("/").split("/") if p]
+    if len(path_parts) >= 2 and path_parts[0] == "community" and path_parts[1] == "file":
         file_type = "community"
+    elif path_parts:
+        file_type = path_parts[0].lower()
+    else:
+        file_type = "design"
     node_raw = qs.get("node-id", [""])[0]
     node_id = unquote(node_raw).replace("-", ":") if node_raw else None
     return {
@@ -43,7 +50,13 @@ def parse_figma_url(url: str) -> Optional[dict]:
         "node_id": node_id,
         "url": url,
         "file_type": file_type,
+        "api_supported": file_type in SUPPORTED_API_TYPES,
     }
+
+
+def is_figma_api_url(url: str) -> bool:
+    parsed = parse_figma_url(url)
+    return bool(parsed and parsed.get("api_supported"))
 
 
 class FigmaClient:
@@ -201,8 +214,14 @@ class FigmaClient:
         parsed = parse_figma_url(url)
         if not parsed:
             raise ValueError("Некорректная ссылка Figma")
+        if not parsed.get("api_supported"):
+            ftype = parsed.get("file_type", "unknown")
+            raise ValueError(
+                f"Ссылка figma.com/{ftype}/ не поддерживается Figma REST API. "
+                "Используйте figma.com/design/… или figma.com/file/…"
+            )
         if not self.configured:
-            raise ValueError("FIGMA_ACCESS_TOKEN не задан в .env")
+            raise ValueError("Figma не подключена — OAuth или FIGMA_ACCESS_TOKEN в .env")
 
         file_key = parsed["file_key"]
         node_id = parsed.get("node_id")

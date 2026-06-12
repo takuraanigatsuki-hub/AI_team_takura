@@ -17,12 +17,24 @@ class FigmaRateLimitError(RuntimeError):
         super().__init__(msg)
 
 
+def _max_cooldown() -> float:
+    import config as cfg
+    return float(cfg.config.get("figma_rate_limit_max_cooldown_sec", 600))
+
+
 def is_in_cooldown() -> bool:
     return time.time() < _cooldown_until
 
 
 def cooldown_remaining() -> int:
     return max(0, int(_cooldown_until - time.time()))
+
+
+def reset_cooldown() -> None:
+    """Сброс cooldown (тесты / после длинной паузы API)."""
+    global _cooldown_until, _rate_limit_hits
+    _cooldown_until = 0.0
+    _rate_limit_hits = 0
 
 
 def get_status() -> dict:
@@ -36,7 +48,8 @@ def get_status() -> dict:
 def set_cooldown(seconds: float) -> None:
     global _cooldown_until, _rate_limit_hits
     _rate_limit_hits += 1
-    _cooldown_until = max(_cooldown_until, time.time() + max(5.0, seconds))
+    capped = min(max(5.0, float(seconds)), _max_cooldown())
+    _cooldown_until = max(_cooldown_until, time.time() + capped)
 
 
 def parse_retry_after(resp) -> float:
@@ -45,7 +58,7 @@ def parse_retry_after(resp) -> float:
     header = resp.headers.get("Retry-After") or resp.headers.get("retry-after")
     if header:
         try:
-            return float(header)
+            return min(float(header), _max_cooldown())
         except ValueError:
             pass
     try:

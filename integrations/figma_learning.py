@@ -29,6 +29,31 @@ FIGMA_WEB_TOPICS = [
     "design system color palette",
 ]
 
+# Встроенные паттерны — когда API недоступен / rate limit / site-ссылки
+BUILTIN_PATTERNS = [
+    {
+        "file_name": "SaaS Dashboard UI",
+        "colors": ["#6c63ff", "#5ecf8a", "#1a1d2e", "#f0f0f5", "#ffd866", "#c792ea"],
+        "fonts": ["Inter 600", "Inter 400"],
+        "frames": ["Sidebar", "KPI Cards", "Chart Area", "Top Nav"],
+        "source": "builtin",
+    },
+    {
+        "file_name": "Landing Hero Section",
+        "colors": ["#4f7df3", "#ffffff", "#0c0d10", "#5ecf8a", "#e2e4ea"],
+        "fonts": ["Inter 700", "Inter 400"],
+        "frames": ["Hero", "Features", "Pricing", "Footer CTA"],
+        "source": "builtin",
+    },
+    {
+        "file_name": "Mobile App Shell",
+        "colors": ["#7aa2ff", "#141519", "#f07178", "#5ecf8a", "#2a2b35"],
+        "fonts": ["SF Pro 600", "SF Pro 400"],
+        "frames": ["Onboarding", "Home Tab", "Profile", "Settings"],
+        "source": "builtin",
+    },
+]
+
 
 def _ensure_dirs() -> None:
     os.makedirs(DATA_DIR, exist_ok=True)
@@ -74,12 +99,22 @@ def save_portfolio_entry(entry: dict) -> None:
 
 def get_reference_urls() -> list[str]:
     import config as cfg_module
+    from integrations.figma_client import is_figma_api_url
 
     urls = list(cfg_module.config.get("figma_reference_urls") or [])
     default = cfg_module.config.get("figma_default_url", "")
     if default and default not in urls:
         urls.insert(0, default)
-    return [u for u in urls if u and "figma.com" in u]
+    return [u for u in urls if u and "figma.com" in u and is_figma_api_url(u)]
+
+
+def ensure_seed_patterns() -> None:
+    """Стартовые паттерны — чтобы Соня могла создавать проекты без Figma API."""
+    patterns = load_patterns()
+    if patterns.get("colors") or patterns.get("studied"):
+        return
+    for bp in BUILTIN_PATTERNS:
+        _merge_builtin_pattern(bp)
 
 
 def _merge_patterns(figma_result: dict, source_url: str) -> dict:
@@ -120,6 +155,74 @@ def _merge_patterns(figma_result: dict, source_url: str) -> dict:
     return patterns
 
 
+def _merge_builtin_pattern(bp: dict) -> dict:
+    patterns = load_patterns()
+    studied = {
+        "file_name": bp.get("file_name", "Reference"),
+        "url": "",
+        "colors": bp.get("colors", [])[:12],
+        "fonts": bp.get("fonts", [])[:6],
+        "frames": bp.get("frames", [])[:8],
+        "timestamp": datetime.now().isoformat(),
+        "source": bp.get("source", "builtin"),
+    }
+    patterns["studied"] = ([studied] + patterns.get("studied", []))[:30]
+    for c in bp.get("colors") or []:
+        if c not in patterns.get("colors", []):
+            patterns.setdefault("colors", []).append(c)
+    patterns["colors"] = patterns.get("colors", [])[:40]
+    for f in bp.get("fonts") or []:
+        if f not in patterns.get("fonts", []):
+            patterns.setdefault("fonts", []).append(f)
+    patterns["fonts"] = patterns.get("fonts", [])[:20]
+    save_patterns(patterns)
+    return patterns
+
+
+async def study_builtin_pattern(agent, pattern: Optional[dict] = None) -> bool:
+    """Изучение без Figma API — встроенный UI-паттерн."""
+    bp = pattern or random.choice(BUILTIN_PATTERNS)
+    patterns = _merge_builtin_pattern(bp)
+    frame_names = ", ".join(bp.get("frames", [])[:4])
+
+    knowledge = {
+        "topic": f"UI pattern: {bp.get('file_name', 'Reference')}",
+        "title": bp.get("file_name", "UI Reference"),
+        "summary": (
+            f"Изучила референс «{bp.get('file_name')}»: "
+            f"{len(bp.get('colors', []))} цветов, фреймы: {frame_names or '—'}."
+        ),
+        "url": "",
+        "source": "figma_builtin",
+        "keywords": ["figma", "design", "ui", "pattern"] + (bp.get("colors") or [])[:2],
+        "timestamp": datetime.now().isoformat(),
+    }
+    agent.learned_topics.append(knowledge)
+    if len(agent.learned_topics) > 200:
+        agent.learned_topics = agent.learned_topics[-200:]
+    agent._persist_knowledge()
+
+    if agent.room_manager:
+        await agent.room_manager.broadcast_learning({
+            "type": "figma_study",
+            "agent_id": agent.agent_id,
+            "agent_name": agent.name,
+            "agent_emoji": agent.emoji,
+            "message": (
+                f"🎨 **UI Reference** · «{bp.get('file_name')}»\n"
+                f"Цвета: {', '.join(bp.get('colors', [])[:5])}\n"
+                f"Фреймы: {frame_names or '—'}\n"
+                f"_(локальный референс — Figma API недоступен)_"
+            ),
+            "file_name": bp.get("file_name"),
+            "colors": bp.get("colors", [])[:8],
+            "url": "",
+            "patterns_total": len(patterns.get("studied", [])),
+            "timestamp": datetime.now().isoformat(),
+        })
+    return True
+
+
 def _pick_colors(patterns: dict, count: int = 5) -> list[str]:
     pool = patterns.get("colors") or []
     if len(pool) >= count:
@@ -130,14 +233,17 @@ def _pick_colors(patterns: dict, count: int = 5) -> list[str]:
 
 
 async def study_reference_file(agent, url: str) -> Optional[dict]:
-    from integrations.figma_client import get_client_async, parse_figma_url
+    from integrations.figma_client import get_client_async, parse_figma_url, is_figma_api_url
     from integrations.figma_rate_limit import FigmaRateLimitError, is_in_cooldown
 
     if is_in_cooldown():
         return {"error": "rate_limit", "url": url}
 
-    if not parse_figma_url(url):
+    parsed = parse_figma_url(url)
+    if not parsed:
         return None
+    if not is_figma_api_url(url):
+        return {"error": "unsupported_url", "url": url}
 
     client = await get_client_async()
     if not client.configured:
@@ -285,21 +391,24 @@ async def create_original_project(agent) -> Optional[dict]:
 async def run_figma_study_session(agent) -> bool:
     from integrations.figma_rate_limit import is_in_cooldown
 
+    ensure_seed_patterns()
+
     if is_in_cooldown():
-        return await _study_figma_web(agent)
+        return await study_builtin_pattern(agent)
 
     urls = get_reference_urls()
-    if not urls:
-        return await _study_figma_web(agent)
+    if urls:
+        random.shuffle(urls)
+        for url in urls[:2]:
+            result = await study_reference_file(agent, url)
+            if result and not result.get("error"):
+                return True
+            if result and result.get("rate_limit"):
+                return await study_builtin_pattern(agent)
 
-    random.shuffle(urls)
-    for url in urls[:1]:
-        result = await study_reference_file(agent, url)
-        if result and not result.get("error"):
-            return True
-        if result and result.get("rate_limit"):
-            return await _study_figma_web(agent)
-
+    # Нет API-ссылок или все запросы неудачны — локальный референс или веб
+    if random.random() < 0.65:
+        return await study_builtin_pattern(agent)
     return await _study_figma_web(agent)
 
 
@@ -328,16 +437,13 @@ async def _study_figma_web(agent) -> bool:
 
 
 async def run_figma_create_session(agent) -> bool:
+    ensure_seed_patterns()
     patterns = load_patterns()
     if len(patterns.get("studied", [])) < 1 and not patterns.get("colors"):
-        await agent._broadcast(
-            "🎨 Сначала изучу ещё макеты в Figma, потом создам свой проект…",
-            "learning",
-        )
-        return await run_figma_study_session(agent)
+        await study_builtin_pattern(agent)
 
     await agent._broadcast(
-        f"🎨 Создаю свой дизайн-проект в стиле изученных макетов…",
+        "🎨 Создаю свой дизайн-проект в стиле изученных макетов…",
         "learning",
     )
     entry = await create_original_project(agent)
