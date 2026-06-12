@@ -76,6 +76,10 @@
         </button>
         <button type="button" class="preview-toggle-btn" onclick="ReactPreview.toggle()" title="React Preview Сони">🎨 Preview</button>
         <button type="button" class="text-btn" onclick="showSettings()">⚙️ Настройки</button>
+        <div class="user-menu" id="userMenu">
+            <a href="/" class="user-link">На сайт</a>
+            <a href="/?auth=login" class="user-link">Вход</a>
+        </div>
         <button type="button" class="icon-btn" id="themeToggle" onclick="toggleTheme()" title="Сменить тему">☀️</button>
     </div>
 </header>
@@ -466,10 +470,12 @@
 <script src="/static/js/ui-enhancements.js?v=2"></script>
 <script src="/static/js/dashboard.js?v=2"></script>
 <script src="/static/js/agent-activity.js?v=1"></script>
+<script src="/static/js/auth.js?v=1"></script>
+<script src="/static/js/setup-wizard.js?v=1"></script>
 <script src="/static/js/projects.js?v=2"></script>
 <script src="/static/js/sprint.js?v=1"></script>
 <script src="/static/js/power-pack.js?v=1"></script>
-<script src="/static/js/app.js?v=13"></script>
+<script src="/static/js/app.js?v=14"></script>
 
 <!-- PWA: регистрация Service Worker -->
 <script>

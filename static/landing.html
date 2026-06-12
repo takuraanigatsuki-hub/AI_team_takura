@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Team Room — Автономная команда ИИ-агентов</title>
+    <meta name="description" content="11 ИИ-агентов: PM, архитектор, backend, frontend, QA, DevOps, Cursor SDK, 3D и презентации. 3D студия, Kanban, Figma pipeline.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/landing.css">
+    <link rel="icon" href="/static/icons/icon-192.png">
+</head>
+<body>
+<header class="lp-header">
+    <a href="/" class="lp-logo">
+        <span class="lp-logo-mark">🤖</span>
+        <span class="lp-logo-text">AI Team Room</span>
+    </a>
+    <nav class="lp-nav">
+        <a href="#features">Возможности</a>
+        <a href="#team">Команда</a>
+        <a href="#pricing">Старт</a>
+    </nav>
+    <div class="lp-header-actions">
+        <button type="button" class="lp-btn-ghost" id="btnLogin">Вход</button>
+        <button type="button" class="lp-btn-primary" id="btnRegister">Регистрация</button>
+        <button type="button" class="lp-btn-accent" id="btnDashboard">Dashboard →</button>
+    </div>
+</header>
+
+<main>
+    <section class="lp-hero">
+        <div class="lp-hero-glow"></div>
+        <div class="lp-hero-content">
+            <span class="lp-badge">11 агентов · 3D Studio · Figma Pipeline</span>
+            <h1>Автономная команда<br><span class="lp-gradient">ИИ-агентов</span> для вашего проекта</h1>
+            <p class="lp-lead">PM координирует задачи, Соня делает UI из Figma, Лео пишет код через Cursor SDK. Kanban, Sprint, Dashboard — всё в одном месте.</p>
+            <div class="lp-hero-cta">
+                <button type="button" class="lp-btn-xl" id="btnHeroStart">Начать бесплатно</button>
+                <a href="/app" class="lp-btn-xl-outline">Открыть Dashboard</a>
+            </div>
+            <div class="lp-hero-stats">
+                <div><strong>11</strong><span>агентов</span></div>
+                <div><strong>3D</strong><span>студия</span></div>
+                <div><strong>Figma</strong><span>→ React</span></div>
+                <div><strong>Git</strong><span>auto-sync</span></div>
+            </div>
+        </div>
+        <div class="lp-hero-visual">
+            <div class="lp-mock">
+                <div class="lp-mock-bar"><span></span><span></span><span></span></div>
+                <div class="lp-mock-body">
+                    <div class="lp-mock-sidebar">
+                        <div class="lp-agent-chip">👔 Виктор</div>
+                        <div class="lp-agent-chip active">🎨 Соня</div>
+                        <div class="lp-agent-chip">⚡ Лео</div>
+                        <div class="lp-agent-chip">🧊 Зоя</div>
+                    </div>
+                    <div class="lp-mock-main">
+                        <div class="lp-mock-msg">📋 Landing page для стартапа</div>
+                        <div class="lp-mock-msg bot">✅ React Preview готов · Deploy доступен</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="lp-features" id="features">
+        <h2>Всё для продуктовой команды</h2>
+        <div class="lp-grid">
+            <article class="lp-card"><span>🎮</span><h3>3D Студия</h3><p>Живая команда на сцене — клик по агенту открывает личный чат.</p></article>
+            <article class="lp-card"><span>📌</span><h3>Kanban & Sprint</h3><p>Задачи, приоритеты, спринты с backlog и burndown.</p></article>
+            <article class="lp-card"><span>🎨</span><h3>Figma → React</h3><p>Импорт макета, Compare, Pipeline и Deploy одной кнопкой.</p></article>
+            <article class="lp-card"><span>⚡</span><h3>Cursor SDK</h3><p>Лео пишет код локально или через Cloud Agent + GitHub PR.</p></article>
+            <article class="lp-card"><span>📽️</span><h3>Презентации & 3D</h3><p>Ника — pitch deck, Зоя — интерактивные 3D-сцены.</p></article>
+            <article class="lp-card"><span>📊</span><h3>Dashboard</h3><p>Командный центр: задачи, git, интеграции, LLM cost.</p></article>
+        </div>
+    </section>
+
+    <section class="lp-team" id="team">
+        <h2>Команда агентов</h2>
+        <div class="lp-agents">
+            <span>👔 PM</span><span>🏛️ Architect</span><span>⚙️ Backend</span><span>🎨 Frontend</span>
+            <span>🧪 QA</span><span>🔍 Review</span><span>📝 Docs</span><span>🔧 DevOps</span>
+            <span>⚡ Cursor</span><span>📽️ Presenter</span><span>🧊 3D</span>
+        </div>
+    </section>
+
+    <section class="lp-cta" id="pricing">
+        <h2>Готовы начать?</h2>
+        <p>Регистрация за 30 секунд — мастер первой настройки проведёт через интерфейс.</p>
+        <div class="lp-hero-cta">
+            <button type="button" class="lp-btn-xl" id="btnCtaRegister">Создать аккаунт</button>
+            <button type="button" class="lp-btn-xl-outline" id="btnCtaLogin">Уже есть аккаунт</button>
+        </div>
+    </section>
+</main>
+
+<footer class="lp-footer">
+    <span>AI Team Room · takura</span>
+    <a href="/app">Dashboard</a>
+</footer>
+
+<!-- Auth modal -->
+<div class="lp-modal hidden" id="authModal">
+    <div class="lp-modal-backdrop" id="authBackdrop"></div>
+    <div class="lp-modal-card">
+        <button type="button" class="lp-modal-close" id="authClose">×</button>
+        <h2 id="authTitle">Вход</h2>
+        <p class="lp-modal-sub" id="authSub">Войдите, чтобы сохранить настройки и проекты</p>
+        <form id="authForm">
+            <label class="lp-label">Email</label>
+            <input type="email" id="authEmail" class="lp-input" required placeholder="you@company.com">
+            <label class="lp-label" id="nameLabel" style="display:none">Имя</label>
+            <input type="text" id="authName" class="lp-input" style="display:none" placeholder="Алексей">
+            <label class="lp-label">Пароль</label>
+            <input type="password" id="authPassword" class="lp-input" required minlength="6" placeholder="минимум 6 символов">
+            <p class="lp-error hidden" id="authError"></p>
+            <button type="submit" class="lp-btn-xl lp-btn-full" id="authSubmit">Войти</button>
+        </form>
+        <p class="lp-switch">
+            <span id="authSwitchText">Нет аккаунта?</span>
+            <button type="button" class="lp-link" id="authSwitch">Зарегистрироваться</button>
+        </p>
+    </div>
+</div>
+
+<script src="/static/js/landing.js?v=1"></script>
+</body>
+</html>

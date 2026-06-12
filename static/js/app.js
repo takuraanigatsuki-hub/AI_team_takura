@@ -39,6 +39,7 @@
         localStorage.setItem(THEME_KEY, next);
         applyTheme(next);
     };
+    window.applyTheme = applyTheme;
 
     // ─── Views ───────────────────────────────────────────
     let dashboardRefreshTimer = null;
@@ -947,7 +948,7 @@
     };
 
     // ─── Init ────────────────────────────────────────────
-    document.addEventListener('DOMContentLoaded', () => {
+    async function initApp() {
         applyTheme(getPreferredTheme());
         fetch('/api/config').then((r) => r.json()).then((cfg) => {
             if (cfg.auto_theme && window.AutoTheme) AutoTheme.start();
@@ -955,8 +956,25 @@
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission().catch(() => {});
         }
+
+        const user = window.Auth ? await Auth.fetchMe() : null;
+        const params = new URLSearchParams(location.search);
+        const viewParam = params.get('view');
+        const setupParam = params.get('setup');
+
+        if (setupParam === '1' && !user) {
+            location.href = '/?auth=register';
+            return;
+        }
+
         connect();
-        switchView('studio');
+
+        let startView = viewParam || (user?.default_view) || 'studio';
+        if (!['studio', 'chat', 'learning', 'design', 'tasks', 'projects', 'kanban', 'sprint', 'timeline', 'dashboard'].includes(startView)) {
+            startView = 'studio';
+        }
+        switchView(startView);
+
         if (window.ReactPreview) ReactPreview.loadLatest();
         if (window.Integrations) {
             Integrations.loadCursorStatus();
@@ -965,7 +983,17 @@
         if (window.UIEnhancements) UIEnhancements.init();
         if (window.PipelineUI) PipelineUI.load();
         if (window.StudioMinimap) StudioMinimap.init();
-        if (window.Onboarding) Onboarding.start();
+
+        const needsSetup = user && !user.setup_complete;
+        if (needsSetup || setupParam === '1') {
+            if (window.SetupWizard) await SetupWizard.maybeStart(user);
+        } else if (window.Onboarding) {
+            Onboarding.start();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initApp();
 
         document.getElementById('messageInput')?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {

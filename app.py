@@ -144,13 +144,128 @@ if os.path.exists(static_dir):
 # ─── REST API ──────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
-async def index():
-    """Главная страница"""
+async def landing():
+    """Главный сайт — лендинг с входом и регистрацией"""
+    html_file = os.path.join(static_dir, "landing.html")
+    if os.path.exists(html_file):
+        with open(html_file, "r", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    return RedirectResponse("/app")
+
+
+@app.get("/app", response_class=HTMLResponse)
+async def app_spa():
+    """Рабочее приложение — 3D студия и Dashboard"""
     html_file = os.path.join(static_dir, "index.html")
     if os.path.exists(html_file):
         with open(html_file, "r", encoding="utf-8") as f:
             return HTMLResponse(f.read())
     return HTMLResponse("<h1>Static files not found</h1>")
+
+
+    return HTMLResponse("<h1>Static files not found</h1>")
+
+
+# ─── Auth API ───────────────────────────────────────────────
+
+class AuthRegister(BaseModel):
+    email: str
+    password: str
+    name: str = ""
+
+
+class AuthLogin(BaseModel):
+    email: str
+    password: str
+
+
+class AuthSetup(BaseModel):
+    name: str = ""
+    goal: str = ""
+    default_view: str = "dashboard"
+    theme: str = "dark"
+
+
+def _set_session_cookie(response, token: str):
+    from room.user_auth import SESSION_COOKIE, SESSION_DAYS
+    response.set_cookie(
+        key=SESSION_COOKIE,
+        value=token,
+        httponly=True,
+        max_age=SESSION_DAYS * 86400,
+        samesite="lax",
+        path="/",
+    )
+
+
+def _get_session_token(request) -> str:
+    from room.user_auth import SESSION_COOKIE
+    return request.cookies.get(SESSION_COOKIE, "")
+
+
+@app.post("/api/auth/register")
+async def auth_register(body: AuthRegister):
+    from fastapi.responses import JSONResponse
+    from room.user_auth import register
+    try:
+        user, token = register(body.email, body.password, body.name)
+        resp = JSONResponse({"ok": True, "user": user})
+        _set_session_cookie(resp, token)
+        return resp
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/auth/login")
+async def auth_login(body: AuthLogin):
+    from fastapi.responses import JSONResponse
+    from room.user_auth import login
+    try:
+        user, token = login(body.email, body.password)
+        resp = JSONResponse({"ok": True, "user": user})
+        _set_session_cookie(resp, token)
+        return resp
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+
+@app.post("/api/auth/logout")
+async def auth_logout(request):
+    from fastapi.responses import JSONResponse
+    from room.user_auth import logout, SESSION_COOKIE
+    token = _get_session_token(request)
+    logout(token)
+    resp = JSONResponse({"ok": True})
+    resp.delete_cookie(SESSION_COOKIE, path="/")
+    return resp
+
+
+@app.get("/api/auth/me")
+async def auth_me(request):
+    from room.user_auth import get_user_from_token
+    user = get_user_from_token(_get_session_token(request))
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return user
+
+
+@app.post("/api/auth/setup")
+async def auth_setup(body: AuthSetup, request):
+    from room.user_auth import get_user_from_token, complete_setup
+    from room.project_memory import set_memory
+    user = get_user_from_token(_get_session_token(request))
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    updated = complete_setup(
+        user["id"],
+        name=body.name,
+        goal=body.goal,
+        default_view=body.default_view,
+        theme=body.theme,
+    )
+    if body.goal:
+        set_memory(brief=body.goal, goals=[], constraints=[])
+    return {"ok": True, "user": updated}
 
 
 @app.get("/api/agents")

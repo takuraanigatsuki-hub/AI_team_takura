@@ -16,6 +16,49 @@ def test_index(client):
     r = client.get("/")
     assert r.status_code == 200
     assert "AI Team Room" in r.text
+    assert "Регистрация" in r.text or "registration" in r.text.lower() or "btnRegister" in r.text
+
+
+def test_app_spa(client):
+    r = client.get("/app")
+    assert r.status_code == 200
+    assert "view-tab" in r.text or "3D Студия" in r.text
+
+
+def test_auth_register_login(client):
+    import uuid
+    email = f"test-{uuid.uuid4().hex[:8]}@example.com"
+    r = client.post("/api/auth/register", json={
+        "email": email,
+        "password": "secret12",
+        "name": "Tester",
+    })
+    assert r.status_code == 200
+    data = r.json()
+    assert data["ok"] is True
+    assert data["user"]["setup_complete"] is False
+    cookie = r.cookies.get("ai_team_session")
+    assert cookie
+
+    r2 = client.get("/api/auth/me")
+    assert r2.status_code == 200
+    assert r2.json()["email"] == email
+
+    r3 = client.post("/api/auth/setup", json={
+        "name": "Tester",
+        "goal": "Build SaaS",
+        "default_view": "dashboard",
+        "theme": "dark",
+    })
+    assert r3.status_code == 200
+    assert r3.json()["user"]["setup_complete"] is True
+
+    client.post("/api/auth/logout")
+    r4 = client.get("/api/auth/me")
+    assert r4.status_code == 401
+
+    r5 = client.post("/api/auth/login", json={"email": email, "password": "secret12"})
+    assert r5.status_code == 200
 
 
 def test_agents(client):
