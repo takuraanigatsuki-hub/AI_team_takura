@@ -39,6 +39,7 @@
             renderKnowledge(knowEl, cache.knowledge || []);
             renderPalette(paletteEl, cache.color_palette || []);
             renderPortfolio(el('dlPortfolio'), cache.portfolio || cache.recent_portfolio || []);
+            renderDiscovery(cache.discovery || {});
             updateAgentBadge(cache.agent);
         } catch (e) {
             if (studiedEl) studiedEl.innerHTML = `<div class="panel-error">${escape(e.message)}</div>`;
@@ -93,7 +94,7 @@
         }
         container.innerHTML = items.map((k) => {
             const src = k.source || 'design';
-            const badge = { figma: 'Figma', figma_builtin: 'Reference', figma_web: 'Web', figma_portfolio: 'Проект', import: 'Import' }[src] || src;
+            const badge = { figma: 'Figma', figma_auto: 'Auto', figma_builtin: 'Reference', figma_web: 'Web', figma_portfolio: 'Проект', import: 'Import' }[src] || src;
             return `<article class="dl-memory-card">
                 <div class="dl-memory-head">
                     <span class="dl-memory-badge">${escape(badge)}</span>
@@ -133,6 +134,92 @@
                 <small class="muted">${escape(p.inspiration || p.theme || '')}</small>
             </div>`
         ).join('');
+    }
+
+    function renderDiscovery(disc) {
+        const statusEl = el('dlDiscoveryStatus');
+        const logEl = el('dlDiscoveryLog');
+        if (!statusEl) return;
+
+        const enabled = disc.auto_discover_enabled !== false;
+        const next = disc.next_target;
+        const queue = disc.queue_size || 0;
+
+        statusEl.innerHTML = `
+            <div class="dl-discovery-grid">
+                <div class="dl-discovery-stat ${enabled ? 'on' : 'off'}">
+                    <span>${enabled ? '✅' : '⏸'}</span>
+                    <small>Авто-поиск</small>
+                </div>
+                <div class="dl-discovery-stat">
+                    <span>${queue}</span>
+                    <small>в очереди</small>
+                </div>
+                <div class="dl-discovery-stat">
+                    <span>${disc.studied_keys_count || 0}</span>
+                    <small>найдено</small>
+                </div>
+                <div class="dl-discovery-stat">
+                    <span>${disc.catalog_size || 0}</span>
+                    <small>каталог</small>
+                </div>
+            </div>
+            ${next ? `<div class="dl-next-target">
+                <span class="dl-memory-badge">${escape(next.source || 'auto')}</span>
+                <strong>${escape(next.name || 'Следующий макет')}</strong>
+                ${next.url ? `<a href="${escape(next.url)}" target="_blank" rel="noopener" class="dl-link">Открыть ↗</a>` : ''}
+            </div>` : '<p class="muted">Очередь пуста — нажмите «Сканировать» или подключите Figma OAuth</p>'}
+            <p class="muted dl-discovery-meta">
+                ${disc.last_scan_at ? `Скан: ${formatTime(disc.last_scan_at)}` : 'Скан ещё не выполнялся'}
+                ${disc.last_study_at ? ` · Изучено: ${formatTime(disc.last_study_at)}` : ''}
+            </p>`;
+
+        if (!logEl) return;
+        const log = disc.recent_log || [];
+        if (!log.length) {
+            logEl.innerHTML = '';
+            return;
+        }
+        logEl.innerHTML = `<div class="panel-label">Журнал авто-исследования</div>` +
+            log.slice(0, 6).map((e) => {
+                const icon = e.status === 'studied' ? '✅' : '⚠️';
+                return `<div class="dl-log-item ${e.status || ''}">
+                    ${icon} <span class="dl-memory-badge">${escape(e.source || '')}</span>
+                    ${escape(e.name || e.file_key || '—')}
+                    <time>${formatTime(e.timestamp)}</time>
+                </div>`;
+            }).join('');
+    }
+
+    async function discoverScan() {
+        toast('🔄 Сканирую Figma-проекты…', 'info');
+        try {
+            const r = await fetch('/api/figma/studio/discover?scan_only=true', { method: 'POST' });
+            const data = await r.json();
+            if (!r.ok) throw new Error(data.detail || 'Ошибка сканирования');
+            const added = data.scan?.added || 0;
+            toast(added ? `Найдено ${added} новых макетов в очереди` : 'Новых макетов не найдено', added ? 'success' : 'info');
+            await loadLab();
+        } catch (e) {
+            toast(e.message, 'error');
+        }
+    }
+
+    async function discoverStudy() {
+        toast('🔍 Соня ищет и изучает макет…', 'info');
+        try {
+            const r = await fetch('/api/figma/studio/discover', { method: 'POST' });
+            const data = await r.json();
+            if (!r.ok) throw new Error(data.detail || 'Ошибка');
+            if (data.studied) {
+                toast('✅ Соня самостоятельно изучила новый макет', 'success');
+            } else {
+                toast('Скан выполнен — макет для изучения не найден (подключите Figma или добавьте каталог)', 'info');
+            }
+            setTimeout(loadLab, 1500);
+        } catch (e) {
+            toast(e.message, 'error');
+        }
     }
 
     function formatTime(ts) {
@@ -239,6 +326,8 @@
     }
 
     function bind() {
+        el('dlDiscoverScan')?.addEventListener('click', discoverScan);
+        el('dlDiscoverStudy')?.addEventListener('click', discoverStudy);
         el('dlStudyBtn')?.addEventListener('click', studyUrl);
         el('dlImportBtn')?.addEventListener('click', importToReact);
         el('dlTriggerStudy')?.addEventListener('click', triggerStudy);
@@ -254,6 +343,8 @@
         loadLab,
         studyUrl,
         importToReact,
+        discoverScan,
+        discoverStudy,
         toastCopy,
     };
 })(window);

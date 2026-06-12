@@ -109,3 +109,44 @@ def test_react_preview_for_sonya_tasks():
         preview = generate_react_preview(t)
         assert preview.get("code")
         assert "function App" in preview["code"] or "App()" in preview["code"]
+
+
+def test_figma_discovery_extract_urls():
+    from integrations.figma_discovery import extract_figma_urls, file_key_to_url
+
+    text = "See https://www.figma.com/design/abc123XYZ/My-Landing?node-id=1-2 and more"
+    urls = extract_figma_urls(text)
+    assert len(urls) == 1
+    assert "abc123XYZ" in urls[0]
+    assert file_key_to_url("abc123XYZ", "Test") == "https://www.figma.com/design/abc123XYZ/test"
+
+
+def test_figma_discovery_queue_and_status(tmp_path, monkeypatch):
+    from integrations import figma_discovery as fd
+
+    disc_file = tmp_path / "sonya_figma_discovery.json"
+    monkeypatch.setattr(fd, "DISCOVERY_FILE", str(disc_file))
+
+    state = fd.load_discovery()
+    assert state["queue"] == []
+
+    fd.mark_studied("key1", name="File One", url="https://www.figma.com/design/key1/x", source="team")
+    status = fd.get_discovery_status()
+    assert status["studied_keys_count"] == 1
+    assert status["auto_discover_enabled"] is True
+
+    fd.mark_failed("key2", "403", url="https://www.figma.com/design/key2/x", source="catalog")
+    status2 = fd.get_discovery_status()
+    assert status2["failed_keys_count"] == 1
+
+
+def test_figma_discover_endpoint(client):
+    from integrations.figma_rate_limit import reset_cooldown
+
+    reset_cooldown()
+    r = client.post("/api/figma/studio/discover?scan_only=true")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["ok"] is True
+    assert "discovery" in data
+    assert "scan" in data

@@ -1331,7 +1331,7 @@ async def figma_design_lab():
             "figma_studies": getattr(frontend, "figma_studies", 0),
             "figma_creations": getattr(frontend, "figma_creations", 0),
         }
-        design_sources = {"figma", "figma_builtin", "figma_web", "figma_portfolio", "import"}
+        design_sources = {"figma", "figma_auto", "figma_builtin", "figma_web", "figma_portfolio", "import"}
         for k in reversed(frontend.learned_topics):
             src = k.get("source") or ""
             topic = (k.get("topic") or "").lower()
@@ -1425,6 +1425,43 @@ async def figma_studio_trigger(action: str = "study", request: Request = None):
         frontend.figma_studies = getattr(frontend, "figma_studies", 0) + 1
     await room.send_agents_state()
     return {"ok": ok, "action": action}
+
+
+@app.post("/api/figma/studio/discover")
+async def figma_studio_discover(scan_only: bool = False):
+    """Сканирование Figma-проектов и автономное изучение Соней."""
+    from integrations.figma_discovery import run_discovery_scan, try_autonomous_study
+
+    frontend = room.agents.get("frontend")
+    if not frontend:
+        raise HTTPException(status_code=404, detail="Соня не найдена")
+
+    prev_status = frontend.status
+    prev_loc = frontend.location
+    scan = await run_discovery_scan(frontend, include_web=True)
+
+    studied = False
+    if not scan_only:
+        frontend.status = "learning"
+        frontend.location = "library"
+        await room.send_agents_state()
+        try:
+            studied = await try_autonomous_study(frontend)
+            if studied:
+                frontend.figma_studies = getattr(frontend, "figma_studies", 0) + 1
+        finally:
+            frontend.status = prev_status if prev_status != "learning" else "idle"
+            frontend.location = prev_loc if prev_loc else "studio"
+            await room.send_agents_state()
+
+    from integrations.figma_discovery import get_discovery_status
+
+    return {
+        "ok": True,
+        "scan": scan,
+        "studied": studied,
+        "discovery": get_discovery_status(),
+    }
 
 
 # ─── Sonya Design Studio ───────────────────────────────────

@@ -1541,6 +1541,65 @@ a.dropdown-item {
 }
 .dl-import-bar .design-input { flex: 1; min-width: 220px; }
 .dl-import-hint { font-size: 11px; margin-bottom: 16px; }
+.dl-discovery-panel {
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-elevated);
+}
+.dl-discovery-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.dl-discovery-head h3 { font-size: 14px; margin-bottom: 4px; }
+.dl-discovery-head p { font-size: 11px; max-width: 520px; }
+.dl-discovery-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.dl-discovery-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.dl-discovery-stat {
+    text-align: center;
+    padding: 8px 6px;
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    border: 1px solid var(--border);
+}
+.dl-discovery-stat span { display: block; font-size: 15px; font-weight: 700; }
+.dl-discovery-stat small { font-size: 9px; color: var(--text-muted); text-transform: uppercase; }
+.dl-discovery-stat.on { border-color: rgba(94, 207, 138, 0.35); }
+.dl-next-target {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+.dl-discovery-meta { font-size: 10px; margin-top: 4px; }
+.dl-discovery-log { margin-top: 10px; }
+.dl-log-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+}
+.dl-log-item.studied { color: var(--text); }
+.dl-log-item time { margin-left: auto; font-size: 10px; }
 .dl-preview-area { margin-bottom: 20px; min-height: 80px; }
 .dl-preview-card {
     padding: 16px;
@@ -1615,6 +1674,7 @@ a.dropdown-item {
     .design-lab-layout { flex-direction: column; }
     .dl-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
     .dl-panels { grid-template-columns: 1fr; }
+    .dl-discovery-grid { grid-template-columns: repeat(2, 1fr); }
 }
 .figma-oauth-bar {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;

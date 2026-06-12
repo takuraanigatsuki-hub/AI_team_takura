@@ -31,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/main.css?v=29">
+    <link rel="stylesheet" href="/static/css/main.css?v=30">
     <link rel="stylesheet" href="/static/css/feature-pack.css?v=3">
 </head>
 <body>
@@ -275,6 +275,22 @@
                 <button type="button" class="btn-secondary" id="dlImportBtn">⚛️ + React Preview</button>
             </section>
             <p class="dl-import-hint muted">Изучить — только память и паттерны. React Preview — импорт + preview + память.</p>
+            <section class="dl-discovery-panel" id="dlDiscoveryPanel">
+                <div class="dl-discovery-head">
+                    <div>
+                        <h3>🔍 Авто-исследование</h3>
+                        <p class="muted">Соня сама сканирует ваши Figma-команды, каталог и веб — без ссылок от вас</p>
+                    </div>
+                    <div class="dl-discovery-actions">
+                        <button type="button" class="btn-secondary btn-sm" id="dlDiscoverScan">🔄 Сканировать</button>
+                        <button type="button" class="btn-primary btn-sm" id="dlDiscoverStudy">🔍 Найти и изучить</button>
+                    </div>
+                </div>
+                <div class="dl-discovery-status" id="dlDiscoveryStatus">
+                    <div class="panel-empty">Загрузка статуса…</div>
+                </div>
+                <div class="dl-discovery-log" id="dlDiscoveryLog"></div>
+            </section>
             <div id="dlStudyPreview" class="dl-preview-area">
                 <div class="panel-empty">
                     <div class="preview-empty-icon">🖼️</div>
@@ -684,7 +700,7 @@
 <script src="/static/js/studio.js?v=21"></script>
 <script src="/static/js/react-preview.js?v=4"></script>
 <script src="/static/js/integrations.js?v=8"></script>
-<script src="/static/js/sonya-design-lab.js?v=1"></script>
+<script src="/static/js/sonya-design-lab.js?v=2"></script>
 <script src="/static/js/ui-enhancements.js?v=4"></script>
 <script src="/static/js/feature-pack.js?v=3"></script>
 <script src="/static/js/dashboard.js?v=2"></script>

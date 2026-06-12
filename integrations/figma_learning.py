@@ -567,6 +567,8 @@ def get_studio_stats() -> dict:
     ensure_seed_patterns()
     patterns = load_patterns()
     portfolio = load_portfolio()
+    from integrations.figma_discovery import get_discovery_status
+
     return {
         "studied_count": len(patterns.get("studied", [])),
         "patterns_colors": len(patterns.get("colors", [])),
@@ -574,4 +576,5 @@ def get_studio_stats() -> dict:
         "recent_studied": patterns.get("studied", [])[:5],
         "recent_portfolio": portfolio[:5],
         "reference_urls": get_reference_urls(),
+        "discovery": get_discovery_status(),
     }
