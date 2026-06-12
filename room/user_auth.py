@@ -245,6 +245,16 @@ def can_access_admin(user: dict | None) -> bool:
     )
 
 
+def can_view_agent_learning(user: dict | None) -> bool:
+    """Лента обучения, Design Lab — только owner / admin / tech_admin."""
+    if not user:
+        return False
+    role = user.get("role", "member")
+    if role in ("owner", "admin", "tech_admin"):
+        return True
+    return has_privilege(user, "view_agent_learning")
+
+
 def register(email: str, password: str, name: str = "") -> tuple[dict, str]:
     email = email.strip().lower()
     if not email or "@" not in email:

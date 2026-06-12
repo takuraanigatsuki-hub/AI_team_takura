@@ -100,8 +100,6 @@
                 <div class="view-tabs">
                     <button type="button" class="view-tab active" data-view="studio" onclick="switchView('studio')">🎮 3D</button>
                     <button type="button" class="view-tab" data-view="chat" onclick="switchView('chat')">💬 Чат</button>
-                    <button type="button" class="view-tab" data-view="learning" onclick="switchView('learning')">📚 Обучение</button>
-                    <button type="button" class="view-tab" data-view="design" onclick="switchView('design')" title="Соня изучает и запоминает дизайн">🎨 Дизайн-лаб</button>
                 </div>
             </div>
             <div class="nav-group">
@@ -130,6 +128,7 @@
                 <span class="nav-group-label">Аккаунт</span>
                 <div class="view-tabs">
                     <button type="button" class="view-tab" data-view="profile" onclick="switchView('profile')">👤 Кабинет</button>
+                    <button type="button" class="view-tab view-tab-admin hidden" id="agentLearningNavTab" data-view="agent-learning" onclick="switchView('agent-learning')" title="Лента обучения и Figma Design Lab">🔬 Обучение</button>
                     <button type="button" class="view-tab view-tab-admin hidden" id="adminNavTab" data-view="admin" onclick="switchView('admin')">🛡 Admin</button>
                 </div>
             </div>
@@ -229,7 +228,21 @@
         </aside>
     </div>
 
-    <!-- SONYA DESIGN LAB (бывш. Design — в блоке Обучение) -->
+    <!-- AGENT LEARNING (admin only) -->
+    <div id="agentLearningSubnav" class="agent-learning-subnav hidden" aria-hidden="true">
+        <div class="al-inner">
+            <div>
+                <h2 class="al-title">🔬 Обучение агентов</h2>
+                <p class="al-sub muted">Внутренний процесс команды — не показывается обычным пользователям</p>
+            </div>
+            <div class="al-tabs" role="tablist">
+                <button type="button" class="al-tab active" id="alTabLearning" role="tab" onclick="switchAgentLearningPanel('learning')">📚 Лента</button>
+                <button type="button" class="al-tab" id="alTabDesign" role="tab" onclick="switchAgentLearningPanel('design')">🎨 Design Lab</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SONYA DESIGN LAB -->
     <div id="designView" class="design-lab-layout hidden">
         <aside class="dl-sidebar">
             <div class="dl-sonya-card">
@@ -431,14 +444,14 @@
         <section class="learning-area">
             <div class="learning-toolbar">
                 <span class="toolbar-label">📚 Чат обучения</span>
-                <span class="learning-hint">Общее обучение команды · UI/Figma — вкладка «Дизайн-лаб»</span>
+                <span class="learning-hint">Находки агентов из Wikipedia, GitHub, Хабра · Figma — вкладка Design Lab</span>
                 <button type="button" class="clear-btn" onclick="clearLearningMessages()">Очистить</button>
             </div>
             <div class="messages learning-messages" id="learningMessages">
                 <div class="welcome" data-learning-welcome>
                     <div class="welcome-icon">📚</div>
                     <h2>Обучение команды</h2>
-                    <p>Агенты делятся находками из Wikipedia, GitHub, Хабра. Дизайн и Figma — во вкладке <button type="button" class="welcome-link" onclick="switchView('design')">🎨 Дизайн-лаб</button> (Соня запоминает макеты).</p>
+                    <p>Агенты делятся находками из Wikipedia, GitHub, Хабра. Figma и UI-память — во вкладке Design Lab.</p>
                 </div>
             </div>
         </section>
@@ -512,7 +525,7 @@
                 <div class="welcome" data-welcome>
                     <div class="welcome-icon">💬</div>
                     <h2>Рабочий чат</h2>
-                    <p>Задачи, планы Виктора и результаты работы. Обучение — во вкладке «Обучение».</p>
+                    <p>Задачи, планы Виктора и результаты работы.</p>
                     <div class="welcome-actions">
                         <button type="button" class="btn-primary" onclick="switchView('chat');applyTemplate('Сделай landing page для стартапа')">🌐 Landing</button>
                         <button type="button" class="btn-secondary" onclick="switchView('chat');applyTemplate('Напиши REST API для задач')">⚙️ API</button>
@@ -614,8 +627,8 @@
     <div class="modal modal-wide">
         <h2>⚙️ Настройки</h2>
         <div class="settings-grid">
-            <div>
-                <h3 class="settings-section-title">Обучение</h3>
+            <div id="settingsLearningSection" class="hidden">
+                <h3 class="settings-section-title">Обучение агентов</h3>
                 <div class="form-group">
                     <label>Интервал мин (сек)</label>
                     <input type="number" id="learnMinInput" value="5" min="5" max="300">
