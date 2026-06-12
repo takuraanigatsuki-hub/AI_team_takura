@@ -12,7 +12,13 @@
         const grid = document.getElementById('investorGrid');
         if (grid) grid.innerHTML = '<div class="dash-loading">Загрузка investor dashboard…</div>';
         try {
-            const r = await fetch('/api/investor/dashboard');
+            const r = await fetch('/api/investor/dashboard', { credentials: 'same-origin' });
+            if (r.status === 401 || r.status === 403) {
+                if (grid) grid.innerHTML = `<div class="tasks-empty tasks-guest"><div class="tasks-empty-icon">🔐</div>
+                    <h3>Investor Portal</h3><p class="muted">Нужен вход с ролью investor или admin</p>
+                    <a href="/?auth=login" class="btn-primary btn-sm">Войти</a></div>`;
+                return;
+            }
             if (!r.ok) throw new Error('HTTP ' + r.status);
             cache = await r.json();
             render();

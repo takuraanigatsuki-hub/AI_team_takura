@@ -262,7 +262,31 @@ body.sidebar-collapsed .app-content-wrap { margin-left: var(--sidebar-collapsed-
     font-size: 12px;
     max-width: 140px;
 }
-#workspaceSwitcher { display: inline-flex; align-items: center; gap: 4px; }
+.dash-loading {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 40px;
+    position: relative;
+}
+.dash-loading::after {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    margin-left: 8px;
+    vertical-align: middle;
+    border: 2px solid rgba(108, 99, 255, 0.25);
+    border-top-color: #6c63ff;
+    border-radius: 50%;
+    animation: dashSpin 0.7s linear infinite;
+}
+@keyframes dashSpin { to { transform: rotate(360deg); } }
+
+#workspaceSwitcher { display: inline-flex !important; align-items: center; gap: 4px; flex-wrap: wrap; max-width: 160px; }
+@media (max-width: 900px) {
+    #workspaceSwitcher { max-width: 120px; }
+    #workspaceSwitcher .ws-select { max-width: 90px; font-size: 11px; }
+}
 
 @media (max-width: 900px) {
     .sb-mobile-toggle { display: inline-flex !important; }
