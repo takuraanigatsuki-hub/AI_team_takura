@@ -358,9 +358,6 @@
 
         buildCeiling();
         buildWindows();
-        buildDesks();
-        buildRestRoom();
-        buildLibrary();
         buildOfficeDecor();
         buildWalls();
         addAmbientParticles();
@@ -436,25 +433,6 @@
     }
 
     function buildOfficeDecor() {
-        const plantPot = new THREE.MeshStandardMaterial({ color: 0x5a4030, roughness: 0.8 });
-        const plantLeaf = new THREE.MeshStandardMaterial({ color: 0x3d8a55, roughness: 0.7 });
-        [[-8, -6], [6, -5], [14, 2], [-14, 4]].forEach(([x, z]) => {
-            const pot = addProp(new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.28, 10), plantPot), false, true);
-            pot.position.set(x, 0.14, z);
-            for (let i = 0; i < 5; i++) {
-                const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.14 + Math.random() * 0.08, 8, 8), plantLeaf);
-                leaf.position.set(x + (Math.random() - 0.5) * 0.25, 0.35 + i * 0.12, z + (Math.random() - 0.5) * 0.25);
-                leaf.scale.y = 1.4;
-                scene.add(leaf);
-            }
-        });
-
-        const coffeeBase = addProp(new THREE.Mesh(
-            new THREE.BoxGeometry(0.7, 0.85, 0.55),
-            new THREE.MeshStandardMaterial({ color: 0x3a4048, metalness: 0.4, roughness: 0.45 })
-        ), true, true);
-        coffeeBase.position.set(15, 0.42, 6);
-
         const board = addProp(new THREE.Mesh(
             new THREE.BoxGeometry(3.5, 1.4, 0.06),
             new THREE.MeshStandardMaterial({ color: 0xf5f5f0, roughness: 0.85 })
@@ -466,19 +444,6 @@
         );
         boardFrame.position.set(-2, 1.5, -6.75);
         scene.add(boardFrame);
-
-        const table = addProp(new THREE.Mesh(
-            new THREE.CylinderGeometry(0.9, 0.9, 0.06, 24),
-            new THREE.MeshStandardMaterial({ color: 0x4a5060, roughness: 0.35, metalness: 0.2 })
-        ), true, true);
-        table.position.set(0, 0.75, 6);
-        for (let i = 0; i < 4; i++) {
-            const chairAngle = (i / 4) * Math.PI * 2;
-            const c = createOfficeChair(0x6c63ff);
-            c.position.set(0 + Math.sin(chairAngle) * 1.3, 0, 6 + Math.cos(chairAngle) * 1.3);
-            c.rotation.y = chairAngle;
-            scene.add(c);
-        }
     }
 
     function addAmbientParticles() {
@@ -716,6 +681,10 @@
         }
         if (screenFrame) screenFrame.visible = screen?.visible;
 
+        if (mesh.userData.useGltf && global.StudioModels) {
+            StudioModels.setAgentStatus(mesh.userData.agentId, status);
+        }
+
         const keyboard = mesh.getObjectByName('keyboard');
         if (keyboard) {
             keyboard.visible = inStudio && status === 'working';
@@ -779,10 +748,18 @@
             const walkPhase = t * 11 + phase;
             mesh.position.y = mesh.userData.baseY + Math.abs(Math.sin(walkPhase)) * 0.045;
             mesh.rotation.y += (Math.atan2(dx, dz) - mesh.rotation.y) * 0.12;
-            if (legL) legL.rotation.x = Math.sin(walkPhase) * 0.55;
-            if (legR) legR.rotation.x = Math.sin(walkPhase + Math.PI) * 0.55;
-            if (armL) armL.rotation.x = Math.sin(walkPhase + Math.PI) * 0.35;
-            if (armR) armR.rotation.x = Math.sin(walkPhase) * 0.35;
+            if (!mesh.userData.useGltf) {
+                if (legL) legL.rotation.x = Math.sin(walkPhase) * 0.55;
+                if (legR) legR.rotation.x = Math.sin(walkPhase + Math.PI) * 0.55;
+                if (armL) armL.rotation.x = Math.sin(walkPhase + Math.PI) * 0.35;
+                if (armR) armR.rotation.x = Math.sin(walkPhase) * 0.35;
+            }
+            return;
+        }
+
+        if (mesh.userData.useGltf) {
+            mesh.rotation.y += ((mesh.userData.faceAngle || 0) - mesh.rotation.y) * 0.08;
+            mesh.position.y = mesh.userData.baseY + Math.sin(t * 1.5 + phase) * 0.008;
             return;
         }
 
@@ -919,6 +896,10 @@
             animateAgent(mesh, t);
         });
 
+        if (global.StudioModels) {
+            StudioModels.updateMixers(clock.getDelta());
+        }
+
         if (controls) controls.update();
         renderer.render(scene, camera);
     }
@@ -1016,30 +997,51 @@
 
             buildRoom();
 
-            AGENT_ORDER.forEach((id) => {
-                const mesh = createAgentAvatar(id, AGENT_EMOJIS[id] || '👤', AGENT_COLORS[id] || 0x888888);
-                const slot = STUDIO_SLOTS[id];
-                mesh.position.set(slot.x, 0, slot.z);
-                mesh.userData.targetX = slot.x;
-                mesh.userData.targetZ = slot.z;
-                mesh.castShadow = true;
-                scene.add(mesh);
-                agentMeshes[id] = mesh;
-            });
+            const spawnAgents = () => {
+                AGENT_ORDER.forEach((id) => {
+                    let mesh = null;
+                    if (global.StudioModels?.hasSoldier?.()) {
+                        mesh = StudioModels.createAgent(id, AGENT_EMOJIS[id] || '👤', AGENT_COLORS[id] || 0x888888, createLabelSprite);
+                    }
+                    if (!mesh) {
+                        mesh = createAgentAvatar(id, AGENT_EMOJIS[id] || '👤', AGENT_COLORS[id] || 0x888888);
+                    }
+                    const slot = STUDIO_SLOTS[id];
+                    mesh.position.set(slot.x, 0, slot.z);
+                    mesh.userData.targetX = slot.x;
+                    mesh.userData.targetZ = slot.z;
+                    mesh.castShadow = true;
+                    scene.add(mesh);
+                    agentMeshes[id] = mesh;
+                });
+            };
 
-            if (onCanvasClickBound) canvas.removeEventListener('click', onCanvasClickBound);
-            onCanvasClickBound = onCanvasClick;
-            canvas.addEventListener('click', onCanvasClickBound);
+            const finishInit = () => {
+                if (global.StudioModels?.isReady?.()) {
+                    StudioModels.spawnOffice(scene, STUDIO_SLOTS);
+                }
+                spawnAgents();
+                if (onCanvasClickBound) canvas.removeEventListener('click', onCanvasClickBound);
+                onCanvasClickBound = onCanvasClick;
+                canvas.addEventListener('click', onCanvasClickBound);
+                if (resizeObserver) resizeObserver.disconnect();
+                resizeObserver = new ResizeObserver(() => resize(canvas));
+                resizeObserver.observe(canvas.parentElement || canvas);
+                resize(canvas);
+                if (!animId) animate();
+                initialized = true;
+                showLoading(false);
+                renderer.render(scene, camera);
+            };
 
-            if (resizeObserver) resizeObserver.disconnect();
-            resizeObserver = new ResizeObserver(() => resize(canvas));
-            resizeObserver.observe(canvas.parentElement || canvas);
-
-            resize(canvas);
-            if (!animId) animate();
-            initialized = true;
-            showLoading(false);
-            renderer.render(scene, camera);
+            if (global.StudioModels) {
+                StudioModels.loadAll()
+                    .then((info) => console.log('[Studio] CC0 models loaded', info))
+                    .catch((e) => console.warn('[Studio] models fallback', e))
+                    .finally(finishInit);
+            } else {
+                finishInit();
+            }
             return true;
         } catch (err) {
             showLoading(false);
