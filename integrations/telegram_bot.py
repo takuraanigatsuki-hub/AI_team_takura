@@ -145,12 +145,28 @@ async def _api(method: str, **kwargs) -> dict:
         return {"ok": False, "description": "no token"}
     import httpx
     url = API_BASE.format(token=token, method=method)
-    async with httpx.AsyncClient(timeout=35.0) as client:
-        r = await client.post(url, json=kwargs)
-        try:
-            return r.json()
-        except Exception:
-            return {"ok": False, "description": r.text[:200]}
+    try:
+        async with httpx.AsyncClient(timeout=35.0, trust_env=False) as client:
+            r = await client.post(url, json=kwargs)
+            try:
+                return r.json()
+            except Exception:
+                return {"ok": False, "description": r.text[:200]}
+    except Exception as e:
+        _log(f"API {method} error: {e}")
+        return {"ok": False, "description": str(e)}
+
+
+def _log(msg: str):
+    line = f"[telegram] {msg}"
+    print(line)
+    try:
+        log_path = os.path.join(os.path.dirname(__file__), "..", "data", "telegram_bot.log")
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
 
 
 def main_reply_keyboard() -> dict:
@@ -558,16 +574,8 @@ async def polling_loop(room, stop_event: asyncio.Event):
 
     await _prepare_bot()
 
-    me = await _api("getMe")
-    if me.get("ok"):
-        global _bot_info
-        _bot_info = me.get("result", {})
-        print(f"Telegram Bot: @{_bot_info.get('username', '?')} (polling + reply keyboard)")
-    else:
-        print(f"Telegram Bot error: {me.get('description', 'invalid token')}")
-        return
-
     offset = _load_offset()
+    _log(f"polling offset={offset}")
     while not stop_event.is_set():
         try:
             data = await _api(
@@ -582,7 +590,10 @@ async def polling_loop(room, stop_event: asyncio.Event):
             for upd in data.get("result", []):
                 offset = upd["update_id"] + 1
                 _save_offset(offset)
-                asyncio.create_task(_safe_handle_update(upd, room))
+                try:
+                    await _safe_handle_update(upd, room)
+                except Exception as e:
+                    _log(f"update error: {e}")
         except asyncio.CancelledError:
             break
         except Exception as e:
@@ -591,21 +602,38 @@ async def polling_loop(room, stop_event: asyncio.Event):
 
 
 async def start_bot(room):
-    global _poll_task, _stop_event, _room
+    global _poll_task, _stop_event, _room, _bot_info
     _room = room
     if not _token():
-        print("Telegram Bot: TELEGRAM_BOT_TOKEN not set")
+        _log("TELEGRAM_BOT_TOKEN not set")
+        return
+    if os.environ.get("TELEGRAM_EMBEDDED", "true").lower() in ("0", "false", "no"):
+        _log("embedded polling disabled (use telegram_standalone.py)")
         return
     use_polling = os.environ.get("TELEGRAM_POLLING", "true").lower() not in ("0", "false", "no")
-    if not use_polling:
-        await _prepare_bot()
-        me = await _api("getMe")
-        if me.get("ok"):
-            _bot_info.update(me.get("result", {}))
-            print(f"Telegram Bot: webhook mode @{_bot_info.get('username', '?')}")
+    await _prepare_bot()
+    me = await _api("getMe")
+    if not me.get("ok"):
+        _log(f"getMe failed: {me.get('description', me)}")
         return
+    _bot_info = me.get("result", {})
+    username = _bot_info.get("username", "?")
+    if not use_polling:
+        _log(f"webhook mode @{username}")
+        return
+    _log(f"started @{username} polling, chat_id={_default_chat_id() or 'auto on /start'}")
     _stop_event = asyncio.Event()
     _poll_task = asyncio.create_task(polling_loop(room, _stop_event))
+
+    def _on_poll_done(t: asyncio.Task):
+        try:
+            exc = t.exception()
+            if exc:
+                _log(f"polling crashed: {exc}")
+        except Exception:
+            pass
+
+    _poll_task.add_done_callback(_on_poll_done)
 
 
 async def stop_bot():

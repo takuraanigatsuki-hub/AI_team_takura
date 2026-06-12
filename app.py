@@ -1081,6 +1081,14 @@ async def telegram_status():
     return bot_status()
 
 
+@app.post("/api/telegram/restart")
+async def telegram_restart():
+    from integrations.telegram_bot import stop_bot, start_bot, bot_status
+    await stop_bot()
+    await start_bot(room)
+    return {"ok": True, **bot_status()}
+
+
 # ─── Power Pack API ─────────────────────────────────────────
 
 class ProjectMemoryUpdate(BaseModel):
