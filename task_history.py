@@ -72,10 +72,53 @@ class TaskHistory:
 
     def mark_in_progress(self, task_id: str):
         t = self._find(task_id)
-        if t and t["status"] in ("queued", "submitted"):
+        if t and t["status"] in ("queued", "submitted", "triaging", "revision_requested"):
             t["status"] = "in_progress"
             t["started_at"] = datetime.now().isoformat()
             self._save()
+
+    def mark_awaiting_approval(self, task_id: str, response: str,
+                               agent_name: str = "", agent_emoji: str = "",
+                               artifact_id: str = None, preview_url: str = None):
+        t = self._find(task_id)
+        if not t:
+            return
+        t["status"] = "awaiting_approval"
+        t["response"] = (response or "")[:2000]
+        t["awaiting_since"] = datetime.now().isoformat()
+        if agent_name:
+            t["agent_name"] = agent_name
+        if agent_emoji:
+            t["agent_emoji"] = agent_emoji
+        if artifact_id:
+            t["artifact_id"] = artifact_id
+        if preview_url:
+            t["preview_url"] = preview_url
+        self._save()
+
+    def mark_user_approved(self, task_id: str, user_note: str = ""):
+        t = self._find(task_id)
+        if not t:
+            return False
+        t["status"] = "completed"
+        t["completed_at"] = datetime.now().isoformat()
+        t["user_approved"] = True
+        if user_note:
+            t["user_note"] = user_note[:500]
+        self._save()
+        if t.get("parent_id"):
+            self._try_complete_parent(t["parent_id"])
+        return True
+
+    def mark_revision_requested(self, task_id: str, feedback: str = ""):
+        t = self._find(task_id)
+        if not t:
+            return False
+        t["status"] = "revision_requested"
+        t["revision_feedback"] = (feedback or "")[:1000]
+        t["revision_count"] = int(t.get("revision_count") or 0) + 1
+        self._save()
+        return True
 
     def mark_completed(self, task_id: str, response: str,
                        agent_name: str = "", agent_emoji: str = ""):
@@ -109,7 +152,11 @@ class TaskHistory:
         children = [t for t in self.tasks if t.get("parent_id") == parent_id]
         if not children:
             return
-        if all(c.get("status") in ("completed", "failed") for c in children):
+        if all(c.get("status") in ("completed", "failed", "awaiting_approval") for c in children):
+            if any(c.get("status") == "awaiting_approval" for c in children):
+                parent["status"] = "awaiting_approval"
+                self._save()
+                return
             done = sum(1 for c in children if c.get("status") == "completed")
             parent["status"] = "completed"
             parent["completed_at"] = datetime.now().isoformat()
