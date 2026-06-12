@@ -297,12 +297,23 @@
 
     async function triggerSonyaCreate() {
         try {
-            const resp = await fetch('/api/figma/studio/trigger?action=create', { method: 'POST' });
-            const data = await resp.json();
-            if (!resp.ok) throw new Error(data.detail || 'Ошибка');
-            if (window.UIEnhancements) UIEnhancements.toast('✨ Соня создаёт проект в Studio…', 'info');
-            setTimeout(loadSonyaStudio, 4000);
-            if (typeof switchView === 'function') setTimeout(() => switchView('sonya-studio'), 1500);
+            let project = null;
+            if (window.SonyaStudio?.createBySonya) {
+                project = await SonyaStudio.createBySonya();
+            } else {
+                const resp = await fetch('/api/sonya/studio/create', { method: 'POST' });
+                const data = await resp.json().catch(() => ({}));
+                if (!resp.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Ошибка');
+                project = data.project;
+            }
+            if (window.UIEnhancements) UIEnhancements.toast('✨ Соня создала проект в Studio…', 'info');
+            if (typeof switchView === 'function') switchView('sonya-studio');
+            if (window.SonyaStudio && project?.id) {
+                await SonyaStudio.load(project.id);
+            } else if (window.SonyaStudio) {
+                setTimeout(() => SonyaStudio.load(), 1500);
+            }
+            setTimeout(loadSonyaStudio, 3000);
         } catch (e) { alert(e.message); }
     }
 

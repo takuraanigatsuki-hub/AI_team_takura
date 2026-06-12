@@ -172,10 +172,19 @@ class PMOrchestratorAgent(BaseAgent):
             assignments["backend"] = f"Реализовать backend: {task_text}"
 
         if any(w in task_lower for w in [
-            "интерфейс", "ui", "фронтенд", "frontend", "компонент", "страниц",
-            "кнопк", "форм", "react", "верст", "дизайн", "css", "landing", "макет"
+            "интерфейс", "ui", "ux", "фронтенд", "frontend", "компонент", "страниц",
+            "кнопк", "форм", "react", "верст", "дизайн", "css", "landing", "лендинг",
+            "макет", "hero", "дашборд", "dashboard", "превью", "preview", "палитр",
         ]):
             assignments["frontend"] = f"Разработать интерфейс: {task_text}"
+
+        if any(w in task_lower for w in [
+            "studio", "студия", "sonya studio", "design studio", "новый проект",
+            "новый макет", "создай проект", "создай макет", "sonya design",
+        ]) or (
+            "проект" in task_lower and any(w in task_lower for w in ("ui", "макет", "дизайн", "интерфейс", "studio", "студи"))
+        ):
+            assignments["frontend"] = f"Sonya Studio — {task_text}"
 
         if any(w in task_lower for w in ["тест", "test", "баг", "bug", "качество", "проверь"]):
             assignments["qa"] = f"Написать тесты: {task_text}"

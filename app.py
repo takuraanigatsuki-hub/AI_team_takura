@@ -820,29 +820,49 @@ async def figma_studio_stats():
 
 @app.post("/api/figma/studio/trigger")
 async def figma_studio_trigger(action: str = "study"):
-    """Ручной запуск обучения/создания Сони в Figma."""
-    from integrations.figma_learning import run_figma_study_session, run_figma_create_session, ensure_seed_patterns
+    """Ручной запуск обучения/создания Сони в Studio."""
+    from integrations.figma_learning import run_figma_study_session, ensure_seed_patterns
+    from integrations.sonya_studio import run_studio_create_session
 
     ensure_seed_patterns()
     frontend = room.agents.get("frontend")
     if not frontend:
         raise HTTPException(status_code=404, detail="Соня не найдена")
 
+    project = None
     if action == "create":
-        from integrations.sonya_studio import run_studio_create_session
-        ok = await run_studio_create_session(frontend)
+        project = await run_studio_create_session(frontend)
+        if not project:
+            raise HTTPException(status_code=500, detail="Не удалось создать проект в Studio")
+        frontend.figma_creations = getattr(frontend, "figma_creations", 0) + 1
+        ok = True
     else:
         ok = await run_figma_study_session(frontend)
-    if ok:
-        if action == "create":
-            frontend.figma_creations = getattr(frontend, "figma_creations", 0) + 1
-        else:
+        if ok:
             frontend.figma_studies = getattr(frontend, "figma_studies", 0) + 1
     await room.send_agents_state()
-    return {"ok": ok, "action": action}
+    out = {"ok": ok, "action": action}
+    if project:
+        out["project"] = project
+    return out
 
 
 # ─── Sonya Design Studio ───────────────────────────────────
+
+async def _sonya_agent_create_project():
+    from integrations.sonya_studio import run_studio_create_session
+    from integrations.sonya_studio_notify import notify_studio
+
+    frontend = room.agents.get("frontend")
+    if not frontend:
+        raise HTTPException(status_code=404, detail="Соня не найдена")
+    project = await run_studio_create_session(frontend)
+    if not project:
+        raise HTTPException(status_code=500, detail="Не удалось создать проект в Studio")
+    await notify_studio("project", project_title=project.get("title", ""), project_id=project.get("id", ""))
+    await room.send_agents_state()
+    return {"ok": True, "project": project}
+
 
 @app.get("/api/sonya/projects")
 async def sonya_list_projects():
@@ -866,6 +886,17 @@ async def sonya_create_project(body: SonyaProjectCreate, request: Request):
     from integrations.sonya_studio_notify import notify_studio
     await notify_studio("project", project_title=project.get("title", ""), project_id=project.get("id", ""))
     return {"ok": True, "project": project}
+
+
+@app.post("/api/sonya/projects/create-new")
+async def sonya_create_new_by_agent():
+    return await _sonya_agent_create_project()
+
+
+@app.post("/api/sonya/studio/create")
+async def sonya_studio_create_alias():
+    """Алиас — статический путь без {project_id}, чтобы не ловить 404."""
+    return await _sonya_agent_create_project()
 
 
 @app.get("/api/sonya/projects/{project_id}")
@@ -932,20 +963,6 @@ async def sonya_apply_comments(project_id: str):
         project_id=project_id,
         version_num=ver.get("version_num", 1),
     )
-    await room.send_agents_state()
-    return {"ok": True, "project": project}
-
-
-@app.post("/api/sonya/projects/create-new")
-async def sonya_create_new_by_agent():
-    from integrations.sonya_studio import create_studio_project
-
-    frontend = room.agents.get("frontend")
-    if not frontend:
-        raise HTTPException(status_code=404, detail="Соня не найдена")
-    project = await create_studio_project(frontend)
-    from integrations.sonya_studio_notify import notify_studio
-    await notify_studio("project", project_title=project.get("title", ""), project_id=project.get("id", ""))
     await room.send_agents_state()
     return {"ok": True, "project": project}
 

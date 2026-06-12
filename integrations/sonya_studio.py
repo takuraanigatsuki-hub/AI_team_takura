@@ -396,7 +396,7 @@ def _colors_to_css(colors: list) -> str:
     return "\n".join(lines)
 
 
-async def create_studio_project(agent, *, title: str = "", theme: str = "") -> dict:
+async def create_studio_project(agent, *, title: str = "", theme: str = "", task: str = "") -> dict:
     """Соня создаёт проект в Studio (без Figma API)."""
     import random
     from integrations.figma_learning import load_patterns, _pick_colors
@@ -407,10 +407,11 @@ async def create_studio_project(agent, *, title: str = "", theme: str = "") -> d
     title = title or theme_title
     colors = _pick_colors(patterns)
     color_hint = ", ".join(colors[:5])
-    task = (
-        f"{theme_title}. Собственный проект Sonya Studio. "
-        f"Палитра: {color_hint}. Современный UI, React компонент."
-    )
+    if not task:
+        task = (
+            f"{theme_title}. Собственный проект Sonya Studio. "
+            f"Палитра: {color_hint}. Современный UI, React компонент."
+        )
     preview = generate_react_preview(task)
     project = create_project(
         title=title,

@@ -374,6 +374,11 @@
                 addAgentMessage({ ...data, type: data.type, message: data.message || '' });
                 if (data.preview && window.ReactPreview) ReactPreview.onMessage(data.preview);
                 break;
+            case 'sonya_studio_hint':
+                if (data.open_view) switchView(data.open_view);
+                if (window.UIEnhancements) UIEnhancements.toast(data.message || 'Sonya Studio', 'info');
+                addAgentMessage({ ...data, type: 'message', message: data.message || '' });
+                break;
             case 'github_sync_started':
             case 'github_sync_done':
                 addLinkMessage(data.message || '🔗 GitHub Sync', data.pr_url || data.branch_url);

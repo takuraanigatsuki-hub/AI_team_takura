@@ -12,6 +12,49 @@
         return String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     }
 
+    async function parseApiError(r) {
+        try {
+            const d = await r.json();
+            if (typeof d.detail === 'string') {
+                return d.detail === 'Not Found'
+                    ? 'Studio API не найден — перезапустите сервер (python main.py)'
+                    : d.detail;
+            }
+            if (Array.isArray(d.detail)) {
+                return d.detail.map((x) => x.msg || JSON.stringify(x)).join(', ');
+            }
+        } catch (_) { /* ignore */ }
+        if (r.status === 404) return 'Studio API недоступен — перезапустите сервер';
+        return r.statusText || 'Ошибка';
+    }
+
+    async function postSonyaCreate() {
+        const attempts = [
+            { url: '/api/sonya/studio/create', label: 'studio/create' },
+            { url: '/api/sonya/projects/create-new', label: 'create-new' },
+            { url: '/api/figma/studio/trigger?action=create', label: 'figma/trigger' },
+        ];
+        let lastErr = 'Не удалось создать проект';
+        for (const { url } of attempts) {
+            try {
+                const r = await fetch(url, { method: 'POST', credentials: 'same-origin' });
+                const d = await r.json().catch(() => ({}));
+                if (!r.ok) {
+                    lastErr = await parseApiError(r);
+                    continue;
+                }
+                if (d.project?.id) return d.project;
+                if (d.ok === false) {
+                    lastErr = 'Соня не смогла создать проект';
+                    continue;
+                }
+            } catch (e) {
+                lastErr = e.message;
+            }
+        }
+        throw new Error(lastErr);
+    }
+
     function statusLabel(st) {
         return { draft: 'Черновик', review: 'На ревью', published: 'Опубликован' }[st] || st;
     }
@@ -55,8 +98,9 @@
         renderProjectList();
         try {
             const r = await fetch(`/api/sonya/projects/${id}`);
-            if (!r.ok) throw new Error('Проект не найден');
-            activeProject = await r.json();
+            const data = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(await parseApiError(r));
+            activeProject = data;
             renderProject();
         } catch (e) {
             if (window.UIEnhancements) UIEnhancements.toast(e.message, 'error');
@@ -355,10 +399,8 @@
 
     async function askSonyaNew() {
         try {
-            const r = await fetch('/api/sonya/projects/create-new', { method: 'POST' });
-            const d = await r.json();
-            if (!r.ok) throw new Error(d.detail || 'Ошибка');
-            await loadProjects(d.project.id);
+            const project = await postSonyaCreate();
+            await loadProjects(project.id);
             if (window.UIEnhancements) UIEnhancements.toast('Соня создала проект', 'success');
         } catch (e) {
             alert(e.message);
@@ -388,6 +430,7 @@
         openProject,
         createProject,
         askSonyaNew,
+        createBySonya: postSonyaCreate,
         applyComments,
         publishProject,
         compareVersions,

@@ -134,6 +134,29 @@ class FrontendDevAgent(BaseAgent):
                 "timestamp": datetime.now().isoformat()
             })
 
+        reply = await self._maybe_handle_studio_command(text)
+        if reply:
+            self.direct_chat.append({
+                "role": "agent",
+                "text": reply,
+                "timestamp": datetime.now().isoformat()
+            })
+            from direct_chat_store import DirectChatStore
+            DirectChatStore.save(self.agent_id, self.direct_chat)
+            if self.room_manager:
+                await self.room_manager.broadcast({
+                    "type": "direct_agent_message",
+                    "agent_id": self.agent_id,
+                    "agent_name": self.name,
+                    "agent_emoji": self.emoji,
+                    "message": reply,
+                    "status": "idle",
+                    "location": self.location,
+                    "timestamp": datetime.now().isoformat()
+                })
+            self.status = "idle"
+            return
+
         await self._emit_preview(text)
 
         response = self.build_task_response(text, self._find_relevant_knowledge(text))
@@ -177,8 +200,7 @@ class FrontendDevAgent(BaseAgent):
             "task_received"
         )
 
-        response = ""
-        try:
+        if await self._maybe_handle_studio_command(task_text, task_id=task_id, sender=sender):
             figma_url = self._extract_figma_url(task_text)
             if figma_url:
                 from integrations.figma_client import is_figma_api_url
@@ -254,3 +276,100 @@ class FrontendDevAgent(BaseAgent):
         except Exception:
             pass
         return state
+
+    async def _maybe_handle_studio_command(
+        self,
+        text: str,
+        *,
+        task_id: str = None,
+        sender: str = "Пользователь",
+    ) -> bool:
+        from integrations.sonya_commands import match_studio_intent
+        from integrations.sonya_studio import (
+            create_studio_project,
+            list_projects,
+            apply_open_comments,
+            publish_project,
+        )
+
+        intent = match_studio_intent(text)
+        if not intent:
+            return False
+
+        action = intent["action"]
+
+        if action == "open_studio":
+            msg = "✨ Откройте вкладку **Studio** в приложении — там проекты, комментарии и публикация."
+            await self._broadcast_work(msg, "message")
+            if self.room_manager:
+                await self.room_manager.broadcast_work({
+                    "type": "sonya_studio_hint",
+                    "agent_id": self.agent_id,
+                    "message": msg,
+                    "open_view": "sonya-studio",
+                    "timestamp": datetime.now().isoformat(),
+                })
+            return True
+
+        if action == "create":
+            title = intent.get("title") or ""
+            task = intent.get("task") or text
+            project = await create_studio_project(self, title=title, task=task)
+            response = (
+                f"✨ **Sonya Studio** · проект «{project.get('title')}» создан!\n"
+                f"Откройте вкладку **Studio** — можно оставлять комментарии на макете."
+            )
+            await self._broadcast_work(response, "task_done")
+            if self.room_manager and task_id:
+                self.room_manager.record_task_completed(task_id, response, self.name, self.emoji)
+            return True
+
+        projects = list_projects()
+        if not projects:
+            await self._broadcast_work(
+                "📭 В Studio пока нет проектов. Скажите «создай новый проект» или нажмите 🎨 Соня.",
+                "message",
+            )
+            return True
+
+        pid = projects[0]["id"]
+
+        if action == "apply_comments":
+            try:
+                updated = await apply_open_comments(self, pid)
+                response = (
+                    f"🔧 Правки применены · «{updated.get('title')}» "
+                    f"v{updated['current_version'].get('version_num', 1)}"
+                )
+                await self._broadcast_work(response, "task_done")
+                if self.room_manager and task_id:
+                    self.room_manager.record_task_completed(task_id, response, self.name, self.emoji)
+            except ValueError as e:
+                await self._broadcast_work(f"ℹ️ {e}", "message")
+            return True
+
+        if action == "publish":
+            pub = publish_project(pid)
+            if pub:
+                response = (
+                    f"📦 Опубликовано · «{pub.get('title')}» — handoff готов (tokens + React)."
+                )
+                await self._broadcast_work(response, "task_done")
+                if self.room_manager and task_id:
+                    self.room_manager.record_task_completed(task_id, response, self.name, self.emoji)
+                if self.room_manager:
+                    handoff = pub.get("figma_handoff") or {}
+                    await self.room_manager.broadcast_work({
+                        "type": "sonya_studio_published",
+                        "agent_id": self.agent_id,
+                        "agent_name": self.name,
+                        "agent_emoji": self.emoji,
+                        "project_id": pid,
+                        "project_title": pub.get("title"),
+                        "message": response,
+                        "handoff": handoff,
+                        "timestamp": handoff.get("published_at"),
+                    })
+            return True
+
+        return False
