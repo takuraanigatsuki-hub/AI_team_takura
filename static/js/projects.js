@@ -14,7 +14,16 @@
             let url = '/api/projects?limit=100';
             if (filterAgent) url += `&agent_id=${encodeURIComponent(filterAgent)}`;
             if (filterType) url += `&type=${encodeURIComponent(filterType)}`;
-            const r = await fetch(url);
+            const r = await fetch(url, { credentials: 'same-origin' });
+            if (!r.ok) {
+                if (r.status === 401) {
+                    el.innerHTML = `<div class="tasks-empty tasks-guest"><div class="tasks-empty-icon">🔐</div>
+                        <h3>Войдите для просмотра проектов</h3>
+                        <a href="/?auth=login" class="btn-primary btn-sm">Войти</a></div>`;
+                    return;
+                }
+                throw new Error('Не удалось загрузить проекты');
+            }
             const d = await r.json();
             lastProjects = d.projects || [];
             lastStats = d.stats || {};
@@ -61,7 +70,9 @@
             return;
         }
 
-        el.innerHTML = projects.map((p) => `
+        el.innerHTML = projects.map((p) => {
+            const admin = global.UIAccess?.canAccessConsole?.(global.Auth?.getUser());
+            return `
             <article class="project-card ${p.type}">
                 <div class="pc-head">
                     <span class="pc-type">${TYPE_LABELS[p.type] || p.type}</span>
@@ -74,12 +85,13 @@
                     ${p.has_preview ? `<a href="/api/projects/${p.id}/preview" target="_blank" class="btn-primary btn-sm">Открыть</a>` : ''}
                     <button type="button" class="btn-secondary btn-sm" onclick="window.open('/api/projects/${p.id}/export?format=print','_blank')">PDF</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="ProjectsUI.diffWith('${p.id}')">Diff</button>
-                    <button type="button" class="btn-secondary btn-sm" onclick="PowerPack.createPR('${p.id}')">PR</button>
+                    ${admin ? `<button type="button" class="btn-secondary btn-sm" onclick="PowerPack.createPR('${p.id}')">PR</button>` : ''}
                     <button type="button" class="btn-secondary btn-sm" onclick="AgentActivity.open('${p.agent_id}')">Агент</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="ProjectsUI.revise('${p.agent_id}','${p.id}')">✏️</button>
                 </div>
                 <time class="pc-time">${(p.created_at || '').slice(0, 16).replace('T', ' ')} · v${p.version || 1}</time>
-            </article>`).join('');
+            </article>`;
+        }).join('');
     }
 
     async function diffWith(id) {

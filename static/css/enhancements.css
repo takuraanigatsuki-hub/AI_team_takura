@@ -382,3 +382,21 @@ body.sidebar-collapsed .sb-badge {
 .tl-time { color: var(--text-muted, #888); font-variant-numeric: tabular-nums; }
 .tl-who { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tl-actions .btn-sm.active { background: rgba(108,99,255,.25); }
+
+/* Project cards polish */
+.project-card {
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.project-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+    border-color: rgba(108, 99, 255, 0.35);
+}
+.projects-empty, .projects-empty .welcome-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 40px 20px;
+    color: var(--text-muted, #888);
+}

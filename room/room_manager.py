@@ -681,6 +681,19 @@ class RoomManager:
             "message": msg,
             "timestamp": datetime.now().isoformat(),
         })
+        try:
+            from room import notifications
+            uid = t.get("user_id") or ""
+            if uid:
+                notifications.push(
+                    "⏳ Задача ждёт вашего решения",
+                    task_title[:200],
+                    user_id=uid,
+                    ntype="task",
+                    link="/app#tasks",
+                )
+        except Exception:
+            pass
 
     async def approve_task(self, task_id: str, note: str = "") -> bool:
         t = self.task_history._find(task_id)

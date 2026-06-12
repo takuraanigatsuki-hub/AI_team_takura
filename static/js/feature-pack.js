@@ -427,6 +427,10 @@
         if (data.type === 'artifact_created') {
             pushNotify('Артефакт', data.title || 'Новый проект');
         }
+        if (data.type === 'task_awaiting_approval') {
+            pushNotify('⏳ На проверке', String(data.message || '').replace(/[*#_`]/g, '').slice(0, 80));
+            syncServerNotifications();
+        }
     }
 
     async function syncServerNotifications() {
@@ -459,7 +463,7 @@
         hookViewSwitch();
         updateFabVisibility('studio');
         syncServerNotifications();
-        setInterval(syncServerNotifications, 45000);
+        setInterval(syncServerNotifications, 15000);
         setInterval(() => updateFooterMeta({ total: 1, completed: dailyGoal._last }), 60000);
     }
 
