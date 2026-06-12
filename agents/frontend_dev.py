@@ -143,13 +143,47 @@ class FrontendDevAgent(BaseAgent):
                 "is_site": preview.get("is_site", False),
                 "site_url": preview.get("site_url"),
             })
-            if preview.get("is_site"):
+            site_url = preview.get("site_url", "/api/sites/latest")
+            is_site = preview.get("is_site") or should_export_site(task_text)
+            kind = classify_task_kind(task_text)
+            if is_site:
                 await self.room_manager.broadcast_work({
                     "type": "site_ready",
                     "agent_name": self.name,
+                    "agent_emoji": self.emoji,
                     "title": preview["title"],
-                    "site_url": preview.get("site_url", "/api/sites/latest"),
-                    "message": f"🌐 Сайт готов! Откройте React Preview или {preview.get('site_url', '/api/sites/latest')}",
+                    "site_url": site_url,
+                    "message": f"🌐 **Сайт готов!** [Открыть]({site_url}) · или **🎨 Preview** в шапке",
+                    "timestamp": preview["timestamp"],
+                })
+                await self.room_manager.broadcast_work({
+                    "type": "result_ready",
+                    "agent_id": self.agent_id,
+                    "agent_name": self.name,
+                    "agent_emoji": self.emoji,
+                    "title": preview["title"],
+                    "site_url": site_url,
+                    "open_preview": True,
+                    "is_site": True,
+                    "message": (
+                        f"🌐 **{preview['title']}** — сайт собран!\n"
+                        f"• [Открыть сайт]({site_url})\n"
+                        f"• Кнопка **🎨 Preview** — живой React"
+                    ),
+                    "timestamp": preview["timestamp"],
+                })
+            elif kind == "table":
+                await self.room_manager.broadcast_work({
+                    "type": "result_ready",
+                    "agent_id": self.agent_id,
+                    "agent_name": self.name,
+                    "agent_emoji": self.emoji,
+                    "title": preview["title"],
+                    "open_preview": True,
+                    "message": (
+                        f"📊 **{preview['title']}** — таблица в React Preview (не landing).\n"
+                        f"Нажмите **🎨 Preview** в шапке."
+                    ),
                     "timestamp": preview["timestamp"],
                 })
 

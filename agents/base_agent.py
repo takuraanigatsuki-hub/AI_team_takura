@@ -1112,8 +1112,19 @@ class BaseAgent:
                 base += f" | Источники: {', '.join(sources_used[:4])}"
         return base
 
-    def _system_with_memory(self) -> str:
+    def _system_with_memory(self, task_text: str = "") -> str:
         base = f"Ты {self.name}, {self.role}. {self.description}\nОтвечай на русском."
+        try:
+            from room.knowledge_applier import get_learned_hints
+            hints = get_learned_hints(
+                self.agent_id,
+                task_text or self.current_task or "",
+                self.learned_topics,
+            )
+            if hints.get("prompt_extra"):
+                base += f"\n\n{hints['prompt_extra']}"
+        except Exception:
+            pass
         try:
             from room.project_memory import context_for_prompt
             ctx = context_for_prompt()
@@ -1130,7 +1141,7 @@ class BaseAgent:
             if is_configured():
                 streamed = ""
                 messages = [
-                    {"role": "system", "content": self._system_with_memory()},
+                    {"role": "system", "content": self._system_with_memory(task_text)},
                     {"role": "user", "content": f"Задача: {task_text}"},
                 ]
                 if self.room_manager:
@@ -1190,7 +1201,12 @@ class BaseAgent:
             saved = save_artifact(self.agent_id, artifact)
             if self.room_manager:
                 from room.agent_capabilities import get_capabilities
+                from room.task_routing import delivery_channel, should_use_m365
                 caps = get_capabilities(self.agent_id)
+                preview_url = f"/api/projects/{saved['id']}/preview" if saved.get("preview_html") else ""
+                msg = f"📦 **{saved['title']}** ({saved['type']}) — смотрите в «Проекты»"
+                if preview_url:
+                    msg += f"\n🔗 [Открыть результат]({preview_url})"
                 await self.room_manager.broadcast_work({
                     "type": "artifact_created",
                     "agent_id": self.agent_id,
@@ -1199,10 +1215,31 @@ class BaseAgent:
                     "artifact_id": saved["id"],
                     "artifact_type": saved["type"],
                     "title": saved["title"],
+                    "preview_url": preview_url,
                     "capabilities": caps.get("skills", [])[:6],
-                    "message": f"📦 **{saved['title']}** ({saved['type']}) — смотрите в «Проекты»",
+                    "message": msg,
                     "timestamp": datetime.now().isoformat(),
                 })
+                if should_use_m365(task_text):
+                    from integrations.m365_deliver import try_deliver_m365
+                    await try_deliver_m365(task_text, self, artifact=saved, room_manager=self.room_manager)
+                elif delivery_channel(task_text) == "preview" and saved.get("preview_html"):
+                    await self.room_manager.broadcast_work({
+                        "type": "result_ready",
+                        "agent_id": self.agent_id,
+                        "agent_name": self.name,
+                        "agent_emoji": self.emoji,
+                        "title": saved["title"],
+                        "artifact_id": saved["id"],
+                        "preview_url": preview_url,
+                        "open_preview": True,
+                        "message": (
+                            f"✅ **{saved['title']}** готово!\n"
+                            f"• [Открыть в браузере]({preview_url})\n"
+                            f"• Или вкладка **Проекты**"
+                        ),
+                        "timestamp": datetime.now().isoformat(),
+                    })
             return saved
         except Exception:
             return None

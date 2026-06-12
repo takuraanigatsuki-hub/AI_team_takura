@@ -58,11 +58,11 @@ class PMOrchestratorAgent(BaseAgent):
         if kind == "site":
             criteria.append("• Для UI — React Preview / готовый сайт")
         elif kind == "presentation":
-            criteria.append("• Презентация — HTML-слайды во вкладке «Проекты»")
+            criteria.append("• Презентация — слайды в «Проекты» + Microsoft 365 (если настроен)")
         elif kind == "model_3d":
             criteria.append("• 3D — интерактивная сцена Three.js")
         elif kind == "table":
-            criteria.append("• Таблица — React Preview (не landing)")
+            criteria.append("• Таблица — React Preview + Excel в Microsoft 365 (если настроен)")
 
         lines += ["", "**Критерии готовности:**"] + criteria
         lines += ["", "👂 **Команда, слушайте план и приступайте!**"]

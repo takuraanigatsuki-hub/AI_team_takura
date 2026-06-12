@@ -659,7 +659,10 @@
                     <label><input type="checkbox" id="cursorEnabledInput" checked> Cursor SDK включён</label>
                 </div>
                 <div class="form-group checkbox">
-                    <label><input type="checkbox" id="cursorGithubSyncInput" checked> GitHub Sync (Cloud Agent)</label>
+                    <label><input type="checkbox" id="cursorGithubSyncInput"> GitHub Sync (Cloud Agent)</label>
+                </div>
+                <div class="form-group checkbox">
+                    <label><input type="checkbox" id="githubSyncOnTasksInput"> GitHub Sync на каждую задачу</label>
                 </div>
                 <div class="form-group checkbox">
                     <label><input type="checkbox" id="cursorAutoPrInput" checked> Авто-создание Pull Request</label>
@@ -669,8 +672,18 @@
                 </div>
                 <p class="modal-note">
                     API ключ: <code>CURSOR_API_KEY</code> в .env<br>
-                    Repo: настройки или <code>CURSOR_REPO_URL</code> · GitHub подключите в
-                    <a href="https://cursor.com/dashboard?tab=cloud-agents" target="_blank" rel="noopener">Cursor Dashboard</a>
+                    GitHub Sync на задачи — только для coding (таблицы/UI/презентации идут в чат и M365).
+                </p>
+            </div>
+            <div>
+                <h3 class="settings-section-title">Microsoft 365</h3>
+                <div class="form-group checkbox">
+                    <label><input type="checkbox" id="m365EnabledInput" checked> Microsoft 365 (таблицы, Word, презентации)</label>
+                </div>
+                <p class="modal-note">
+                    Azure App + Graph API в `.env`:<br>
+                    <code>MS365_TENANT_ID</code>, <code>MS365_CLIENT_ID</code>, <code>MS365_CLIENT_SECRET</code>, <code>MS365_USER_EMAIL</code><br>
+                    Права: <code>Files.ReadWrite.All</code> (application)
                 </p>
             </div>
         </div>

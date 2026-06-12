@@ -160,7 +160,10 @@ async def auto_sync_loop(room_manager=None, interval: int = 60):
 async def sync_after_task(task_text: str, room_manager=None) -> Optional[dict]:
     """Синхронизация после задачи пользователя."""
     import config as cfg_module
+    from room.task_routing import should_sync_to_github
 
+    if not should_sync_to_github(task_text):
+        return None
     if not cfg_module.config.get("git_auto_sync", True):
         return None
     if not has_local_changes():

@@ -485,7 +485,7 @@
                 }
                 break;
             case 'site_ready':
-                addSystemMessage(data.message || '🌐 Сайт готов! Откройте React Preview.');
+                addResultReadyMessage(data);
                 fetch('/api/agents/frontend/preview').then((r) => r.json()).then((d) => {
                     if (d.preview && window.ReactPreview) {
                         ReactPreview.onMessage({
@@ -495,6 +495,21 @@
                         });
                     }
                 }).catch(() => {});
+                break;
+            case 'result_ready':
+                addResultReadyMessage(data);
+                if (data.open_preview && window.ReactPreview) {
+                    fetch('/api/agents/frontend/preview').then((r) => r.json()).then((d) => {
+                        if (d.preview) ReactPreview.onMessage({ ...d.preview, is_site: data.is_site, site_url: data.site_url });
+                    }).catch(() => {});
+                }
+                break;
+            case 'm365_ready':
+                addLinkMessage(data.message || '📎 Microsoft 365', data.web_url);
+                if (window.UIEnhancements) UIEnhancements.toast(data.title || 'M365', 'success');
+                break;
+            case 'm365_hint':
+                addSystemMessage(data.message || 'Microsoft 365 не настроен');
                 break;
             case 'cursor_progress':
             case 'cursor_run_done':
@@ -566,6 +581,32 @@
         div.innerHTML = `<div class="msg-body">${html}</div>`;
         container.appendChild(div);
         scrollToBottom('messages');
+    }
+
+    function addResultReadyMessage(data) {
+        const container = document.getElementById('messages');
+        if (!container) return;
+        const welcome = container.querySelector('[data-welcome]');
+        if (welcome) welcome.remove();
+        const div = document.createElement('div');
+        div.className = 'message result-ready';
+        const who = data.agent_emoji && data.agent_name ? `${data.agent_emoji} ${data.agent_name}` : 'Команда';
+        let html = `<div class="msg-header">${escapeHtml(who)}</div><div class="msg-body">${formatText(data.message || 'Готово')}</div>`;
+        html += '<div class="result-ready-actions">';
+        if (data.site_url) {
+            html += `<a class="btn-secondary btn-sm" href="${escapeHtml(data.site_url)}" target="_blank" rel="noopener">🌐 Открыть сайт</a>`;
+        }
+        if (data.preview_url) {
+            html += `<a class="btn-secondary btn-sm" href="${escapeHtml(data.preview_url)}" target="_blank" rel="noopener">👁 Preview</a>`;
+        }
+        if (data.open_preview && window.ReactPreview) {
+            html += `<button type="button" class="btn-primary btn-sm" onclick="ReactPreview.toggle()">🎨 React Preview</button>`;
+        }
+        html += '</div>';
+        div.innerHTML = html;
+        container.appendChild(div);
+        scrollToBottom('messages');
+        if (window.UIEnhancements) UIEnhancements.toast(data.title || 'Готово', 'success');
     }
 
     async function notifyPush(title, body) {
@@ -1054,9 +1095,11 @@
                 document.getElementById('cursorRepoInput').value = cfg.cursor_repo_url || '';
                 document.getElementById('cursorRefInput').value = cfg.cursor_repo_ref || 'main';
                 document.getElementById('cursorEnabledInput').checked = cfg.cursor_enabled !== false;
-                document.getElementById('cursorGithubSyncInput').checked = cfg.cursor_github_sync !== false;
+                document.getElementById('cursorGithubSyncInput').checked = cfg.cursor_github_sync === true;
+                document.getElementById('githubSyncOnTasksInput').checked = cfg.github_sync_on_tasks === true;
                 document.getElementById('cursorAutoPrInput').checked = cfg.cursor_auto_create_pr !== false;
                 document.getElementById('gitAutoSyncInput').checked = cfg.git_auto_sync !== false;
+                document.getElementById('m365EnabledInput').checked = cfg.m365_enabled !== false;
             }
         } catch (_) {}
         if (window.Integrations) Integrations.loadCursorStatus();
@@ -1079,8 +1122,10 @@
                     cursor_repo_ref: document.getElementById('cursorRefInput').value,
                     cursor_enabled: document.getElementById('cursorEnabledInput').checked,
                     cursor_github_sync: document.getElementById('cursorGithubSyncInput').checked,
+                    github_sync_on_tasks: document.getElementById('githubSyncOnTasksInput').checked,
                     cursor_auto_create_pr: document.getElementById('cursorAutoPrInput').checked,
                     git_auto_sync: document.getElementById('gitAutoSyncInput').checked,
+                    m365_enabled: document.getElementById('m365EnabledInput').checked,
                 }),
             });
             if (resp.ok) {

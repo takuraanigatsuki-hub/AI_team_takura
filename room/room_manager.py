@@ -332,7 +332,11 @@ class RoomManager:
             asyncio.create_task(self.pipeline.on_task_completed(task_id, failed=True))
 
     async def _maybe_github_sync(self, task_text: str):
-        """Автосинхронизация с GitHub через Cursor Cloud Agent + локальный git push."""
+        """GitHub Sync только для явных coding-задач (не таблицы/UI/презентации)."""
+        from room.task_routing import should_sync_to_github
+
+        if not should_sync_to_github(task_text):
+            return
         try:
             from integrations.github_sync import sync_task_to_github
             await sync_task_to_github(task_text, room_manager=self, source="task")

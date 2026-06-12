@@ -873,6 +873,8 @@ class ConfigUpdate(BaseModel):
     cursor_auto_create_pr: bool = None
     git_auto_sync: bool = None
     git_sync_interval_sec: int = None
+    github_sync_on_tasks: bool = None
+    m365_enabled: bool = None
 
 
 class CursorRunRequest(BaseModel):
@@ -929,6 +931,9 @@ async def get_config():
         "figma_default_url": cfg_module.config.get("figma_default_url", ""),
         "git_auto_sync": cfg_module.config.get("git_auto_sync", True),
         "git_sync_interval_sec": cfg_module.config.get("git_sync_interval_sec", 60),
+        "github_sync_on_tasks": cfg_module.config.get("github_sync_on_tasks", False),
+        "m365_enabled": cfg_module.config.get("m365_enabled", True),
+        "m365_configured": _m365_is_configured(),
         "llm_configured": _llm_is_configured(),
         "llm_model": cfg_module.config.get("llm_model", "gpt-4o-mini"),
         "auto_theme": cfg_module.config.get("auto_theme", False),
@@ -942,6 +947,23 @@ def _llm_is_configured() -> bool:
         return is_configured()
     except Exception:
         return False
+
+
+def _m365_is_configured() -> bool:
+    try:
+        from integrations.m365_client import is_configured
+        return is_configured()
+    except Exception:
+        return False
+
+
+@app.get("/api/m365/status")
+async def m365_status():
+    from integrations.m365_client import status as m365_status_fn
+    import config as cfg_module
+    st = m365_status_fn()
+    st["enabled"] = cfg_module.config.get("m365_enabled", True)
+    return st
 
 
 @app.post("/api/config")
@@ -999,6 +1021,14 @@ async def update_config(update: ConfigUpdate):
     if update.git_sync_interval_sec is not None:
         current["git_sync_interval_sec"] = max(30, update.git_sync_interval_sec)
         cfg_module.config["git_sync_interval_sec"] = current["git_sync_interval_sec"]
+
+    if update.github_sync_on_tasks is not None:
+        current["github_sync_on_tasks"] = update.github_sync_on_tasks
+        cfg_module.config["github_sync_on_tasks"] = update.github_sync_on_tasks
+
+    if update.m365_enabled is not None:
+        current["m365_enabled"] = update.m365_enabled
+        cfg_module.config["m365_enabled"] = update.m365_enabled
 
     with open(config_file, "w", encoding="utf-8") as f:
         json.dump(current, f, indent=4, ensure_ascii=False)

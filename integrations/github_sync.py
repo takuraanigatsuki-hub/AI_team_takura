@@ -90,6 +90,8 @@ async def sync_task_to_github(
     """
     from config import config
 
+    if not config.get("github_sync_on_tasks", False):
+        return None
     if not config.get("cursor_github_sync"):
         return None
     if not config.get("cursor_enabled"):
