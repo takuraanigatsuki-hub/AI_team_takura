@@ -12,6 +12,12 @@ LEARNING_TYPES = frozenset({
     "peer_learning", "peer_discussion", "skill_evaluation",
 })
 
+# Только обучение — никогда не попадает в рабочий чат
+STUDY_TYPES = frozenset({
+    "learning", "learning_result", "reflection", "rest", "figma_study",
+    "peer_learning", "peer_discussion",
+})
+
 WORK_TYPES = frozenset({
     "user_message", "system", "error", "task_received", "task_done",
     "assignment", "orchestrating", "pm_plan", "message", "site_ready",
@@ -157,6 +163,9 @@ class RoomManager:
         await self._send_to_clients(message, exclude)
 
     async def broadcast_work(self, message: dict, exclude: WebSocket = None):
+        msg_type = message.get("type", "")
+        if msg_type in STUDY_TYPES:
+            return await self.broadcast_learning(message, exclude)
         message["channel"] = "work"
         self._append_history(message, "work")
         await self._send_to_clients(message, exclude)

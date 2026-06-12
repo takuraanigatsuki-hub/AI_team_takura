@@ -1075,15 +1075,6 @@ class BaseAgent:
                 )
                 eval_msg = f"🎓 **Оценка ({ev.get('score', 7)}/10):** {ev.get('feedback', '')[:400]}"
                 await self._broadcast_work(eval_msg, "skill_evaluation")
-                if self.room_manager:
-                    await self.room_manager.broadcast_learning({
-                        "type": "skill_evaluation",
-                        "agent_id": evaluator.agent_id,
-                        "agent_name": evaluator.name,
-                        "agent_emoji": evaluator.emoji,
-                        "message": eval_msg,
-                        "timestamp": datetime.now().isoformat(),
-                    })
 
             await self._broadcast_work(
                 f"✅ Готово:\n{response[:800]}{'…' if len(response) > 800 else ''}\n\n"
@@ -1299,12 +1290,21 @@ class BaseAgent:
             await self.room_manager._broadcast_task_history()
 
     async def _broadcast(self, message: str, msg_type: str = "message"):
-        if msg_type in ("learning", "learning_result", "reflection", "rest"):
+        if msg_type in (
+            "learning", "learning_result", "reflection", "rest",
+            "figma_study", "peer_learning", "peer_discussion",
+        ):
             await self._broadcast_learning(message, msg_type)
         else:
             await self._broadcast_work(message, msg_type)
 
     async def _broadcast_work(self, message: str, msg_type: str = "message"):
+        if msg_type in (
+            "learning", "learning_result", "reflection", "rest",
+            "figma_study", "peer_learning", "peer_discussion",
+        ):
+            await self._broadcast_learning(message, msg_type)
+            return
         if self.room_manager:
             await self.room_manager.broadcast_work({
                 "type": msg_type,

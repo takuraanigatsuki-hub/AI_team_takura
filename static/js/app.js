@@ -528,7 +528,6 @@
                 break;
             case 'peer_learning':
             case 'peer_discussion':
-            case 'skill_evaluation':
             case 'learning':
             case 'learning_result':
             case 'reflection':
@@ -537,10 +536,16 @@
                 if (canViewAgentLearning(window.Auth?.getUser())) {
                     addLearningAgentMessage(data);
                 }
-                if (['peer_learning', 'peer_discussion', 'skill_evaluation'].includes(data.type)) {
+                if (data.type === 'figma_study' && window.SonyaDesignLab) SonyaDesignLab.loadLab();
+                break;
+            case 'skill_evaluation':
+                if (data.channel === 'learning') {
+                    if (canViewAgentLearning(window.Auth?.getUser())) {
+                        addLearningAgentMessage(data);
+                    }
+                } else {
                     addAgentMessage({ ...data, message: data.message || '' });
                 }
-                if (data.type === 'figma_study' && window.SonyaDesignLab) SonyaDesignLab.loadLab();
                 break;
             case 'result_ready':
                 addResultReadyMessage(data);
@@ -599,7 +604,7 @@
             case 'direct_user_echo':
                 break;
             default:
-                if (data.channel === 'learning' || LEARNING_TYPES.has(data.type)) {
+                if (data.channel === 'learning' || (LEARNING_TYPES.has(data.type) && data.type !== 'skill_evaluation')) {
                     if (!canViewAgentLearning(window.Auth?.getUser())) break;
                     if (data.type === 'figma_study') {
                         addLearningAgentMessage({ ...data, type: 'figma_study', message: data.message || '' });
@@ -707,6 +712,8 @@
     }
 
     function addWorkMessage(msg) {
+        if (LEARNING_TYPES.has(msg.type) && msg.type !== 'skill_evaluation') return;
+        if (msg.channel === 'learning') return;
         if (msg.type === 'user_message') addUserMessage(msg.message, msg.target);
         else if (msg.type === 'system') addSystemMessage(msg.message);
         else if (msg.type === 'pm_plan') addPlanMessage(msg);

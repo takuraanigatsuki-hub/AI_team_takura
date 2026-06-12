@@ -285,19 +285,19 @@ class FrontendDevAgent(BaseAgent):
                         figma_data = await client.import_design(figma_url)
                         await self.apply_figma_design(figma_data)
                     except FigmaRateLimitError:
-                        await self._broadcast_work(
+                        await self._broadcast(
                             "⏳ Figma API временно недоступен — верстаю UI по описанию задачи.",
-                            "learning",
+                            "message",
                         )
                     except Exception as e:
-                        await self._broadcast_work(
+                        await self._broadcast(
                             f"ℹ️ Figma: {e}. Продолжаю по тексту задачи.",
-                            "learning",
+                            "message",
                         )
                 elif figma_url:
-                    await self._broadcast_work(
+                    await self._broadcast(
                         "ℹ️ Ссылка Figma Sites/Proto не поддерживается API — верстаю по описанию.",
-                        "learning",
+                        "message",
                     )
 
             await self._emit_preview(task_text)
