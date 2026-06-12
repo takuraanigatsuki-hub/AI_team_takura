@@ -2,7 +2,7 @@ import asyncio
 import json
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from pydantic import BaseModel
@@ -230,7 +230,7 @@ async def auth_login(body: AuthLogin):
 
 
 @app.post("/api/auth/logout")
-async def auth_logout(request):
+async def auth_logout(request: Request):
     from fastapi.responses import JSONResponse
     from room.user_auth import logout, SESSION_COOKIE
     token = _get_session_token(request)
