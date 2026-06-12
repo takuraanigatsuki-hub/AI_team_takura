@@ -520,6 +520,7 @@
         if (initialized && renderer) {
             onAgentClick = clickCallback;
             resize(canvas);
+            showLoading(false);
             return true;
         }
 

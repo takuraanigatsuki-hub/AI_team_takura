@@ -13,6 +13,7 @@
             currentUser = await r.json();
             updateHeader();
             applyUserTheme(currentUser);
+            if (window.AdminPanel) AdminPanel.updateNavVisibility(currentUser);
             return currentUser;
         } catch (_) {
             currentUser = null;
@@ -54,8 +55,11 @@
         const sub = currentUser.subscription || {};
         const bal = sub.balance_display != null ? sub.balance_display : (sub.balance ?? '—');
         const tierShort = sub.tier_emoji ? `${sub.tier_emoji}` : '';
+        const adminBtn = (currentUser.is_owner || (currentUser.privileges || []).includes('manage_users'))
+            ? `<button type="button" class="hdr-btn hdr-accent-purple" onclick="switchView('admin')" title="Admin">🛡</button>` : '';
         el.innerHTML = `
-            <span class="hdr-balance" title="Баланс кредитов">${tierShort} ${bal} кр.</span>
+            <span class="hdr-balance" title="Баланс · ${sub.tier_name || 'Free'}">${tierShort} ${bal} кр.</span>
+            ${adminBtn}
             <button type="button" class="hdr-btn" onclick="switchView('profile')" title="Личный кабинет">👤 ${name}</button>
             <button type="button" class="hdr-btn" onclick="Auth.logout()">Выход</button>
             <a href="/" class="hdr-btn hdr-icon user-home" title="Главный сайт">🏠</a>`;

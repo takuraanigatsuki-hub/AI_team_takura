@@ -1067,6 +1067,7 @@
             Integrations.loadFigmaStatus();
         }
         if (window.UIEnhancements) UIEnhancements.init();
+        if (window.AdminPanel && user) AdminPanel.updateNavVisibility(user);
         if (window.PipelineUI) PipelineUI.load();
         if (window.StudioMinimap) StudioMinimap.init();
         if (window.SonyaStudio) SonyaStudio.init();

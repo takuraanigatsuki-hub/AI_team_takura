@@ -67,9 +67,17 @@
         }
     }
 
+    function canAdmin(user) {
+        if (!user) return false;
+        if (user.is_owner) return true;
+        const p = user.privileges || [];
+        return p.includes('admin') || p.includes('manage_users') || p.includes('manage_settings');
+    }
+
     function renderTabs() {
         const nav = document.getElementById('profileTabNav');
         if (!nav) return;
+        const user = global.Auth?.getUser();
         const tabs = [
             { id: 'profile', label: '👤 Профиль' },
             { id: 'subscription', label: '💎 Подписка' },
@@ -77,9 +85,12 @@
             { id: 'security', label: '🔒 Безопасность' },
             { id: 'activity', label: '📈 Активность' },
         ];
+        if (canAdmin(user)) {
+            tabs.push({ id: 'admin-link', label: '🛡 Admin-панель' });
+        }
         nav.innerHTML = tabs.map((t) => `
             <button type="button" class="profile-tab ${t.id === activeTab ? 'active' : ''}"
-                data-tab="${t.id}" onclick="ProfileCabinet.switchTab('${t.id}')">${t.label}</button>`).join('');
+                data-tab="${t.id}" onclick="${t.id === 'admin-link' ? "switchView('admin')" : `ProfileCabinet.switchTab('${t.id}')`}">${t.label}</button>`).join('');
     }
 
     function renderContent() {
@@ -226,9 +237,11 @@
                     <li><span>Brief проекта</span><strong>${s.has_project_brief ? 'задан' : 'не задан'}</strong></li>
                 </ul>
                 <div class="profile-quick-links">
+                    <button type="button" class="btn-secondary btn-sm" onclick="switchView('studio')">🎮 3D</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="switchView('tasks')">📋 Задачи</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="switchView('sonya-studio')">✨ Studio</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="switchView('dashboard')">📊 Dashboard</button>
+                    ${canAdmin(user) ? '<button type="button" class="btn-primary btn-sm" onclick="switchView(\'admin\')">🛡 Admin</button>' : ''}
                 </div>`;
         }
     }
