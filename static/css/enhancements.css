@@ -264,7 +264,9 @@ body.sidebar-collapsed .app-content-wrap { margin-left: var(--sidebar-collapsed-
 }
 #workspaceSwitcher { display: inline-flex; align-items: center; gap: 4px; }
 
+@media (max-width: 900px) {
     .app-sidebar { transform: translateX(-100%); }
     body.sidebar-open .app-sidebar { transform: translateX(0); }
     .app-content-wrap { margin-left: 0 !important; }
+    body.has-sidebar .status-footer { margin-left: 0 !important; }
 }
