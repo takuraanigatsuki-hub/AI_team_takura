@@ -51,6 +51,7 @@
             admin: '🛡 Админ',
             tech_admin: '⚙ Тех. админ',
             support: '💬 Поддержка',
+            investor: '💼 Инвестор',
             member: '👤 Пользователь',
         };
         const cls = {
@@ -58,6 +59,7 @@
             admin: 'role-badge role-admin',
             tech_admin: 'role-badge role-tech',
             support: 'role-badge role-support',
+            investor: 'role-badge role-investor',
             member: 'role-badge role-user',
         };
         const text = user.role_label || labels[role] || labels.member;
@@ -78,11 +80,20 @@
         return user.role === 'owner' || user.role === 'admin' || user.role === 'tech_admin';
     }
 
+    function canViewInvestorPortal(user) {
+        if (!user) return false;
+        if (user.can_view_investor_portal) return true;
+        return canAccessAdmin(user);
+    }
+
     function updateNavVisibility(user) {
         const showAdmin = canAccessAdmin(user);
         const showLearning = canViewAgentLearning(user);
+        const showInvestor = canViewInvestorPortal(user);
         document.getElementById('adminNavTab')?.classList.toggle('hidden', !showAdmin);
         document.getElementById('agentLearningNavTab')?.classList.toggle('hidden', !showLearning);
+        document.getElementById('investorNavTab')?.classList.toggle('hidden', !showInvestor);
+        if (window.SidebarNav) SidebarNav.render();
     }
 
     function updateHeader() {
@@ -117,5 +128,5 @@
         return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     }
 
-    global.Auth = { fetchMe, getUser, isLoggedIn, logout, updateHeader, updateNavVisibility, roleBadgeHtml, canAccessAdmin, canViewAgentLearning };
+    global.Auth = { fetchMe, getUser, isLoggedIn, logout, updateHeader, updateNavVisibility, roleBadgeHtml, canAccessAdmin, canViewAgentLearning, canViewInvestorPortal };
 })(window);

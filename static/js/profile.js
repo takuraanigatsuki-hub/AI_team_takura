@@ -213,6 +213,12 @@
     }
 
     function canAccessView(user, view) {
+        if (view === 'investor') {
+            return global.Auth?.canViewInvestorPortal?.(user) || false;
+        }
+        if (user?.role === 'investor') {
+            return ['investor', 'profile', 'studio'].includes(view);
+        }
         if (['learning', 'design', 'agent-learning'].includes(view)) {
             if (global.Auth?.canViewAgentLearning) return Auth.canViewAgentLearning(user);
             return user?.role === 'owner' || user?.role === 'admin' || user?.role === 'tech_admin';

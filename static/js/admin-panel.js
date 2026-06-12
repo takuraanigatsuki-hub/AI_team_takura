@@ -29,6 +29,7 @@
     function roleOptionsHtml(selected, isOwner) {
         const opts = [
             ['member', '👤 Пользователь'],
+            ['investor', '💼 Инвестор'],
             ['support', '💬 Поддержка'],
             ['admin', '🛡 Админ'],
             ['tech_admin', '⚙ Тех. админ'],
@@ -64,6 +65,8 @@
         if (!nav) return;
         const items = [
             { id: 'console', label: '🖥 Консоль AI & Cursor', show: true },
+            { id: 'security', label: '🛡 Security', show: true },
+            { id: 'flags', label: '🚩 Feature Flags', show: canManageSite(user) },
             { id: 'users', label: '👥 Пользователи', show: canManageUsers(user) },
             { id: 'site', label: '🌐 Сайт и настройки', show: canManageSite(user) },
         ].filter((i) => i.show);

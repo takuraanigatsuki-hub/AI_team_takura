@@ -68,6 +68,6 @@ class SecurityAgent(BaseAgent):
                     f"Review and patch vulnerable endpoints. Detail: {detail}"
                 )
                 try:
-                    await cursor.handle_task(patch_task, from_user=False)
+                    await cursor.assign_task({"text": patch_task, "sender": "Олег (Security)"})
                 except Exception:
                     pass

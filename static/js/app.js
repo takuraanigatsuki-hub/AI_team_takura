@@ -3,7 +3,7 @@
  */
 (function () {
     const THEME_KEY = 'ai-team-room-theme';
-    const AGENT_ORDER = ['pm', 'architect', 'backend', 'frontend', 'qa', 'reviewer', 'doc_writer', 'devops', 'cursor', 'evaluator'];
+    const AGENT_ORDER = ['pm', 'architect', 'backend', 'frontend', 'qa', 'reviewer', 'doc_writer', 'devops', 'cursor', 'security', 'evaluator'];
     const LEARNING_AGENT_ORDER = ['evaluator', 'pm', 'architect', 'backend', 'frontend', 'qa', 'reviewer', 'doc_writer', 'devops', 'cursor'];
     const LEARNING_TYPES = new Set([
         'learning', 'learning_result', 'reflection', 'rest', 'figma_study',
@@ -77,6 +77,18 @@
                 switchView('profile');
                 return;
             }
+        } else if (view === 'investor') {
+            if (!user || (!user.can_view_investor_portal && !window.Auth?.canAccessAdmin?.(user))) {
+                const msg = 'Investor Portal — войдите с ролью investor или admin';
+                if (window.UIEnhancements) UIEnhancements.toast(msg, 'warn');
+                else alert(msg);
+                switchView(user ? 'profile' : 'studio');
+                return;
+            }
+        } else if (user?.role === 'investor' && !['investor', 'profile', 'studio'].includes(view)) {
+            if (window.UIEnhancements) UIEnhancements.toast('Investor — только просмотр', 'warn');
+            switchView('investor');
+            return;
         } else if (AGENT_LEARNING_VIEWS.has(view)) {
             if (!canViewAgentLearning(user)) {
                 const msg = 'Обучение агентов доступно только администраторам';
@@ -127,7 +139,9 @@
         document.getElementById('projectsView')?.classList.toggle('hidden', view !== 'projects');
         document.getElementById('profileView')?.classList.toggle('hidden', view !== 'profile');
         document.getElementById('adminView')?.classList.toggle('hidden', view !== 'admin');
+        document.getElementById('investorView')?.classList.toggle('hidden', view !== 'investor');
 
+        if (window.SidebarNav) SidebarNav.setActive(view);
         if (view === 'tasks') loadTasks();
         if (view === 'projects' && window.ProjectsUI) ProjectsUI.load();
         if (view === 'kanban' && window.KanbanUI) KanbanUI.refresh();
@@ -145,6 +159,7 @@
         if (view === 'sonya-studio' && window.SonyaStudio) SonyaStudio.load();
         if (view === 'dashboard' && window.Dashboard) Dashboard.load();
         if (view === 'dashboard' && window.PowerPack) PowerPack.loadCostWidget();
+        if (view === 'investor' && window.InvestorPortal) InvestorPortal.load();
         if (view === 'profile' && window.ProfileCabinet) ProfileCabinet.load();
         if (view === 'admin' && window.AdminPanel) AdminPanel.load();
 

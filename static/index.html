@@ -302,7 +302,12 @@
             <div id="mashaTabTasks" class="ml-tab-panel hidden">
                 <div id="mashaUserList" class="ml-list"></div>
             </div>
+            <div id="mashaTabSkills" class="ml-tab-panel hidden">
+                <p class="ml-panel-hint muted">Skill matrix — средние оценки Маши по агентам</p>
+                <div id="mashaSkillMatrix" class="ml-skill-matrix"></div>
+            </div>
             <div id="mashaTabProjects" class="ml-tab-panel hidden">
+                <section class="ml-panel-inline">
                     <h3>📁 Solo-проекты</h3>
                     <div id="mashaSoloList" class="ml-list"></div>
                 </section>
@@ -450,6 +455,7 @@
                     <p class="tasks-sub">Подтверждайте результат или отправляйте на правки</p>
                 </div>
                 <div class="tasks-head-actions">
+                    <button type="button" class="btn-primary btn-sm" onclick="TaskTemplates.showPicker()">📋 Шаблоны</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="exportTasks()">📥 Export</button>
                     <button type="button" class="btn-secondary btn-sm tasks-btn-warn" onclick="cancelAllTasks()">🛑 Отменить активные</button>
                     <button type="button" class="btn-secondary btn-sm tasks-btn-danger" onclick="clearTasksHistory()">🗑 Очистить всё</button>
@@ -790,6 +796,18 @@
     </div>
 </div>
 
+</div><!-- .main -->
+</div><!-- .app-content-wrap -->
+
+<div id="templatePickerModal" class="template-modal hidden" onclick="if(event.target===this)TaskTemplates.hidePicker()">
+    <div class="template-modal-inner">
+        <h3>📋 Шаблоны задач</h3>
+        <p class="muted">Готовые пресеты для PM и команды</p>
+        <div id="templatePickerList"></div>
+        <button type="button" class="btn-secondary btn-sm" style="margin-top:16px" onclick="TaskTemplates.hidePicker()">Закрыть</button>
+    </div>
+</div>
+
 <!-- Cursor SDK Panel -->
 <aside id="cursorPanel" class="side-panel">
     <div class="side-panel-header">
@@ -828,9 +846,9 @@
 <script src="/static/js/search.js?v=1"></script>
 <script src="/static/js/dashboard.js?v=2"></script>
 <script src="/static/js/agent-activity.js?v=1"></script>
-<script src="/static/js/auth.js?v=7"></script>
+<script src="/static/js/auth.js?v=8"></script>
 <script src="/static/js/profile.js?v=5"></script>
-<script src="/static/js/admin-panel.js?v=2"></script>
+<script src="/static/js/admin-panel.js?v=3"></script>
 <script src="/static/js/setup-wizard.js?v=2"></script>
 <script src="/static/js/cinematic-onboarding.js?v=1"></script>
 <script src="/static/js/projects.js?v=2"></script>
@@ -838,8 +856,12 @@
 <script src="/static/js/power-pack.js?v=1"></script>
 <script src="/static/js/sonya-studio.js?v=3"></script>
 <script src="/static/js/chat-commands.js?v=1"></script>
-<script src="/static/js/masha-learning-lab.js?v=2"></script>
-<script src="/static/js/app.js?v=34"></script>
+<script src="/static/js/masha-learning-lab.js?v=3"></script>
+<script src="/static/js/sidebar-nav.js?v=1"></script>
+<script src="/static/js/investor-portal.js?v=1"></script>
+<script src="/static/js/security-dashboard.js?v=1"></script>
+<script src="/static/js/task-templates.js?v=1"></script>
+<script src="/static/js/app.js?v=35"></script>
 
 <!-- PWA: регистрация Service Worker -->
 <script>
