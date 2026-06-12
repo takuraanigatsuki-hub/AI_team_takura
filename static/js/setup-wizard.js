@@ -130,7 +130,8 @@
             await global.Auth?.fetchMe();
             overlay?.remove();
             if (window.switchView) switchView(formData.default_view);
-            if (window.Onboarding) Onboarding.start();
+            if (window.CinematicOnboarding) CinematicOnboarding.start(formData.goal);
+            else if (window.Onboarding) Onboarding.start();
             if (window.UIEnhancements) UIEnhancements.toast('🎉 Настройка завершена', 'success');
         } catch (e) {
             alert(e.message || 'Ошибка сохранения');

@@ -1094,6 +1094,8 @@
         const needsSetup = user && !user.setup_complete;
         if (needsSetup || setupParam === '1') {
             if (window.SetupWizard) await SetupWizard.maybeStart(user);
+        } else if (window.CinematicOnboarding) {
+            CinematicOnboarding.start();
         } else if (window.Onboarding) {
             Onboarding.start();
         }

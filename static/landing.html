@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/landing.css?v=3">
+    <link rel="stylesheet" href="/static/css/landing.css?v=4">
     <link rel="icon" href="/static/icons/icon-192.png">
 </head>
 <body>
@@ -41,38 +41,132 @@
     <section class="lp-hero">
         <div class="lp-hero-glow"></div>
         <div class="lp-hero-content">
-            <span class="lp-badge">11 агентов · 3D Studio · Figma Pipeline</span>
+            <span class="lp-badge">11 агентов · живая 3D-студия · Figma → Deploy</span>
             <h1>Автономная команда<br><span class="lp-gradient">ИИ-агентов</span> для вашего проекта</h1>
-            <p class="lp-lead">PM координирует задачи, Соня делает UI из Figma, Лео пишет код через Cursor SDK. Kanban, Sprint, Dashboard — всё в одном месте.</p>
+            <p class="lp-lead">Кликните на агента в 3D-офисе — demo-чат без регистрации. PM, UI, код и deploy — один поток.</p>
             <div class="lp-hero-cta" id="lpHeroCtaGuest">
                 <button type="button" class="lp-btn-xl" id="btnHeroStart">Начать бесплатно</button>
-                <a href="/app" class="lp-btn-xl-outline">Открыть Dashboard</a>
+                <button type="button" class="lp-btn-xl-outline" id="btnHeroDemo">▶ Demo за 2 мин</button>
             </div>
             <div class="lp-hero-cta hidden" id="lpHeroCtaUser">
                 <a href="/app" class="lp-btn-xl" id="lpHeroWorkspace">Перейти в рабочую область</a>
                 <a href="/app?view=profile" class="lp-btn-xl-outline">Личный кабинет</a>
             </div>
-            <div class="lp-hero-stats">
-                <div><strong>11</strong><span>агентов</span></div>
-                <div><strong>3D</strong><span>студия</span></div>
-                <div><strong>Figma</strong><span>→ React</span></div>
-                <div><strong>Git</strong><span>auto-sync</span></div>
+            <div class="lp-live-stats" id="lpLiveStats">
+                <div><strong id="lpLiveTasks">847</strong><span>задач сегодня</span></div>
+                <div><strong id="lpLiveRooms">124</strong><span>комнат live</span></div>
+                <div><strong id="lpLivePr">23</strong><span>PR за сутки</span></div>
             </div>
         </div>
         <div class="lp-hero-visual">
-            <div class="lp-mock">
-                <div class="lp-mock-bar"><span></span><span></span><span></span></div>
-                <div class="lp-mock-body">
-                    <div class="lp-mock-sidebar">
-                        <div class="lp-agent-chip">👔 Виктор</div>
-                        <div class="lp-agent-chip active">🎨 Соня</div>
-                        <div class="lp-agent-chip">⚡ Лео</div>
-                        <div class="lp-agent-chip">🧊 Зоя</div>
+            <div class="lp-studio-wrap">
+                <canvas id="landingCanvas" aria-label="3D студия команды"></canvas>
+                <div id="landingStudioLoading" class="lp-studio-loading">
+                    <div class="lp-studio-ring"></div>
+                    <span>Загрузка 3D-офиса…</span>
+                </div>
+                <div id="landingStudioError" class="lp-studio-error" style="display:none"></div>
+                <div class="lp-studio-hint">🖱 вращение · клик — demo-чат</div>
+            </div>
+            <aside class="lp-mini-chat hidden" id="lpMiniChat">
+                <div class="lp-mini-chat-head">
+                    <span id="lpMiniChatTitle">Агент</span>
+                    <button type="button" class="lp-mini-close" id="lpMiniChatClose" aria-label="Закрыть">×</button>
+                </div>
+                <div class="lp-mini-chat-msgs" id="lpMiniChatMsgs"></div>
+                <div class="lp-mini-chat-input">
+                    <input type="text" id="lpMiniChatInput" placeholder="landing, figma, api…" autocomplete="off">
+                    <button type="button" id="lpMiniChatSend">↑</button>
+                </div>
+            </aside>
+        </div>
+    </section>
+
+    <section class="lp-activity" aria-label="Активность комнат">
+        <div class="lp-activity-inner">
+            <div class="lp-activity-feed">
+                <h3>🔴 Live · комнаты сейчас</h3>
+                <ul id="lpActivityList" class="lp-activity-list"></ul>
+            </div>
+            <p class="lp-activity-note">Demo-лента · в приложении — ваши задачи и deploy в реальном времени</p>
+        </div>
+    </section>
+
+    <section class="lp-figma" id="figma">
+        <div class="lp-figma-head">
+            <h2>Figma → React · Compare</h2>
+            <p>Импорт макета, split-view и score совпадения — как в приложении</p>
+        </div>
+        <div class="lp-figma-split">
+            <div class="lp-figma-pane lp-figma-left">
+                <span class="lp-split-label">Figma</span>
+                <div class="lp-figma-mock">
+                    <div class="lp-mock-nav"></div>
+                    <div class="lp-mock-hero-block"></div>
+                    <div class="lp-mock-cards"><i></i><i></i><i></i></div>
+                </div>
+            </div>
+            <div class="lp-figma-score">
+                <span class="lp-match-ring" id="lpFigmaMatch">94%</span>
+                <span class="lp-match-label">match</span>
+                <button type="button" class="lp-btn-sm lp-btn-accent" onclick="LandingDemo?.playGuidedDemo?.()">Improve</button>
+            </div>
+            <div class="lp-figma-pane lp-figma-right">
+                <span class="lp-split-label">React Preview</span>
+                <div class="lp-react-mock">
+                    <div class="lp-mock-nav lp-react-nav"></div>
+                    <div class="lp-mock-hero-block lp-react-hero"></div>
+                    <div class="lp-mock-cards lp-react-cards"><i></i><i></i><i></i></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="lp-guided" id="demo">
+        <div class="lp-guided-grid">
+            <div class="lp-guided-copy">
+                <h2>Landing за 2 минуты</h2>
+                <p class="lp-lead">Один сценарий вместо списка фич — задача → Kanban → Figma → PR → Deploy.</p>
+                <ol class="lp-demo-steps">
+                    <li class="lp-demo-step active" data-step="0"><span>1</span> Задача в чат</li>
+                    <li class="lp-demo-step" data-step="1"><span>2</span> PM · Kanban</li>
+                    <li class="lp-demo-step" data-step="2"><span>3</span> Figma → UI</li>
+                    <li class="lp-demo-step" data-step="3"><span>4</span> Cursor · PR</li>
+                    <li class="lp-demo-step" data-step="4"><span>5</span> Deploy</li>
+                    <li class="lp-demo-step" data-step="5"><span>6</span> Готово</li>
+                </ol>
+                <button type="button" class="lp-btn-xl" id="lpDemoPlay">▶ Смотреть demo</button>
+                <p class="lp-demo-caption" id="lpDemoCaption">Нажмите play — ~40 секунд</p>
+            </div>
+            <div class="lp-guided-stage">
+                <div class="lp-demo-panel active" data-mode="task">
+                    <div class="lp-demo-window-bar"><span></span><span></span><span></span> Чат</div>
+                    <div class="lp-demo-input" id="lpDemoInput"></div>
+                </div>
+                <div class="lp-demo-panel" data-mode="kanban">
+                    <div class="lp-demo-kanban">
+                        <div><em>Backlog</em><p>Landing hero</p></div>
+                        <div class="col-active"><em>In Progress</em><p>UI · Соня</p></div>
+                        <div><em>Review</em><p>API · Макс</p></div>
+                        <div><em>Done</em><p>—</p></div>
                     </div>
-                    <div class="lp-mock-main">
-                        <div class="lp-mock-msg">📋 Landing page для стартапа</div>
-                        <div class="lp-mock-msg bot">✅ React Preview готов · Deploy доступен</div>
+                </div>
+                <div class="lp-demo-panel" data-mode="figma">
+                    <div class="lp-demo-figma-mini">
+                        <div class="half figma">Figma</div>
+                        <div class="half react">React</div>
                     </div>
+                </div>
+                <div class="lp-demo-panel" data-mode="code">
+                    <pre class="lp-demo-code">+ src/Landing.tsx
++ api/register.ts
+PR #42 · checks ✓</pre>
+                </div>
+                <div class="lp-demo-panel" data-mode="deploy">
+                    <div class="lp-demo-deploy">🚀 bundle.zip · preview URL ready</div>
+                </div>
+                <div class="lp-demo-panel" data-mode="done">
+                    <div class="lp-demo-done">✅ Landing live · <span id="lpStatTasks">4</span> задачи · <span id="lpStatPr">1</span> PR · <span id="lpStatDeploy">1</span> deploy</div>
                 </div>
             </div>
         </div>
@@ -142,6 +236,12 @@
     </div>
 </div>
 
-<script src="/static/js/landing.js?v=2"></script>
+<script src="/static/vendor/three.min.js"></script>
+<script src="/static/vendor/OrbitControls.js"></script>
+<script src="/static/js/studio-textures.js?v=1"></script>
+<script src="/static/js/studio-models.js?v=3"></script>
+<script src="/static/js/studio.js?v=21"></script>
+<script src="/static/js/landing-demo.js?v=1"></script>
+<script src="/static/js/landing.js?v=3"></script>
 </body>
 </html>

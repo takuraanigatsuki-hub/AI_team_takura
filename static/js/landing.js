@@ -95,6 +95,10 @@
     document.getElementById('btnRegister')?.addEventListener('click', () => openModal('register'));
     document.getElementById('btnDashboard')?.addEventListener('click', goDashboard);
     document.getElementById('btnHeroStart')?.addEventListener('click', () => openModal('register'));
+    document.getElementById('btnHeroDemo')?.addEventListener('click', () => {
+        document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(() => window.LandingDemo?.playGuidedDemo?.(), 600);
+    });
     document.getElementById('btnCtaRegister')?.addEventListener('click', () => openModal('register'));
     document.getElementById('btnCtaLogin')?.addEventListener('click', () => openModal('login'));
     document.getElementById('btnLogout')?.addEventListener('click', logout);
@@ -137,5 +141,6 @@
         }
         if (params.get('auth') === 'login') openModal('login');
         if (params.get('auth') === 'register') openModal('register');
+        if (window.LandingDemo) LandingDemo.init();
     });
 })();
