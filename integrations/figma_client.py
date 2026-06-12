@@ -54,9 +54,22 @@ def parse_figma_url(url: str) -> Optional[dict]:
     }
 
 
+def is_valid_file_key(file_key: str) -> bool:
+    """Ключ файла Figma — буквенно-цифровой; чисто числовые ID community-постов API не принимает."""
+    if not file_key or len(file_key) < 8:
+        return False
+    if not re.fullmatch(r"[a-zA-Z0-9]+", file_key):
+        return False
+    if file_key.isdigit():
+        return False
+    return any(c.isalpha() for c in file_key)
+
+
 def is_figma_api_url(url: str) -> bool:
     parsed = parse_figma_url(url)
-    return bool(parsed and parsed.get("api_supported"))
+    if not parsed or not parsed.get("api_supported"):
+        return False
+    return is_valid_file_key(parsed.get("file_key") or "")
 
 
 class FigmaClient:

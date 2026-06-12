@@ -7,7 +7,7 @@ import re
 from datetime import datetime
 from typing import Any, Optional
 
-from integrations.figma_client import is_figma_api_url, parse_figma_url
+from integrations.figma_client import is_figma_api_url, is_valid_file_key, parse_figma_url
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 DISCOVERY_FILE = os.path.join(DATA_DIR, "sonya_figma_discovery.json")
@@ -17,8 +17,15 @@ FIGMA_LINK_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Дополнительный каталог — расширяется через config.figma_discovery_catalog
-BUILTIN_DISCOVERY_CATALOG: list[dict] = []
+# Стартовый каталог — Community-файлы с валидным file_key (без OAuth/teams)
+BUILTIN_DISCOVERY_CATALOG: list[dict] = [
+    {
+        "file_key": "fk1qJWkEEIOPSIlMa5Q1OS",
+        "name": "eCommerce Landing UI Kit",
+        "category": "landing",
+        "url": "https://www.figma.com/design/fk1qJWkEEIOPSIlMa5Q1OS/eCommerce-Landing",
+    },
+]
 
 WEB_DISCOVERY_TOPICS = [
     "figma community landing page template file",
