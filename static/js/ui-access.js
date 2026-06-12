@@ -50,6 +50,13 @@
         document.body.classList.toggle('user-guest', !u);
         document.body.classList.toggle('user-member', !!u && !admin);
         document.body.classList.toggle('user-admin', admin);
+
+        document.querySelectorAll('.dropdown-section-label[data-ui]').forEach((label) => {
+            const section = label.dataset.ui;
+            const hasVisible = [...document.querySelectorAll(`.dropdown-item[data-ui="${section}"]`)]
+                .some((el) => !el.classList.contains('hidden'));
+            label.classList.toggle('hidden', !hasVisible);
+        });
     }
 
     function filterCommands(commands) {

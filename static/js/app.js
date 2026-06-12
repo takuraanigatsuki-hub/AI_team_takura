@@ -1471,9 +1471,12 @@
         connect();
 
         let startView = viewParam || (user?.default_view) || 'studio';
-        const allowedViews = ['studio', 'chat', 'agent-learning', 'learning', 'design', 'sonya-studio', 'tasks', 'projects', 'kanban', 'sprint', 'timeline', 'dashboard', 'profile', 'admin'];
+        const allowedViews = ['studio', 'chat', 'agent-learning', 'learning', 'design', 'masha', 'sonya-studio', 'tasks', 'projects', 'kanban', 'sprint', 'timeline', 'dashboard', 'profile', 'admin', 'investor'];
         if (!allowedViews.includes(startView)) {
             startView = 'studio';
+        }
+        if (startView === 'admin' && !window.AdminPanel?.canAccess?.(user)) {
+            startView = 'profile';
         }
         if (AGENT_LEARNING_VIEWS.has(startView) && !canViewAgentLearning(user)) {
             startView = 'studio';
@@ -1482,6 +1485,7 @@
 
         if (window.Auth) Auth.updateNavVisibility(user);
         if (window.AdminPanel && user) AdminPanel.updateNavVisibility(user);
+        if (window.UIAccess) UIAccess.applyMenuVisibility(user);
 
         if (window.ReactPreview) ReactPreview.loadLatest({ autoOpen: false });
         if (window.Integrations) {
