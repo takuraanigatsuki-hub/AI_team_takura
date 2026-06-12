@@ -181,6 +181,12 @@ async def app_spa():
     return HTMLResponse("<h1>Static files not found</h1>")
 
 
+@app.get("/cabinet")
+async def cabinet_page():
+    """Личный кабинет — редирект в приложение."""
+    return RedirectResponse("/app?view=profile")
+
+
 # ─── Auth API ───────────────────────────────────────────────
 
 class AuthRegister(BaseModel):
