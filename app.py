@@ -2012,9 +2012,24 @@ async def get_timeline(limit: int = 100):
 
 
 @app.get("/api/timeline/replay")
-async def get_timeline_replay(hours: float = 1.0):
+async def get_timeline_replay(request: Request, hours: float = 1.0):
     from integrations.timeline_store import replay_summary
-    return replay_summary(hours=min(max(hours, 0.25), 24))
+    from room.message_filter import filter_messages_for_viewer, is_privileged
+
+    user = _optional_user(request)
+    viewer = {
+        "user_id": user.get("id", "") if user else "",
+        "role": user.get("role", "guest") if user else "guest",
+    }
+    data = replay_summary(hours=min(max(hours, 0.25), 24))
+    if is_privileged(viewer.get("role", "")):
+        return data
+    events = filter_messages_for_viewer(data.get("events") or [], viewer)
+    by_type = {}
+    for e in events:
+        t = e.get("type", "unknown")
+        by_type[t] = by_type.get(t, 0) + 1
+    return {**data, "total": len(events), "by_type": by_type, "events": events[-80:]}
 
 
 @app.get("/api/kanban")
@@ -2239,9 +2254,10 @@ class SprintStart(BaseModel):
 
 
 @app.post("/api/sprint/start")
-async def start_sprint_api(body: SprintStart):
+async def start_sprint_api(body: SprintStart, request: Request):
+    user = _current_user(request)
     from room.sprint_store import start_sprint
-    return start_sprint(body.name, body.goal, body.days)
+    return start_sprint(body.name, body.goal, body.days, user.get("id", ""))
 
 
 class SprintBacklogItem(BaseModel):
@@ -2250,21 +2266,24 @@ class SprintBacklogItem(BaseModel):
 
 
 @app.post("/api/sprint/backlog")
-async def add_sprint_backlog(body: SprintBacklogItem):
+async def add_sprint_backlog(body: SprintBacklogItem, request: Request):
+    user = _current_user(request)
     from room.sprint_store import add_backlog_item
-    return add_backlog_item(body.text, body.priority)
+    return add_backlog_item(body.text, body.priority, user.get("id", ""))
 
 
 @app.post("/api/sprint/backlog/{item_id}/toggle")
-async def toggle_sprint_item(item_id: str):
+async def toggle_sprint_item(item_id: str, request: Request):
+    user = _current_user(request)
     from room.sprint_store import toggle_backlog
-    return toggle_backlog(item_id)
+    return toggle_backlog(item_id, user_id=user.get("id", ""))
 
 
 @app.post("/api/sprint/end")
-async def end_sprint_api():
+async def end_sprint_api(request: Request):
+    user = _current_user(request)
     from room.sprint_store import end_sprint
-    return end_sprint()
+    return end_sprint(user.get("id", ""))
 
 
 @app.get("/api/projects/{artifact_id}/diff/{other_id}")
