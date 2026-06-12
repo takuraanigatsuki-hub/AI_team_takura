@@ -191,7 +191,7 @@
                     <ul class="profile-meta-list">
                         <li><span>LLM стоимость</span><strong>~$${s.llm_cost_usd ?? 0} · ${s.llm_cost_rub ?? 0} ₽</strong></li>
                         <li><span>Figma паттерны</span><strong>${s.figma_patterns ?? 0} изучено · ${s.figma_portfolio ?? 0} в портфолио</strong></li>
-                        <li><span>Агенты онлайн</span><strong>${s.agents_online ?? 0} / ${s.agents_total ?? 0}</strong></li>
+                        <li><span>Агенты</span><strong>${s.agents_busy ?? 0} занято · ${s.agents_total ?? 0} всего</strong></li>
                         <li><span>ID аккаунта</span><strong class="pf-mono">${esc(user.id)}</strong></li>
                         <li><span>Обновлён</span><strong>${fmtDateTime(s.updated_at || user.updated_at)}</strong></li>
                     </ul>
@@ -467,7 +467,7 @@
                     <li><span>Участник с</span><strong>${fmtDate(s.member_since || user.created_at)}</strong></li>
                     <li><span>AI запросов</span><strong>${s.llm_requests ?? 0}</strong></li>
                     <li><span>Токены LLM</span><strong>${((s.llm_tokens_in || 0) + (s.llm_tokens_out || 0)).toLocaleString('ru')}</strong></li>
-                    <li><span>Агенты онлайн</span><strong>${s.agents_online ?? 0} / ${s.agents_total ?? 0}</strong></li>
+                    <li><span>Агенты</span><strong>${s.agents_busy ?? 0} занято · ${s.agents_total ?? 0} всего</strong></li>
                 </ul>
                 <div class="profile-quick-links" style="margin-top:16px">
                     <button type="button" class="btn-secondary btn-sm" onclick="switchView('studio')">🎮 3D</button>

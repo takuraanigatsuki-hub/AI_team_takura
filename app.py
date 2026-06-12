@@ -502,7 +502,11 @@ async def auth_profile_stats(request: Request):
         "llm_cost_rub": llm.get("estimated_cost_rub", 0),
         "figma_patterns": figma.get("studied_count", 0),
         "figma_portfolio": figma.get("portfolio_count", 0),
-        "agents_online": sum(1 for a in room.agents.values() if a.get_state().get("status") != "offline"),
+        "agents_online": len(room.agents),
+        "agents_busy": sum(
+            1 for a in room.agents.values()
+            if a.get_state().get("status") in ("working", "learning")
+        ),
         "agents_total": len(room.agents),
         "top_agents": [{"id": k, "count": v} for k, v in top_agents],
         "has_project_brief": bool(mem.get("brief") or user.get("project_goal")),
