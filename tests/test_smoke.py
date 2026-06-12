@@ -50,8 +50,7 @@ def test_auth_register_login(client):
         "default_view": "dashboard",
         "theme": "dark",
     })
-    if r3.status_code != 200:
-        pytest.fail(f"setup failed: {r3.status_code} {r3.text}")
+    assert r3.status_code == 200
     assert r3.json()["user"]["setup_complete"] is True
 
     client.post("/api/auth/logout")

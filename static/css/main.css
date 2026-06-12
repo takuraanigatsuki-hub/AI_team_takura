@@ -1100,6 +1100,10 @@ body.has-pipeline .header { box-shadow: 0 2px 20px rgba(0,0,0,0.15); }
 .mention-item:hover { background: var(--accent-soft); }
 
 /* Setup wizard & user menu */
+.logo-link { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+.logo-link:hover { opacity: 0.9; }
+
+/* Setup wizard & user menu */
 .setup-overlay {
     position: fixed; inset: 0; z-index: 10001;
     background: rgba(0,0,0,0.7);
