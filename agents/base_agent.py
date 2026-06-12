@@ -252,9 +252,10 @@ class BaseAgent:
                 await asyncio.sleep(3)
 
     def _work_mode_active(self) -> bool:
+        """Занят ли этот агент — только локально, без блокировки всей команды."""
         if not self.task_queue.empty():
             return True
-        if self.room_manager and self.room_manager.has_pending_work():
+        if self.status in ("working", "thinking"):
             return True
         return False
 
@@ -314,6 +315,10 @@ class BaseAgent:
         await self._broadcast(f"📚 Изучаю: *{topic}*...", "learning")
 
         material = await self._fetch_learning_material(topic)
+        if not self.task_queue.empty():
+            self.location = "studio"
+            self.status = "idle"
+            return
 
         if material:
             entry = {

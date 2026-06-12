@@ -186,10 +186,9 @@ class RoomManager:
         })
 
     def has_pending_work(self) -> bool:
-        """Есть ли задачи, где агенты реально заняты.
+        """Есть ли в комнате активные задачи (статистика/UI, не блокирует обучение).
 
-        «submitted» и «awaiting_approval» не блокируют обучение — иначе зависшие
-        или ожидающие проверки задачи навсегда отключают ленту обучения.
+        Обучение решается per-agent в BaseAgent._work_mode_active().
         """
         blocking = ("queued", "in_progress", "triaging", "revision_requested")
         if any(t.get("status") in blocking for t in self.task_history.tasks):
@@ -198,6 +197,15 @@ class RoomManager:
             if not agent.task_queue.empty():
                 return True
         return False
+
+    def agent_is_busy(self, agent_id: str) -> bool:
+        """Занят ли конкретный агент задачей."""
+        agent = self.agents.get(agent_id)
+        if not agent:
+            return False
+        if not agent.task_queue.empty():
+            return True
+        return agent.status in ("working", "thinking")
 
     async def handle_user_message(self, data: dict):
         msg_type = data.get("type", "task")
