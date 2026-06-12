@@ -503,13 +503,24 @@
                 }).catch(() => {});
                 break;
             case 'task_awaiting_approval':
-                addSystemMessage(data.message || '⏳ Задача ждёт подтверждения');
+                addAgentMessage({
+                    ...data,
+                    agent_id: data.agent_id || 'pm',
+                    agent_name: data.agent_name || 'Виктор',
+                    agent_emoji: data.agent_emoji || '🎯',
+                    type: 'message',
+                    message: data.message || '⏳ Задача ждёт подтверждения',
+                });
                 if (document.getElementById('tasksView') && !document.getElementById('tasksView').classList.contains('hidden')) loadTasks();
-                else if (window.UIEnhancements) UIEnhancements.toast('⏳ Задача на проверке', 'info');
+                else if (window.UIEnhancements) UIEnhancements.toast('⏳ Виктор ждёт вашего решения', 'info');
                 break;
             case 'task_approved':
             case 'task_revision':
-                addSystemMessage(data.message || '');
+                if (data.agent_id) {
+                    addAgentMessage({ ...data, type: 'message', message: data.message || '' });
+                } else {
+                    addSystemMessage(data.message || '');
+                }
                 loadTasks();
                 break;
             case 'role_triage':
@@ -1090,6 +1101,34 @@
             });
             if (r.ok) {
                 if (window.UIEnhancements) UIEnhancements.toast('✎ Отправлено на доработку', 'info');
+                loadTasks();
+            }
+        } catch (_) {}
+    };
+
+    window.cancelAllTasks = async function () {
+        if (!confirm('Отменить все активные задачи и очистить очереди агентов?')) return;
+        try {
+            const r = await fetch('/api/tasks/cancel-all', { method: 'POST' });
+            if (r.ok) {
+                const data = await r.json();
+                if (window.UIEnhancements) {
+                    UIEnhancements.toast(`🛑 Отменено: ${data.cancelled || 0}`, 'success');
+                }
+                loadTasks();
+            }
+        } catch (_) {}
+    };
+
+    window.clearTasksHistory = async function () {
+        if (!confirm('Полностью удалить всю историю задач? Это нельзя отменить.')) return;
+        try {
+            const r = await fetch('/api/tasks/clear', { method: 'POST' });
+            if (r.ok) {
+                const data = await r.json();
+                if (window.UIEnhancements) {
+                    UIEnhancements.toast(`🗑 Удалено записей: ${data.cleared || 0}`, 'success');
+                }
                 loadTasks();
             }
         } catch (_) {}

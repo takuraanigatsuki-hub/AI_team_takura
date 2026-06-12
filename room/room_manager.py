@@ -345,22 +345,75 @@ class RoomManager:
         self, task_id: str, response: str, agent_name: str = "", agent_emoji: str = "",
         artifact_id: str = None, preview_url: str = None,
     ):
-        if task_id:
-            self.task_history.mark_awaiting_approval(
-                task_id, response, agent_name, agent_emoji, artifact_id, preview_url,
-            )
-            asyncio.create_task(self._broadcast_task_history())
-            asyncio.create_task(self.broadcast_work({
-                "type": "task_awaiting_approval",
-                "task_id": task_id,
-                "agent_name": agent_name,
-                "agent_emoji": agent_emoji,
-                "message": (
-                    f"⏳ **{agent_name}** завершил работу — нужно ваше подтверждение.\n"
-                    f"Откройте вкладку **Задачи** → ✓ Принять или ✎ Правки."
-                ),
-                "timestamp": datetime.now().isoformat(),
-            }))
+        if not task_id:
+            return
+        self.task_history.mark_awaiting_approval(
+            task_id, response, agent_name, agent_emoji, artifact_id, preview_url,
+        )
+        asyncio.create_task(self._broadcast_task_history())
+        t = self.task_history._find(task_id)
+        notify_id = task_id
+        if t and t.get("parent_id"):
+            parent = self.task_history._find(t["parent_id"])
+            if parent and parent.get("status") == "awaiting_approval":
+                notify_id = parent["id"]
+            else:
+                return
+        asyncio.create_task(self._pm_notify_user_approval(notify_id))
+
+    async def _pm_notify_user_approval(self, task_id: str):
+        """Единое уведомление о проверке — только от PM (Виктор)."""
+        t = self.task_history._find(task_id)
+        if not t or t.get("status") != "awaiting_approval":
+            return
+        if t.get("approval_notified"):
+            return
+
+        pm = self.agents.get("pm")
+        pm_name = pm.name if pm else "Виктор"
+        pm_emoji = pm.emoji if pm else "🎯"
+
+        children = [c for c in self.task_history.tasks if c.get("parent_id") == task_id]
+        lines = []
+        site_url = None
+        preview_url = None
+        for c in children:
+            if c.get("status") != "awaiting_approval":
+                continue
+            who = f"{c.get('agent_emoji', '')} {c.get('agent_name', 'Агент')}".strip()
+            snippet = (c.get("response") or "")[:140]
+            lines.append(f"• **{who}**: {snippet}{'…' if len(c.get('response') or '') > 140 else ''}")
+            if c.get("preview_url"):
+                preview_url = c["preview_url"]
+            if c.get("agent_id") == "frontend" and not site_url:
+                site_url = c.get("preview_url") or "/api/sites/latest"
+
+        if not lines and t.get("response"):
+            lines.append((t.get("response") or "")[:400])
+
+        t["approval_notified"] = True
+        self.task_history._save()
+
+        task_title = (t.get("task") or "")[:220]
+        msg = (
+            f"⏳ **Команда завершила работу** — нужно ваше подтверждение.\n\n"
+            f"**Задача:** _{task_title}_\n\n"
+        )
+        if lines:
+            msg += "\n".join(lines[:8]) + "\n\n"
+        msg += "Откройте вкладку **Задачи** → ✓ Принять или ✎ Правки."
+
+        await self.broadcast_work({
+            "type": "task_awaiting_approval",
+            "task_id": task_id,
+            "agent_id": "pm",
+            "agent_name": pm_name,
+            "agent_emoji": pm_emoji,
+            "site_url": site_url or preview_url,
+            "preview_url": preview_url,
+            "message": msg,
+            "timestamp": datetime.now().isoformat(),
+        })
 
     async def approve_task(self, task_id: str, note: str = "") -> bool:
         t = self.task_history._find(task_id)
@@ -368,10 +421,14 @@ class RoomManager:
             return False
         self.task_history.mark_user_approved(task_id, note)
         await self.pipeline.on_task_completed(task_id, failed=False)
+        pm = self.agents.get("pm")
         await self.broadcast_work({
             "type": "task_approved",
             "task_id": task_id,
-            "message": f"✅ Задача принята пользователем{f': {note}' if note else ''}.",
+            "agent_id": "pm",
+            "agent_name": pm.name if pm else "Виктор",
+            "agent_emoji": pm.emoji if pm else "🎯",
+            "message": f"✅ **Виктор:** задача принята пользователем{f' — {note}' if note else ''}.",
             "timestamp": datetime.now().isoformat(),
         })
         await self._broadcast_task_history()
@@ -381,27 +438,79 @@ class RoomManager:
         t = self.task_history._find(task_id)
         if not t or t.get("status") != "awaiting_approval":
             return False
-        agent_id = t.get("agent_id")
-        agent = self.agents.get(agent_id)
         self.task_history.mark_revision_requested(task_id, feedback)
-        if agent:
-            revision_text = f"{t.get('task', '')}\n\n✎ Правки пользователя: {feedback}"
+        t["approval_notified"] = False
+        self.task_history._save()
+
+        revision_text = f"{t.get('task', '')}\n\n✎ Правки пользователя: {feedback}"
+        pm = self.agents.get("pm")
+        agent_id = t.get("agent_id")
+        agent = self.agents.get(agent_id) if agent_id else None
+
+        if pm and (t.get("target") == "all" or not agent):
+            await pm.orchestrate_task(revision_text, self.agents, parent_id=task_id)
+        elif agent:
             child_id = self.task_history.add_queued(
                 revision_text, agent_id, agent.name, agent.emoji,
-                parent_id=t.get("parent_id"), sender="Пользователь",
+                parent_id=task_id, sender="Пользователь",
             )
             await agent.assign_task(
                 revision_text, sender="Пользователь (правки)",
-                parent_id=t.get("parent_id"), task_id=child_id,
+                parent_id=task_id, task_id=child_id,
             )
         await self.broadcast_work({
             "type": "task_revision",
             "task_id": task_id,
-            "message": f"✎ Отправлено на доработку: {feedback[:200]}",
+            "agent_id": "pm",
+            "agent_name": pm.name if pm else "Виктор",
+            "agent_emoji": pm.emoji if pm else "🎯",
+            "message": f"✎ **Виктор:** отправил на доработку: {feedback[:200]}",
             "timestamp": datetime.now().isoformat(),
         })
         await self._broadcast_task_history()
         return True
+
+    async def cancel_all_tasks(self) -> int:
+        """Отменить активные задачи и очистить очереди агентов."""
+        count = self.task_history.cancel_all_active()
+        for agent in self.agents.values():
+            while not agent.task_queue.empty():
+                try:
+                    agent.task_queue.get_nowait()
+                except Exception:
+                    break
+            if agent.status in ("working", "thinking"):
+                agent.status = "idle"
+                agent.location = "studio"
+            agent.current_task = None
+        if count:
+            await self.broadcast_work({
+                "type": "system",
+                "message": f"🛑 Отменено активных задач: {count}",
+                "timestamp": datetime.now().isoformat(),
+            })
+        await self._broadcast_task_history()
+        return count
+
+    async def clear_task_history(self) -> int:
+        """Полностью очистить журнал задач."""
+        total = self.task_history.clear_all()
+        for agent in self.agents.values():
+            while not agent.task_queue.empty():
+                try:
+                    agent.task_queue.get_nowait()
+                except Exception:
+                    break
+            agent.status = "idle"
+            agent.location = "studio"
+            agent.current_task = None
+        await self.broadcast_work({
+            "type": "system",
+            "message": "🗑️ История задач полностью очищена",
+            "timestamp": datetime.now().isoformat(),
+        })
+        await self._broadcast_task_history()
+        return total
 
     def record_task_failed(self, task_id: str, error: str = ""):
         if task_id:

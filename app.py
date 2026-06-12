@@ -2206,6 +2206,20 @@ async def request_task_revision(task_id: str, body: TaskRevisionBody):
     return {"ok": True, "task_id": task_id}
 
 
+@app.post("/api/tasks/cancel-all")
+async def cancel_all_tasks():
+    """Отменить все активные задачи и очистить очереди агентов."""
+    count = await room.cancel_all_tasks()
+    return {"ok": True, "cancelled": count}
+
+
+@app.post("/api/tasks/clear")
+async def clear_tasks_history():
+    """Полностью очистить журнал задач."""
+    total = await room.clear_task_history()
+    return {"ok": True, "cleared": total}
+
+
 @app.patch("/api/tasks/{task_id}/priority")
 async def update_task_priority(task_id: str, body: TaskPriorityUpdate):
     ok = room.task_history.set_priority(task_id, body.priority)

@@ -529,7 +529,7 @@ function App() {
         <strong style={{ fontSize: 18, color: s.primary }}>MySite</strong>
         <nav style={{ display: 'flex', gap: 20, fontSize: 14 }}>
           {nav.map(n => (
-            <a key={n} href="#" style={{ color: s.muted, textDecoration: 'none' }}>{n}</a>
+            <a key={n} href="#top" style={{ color: s.muted, textDecoration: 'none' }}>{n}</a>
           ))}
         </nav>
         <button style={{

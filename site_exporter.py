@@ -3,6 +3,36 @@ from datetime import datetime
 
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "output", "sites")
 
+_NAV_FIX_SCRIPT = """
+<script>
+document.addEventListener('click', function(e) {
+  var a = e.target.closest('a');
+  if (!a) return;
+  var href = (a.getAttribute('href') || '').trim();
+  if (!href || href === '#' || href === '/' || href === './' || href === '../') {
+    e.preventDefault();
+    return;
+  }
+  if (href.charAt(0) === '#' && href.length > 1) {
+    e.preventDefault();
+    try {
+      var el = document.querySelector(href);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (_) {}
+  }
+}, true);
+</script>
+"""
+
+
+def _sanitize_site_code(code: str) -> str:
+    """Ссылки href=\"/\" и href=\"#\" не должны уводить на главную студию."""
+    code = code.replace('href="/"', 'href="#top"')
+    code = code.replace("href='/'", "href='#top'")
+    code = code.replace('href="#"', 'href="#top"')
+    code = code.replace("href='#'", "href='#top'")
+    return code
+
 
 def export_site_html(code: str, task: str, title: str = "Сайт") -> str:
     """Сохранить React-компонент как standalone HTML-файл."""
@@ -10,6 +40,8 @@ def export_site_html(code: str, task: str, title: str = "Сайт") -> str:
     safe_title = "".join(c if c.isalnum() or c in " -_" else "" for c in title)[:40].strip() or "site"
     filename = f"{safe_title.replace(' ', '_').lower()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
     filepath = os.path.join(OUTPUT_DIR, filename)
+
+    code = _sanitize_site_code(code)
 
     html = f"""<!DOCTYPE html>
 <html lang="ru">
@@ -22,13 +54,14 @@ def export_site_html(code: str, task: str, title: str = "Сайт") -> str:
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>body{{margin:0}}#root{{min-height:100vh}}</style>
 </head>
-<body>
+<body id="top">
 <div id="root"></div>
 <script type="text/babel" data-presets="react">
 const {{ useState, useEffect }} = React;
 {code}
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
+{_NAV_FIX_SCRIPT}
 </body>
 </html>"""
 

@@ -372,7 +372,11 @@
                     <h2 class="tasks-title">📋 Задачи</h2>
                     <p class="tasks-sub">Подтверждайте результат или отправляйте на правки</p>
                 </div>
-                <button type="button" class="btn-secondary btn-sm" onclick="exportTasks()">📥 Export</button>
+                <div class="tasks-head-actions">
+                    <button type="button" class="btn-secondary btn-sm" onclick="exportTasks()">📥 Export</button>
+                    <button type="button" class="btn-secondary btn-sm tasks-btn-warn" onclick="cancelAllTasks()">🛑 Отменить активные</button>
+                    <button type="button" class="btn-secondary btn-sm tasks-btn-danger" onclick="clearTasksHistory()">🗑 Очистить всё</button>
+                </div>
             </header>
             <div class="tasks-stats tasks-stats-grid" id="tasksStats">
                 <div class="stat-card"><span class="stat-num" id="statTotal">0</span><span class="stat-label">Всего</span></div>
@@ -751,7 +755,7 @@
 <script src="/static/js/sprint.js?v=1"></script>
 <script src="/static/js/power-pack.js?v=1"></script>
 <script src="/static/js/sonya-studio.js?v=3"></script>
-<script src="/static/js/app.js?v=30"></script>
+<script src="/static/js/app.js?v=31"></script>
 
 <!-- PWA: регистрация Service Worker -->
 <script>

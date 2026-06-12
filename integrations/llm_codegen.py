@@ -11,14 +11,22 @@ async def generate_react_from_llm(task_text: str, hints: dict = None) -> dict:
     """React-компонент от LLM; минимальный fallback без библиотеки шаблонов."""
     hints = hints or {}
     title = (task_text or "Компонент")[:60]
+    from room.task_routing import classify_task_kind, should_export_site
+
+    is_site = classify_task_kind(task_text) == "site" or should_export_site(task_text)
 
     try:
         from integrations.llm_client import is_configured, agent_reply
         if is_configured():
             extra = hints.get("prompt_extra") or ""
+            site_rules = (
+                "Это одностраничный сайт: навигация только якоря #section или кнопки, "
+                "НЕ используй href=\"/\" и href=\"#\" — они уводят с страницы. "
+                "Секции помечай id=\"about\", id=\"services\" и т.д."
+            ) if is_site else ""
             prompt = (
                 f"Сгенерируй один React-компонент function App() для задачи:\n{task_text}\n\n"
-                f"{extra}\n\n"
+                f"{extra}\n{site_rules}\n\n"
                 "Только JSX+useState, inline styles, без import. "
                 "Уникальный дизайн под задачу, не generic landing. "
                 "Верни только код компонента."
@@ -29,11 +37,17 @@ async def generate_react_from_llm(task_text: str, hints: dict = None) -> dict:
             )
             code = _extract_code(code)
             if code and "function App" in code:
-                return {"title": title, "code": code, "generated_by": "llm"}
+                result = {"title": title, "code": code, "generated_by": "llm"}
+                if is_site:
+                    result["is_site"] = True
+                return result
     except Exception:
         pass
 
-    return _minimal_react(title, task_text)
+    result = _minimal_react(title, task_text)
+    if is_site:
+        result["is_site"] = True
+    return result
 
 
 async def generate_artifact_content(task_text: str, art_type: str, agent_name: str, hints: dict = None) -> str:

@@ -318,8 +318,8 @@ class FrontendDevAgent(BaseAgent):
                 response += f"\n\n🖥️ Откройте **React Preview** — «{self.last_preview['title']}»"
 
             await self._broadcast_work(
-                f"✅ Готово к проверке:\n{response[:800]}{'…' if len(response) > 800 else ''}\n\n"
-                f"⏳ **Жду вашего подтверждения** во вкладке «Задачи».",
+                f"✅ Готово:\n{response[:800]}{'…' if len(response) > 800 else ''}\n\n"
+                f"📤 Передаю **Виктору** — он пришлёт запрос на подтверждение.",
                 "task_done",
             )
             if self.room_manager and task_id:
