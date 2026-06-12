@@ -109,7 +109,10 @@ def _public_user(user: dict) -> dict:
         "is_owner": role == "owner",
         "setup_complete": bool(user.get("setup_complete")),
         "default_view": user.get("default_view", "dashboard"),
+        "theme": user.get("theme", "dark"),
+        "project_goal": user.get("project_goal", ""),
         "created_at": user.get("created_at"),
+        "setup_at": user.get("setup_at"),
     }
 
 
@@ -205,6 +208,12 @@ def get_user_from_token(token: str) -> Optional[dict]:
     return _public_user(user) if user else None
 
 
+ALLOWED_DEFAULT_VIEWS = (
+    "studio", "dashboard", "chat", "kanban", "design", "sonya-studio",
+    "tasks", "projects", "sprint", "timeline", "profile",
+)
+
+
 def complete_setup(user_id: str, *, name: str = "", goal: str = "",
                    default_view: str = "dashboard", theme: str = "") -> dict:
     users = _load(USERS_FILE)
@@ -213,7 +222,7 @@ def complete_setup(user_id: str, *, name: str = "", goal: str = "",
         if u.get("id") == user_id:
             if name:
                 u["name"] = name.strip()[:80]
-            if default_view in ("studio", "dashboard", "chat", "kanban"):
+            if default_view in ALLOWED_DEFAULT_VIEWS:
                 u["default_view"] = default_view
             if theme in ("light", "dark", "auto"):
                 u["theme"] = theme
@@ -227,6 +236,52 @@ def complete_setup(user_id: str, *, name: str = "", goal: str = "",
         raise ValueError("Пользователь не найден")
     _save_users(users)
     return _public_user(updated)
+
+
+def update_profile(
+    user_id: str,
+    *,
+    name: str = None,
+    default_view: str = None,
+    theme: str = None,
+    project_goal: str = None,
+) -> dict:
+    users = _load(USERS_FILE)
+    updated = None
+    for u in users:
+        if u.get("id") != user_id:
+            continue
+        if name is not None:
+            u["name"] = name.strip()[:80] or u.get("name", "")
+        if default_view is not None and default_view in ALLOWED_DEFAULT_VIEWS:
+            u["default_view"] = default_view
+        if theme is not None and theme in ("light", "dark", "auto"):
+            u["theme"] = theme
+        if project_goal is not None:
+            u["project_goal"] = project_goal.strip()[:500]
+        u["updated_at"] = datetime.now().isoformat()
+        updated = u
+        break
+    if not updated:
+        raise ValueError("Пользователь не найден")
+    _save_users(users)
+    return _public_user(updated)
+
+
+def change_password(user_id: str, current_password: str, new_password: str) -> None:
+    if len(new_password) < 6:
+        raise ValueError("Новый пароль минимум 6 символов")
+    user = _find_user(user_id)
+    if not user or not _verify_password(current_password, user.get("password", "")):
+        raise ValueError("Неверный текущий пароль")
+    salt, digest = _hash_password(new_password)
+    users = _load(USERS_FILE)
+    for u in users:
+        if u.get("id") == user_id:
+            u["password"] = f"{salt}:{digest}"
+            u["updated_at"] = datetime.now().isoformat()
+            break
+    _save_users(users)
 
 
 def ensure_owner(email: str, password: str, name: str = "Owner") -> dict:

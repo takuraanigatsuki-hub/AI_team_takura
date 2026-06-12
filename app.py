@@ -201,6 +201,18 @@ class AuthSetup(BaseModel):
     theme: str = "dark"
 
 
+class AuthProfileUpdate(BaseModel):
+    name: str = ""
+    default_view: str = ""
+    theme: str = ""
+    project_goal: str = ""
+
+
+class AuthPasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+
 def _set_session_cookie(response, token: str):
     from room.user_auth import SESSION_COOKIE, SESSION_DAYS
     response.set_cookie(
@@ -281,6 +293,65 @@ async def auth_setup(body: AuthSetup, request: Request):
     if body.goal:
         set_memory(brief=body.goal, goals=[], constraints=[])
     return {"ok": True, "user": updated}
+
+
+@app.patch("/api/auth/profile")
+async def auth_update_profile(body: AuthProfileUpdate, request: Request):
+    from room.user_auth import get_user_from_token, update_profile
+
+    user = get_user_from_token(_get_session_token(request))
+    if not user:
+        raise HTTPException(status_code=401, detail="Не авторизован")
+    try:
+        updated = update_profile(
+            user["id"],
+            name=body.name if body.name else None,
+            default_view=body.default_view or None,
+            theme=body.theme or None,
+            project_goal=body.project_goal if body.project_goal is not None else None,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True, "user": updated}
+
+
+@app.post("/api/auth/change-password")
+async def auth_change_password(body: AuthPasswordChange, request: Request):
+    from room.user_auth import get_user_from_token, change_password
+
+    user = get_user_from_token(_get_session_token(request))
+    if not user:
+        raise HTTPException(status_code=401, detail="Не авторизован")
+    try:
+        change_password(user["id"], body.current_password, body.new_password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True}
+
+
+@app.get("/api/auth/profile/stats")
+async def auth_profile_stats(request: Request):
+    from room.user_auth import get_user_from_token
+    from integrations.sonya_studio import list_projects
+    from room.project_memory import get_memory
+
+    user = get_user_from_token(_get_session_token(request))
+    if not user:
+        raise HTTPException(status_code=401, detail="Не авторизован")
+
+    th = room.task_history.stats()
+    mem = get_memory() or {}
+    projects = list_projects()
+    return {
+        "tasks_total": th.get("total", 0),
+        "tasks_completed": th.get("completed", 0),
+        "tasks_active": th.get("active", 0),
+        "sonya_projects": len(projects),
+        "sonya_published": sum(1 for p in projects if p.get("status") == "published"),
+        "has_project_brief": bool(mem.get("brief") or user.get("project_goal")),
+        "member_since": user.get("created_at"),
+        "setup_at": user.get("setup_at"),
+    }
 
 
 @app.get("/api/agents")
