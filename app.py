@@ -159,6 +159,16 @@ async def landing():
     return RedirectResponse("/app")
 
 
+@app.get("/startup", response_class=HTMLResponse)
+async def startup_landing():
+    """Landing page для стартапа — hero, features, CTA"""
+    html_file = os.path.join(static_dir, "startup.html")
+    if os.path.exists(html_file):
+        with open(html_file, "r", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    raise HTTPException(status_code=404, detail="Startup landing not found")
+
+
 @app.get("/app", response_class=HTMLResponse)
 async def app_spa():
     """Рабочее приложение — 3D студия и Dashboard"""
