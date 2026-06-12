@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Team Room — Investor Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/main.css?v=40">
+    <link rel="stylesheet" href="/static/css/enhancements.css?v=1">
+    <style>
+        body { background: #0a0a10; min-height: 100vh; }
+        .inv-page { max-width: 960px; margin: 0 auto; padding: 32px 20px; }
+        .inv-header { text-align: center; margin-bottom: 40px; }
+        .inv-header h1 { font-family: Rajdhani, sans-serif; font-size: 2.5rem; background: linear-gradient(135deg, #d4af37, #6c63ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nda-gate { text-align: center; padding: 60px 20px; }
+    </style>
+</head>
+<body>
+<div class="inv-page">
+    <header class="inv-header">
+        <h1>💼 Investor Portal</h1>
+        <p class="muted">AI Team Room · Live Performance Dashboard</p>
+    </header>
+    <div id="ndaGate" class="nda-gate hidden">
+        <h2>📄 NDA Required</h2>
+        <p class="muted">Подтвердите согласие с условиями конфиденциальности</p>
+        <button type="button" class="btn-primary" id="ndaAcceptBtn">Принимаю NDA</button>
+    </div>
+    <div id="investorGrid"></div>
+    <footer style="text-align:center;margin-top:48px;opacity:.5;font-size:12px">
+        <a href="/app">← В приложение</a> · Read-only access
+    </footer>
+</div>
+<script src="/static/js/investor-portal.js?v=1"></script>
+<script>
+(function () {
+    const params = new URLSearchParams(location.search);
+    const token = params.get('view') || params.get('view_token') || '';
+    async function init() {
+        if (token) {
+            const r = await fetch('/api/view-token/validate?token=' + encodeURIComponent(token));
+            const d = await r.json();
+            if (d.nda_required && !d.valid) {
+                document.getElementById('ndaGate').classList.remove('hidden');
+                document.getElementById('ndaAcceptBtn').onclick = async () => {
+                    await fetch('/api/view-token/validate?token=' + encodeURIComponent(token) + '&accept_nda=true');
+                    document.getElementById('ndaGate').classList.add('hidden');
+                    InvestorPortal.load();
+                };
+                return;
+            }
+        }
+        InvestorPortal.load();
+    }
+    init();
+})();
+</script>
+</body>
+</html>

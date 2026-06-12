@@ -31,11 +31,28 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/main.css?v=39">
+    <link rel="stylesheet" href="/static/css/main.css?v=40">
     <link rel="stylesheet" href="/static/css/feature-pack.css?v=3">
+    <link rel="stylesheet" href="/static/css/enhancements.css?v=1">
 </head>
-<body>
+<body class="has-sidebar">
 
+<aside class="app-sidebar" id="appSidebar" aria-label="Навигация">
+    <div class="sb-brand"><span>🤖</span><span class="sb-label">AI Team</span></div>
+    <nav class="sb-nav" id="appSidebarNav"></nav>
+    <div class="sb-footer">
+        <label class="sb-density sb-label">Плотность
+            <select id="densitySelect" title="UI density">
+                <option value="comfortable">Comfortable</option>
+                <option value="compact">Compact</option>
+                <option value="focus">Focus</option>
+            </select>
+        </label>
+        <button type="button" class="sb-item" id="sidebarToggle" title="Свернуть"><span class="sb-icon">◀</span><span class="sb-label">Свернуть</span></button>
+    </div>
+</aside>
+
+<div class="app-content-wrap">
 <header class="header">
     <div class="header-row header-row-main">
         <a href="/" class="logo logo-link" title="Главный сайт">
@@ -116,6 +133,7 @@
                     <button type="button" class="view-tab" data-view="projects" onclick="switchView('projects')">📦 Проекты</button>
                     <button type="button" class="view-tab" data-view="kanban" onclick="switchView('kanban')">📌 Kanban</button>
                     <button type="button" class="view-tab" data-view="dashboard" onclick="switchView('dashboard')">📊 Dashboard</button>
+                    <button type="button" class="view-tab hidden" id="investorNavTab" data-view="investor" onclick="switchView('investor')">💼 Investor</button>
                     <details class="nav-more-dropdown">
                         <summary class="view-tab view-tab-more" title="Ещё разделы">⋯</summary>
                         <div class="nav-more-menu">
@@ -266,6 +284,7 @@
             <div class="ml-tabs" role="tablist">
                 <button type="button" class="ml-tab active" data-ml-tab="evals" onclick="MashaLearningLab.switchTab('evals')">🎓 Оценки</button>
                 <button type="button" class="ml-tab" data-ml-tab="tasks" onclick="MashaLearningLab.switchTab('tasks')">📋 Задания</button>
+                <button type="button" class="ml-tab" data-ml-tab="skills" onclick="MashaLearningLab.switchTab('skills')">📈 Skills</button>
                 <button type="button" class="ml-tab" data-ml-tab="projects" onclick="MashaLearningLab.switchTab('projects')">📁 Проекты</button>
             </div>
             <div id="mashaTabEvals" class="ml-tab-panel active">
@@ -284,7 +303,6 @@
                 <div id="mashaUserList" class="ml-list"></div>
             </div>
             <div id="mashaTabProjects" class="ml-tab-panel hidden">
-                <section class="ml-panel-inline">
                     <h3>📁 Solo-проекты</h3>
                     <div id="mashaSoloList" class="ml-list"></div>
                 </section>
@@ -384,6 +402,11 @@
             <div class="dash-loading">Загрузка…</div>
         </div>
         <div class="llm-cost-bar" id="llmCostWidget">LLM: …</div>
+    </div>
+
+    <!-- INVESTOR PORTAL -->
+    <div id="investorView" class="investor-layout hidden">
+        <div id="investorGrid"><div class="dash-loading">Загрузка…</div></div>
     </div>
 
     <!-- ADMIN PANEL -->

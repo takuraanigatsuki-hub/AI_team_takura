@@ -2506,22 +2506,53 @@ async def deploy_download():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket соединение для реального времени"""
-    await room.connect(websocket)
+    """WebSocket — auth через cookie; guest read-only."""
+    from room.user_auth import get_user_from_token, SESSION_COOKIE
+    from room.feature_flags import is_enabled
+    from room.view_tokens import validate_token
+
+    token = websocket.cookies.get(SESSION_COOKIE, "")
+    user = get_user_from_token(token) if token else None
+    view_tok = websocket.query_params.get("view_token", "")
+    view_access = validate_token(view_tok) if view_tok else None
+    guest_readonly = is_enabled("guest_readonly_ws") and not user and not (view_access and view_access.get("valid"))
+
+    await room.connect(websocket, user=user, view_token=view_access, readonly=guest_readonly)
     try:
         while True:
             data = await websocket.receive_text()
+            if guest_readonly:
+                await websocket.send_text(json.dumps({
+                    "type": "error",
+                    "message": "🔒 Войдите для отправки задач",
+                    "timestamp": __import__("datetime").datetime.now().isoformat(),
+                }, ensure_ascii=False))
+                continue
+            if user and user.get("role") == "investor":
+                try:
+                    message = json.loads(data)
+                    if message.get("type") in ("task", "learning"):
+                        await websocket.send_text(json.dumps({
+                            "type": "error",
+                            "message": "🔒 Investor — только просмотр",
+                        }, ensure_ascii=False))
+                        continue
+                except json.JSONDecodeError:
+                    await websocket.send_text(json.dumps({
+                        "type": "error",
+                        "message": "🔒 Investor — только просмотр",
+                    }, ensure_ascii=False))
+                    continue
             try:
                 message = json.loads(data)
-                await room.handle_user_message(message)
+                await room.handle_user_message(message, user=user)
             except json.JSONDecodeError:
-                # Если просто текст — считаем как задачу всем
                 await room.handle_user_message({
                     "type": "task",
                     "text": data,
                     "target": "all"
-                })
+                }, user=user)
     except WebSocketDisconnect:
         await room.disconnect(websocket)
-    except Exception as e:
+    except Exception:
         await room.disconnect(websocket)

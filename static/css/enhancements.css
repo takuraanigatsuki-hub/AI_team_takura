@@ -1,0 +1,184 @@
+/* Enhancements: sidebar, unified cards, density, investor, security */
+
+:root {
+    --sidebar-w: 220px;
+    --sidebar-collapsed-w: 64px;
+}
+
+body.has-sidebar {
+    display: flex;
+    min-height: 100vh;
+}
+
+.app-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--sidebar-w);
+    background: var(--surface-2, #12121a);
+    border-right: 1px solid var(--border, rgba(255,255,255,.08));
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    transition: width .2s ease;
+    overflow: hidden;
+}
+
+body.sidebar-collapsed .app-sidebar { width: var(--sidebar-collapsed-w); }
+body.sidebar-collapsed .sb-label,
+body.sidebar-collapsed .sb-group-label { display: none; }
+
+.app-content-wrap {
+    flex: 1;
+    margin-left: var(--sidebar-w);
+    min-width: 0;
+    transition: margin-left .2s ease;
+}
+
+body.sidebar-collapsed .app-content-wrap { margin-left: var(--sidebar-collapsed-w); }
+
+.sb-brand {
+    padding: 16px 14px;
+    font-family: Rajdhani, sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    border-bottom: 1px solid var(--border, rgba(255,255,255,.08));
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sb-nav { flex: 1; overflow-y: auto; padding: 8px 6px; }
+
+.sb-group { margin-bottom: 12px; }
+.sb-group-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-muted, #888);
+    padding: 4px 10px 6px;
+}
+
+.sb-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text, #e8e8f0);
+    cursor: pointer;
+    font-size: 14px;
+    text-align: left;
+    transition: background .15s;
+}
+
+.sb-item:hover { background: rgba(108, 99, 255, .12); }
+.sb-item.active {
+    background: linear-gradient(90deg, rgba(108,99,255,.25), transparent);
+    color: var(--accent, #6c63ff);
+    font-weight: 600;
+}
+
+.sb-icon { font-size: 1.15rem; min-width: 24px; text-align: center; }
+
+.sb-footer {
+    padding: 10px;
+    border-top: 1px solid var(--border, rgba(255,255,255,.08));
+}
+
+.sb-density select {
+    width: 100%;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface, #0d0d14);
+    color: inherit;
+    font-size: 12px;
+}
+
+/* Unified cards */
+.ucard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.ucard-grid-agents { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+
+.ucard {
+    background: var(--surface-2, #16161f);
+    border: 1px solid var(--border, rgba(255,255,255,.08));
+    border-radius: 14px;
+    padding: 14px 16px;
+    transition: transform .15s, box-shadow .15s;
+}
+
+.ucard-click { cursor: pointer; text-align: left; width: 100%; }
+.ucard-click:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+
+.ucard-kpi { text-align: center; }
+.ucard-kpi-val { display: block; font-size: 1.75rem; font-weight: 700; color: var(--accent, #6c63ff); }
+.ucard-kpi-label { font-size: 12px; color: var(--text-muted); }
+
+.ucard-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between; }
+.ucard-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(108,99,255,.15);
+    color: var(--accent);
+}
+
+.ucard-section { margin-bottom: 28px; }
+.ucard-section h3 { margin-bottom: 12px; font-size: 1rem; }
+
+.ucard-emoji { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+
+/* Investor */
+.investor-layout { padding: 24px; max-width: 1100px; margin: 0 auto; overflow-y: auto; height: calc(100vh - 120px); }
+.investor-hero { margin-bottom: 24px; }
+.investor-hero h2 { font-family: Rajdhani, sans-serif; font-size: 1.75rem; }
+
+.skill-bar-row { display: grid; grid-template-columns: 140px 1fr 48px; gap: 12px; align-items: center; margin-bottom: 8px; font-size: 13px; }
+.skill-bar { height: 8px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; }
+.skill-bar-fill { height: 100%; background: linear-gradient(90deg, #6c63ff, #a89cff); border-radius: 4px; }
+
+/* Security */
+.sec-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+.sec-event { padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,.04); margin-bottom: 6px; font-size: 13px; }
+.sec-event.sev-high, .sec-event.sev-critical { border-left: 3px solid #ef4444; }
+.sec-event.sev-medium { border-left: 3px solid #f59e0b; }
+
+/* Masha skill tab */
+.ml-skill-matrix { padding: 16px 0; }
+
+/* Density */
+[data-density="compact"] .ucard { padding: 10px 12px; }
+[data-density="compact"] .main { --gap: 8px; }
+[data-density="focus"] .header-row-nav { display: none; }
+[data-density="focus"] .fp-hide-mobile { display: none !important; }
+
+/* Template modal */
+.template-modal {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center;
+}
+.template-modal.hidden { display: none; }
+.template-modal-inner {
+    background: var(--surface-2); border-radius: 16px; padding: 24px;
+    max-width: 640px; width: 90%; max-height: 80vh; overflow-y: auto;
+}
+#templatePickerList { display: grid; gap: 10px; margin-top: 16px; }
+
+.role-badge.role-investor { background: rgba(212,175,55,.2); color: #d4af37; }
+
+@media (max-width: 900px) {
+    .app-sidebar { transform: translateX(-100%); }
+    body.sidebar-open .app-sidebar { transform: translateX(0); }
+    .app-content-wrap { margin-left: 0 !important; }
+}

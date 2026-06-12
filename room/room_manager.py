@@ -60,14 +60,23 @@ class RoomManager:
             return "learning"
         return "work"
 
-    async def connect(self, websocket: WebSocket):
+    async def connect(self, websocket: WebSocket, user=None, view_token=None, readonly: bool = False):
         await websocket.accept()
         self.active_connections.add(websocket)
         self._visitor_counter += 1
-        vid = f"guest-{self._visitor_counter}"
+        if user:
+            vid = user.get("id", f"user-{self._visitor_counter}")
+            name = user.get("name") or user.get("email", "User").split("@")[0]
+        else:
+            vid = f"guest-{self._visitor_counter}"
+            name = f"Guest {self._visitor_counter}"
         self.connection_meta[websocket] = {
             "id": vid,
-            "name": f"Guest {self._visitor_counter}",
+            "name": name,
+            "user_id": user.get("id") if user else "",
+            "role": user.get("role", "guest") if user else "guest",
+            "readonly": readonly,
+            "view_token": view_token,
             "joined_at": datetime.now().isoformat(),
         }
 
@@ -347,7 +356,7 @@ class RoomManager:
             agent.status = "idle"
             agent.location = "studio"
 
-    async def handle_user_message(self, data: dict):
+    async def handle_user_message(self, data: dict, user=None):
         msg_type = data.get("type", "task")
         target = data.get("target", "all")
         raw_text = data.get("text", "")
