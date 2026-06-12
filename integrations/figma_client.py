@@ -33,9 +33,12 @@ def parse_figma_url(url: str) -> Optional[dict]:
     parsed = urlparse(url)
     qs = parse_qs(parsed.query)
     path_parts = parsed.path.strip("/").split("/")
-    file_type = path_parts[1] if len(path_parts) >= 2 else "design"
     if path_parts[:2] == ["community", "file"]:
         file_type = "community"
+    elif path_parts:
+        file_type = path_parts[0]
+    else:
+        file_type = "design"
     node_raw = qs.get("node-id", [""])[0]
     node_id = unquote(node_raw).replace("-", ":") if node_raw else None
     return {

@@ -1,6 +1,11 @@
 """Генерация runnable React-кода для live preview Сони."""
 import re
 import random
+from pathlib import Path
+
+from integrations.figma_client import parse_figma_url
+
+_COMPONENTS_DIR = Path(__file__).resolve().parent.parent / "static" / "components"
 
 
 def _esc(s: str) -> str:
@@ -10,6 +15,22 @@ def _esc(s: str) -> str:
 def _fmt(template: str, task: str) -> str:
     """Подставить task без конфликта с JSX-фигурными скобками."""
     return template.replace("{task}", _esc(task))
+
+
+def _extract_figma_url(task: str) -> str:
+    for word in task.split():
+        if "figma.com" in word:
+            return word.strip("()[]<>\"'")
+    return ""
+
+
+def is_figma_import_task(task: str) -> bool:
+    t = task.lower()
+    if "figma.com" not in task:
+        return False
+    return any(w in t for w in [
+        "figma", "импорт", "import", "макет", "design", "создай react", "react ui",
+    ])
 
 
 def is_site_task(task: str) -> bool:
@@ -111,6 +132,20 @@ def generate_react_preview(task: str) -> dict:
 def _match_preview_template(task: str) -> dict:
     t = task.lower()
     title = task[:60] if task else "Компонент"
+
+    if is_figma_import_task(task):
+        figma_url = _extract_figma_url(task)
+        parsed = parse_figma_url(figma_url) if figma_url else None
+        if parsed:
+            from integrations.figma_react import generate_react_from_figma, resolve_component_for_file
+
+            if resolve_component_for_file(parsed["file_key"]):
+                figma_stub = {
+                    "file_key": parsed["file_key"],
+                    "url": figma_url,
+                    "summary": {"file_name": "Untitled", "colors": [], "fonts": [], "frames": []},
+                }
+                return generate_react_from_figma(figma_stub, task=task)
 
     if is_site_task(task):
         return {"title": "Готовый сайт", "code": _fmt(_WEBSITE, task), "is_site": True}
