@@ -995,6 +995,12 @@
     document.addEventListener('DOMContentLoaded', () => {
         initApp();
 
+        document.addEventListener('click', (e) => {
+            document.querySelectorAll('.header-dropdown[open]').forEach((d) => {
+                if (!d.contains(e.target)) d.removeAttribute('open');
+            });
+        });
+
         document.getElementById('messageInput')?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();

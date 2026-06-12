@@ -37,14 +37,14 @@
         if (!el) return;
         if (!currentUser) {
             el.innerHTML = `
-                <a href="/" class="user-link">На сайт</a>
-                <a href="/?auth=login" class="user-link">Вход</a>`;
+                <a href="/" class="hdr-btn">На сайт</a>
+                <a href="/?auth=login" class="hdr-btn">Вход</a>`;
             return;
         }
         el.innerHTML = `
             <span class="user-name" title="${escape(currentUser.email)}">👤 ${escape(currentUser.name || currentUser.email)}</span>
-            <button type="button" class="text-btn" onclick="Auth.logout()">Выход</button>
-            <a href="/" class="text-btn user-home" title="Главный сайт">🏠</a>`;
+            <button type="button" class="hdr-btn" onclick="Auth.logout()">Выход</button>
+            <a href="/" class="hdr-btn hdr-icon user-home" title="Главный сайт">🏠</a>`;
     }
 
     function escape(s) {
