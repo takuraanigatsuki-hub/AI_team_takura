@@ -7,8 +7,9 @@ import pytest
 @pytest.fixture
 def client():
     from app import app
-    from fastapi.testclient import TestClient
-    return TestClient(app)
+    from starlette.testclient import TestClient
+    with TestClient(app) as c:
+        yield c
 
 
 def test_index(client):

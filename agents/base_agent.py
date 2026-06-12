@@ -941,7 +941,7 @@ class BaseAgent:
                 "timestamp": datetime.now().isoformat()
             })
 
-        response = self.build_task_response(text, self._find_relevant_knowledge(text))
+        response = await self._build_response(text)
         self.direct_chat.append({
             "role": "agent",
             "text": response,
