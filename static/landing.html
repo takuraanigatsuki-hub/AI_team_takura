@@ -5,10 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Team Room — Автономная команда ИИ-агентов</title>
     <meta name="description" content="11 ИИ-агентов: PM, архитектор, backend, frontend, QA, DevOps, Cursor SDK, 3D и презентации. 3D студия, Kanban, Figma pipeline.">
+    <meta property="og:title" content="AI Team Room — Автономная команда ИИ-агентов">
+    <meta property="og:description" content="PM, Figma → React, Cursor SDK, Kanban и 3D-студия в одной платформе для разработки продукта.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/static/icons/icon-512.png">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#6c63ff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="AI Team">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<<<<<<< HEAD
     <link rel="stylesheet" href="/static/css/landing.css?v=4">
+=======
+    <link rel="stylesheet" href="/static/css/landing.css?v=3">
+>>>>>>> origin/main
     <link rel="icon" href="/static/icons/icon-192.png">
 </head>
 <body>
@@ -17,9 +30,16 @@
         <span class="lp-logo-mark">🤖</span>
         <span class="lp-logo-text">AI Team Room</span>
     </a>
+<<<<<<< HEAD
     <nav class="lp-nav" aria-label="Разделы">
+=======
+    <button type="button" class="lp-nav-toggle" id="lpNavToggle" aria-label="Меню" aria-expanded="false">☰</button>
+    <nav class="lp-nav" id="lpNav">
+>>>>>>> origin/main
         <a href="#features">Возможности</a>
+        <a href="#how">Как работает</a>
         <a href="#team">Команда</a>
+        <a href="#integrations">Интеграции</a>
         <a href="#pricing">Старт</a>
     </nav>
     <div class="lp-header-right">
@@ -173,7 +193,9 @@ PR #42 · checks ✓</pre>
     </section>
 
     <section class="lp-features" id="features">
+        <p class="lp-section-label">Возможности</p>
         <h2>Всё для продуктовой команды</h2>
+        <p class="lp-section-desc">От идеи до деплоя — агенты берут на себя планирование, дизайн, код, тесты и документацию.</p>
         <div class="lp-grid">
             <article class="lp-card"><span>🎮</span><h3>3D Студия</h3><p>Живая команда на сцене — клик по агенту открывает личный чат.</p></article>
             <article class="lp-card"><span>📌</span><h3>Kanban & Sprint</h3><p>Задачи, приоритеты, спринты с backlog и burndown.</p></article>
@@ -184,12 +206,50 @@ PR #42 · checks ✓</pre>
         </div>
     </section>
 
+    <section class="lp-how" id="how">
+        <p class="lp-section-label">Как это работает</p>
+        <h2>Три шага до результата</h2>
+        <div class="lp-steps">
+            <article class="lp-step">
+                <span class="lp-step-num">1</span>
+                <h3>Поставьте задачу</h3>
+                <p>Опишите цель в чате — PM Виктор разобьёт её на подзадачи и назначит агентов.</p>
+            </article>
+            <article class="lp-step">
+                <span class="lp-step-num">2</span>
+                <h3>Наблюдайте в 3D</h3>
+                <p>Следите за прогрессом в студии: кто работает, что готово, какие артефакты появились.</p>
+            </article>
+            <article class="lp-step">
+                <span class="lp-step-num">3</span>
+                <h3>Получите результат</h3>
+                <p>Код, UI, презентации и деплой — с GitHub sync и React Preview в один клик.</p>
+            </article>
+        </div>
+    </section>
+
     <section class="lp-team" id="team">
-        <h2>Команда агентов</h2>
+        <p class="lp-section-label">Команда</p>
+        <h2>11 специализированных агентов</h2>
         <div class="lp-agents">
             <span>👔 PM</span><span>🏛️ Architect</span><span>⚙️ Backend</span><span>🎨 Frontend</span>
             <span>🧪 QA</span><span>🔍 Review</span><span>📝 Docs</span><span>🔧 DevOps</span>
             <span>⚡ Cursor</span><span>📽️ Presenter</span><span>🧊 3D</span>
+        </div>
+    </section>
+
+    <section class="lp-integrations" id="integrations">
+        <p class="lp-section-label">Интеграции</p>
+        <h2>Подключается к вашему стеку</h2>
+        <div class="lp-integrations-grid">
+            <span>🎨 Figma</span>
+            <span>⚡ Cursor SDK</span>
+            <span>🐙 GitHub</span>
+            <span>✈️ Telegram</span>
+            <span>🧩 Linear</span>
+            <span>📋 Jira</span>
+            <span>📝 Notion</span>
+            <span>▲ Vercel</span>
         </div>
     </section>
 
@@ -208,8 +268,15 @@ PR #42 · checks ✓</pre>
 </main>
 
 <footer class="lp-footer">
-    <span>AI Team Room · takura</span>
-    <a href="/app">Dashboard</a>
+    <div class="lp-footer-brand">
+        <span class="lp-logo-mark">🤖</span>
+        <span>AI Team Room · takura</span>
+    </div>
+    <div class="lp-footer-links">
+        <a href="/app">Dashboard</a>
+        <a href="/startup">Пример лендинга</a>
+        <a href="/app?view=design">Figma Studio</a>
+    </div>
 </footer>
 
 <!-- Auth modal -->
@@ -236,12 +303,15 @@ PR #42 · checks ✓</pre>
     </div>
 </div>
 
+<<<<<<< HEAD
 <script src="/static/vendor/three.min.js"></script>
 <script src="/static/vendor/OrbitControls.js"></script>
 <script src="/static/js/studio-textures.js?v=1"></script>
 <script src="/static/js/studio-models.js?v=3"></script>
 <script src="/static/js/studio.js?v=21"></script>
 <script src="/static/js/landing-demo.js?v=1"></script>
+=======
+>>>>>>> origin/main
 <script src="/static/js/landing.js?v=3"></script>
 </body>
 </html>

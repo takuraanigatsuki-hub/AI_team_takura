@@ -2,6 +2,9 @@
 (function (global) {
     let filterAgent = '';
     let filterType = '';
+    let filterSearch = '';
+    let lastProjects = [];
+    let lastStats = {};
 
     async function load() {
         const el = document.getElementById('projectsGrid');
@@ -13,6 +16,8 @@
             if (filterType) url += `&type=${encodeURIComponent(filterType)}`;
             const r = await fetch(url);
             const d = await r.json();
+            lastProjects = d.projects || [];
+            lastStats = d.stats || {};
             render(d, el);
         } catch (e) {
             el.innerHTML = `<div class="panel-error">${e.message}</div>`;
@@ -34,7 +39,14 @@
 
     function render(data, el) {
         const stats = data.stats || {};
-        const projects = data.projects || [];
+        let projects = data.projects || [];
+        if (filterSearch) {
+            const q = filterSearch.toLowerCase();
+            projects = projects.filter((p) => {
+                const hay = `${p.title || ''} ${p.description || ''} ${(p.tags || []).join(' ')} ${p.agent_name || ''}`.toLowerCase();
+                return hay.includes(q);
+            });
+        }
         const statEl = document.getElementById('projectsStats');
         if (statEl) {
             statEl.innerHTML = `
@@ -87,6 +99,16 @@
         load();
     }
 
+    function setSearch(query) {
+        filterSearch = (query || '').trim().toLowerCase();
+        const el = document.getElementById('projectsGrid');
+        if (el && lastProjects.length) {
+            render({ projects: lastProjects, stats: lastStats }, el);
+        } else {
+            load();
+        }
+    }
+
     function revise(agentId, artifactId) {
         if (window.AgentActivity) AgentActivity.revise(agentId, artifactId);
     }
@@ -95,5 +117,5 @@
         return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     }
 
-    global.ProjectsUI = { load, setFilter, revise, diffWith };
+    global.ProjectsUI = { load, setFilter, setSearch, revise, diffWith };
 })(window);

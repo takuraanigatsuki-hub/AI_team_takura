@@ -1033,6 +1033,13 @@ async def get_history():
     }
 
 
+@app.get("/api/search")
+async def search_site(q: str = "", limit: int = 30):
+    """Глобальный поиск по задачам, проектам, чату и обучению."""
+    from integrations.search_service import search_room
+    return search_room(q, room, limit=min(max(limit, 1), 100))
+
+
 @app.get("/api/sites/latest")
 async def get_latest_site():
     """Готовый HTML-сайт от Сони"""

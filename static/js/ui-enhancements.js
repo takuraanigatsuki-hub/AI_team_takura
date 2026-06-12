@@ -11,6 +11,7 @@
         { keys: 'Ctrl+4', action: () => switchView('tasks'), label: 'Задачи' },
         { keys: 'Ctrl+5', action: () => switchView('dashboard'), label: 'Dashboard' },
         { keys: 'Ctrl+K', action: () => toggleCommandPalette(), label: 'Командная палитра' },
+        { keys: 'Ctrl+Shift+F', action: () => { if (window.SiteSearch) SiteSearch.open(); }, label: 'Поиск по сайту' },
         { keys: 'Ctrl+/', action: () => toggleShortcutsHelp(), label: 'Справка' },
     ];
 
@@ -159,11 +160,15 @@
     }
 
     function toggleShortcutsHelp() {
+<<<<<<< HEAD
         if (global.FeaturePack?.showShortcutsModal) {
             global.FeaturePack.showShortcutsModal();
             return;
         }
         toast('Ctrl+1-6 вкладки · Ctrl+K палитра · Ctrl+G поиск · Enter+Ctrl отправить', 'info', 6000);
+=======
+        toast('Ctrl+1-6 вкладки · Ctrl+K палитра · Ctrl+Shift+F поиск · Enter+Ctrl отправить', 'info', 6000);
+>>>>>>> origin/main
     }
 
     function bindKeyboard() {

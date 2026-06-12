@@ -16,6 +16,8 @@
     let privateChatZIndex = 350;
     let taskHistory = [];
     let taskFilter = 'all';
+    let taskSearchQuery = '';
+    let learningSearchQuery = '';
     let taskStats = { total: 0, completed: 0, active: 0 };
 
     // ─── Theme ───────────────────────────────────────────
@@ -674,6 +676,7 @@
         removeLearningWelcome();
         const div = document.createElement('div');
         div.className = `message learning-msg ${data.type || ''}`;
+        div.dataset.searchText = `${data.agent_name || ''} ${data.message || ''}`.toLowerCase();
         div.innerHTML = `
             <div class="msg-avatar">${data.agent_emoji || '🤖'}</div>
             <div class="msg-body">
@@ -686,6 +689,7 @@
             </div>`;
         document.getElementById('learningMessages').appendChild(div);
         scrollToBottom('learningMessages');
+        applyLearningSearchFilter();
     }
 
     function learningTypeLabel(type) {
@@ -745,6 +749,23 @@
     window.filterChatMessages = function (query) {
         chatSearchQuery = query.trim().toLowerCase();
         applyChatSearchFilter();
+    };
+
+    function applyLearningSearchFilter() {
+        const q = learningSearchQuery;
+        document.querySelectorAll('#learningMessages .message').forEach((el) => {
+            if (!q) {
+                el.classList.remove('search-hidden');
+                return;
+            }
+            const text = el.dataset.searchText || el.textContent.toLowerCase();
+            el.classList.toggle('search-hidden', !text.includes(q));
+        });
+    }
+
+    window.filterLearningMessages = function (query) {
+        learningSearchQuery = query.trim().toLowerCase();
+        applyLearningSearchFilter();
     };
 
     function renderAgents() {
@@ -898,9 +919,14 @@
 
     window.filterTasks = function (filter) {
         taskFilter = filter;
-        document.querySelectorAll('.filter-btn').forEach((b) => {
+        document.querySelectorAll('.tasks-filters .filter-btn[data-filter]').forEach((b) => {
             b.classList.toggle('active', b.dataset.filter === filter);
         });
+        renderTasks();
+    };
+
+    window.filterTasksSearch = function (query) {
+        taskSearchQuery = query.trim().toLowerCase();
         renderTasks();
     };
 
@@ -948,6 +974,12 @@
         if (taskFilter === 'completed') items = items.filter((t) => t.status === 'completed');
         if (taskFilter === 'active') {
             items = items.filter((t) => ['submitted', 'queued', 'in_progress'].includes(t.status));
+        }
+        if (taskSearchQuery) {
+            items = items.filter((t) => {
+                const hay = `${t.task || ''} ${t.response || ''} ${t.agent_name || ''} ${t.target || ''}`.toLowerCase();
+                return hay.includes(taskSearchQuery);
+            });
         }
 
         if (!items.length) {
@@ -1176,7 +1208,12 @@
             Integrations.loadFigmaStatus();
         }
         if (window.UIEnhancements) UIEnhancements.init();
+<<<<<<< HEAD
         if (window.FeaturePack) FeaturePack.init();
+=======
+        if (window.SiteSearch) SiteSearch.init();
+        if (window.AdminPanel && user) AdminPanel.updateNavVisibility(user);
+>>>>>>> origin/main
         if (window.PipelineUI) PipelineUI.load();
         if (window.StudioMinimap) StudioMinimap.init();
         if (window.SonyaStudio) SonyaStudio.init();

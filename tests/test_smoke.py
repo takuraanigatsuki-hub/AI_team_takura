@@ -16,9 +16,11 @@ def test_index(client):
     r = client.get("/")
     assert r.status_code == 200
     assert "AI Team Room" in r.text
-    assert "reactPreviewPanel" in r.text
-    assert "reactPreviewViewport" in r.text
-    assert "Регистрация" in r.text or "registration" in r.text.lower() or "btnRegister" in r.text
+    assert 'id="features"' in r.text
+    assert 'id="how"' in r.text
+    assert 'id="pricing"' in r.text
+    assert "lp-hero" in r.text
+    assert "Регистрация" in r.text or "btnRegister" in r.text
 
 
 def test_startup_landing(client):
@@ -34,6 +36,9 @@ def test_app_spa(client):
     r = client.get("/app")
     assert r.status_code == 200
     assert "view-tab" in r.text or "3D Студия" in r.text
+    assert "search.js" in r.text
+    assert 'id="siteSearchInput"' not in r.text  # overlay created dynamically
+    assert 'onclick="SiteSearch.open()"' in r.text
 
 
 def test_auth_register_login(client):
@@ -119,6 +124,18 @@ def test_projects(client):
     r = client.get("/api/projects")
     assert r.status_code == 200
     assert "projects" in r.json()
+
+
+def test_search(client):
+    r = client.get("/api/search?q=")
+    assert r.status_code == 200
+    data = r.json()
+    assert "results" in data
+    assert data["count"] == 0
+
+    r2 = client.get("/api/search?q=test")
+    assert r2.status_code == 200
+    assert "results" in r2.json()
 
 
 def test_integrations_status(client):
