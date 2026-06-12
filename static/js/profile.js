@@ -231,7 +231,7 @@
 
     async function loadPlans() {
         try {
-            const r = await fetch('/api/subscription/plans');
+            const r = await fetch('/api/subscription/plans', { credentials: 'same-origin' });
             if (r.ok) {
                 const d = await r.json();
                 plans = d.plans || [];
@@ -538,9 +538,9 @@
 
     async function upgrade(tier) {
         try {
-            const flagsR = await fetch('/api/feature-flags');
+            const flagsR = await fetch('/api/feature-flags', { credentials: 'same-origin' });
             const flagsD = flagsR.ok ? await flagsR.json() : {};
-            const stripeR = await fetch('/api/billing/stripe/status');
+            const stripeR = await fetch('/api/billing/stripe/status', { credentials: 'same-origin' });
             const stripeD = stripeR.ok ? await stripeR.json() : {};
             if (flagsD.flags?.stripe_billing && stripeD.configured) {
                 if (!confirm(`Оплатить тариф «${tier}» через Stripe?`)) return;

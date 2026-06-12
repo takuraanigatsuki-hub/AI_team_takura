@@ -84,11 +84,17 @@
     async function runSearch(query, listEl) {
         if (activeController) activeController.abort();
         activeController = new AbortController();
-        listEl.innerHTML = '<div class="search-hint">Поиск…</div>';
+        listEl.innerHTML = '<div class="search-hint dash-loading">Поиск…</div>';
         try {
             const r = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=30`, {
+                credentials: 'same-origin',
                 signal: activeController.signal,
             });
+            if (r.status === 401) {
+                listEl.innerHTML = '<div class="search-hint">Войдите, чтобы искать по своим задачам и сообщениям</div>';
+                return;
+            }
+            if (!r.ok) throw new Error('HTTP ' + r.status);
             const d = await r.json();
             renderResults(listEl, d.results || [], query);
         } catch (e) {

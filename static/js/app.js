@@ -906,7 +906,7 @@
     async function loadLearningHistory(force = false) {
         if (!canViewAgentLearning(window.Auth?.getUser())) return;
         try {
-            const r = await fetch('/api/history');
+            const r = await fetch('/api/history', { credentials: 'same-origin' });
             if (!r.ok) return;
             const data = await r.json();
             const msgs = data.learning || [];

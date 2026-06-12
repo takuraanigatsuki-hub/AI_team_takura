@@ -7,7 +7,7 @@
 
     async function loadCommands() {
         try {
-            const r = await fetch('/api/chat/commands');
+            const r = await fetch('/api/chat/commands', { credentials: 'same-origin' });
             if (r.ok) {
                 const d = await r.json();
                 commands = d.commands || [];

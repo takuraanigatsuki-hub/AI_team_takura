@@ -2189,7 +2189,9 @@ body.has-pipeline-collapsed .toast-container { bottom: 88px; }
     transition: background var(--transition);
 }
 .search-result:hover, .search-result:focus-visible {
-    background: var(--surface-2); outline: none;
+    background: var(--surface-2);
+    box-shadow: inset 3px 0 0 var(--accent);
+    outline: none;
 }
 .search-result-type { font-size: 10px; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
 .search-result-title { font-size: 13px; font-weight: 500; line-height: 1.35; }

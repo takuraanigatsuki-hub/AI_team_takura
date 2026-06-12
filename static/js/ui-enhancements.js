@@ -60,9 +60,9 @@
         if (!admin) return;
         try {
             const [gitR, cursorR, cfgR] = await Promise.all([
-                fetch('/api/git/status'),
-                fetch('/api/cursor/status'),
-                fetch('/api/config'),
+                fetch('/api/git/status', { credentials: 'same-origin' }),
+                fetch('/api/cursor/status', { credentials: 'same-origin' }),
+                fetch('/api/config', { credentials: 'same-origin' }),
             ]);
             const git = gitR.ok ? await gitR.json() : {};
             const cursor = cursorR.ok ? await cursorR.json() : {};
@@ -105,7 +105,7 @@
     async function syncNow() {
         toast('Синхронизация с GitHub…', 'info');
         try {
-            const r = await fetch('/api/git/sync', { method: 'POST' });
+            const r = await fetch('/api/git/sync', { method: 'POST', credentials: 'same-origin' });
             const d = await r.json();
             if (d.action === 'pushed') toast(`📤 ${d.commit} → ${d.branch}`, 'success');
             else if (d.action === 'skip') toast('Нет изменений', 'info');
