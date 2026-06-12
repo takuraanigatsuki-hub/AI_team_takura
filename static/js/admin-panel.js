@@ -213,7 +213,11 @@
         const user = global.Auth?.getUser();
         if (!el || !user) return;
         if (!canAccess(user)) {
-            el.innerHTML = '<div class="panel-empty">Недостаточно прав</div>';
+            el.innerHTML = global.UICore ? UICore.emptyState({
+                icon: '🔒',
+                title: 'Недостаточно прав',
+                text: 'Admin доступен только администраторам',
+            }) : '<div class="panel-empty">Недостаточно прав</div>';
             return;
         }
         if (activeSection === 'console') el.innerHTML = renderConsole(user);
@@ -222,7 +226,7 @@
             if (window.SecurityDashboard) SecurityDashboard.load();
         }
         else if (activeSection === 'flags') {
-            el.innerHTML = '<div class="admin-section-head"><h2>🚩 Feature Flags</h2><p class="muted">Включение функций платформы</p></div><div id="featureFlagsPanel"><div class="dash-loading">Загрузка…</div></div>';
+            el.innerHTML = `<div class="admin-section-head"><h2>🚩 Feature Flags</h2><p class="muted">Включение функций платформы</p></div><div id="featureFlagsPanel">${global.UICore ? UICore.loadingState('', { compact: true }) : '<div class="dash-loading">Загрузка…</div>'}</div>`;
             loadFeatureFlags();
         }
         else if (activeSection === 'users') el.innerHTML = renderUsersTable(user);

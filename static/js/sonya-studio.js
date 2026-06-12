@@ -61,11 +61,16 @@
 
     async function loadProjects(selectId) {
         const listEl = document.getElementById('ssProjectList');
-        if (listEl) listEl.innerHTML = '<div class="dash-loading">Загрузка…</div>';
+        if (listEl) listEl.innerHTML = global.UICore ? UICore.loadingState('', { compact: true }) : '<div class="dash-loading">Загрузка…</div>';
         try {
             const r = await fetch('/api/sonya/projects', { credentials: 'same-origin' });
             if (r.status === 401) {
-                if (listEl) listEl.innerHTML = '<div class="panel-empty">🔐 Войдите для Studio проектов</div>';
+                if (listEl) {
+                    listEl.innerHTML = global.UICore ? UICore.authRequiredState({
+                        title: 'Studio проекты',
+                        text: 'Войдите для доступа к Sonya Studio',
+                    }) : '<div class="panel-empty">🔐 Войдите для Studio проектов</div>';
+                }
                 return;
             }
             if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -77,7 +82,11 @@
             if (id) await openProject(id);
             else clearCanvas();
         } catch (e) {
-            if (listEl) listEl.innerHTML = `<div class="panel-error">${esc(e.message)}</div>`;
+            if (listEl) {
+                listEl.innerHTML = global.UICore
+                    ? UICore.errorState(e.message, { retryOnclick: 'SonyaStudio.load()' })
+                    : `<div class="panel-error">${esc(e.message)}</div>`;
+            }
         }
     }
 
@@ -85,7 +94,13 @@
         const el = document.getElementById('ssProjectList');
         if (!el) return;
         if (!projects.length) {
-            el.innerHTML = '<div class="panel-empty">Нет проектов.<br>Нажмите «Новый проект».</div>';
+            el.innerHTML = global.UICore ? UICore.emptyState({
+                icon: '✨',
+                title: 'Нет проектов',
+                text: 'Создайте первый дизайн-проект',
+                primaryLabel: 'Новый проект',
+                primaryOnclick: 'SonyaStudio.createNew()',
+            }) : '<div class="panel-empty">Нет проектов.<br>Нажмите «Новый проект».</div>';
             return;
         }
         el.innerHTML = projects.map((p) => `

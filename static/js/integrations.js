@@ -122,7 +122,7 @@
         const el = document.getElementById('cursorPanelBody');
         if (!el) return;
         if (!cursorStatus) {
-            el.innerHTML = '<div class="dash-loading">Загрузка…</div>';
+            el.innerHTML = global.UICore ? UICore.loadingState('', { compact: true }) : '<div class="dash-loading">Загрузка…</div>';
             return;
         }
         const user = cursorStatus.user?.email || cursorStatus.user?.userEmail || '—';
@@ -194,7 +194,11 @@
         const url = input?.value?.trim();
         if (!url) return;
         const resultEl = document.getElementById('dlStudyPreview') || document.getElementById('figmaImportResult');
-        if (resultEl) resultEl.innerHTML = '<div class="panel-empty">Импорт…</div>';
+        if (resultEl) {
+            resultEl.innerHTML = global.UICore
+                ? UICore.loadingState('Импорт…', { compact: true })
+                : '<div class="panel-empty">Импорт…</div>';
+        }
         try {
             const resp = await fetch('/api/figma/import', {
                 method: 'POST',
@@ -218,7 +222,11 @@
             }
             if (window.ReactPreview) ReactPreview.loadLatest();
         } catch (e) {
-            if (resultEl) resultEl.innerHTML = `<div class="panel-error">${e.message}</div>`;
+            if (resultEl) {
+                resultEl.innerHTML = global.UICore
+                    ? UICore.errorState(e.message)
+                    : `<div class="panel-error">${e.message}</div>`;
+            }
         }
     }
 

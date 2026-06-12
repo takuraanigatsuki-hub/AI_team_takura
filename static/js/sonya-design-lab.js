@@ -95,7 +95,7 @@
             }
             if (discoveryEl) {
                 discoveryEl.innerHTML = global.UICore
-                    ? UICore.errorState(msg, { compact: true })
+                    ? UICore.errorState(msg)
                     : `<div class="panel-error">${escape(msg)}</div>`;
             }
         }
@@ -145,7 +145,7 @@
     function renderKnowledge(container, items) {
         if (!container) return;
         if (!items.length) {
-            container.innerHTML = '<div class="panel-empty">Соня запоминает сюда каждый изученный макет и UI-паттерн</div>';
+            container.innerHTML = global.UICore ? UICore.inlineEmpty('Соня запоминает сюда каждый изученный макет и UI-паттерн') : '<div class="panel-empty">Соня запоминает сюда каждый изученный макет и UI-паттерн</div>';
             return;
         }
         container.innerHTML = items.map((k) => {
@@ -306,7 +306,7 @@
             return;
         }
         const preview = el('dlStudyPreview');
-        if (preview) preview.innerHTML = '<div class="panel-empty">Соня изучает макет…</div>';
+        if (preview) preview.innerHTML = global.UICore ? UICore.loadingState('Соня изучает макет…', { compact: true }) : '<div class="panel-empty">Соня изучает макет…</div>';
         const studyEndpoints = ['/api/figma/studio/study-url', '/api/figma/study'];
         try {
             let data = null;
@@ -344,7 +344,11 @@
             renderStudyPreview(preview, data);
             await loadLab();
         } catch (e) {
-            if (preview) preview.innerHTML = `<div class="panel-error">${escape(e.message)}</div>`;
+            if (preview) {
+                preview.innerHTML = global.UICore
+                    ? UICore.errorState(e.message)
+                    : `<div class="panel-error">${escape(e.message)}</div>`;
+            }
             toast(e.message, 'error');
         }
     }
@@ -370,7 +374,7 @@
             return;
         }
         const preview = el('dlStudyPreview');
-        if (preview) preview.innerHTML = '<div class="panel-empty">Импорт + React Preview…</div>';
+        if (preview) preview.innerHTML = global.UICore ? UICore.loadingState('Импорт + React Preview…', { compact: true }) : '<div class="panel-empty">Импорт + React Preview…</div>';
         try {
             const r = await fetch('/api/figma/import', {
                 method: 'POST',
@@ -388,7 +392,11 @@
             if (global.ReactPreview) ReactPreview.loadLatest();
             await loadLab();
         } catch (e) {
-            if (preview) preview.innerHTML = `<div class="panel-error">${escape(e.message)}</div>`;
+            if (preview) {
+                preview.innerHTML = global.UICore
+                    ? UICore.errorState(e.message)
+                    : `<div class="panel-error">${escape(e.message)}</div>`;
+            }
         }
     }
 

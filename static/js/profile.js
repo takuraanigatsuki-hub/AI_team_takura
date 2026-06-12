@@ -285,7 +285,10 @@
         if (!el) return;
 
         if (!user) {
-            el.innerHTML = `
+            el.innerHTML = global.UICore ? UICore.authRequiredState({
+                title: 'Личный кабинет',
+                text: 'Войдите в аккаунт, чтобы открыть профиль и настройки',
+            }) : `
                 <div class="panel-empty">
                     <p>Войдите в аккаунт, чтобы открыть личный кабинет.</p>
                     <a href="/?auth=login" class="btn-primary btn-sm">Войти</a>

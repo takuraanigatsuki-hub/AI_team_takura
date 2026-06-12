@@ -29,7 +29,9 @@
                 <p class="muted">${esc((t.description || '').slice(0, 100))}${(t.description || '').length > 100 ? '…' : ''}</p>
                 <span class="ucard-badge">${t.credits} кр.</span>
             </button>`
-        ).join('') : '<p class="muted panel-empty">Нет доступных шаблонов</p>';
+        ).join('') : (global.UICore
+            ? UICore.inlineEmpty('Нет доступных шаблонов')
+            : '<p class="muted panel-empty">Нет доступных шаблонов</p>');
         modal.classList.remove('hidden');
     }
 

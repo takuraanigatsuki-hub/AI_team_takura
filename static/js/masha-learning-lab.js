@@ -48,11 +48,16 @@
         try {
             const r = await fetch('/api/learning/skill-matrix', { credentials: 'same-origin' });
             const d = await r.json();
-            box.innerHTML = (d.agents || []).map((a) =>
+            const rows = (d.agents || []).map((a) =>
                 `<div class="skill-bar-row"><span>${a.emoji} ${esc(a.name)}</span><div class="skill-bar"><div class="skill-bar-fill" style="width:${(a.average || 0) * 10}%"></div></div><strong>${a.average}/10 <small class="muted">(${a.count})</small></strong></div>`
-            ).join('') || '<p class="muted">Пока нет оценок — Маша оценит после задач</p>';
+            ).join('');
+            box.innerHTML = rows || (global.UICore
+                ? UICore.inlineEmpty('Пока нет оценок — Маша оценит после задач')
+                : '<p class="muted">Пока нет оценок — Маша оценит после задач</p>');
         } catch (_) {
-            box.innerHTML = '<p class="muted">Ошибка загрузки</p>';
+            box.innerHTML = global.UICore
+                ? UICore.errorState('Ошибка загрузки', { retryOnclick: 'MashaLearningLab.load()' })
+                : '<p class="muted">Ошибка загрузки</p>';
         }
     }
 
@@ -107,7 +112,9 @@
                 solo: 'Агенты создадут проекты после практики',
                 collab: 'Совместные проекты появятся после /collab',
             };
-            container.innerHTML = `<div class="panel-empty">${empty[kind] || 'Пусто'}</div>`;
+            container.innerHTML = global.UICore
+                ? UICore.inlineEmpty(empty[kind] || 'Пусто')
+                : `<div class="panel-empty">${empty[kind] || 'Пусто'}</div>`;
             return;
         }
         container.innerHTML = items.map((p) => `
@@ -127,7 +134,9 @@
     function renderEvaluations(container, items) {
         if (!container) return;
         if (!items.length) {
-            container.innerHTML = '<div class="panel-empty">Оценки появятся здесь</div>';
+            container.innerHTML = global.UICore
+                ? UICore.inlineEmpty('Оценки появятся здесь')
+                : '<div class="panel-empty">Оценки появятся здесь</div>';
             return;
         }
         container.innerHTML = items.slice(0, 40).map((e) => `
