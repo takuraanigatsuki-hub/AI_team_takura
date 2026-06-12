@@ -63,6 +63,13 @@ async def lifespan(app: FastAPI):
     if primary:
         print(f"👑 Primary owner upgraded: {primary['email']} (tier Owner, full access)")
 
+    from room.accounting_db import init_schema
+    accounting = init_schema()
+    print(
+        f"📒 Бухгалтерия: {len(accounting['tables'])} таблиц, "
+        f"счетов в плане: {accounting['seeded_accounts'] or 'уже есть'}"
+    )
+
     # Запускаем агентов
     await room.start_all_agents()
 
@@ -2050,6 +2057,157 @@ async def toggle_sprint_item(item_id: str):
 async def end_sprint_api():
     from room.sprint_store import end_sprint
     return end_sprint()
+
+
+# ─── Бухгалтерия API ────────────────────────────────────────
+
+
+def _require_accounting_admin(request: Request) -> dict:
+    admin = _current_user(request)
+    if not admin.get("is_owner") and "manage_users" not in (admin.get("privileges") or []):
+        raise HTTPException(status_code=403, detail="Только владелец или админ")
+    return admin
+
+
+class AccountingAccountCreate(BaseModel):
+    code: str
+    name_ru: str
+    account_type: str
+    parent_id: str | None = None
+
+
+class AccountingCounterpartyCreate(BaseModel):
+    name: str
+    inn: str = ""
+    counterparty_type: str = "both"
+    email: str = ""
+    phone: str = ""
+
+
+class AccountingJournalLine(BaseModel):
+    account_id: str
+    debit: float = 0
+    credit: float = 0
+    description: str = ""
+
+
+class AccountingJournalEntryCreate(BaseModel):
+    entry_date: str
+    description: str = ""
+    lines: list[AccountingJournalLine]
+    document_id: str | None = None
+    post: bool = False
+
+
+@app.get("/api/accounting/status")
+async def accounting_status(request: Request):
+    _require_accounting_admin(request)
+    from room.accounting_db import schema_status
+    return schema_status()
+
+
+@app.get("/api/accounting/accounts")
+async def accounting_list_accounts(request: Request, active_only: bool = True):
+    _require_accounting_admin(request)
+    from room.accounting_db import list_accounts
+    return {"accounts": list_accounts(active_only=active_only)}
+
+
+@app.post("/api/accounting/accounts")
+async def accounting_create_account(body: AccountingAccountCreate, request: Request):
+    _require_accounting_admin(request)
+    from room.accounting_db import create_account
+    try:
+        account = create_account(
+            body.code,
+            body.name_ru,
+            body.account_type,
+            parent_id=body.parent_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True, "account": account}
+
+
+@app.get("/api/accounting/counterparties")
+async def accounting_list_counterparties(request: Request, active_only: bool = True):
+    _require_accounting_admin(request)
+    from room.accounting_db import list_counterparties
+    return {"counterparties": list_counterparties(active_only=active_only)}
+
+
+@app.post("/api/accounting/counterparties")
+async def accounting_create_counterparty(body: AccountingCounterpartyCreate, request: Request):
+    _require_accounting_admin(request)
+    from room.accounting_db import create_counterparty
+    try:
+        cp = create_counterparty(
+            body.name,
+            inn=body.inn,
+            counterparty_type=body.counterparty_type,
+            email=body.email,
+            phone=body.phone,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True, "counterparty": cp}
+
+
+@app.get("/api/accounting/journal")
+async def accounting_list_journal(request: Request, limit: int = 50, status: str = ""):
+    _require_accounting_admin(request)
+    from room.accounting_db import list_journal_entries
+    return {
+        "entries": list_journal_entries(
+            limit=limit,
+            status=status or None,
+        )
+    }
+
+
+@app.get("/api/accounting/journal/{entry_id}")
+async def accounting_get_journal(entry_id: str, request: Request):
+    _require_accounting_admin(request)
+    from room.accounting_db import get_journal_entry
+    entry = get_journal_entry(entry_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Проводка не найдена")
+    return entry
+
+
+@app.post("/api/accounting/journal")
+async def accounting_create_journal(body: AccountingJournalEntryCreate, request: Request):
+    _require_accounting_admin(request)
+    from room.accounting_db import create_journal_entry
+    try:
+        entry = create_journal_entry(
+            body.entry_date,
+            body.description,
+            [line.model_dump() for line in body.lines],
+            document_id=body.document_id,
+            post=body.post,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True, "entry": entry}
+
+
+@app.post("/api/accounting/journal/{entry_id}/post")
+async def accounting_post_journal(entry_id: str, request: Request):
+    _require_accounting_admin(request)
+    from room.accounting_db import post_journal_entry
+    try:
+        entry = post_journal_entry(entry_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True, "entry": entry}
+
+
+@app.get("/api/accounting/balances")
+async def accounting_balances(request: Request):
+    _require_accounting_admin(request)
+    from room.accounting_db import account_balances
+    return {"balances": account_balances()}
 
 
 @app.get("/api/projects/{artifact_id}/diff/{other_id}")
