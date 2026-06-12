@@ -19,6 +19,15 @@ def test_index(client):
     assert "Регистрация" in r.text or "registration" in r.text.lower() or "btnRegister" in r.text
 
 
+def test_startup_landing(client):
+    r = client.get("/startup")
+    assert r.status_code == 200
+    assert "LaunchKit" in r.text
+    assert 'id="features"' in r.text
+    assert 'id="cta"' in r.text
+    assert "sl-hero" in r.text
+
+
 def test_app_spa(client):
     r = client.get("/app")
     assert r.status_code == 200
