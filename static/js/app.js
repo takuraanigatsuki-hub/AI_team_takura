@@ -413,7 +413,7 @@
         const pill = document.getElementById('activeAgentsPill');
         if (pill) {
             pill.textContent = working ? `${working} активны` : 'все свободны';
-            pill.className = 'active-pill' + (working ? ' has-active' : '');
+            pill.className = 'status-chip' + (working ? ' has-active' : '');
         }
     }
 
