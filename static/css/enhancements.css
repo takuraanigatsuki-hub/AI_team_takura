@@ -235,7 +235,11 @@ body.sidebar-collapsed .app-content-wrap { margin-left: var(--sidebar-collapsed-
     overflow: hidden;
     transition: opacity .15s;
 }
-.dash-widget.dragging { opacity: .5; }
+.dash-widget.dragging {
+    opacity: .65;
+    box-shadow: 0 12px 40px rgba(108, 99, 255, 0.25);
+    transform: scale(1.01);
+}
 .dash-widget-handle {
     padding: 8px 14px;
     background: rgba(108,99,255,.08);

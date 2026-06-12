@@ -1451,7 +1451,7 @@
         document.getElementById('settingsLearningSection')?.classList.toggle('hidden', !learning);
         if (!admin && !learning) return;
         try {
-            const resp = await fetch('/api/config');
+            const resp = await fetch('/api/config', { credentials: 'same-origin' });
             if (resp.ok) {
                 const cfg = await resp.json();
                 document.getElementById('learnMinInput').value = cfg.learning_interval_min || 15;
@@ -1478,6 +1478,7 @@
         try {
             const resp = await fetch('/api/config', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     learning_interval_min: parseInt(document.getElementById('learnMinInput').value, 10),
@@ -1574,6 +1575,7 @@
         try {
             const r = await fetch('/api/templates/apply', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ template_id: templateId }),
             });
@@ -1590,7 +1592,7 @@
     // ─── Init ────────────────────────────────────────────
     async function initApp() {
         applyTheme(getPreferredTheme());
-        fetch('/api/config').then((r) => r.json()).then((cfg) => {
+        fetch('/api/config', { credentials: 'same-origin' }).then((r) => r.json()).then((cfg) => {
             if (cfg.auto_theme && window.AutoTheme) AutoTheme.start();
             else if (window.AutoTheme) AutoTheme.stop?.();
         }).catch(() => {});
@@ -1686,7 +1688,7 @@
 
     async function initMentionAutocomplete() {
         try {
-            const r = await fetch('/api/mentions/aliases');
+            const r = await fetch('/api/mentions/aliases', { credentials: 'same-origin' });
             const d = await r.json();
             mentionAliases = d.aliases || {};
         } catch (_) {}

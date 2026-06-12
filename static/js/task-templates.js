@@ -9,7 +9,7 @@
     }
 
     async function fetchTemplates() {
-        const r = await fetch('/api/task-templates');
+        const r = await fetch('/api/task-templates', { credentials: 'same-origin' });
         if (r.ok) {
             const d = await r.json();
             templates = d.templates || [];
@@ -22,14 +22,14 @@
         const modal = document.getElementById('templatePickerModal');
         const list = document.getElementById('templatePickerList');
         if (!modal || !list) return;
-        list.innerHTML = templates.map((t) =>
+        list.innerHTML = templates.length ? templates.map((t) =>
             `<button type="button" class="ucard ucard-click" onclick="TaskTemplates.apply('${t.id}')">
                 <span class="ucard-emoji">${t.emoji}</span>
                 <strong>${esc(t.title)}</strong>
-                <p class="muted">${esc(t.description.slice(0, 100))}…</p>
+                <p class="muted">${esc((t.description || '').slice(0, 100))}${(t.description || '').length > 100 ? '…' : ''}</p>
                 <span class="ucard-badge">${t.credits} кр.</span>
             </button>`
-        ).join('');
+        ).join('') : '<p class="muted panel-empty">Нет доступных шаблонов</p>';
         modal.classList.remove('hidden');
     }
 

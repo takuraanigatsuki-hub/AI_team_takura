@@ -9,7 +9,7 @@
     async function load() {
         const el = document.getElementById('projectsGrid');
         if (!el) return;
-        el.innerHTML = '<div class="panel-empty">Загрузка…</div>';
+        el.innerHTML = '<div class="dash-loading">Загрузка…</div>';
         try {
             let url = '/api/projects?limit=100';
             if (filterAgent) url += `&agent_id=${encodeURIComponent(filterAgent)}`;
