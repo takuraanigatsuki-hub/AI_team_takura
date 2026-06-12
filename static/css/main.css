@@ -107,6 +107,11 @@ body::before {
     background: var(--gradient-accent);
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 4px 14px rgba(108, 99, 255, 0.35);
+    animation: logoGlow 4s ease-in-out infinite;
+}
+@keyframes logoGlow {
+    0%, 100% { filter: drop-shadow(0 0 6px rgba(108, 99, 255, 0.4)); }
+    50% { filter: drop-shadow(0 0 14px rgba(94, 207, 138, 0.5)); }
 }
 .logo-text h1 { font-size: 14px; font-weight: 600; }
 .logo-text p { font-size: 11px; color: var(--text-muted); }
@@ -873,12 +878,3 @@ body::before {
 .chat-search:focus { outline: none; width: 180px; border-color: var(--accent); }
 .message.search-hidden { display: none !important; }
 .filter-btn.export-btn { margin-left: auto; border-color: var(--accent); color: var(--accent); }
-
-/* ─── Header glow ─── */
-.logo-mark {
-    animation: logoGlow 4s ease-in-out infinite;
-}
-@keyframes logoGlow {
-    0%, 100% { filter: drop-shadow(0 0 6px rgba(108, 99, 255, 0.4)); }
-    50% { filter: drop-shadow(0 0 14px rgba(94, 207, 138, 0.5)); }
-}

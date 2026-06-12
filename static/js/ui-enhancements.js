@@ -123,6 +123,7 @@
             { label: '🎨 React Preview', run: () => { if (window.ReactPreview) ReactPreview.toggle(); } },
             { label: '⚡ Cursor Panel', run: () => { if (window.Integrations) Integrations.toggleCursorPanel(); } },
             { label: '📊 Dashboard', run: () => switchView('dashboard') },
+            { label: '📥 Export задач', run: () => { switchView('tasks'); if (window.exportTasks) exportTasks(); } },
             { label: '📤 Sync GitHub', run: syncNow },
             { label: '⚙️ Настройки', run: () => showSettings() },
             { label: '🌓 Сменить тему', run: () => toggleTheme() },
@@ -169,6 +170,11 @@
             if (e.ctrlKey && e.key === '/') {
                 e.preventDefault();
                 toggleShortcutsHelp();
+            }
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                switchView('chat');
+                document.getElementById('chatSearch')?.focus();
             }
             if (e.ctrlKey && e.key === 'Enter') {
                 const inp = document.getElementById('messageInput');
