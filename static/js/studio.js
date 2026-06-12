@@ -681,10 +681,6 @@
         }
         if (screenFrame) screenFrame.visible = screen?.visible;
 
-        if (mesh.userData.useGltf && global.StudioModels) {
-            StudioModels.setAgentStatus(mesh.userData.agentId, status);
-        }
-
         const keyboard = mesh.getObjectByName('keyboard');
         if (keyboard) {
             keyboard.visible = inStudio && status === 'working';
@@ -748,18 +744,10 @@
             const walkPhase = t * 11 + phase;
             mesh.position.y = mesh.userData.baseY + Math.abs(Math.sin(walkPhase)) * 0.045;
             mesh.rotation.y += (Math.atan2(dx, dz) - mesh.rotation.y) * 0.12;
-            if (!mesh.userData.useGltf) {
-                if (legL) legL.rotation.x = Math.sin(walkPhase) * 0.55;
-                if (legR) legR.rotation.x = Math.sin(walkPhase + Math.PI) * 0.55;
-                if (armL) armL.rotation.x = Math.sin(walkPhase + Math.PI) * 0.35;
-                if (armR) armR.rotation.x = Math.sin(walkPhase) * 0.35;
-            }
-            return;
-        }
-
-        if (mesh.userData.useGltf) {
-            mesh.rotation.y += ((mesh.userData.faceAngle || 0) - mesh.rotation.y) * 0.08;
-            mesh.position.y = mesh.userData.baseY + Math.sin(t * 1.5 + phase) * 0.008;
+            if (legL) legL.rotation.x = Math.sin(walkPhase) * 0.55;
+            if (legR) legR.rotation.x = Math.sin(walkPhase + Math.PI) * 0.55;
+            if (armL) armL.rotation.x = Math.sin(walkPhase + Math.PI) * 0.35;
+            if (armR) armR.rotation.x = Math.sin(walkPhase) * 0.35;
             return;
         }
 
@@ -896,10 +884,6 @@
             animateAgent(mesh, t);
         });
 
-        if (global.StudioModels) {
-            StudioModels.updateMixers(clock.getDelta());
-        }
-
         if (controls) controls.update();
         renderer.render(scene, camera);
     }
@@ -960,7 +944,7 @@
             hideError();
             showLoading(true);
             const loadEl = document.querySelector('#studioLoading span');
-            if (loadEl) loadEl.textContent = 'Загрузка CC0-моделей офиса…';
+            if (loadEl) loadEl.textContent = 'Загрузка офиса…';
             canvasEl = canvas;
             onAgentClick = clickCallback;
             clock = new THREE.Clock();
@@ -1001,13 +985,7 @@
 
             const spawnAgents = () => {
                 AGENT_ORDER.forEach((id) => {
-                    let mesh = null;
-                    if (global.StudioModels?.hasSoldier?.()) {
-                        mesh = StudioModels.createAgent(id, AGENT_EMOJIS[id] || '👤', AGENT_COLORS[id] || 0x888888, createLabelSprite);
-                    }
-                    if (!mesh) {
-                        mesh = createAgentAvatar(id, AGENT_EMOJIS[id] || '👤', AGENT_COLORS[id] || 0x888888);
-                    }
+                    const mesh = createAgentAvatar(id, AGENT_EMOJIS[id] || '👤', AGENT_COLORS[id] || 0x888888);
                     const slot = STUDIO_SLOTS[id];
                     mesh.position.set(slot.x, 0, slot.z);
                     mesh.userData.targetX = slot.x;
