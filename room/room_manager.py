@@ -15,7 +15,7 @@ LEARNING_TYPES = frozenset({
 # Только обучение — никогда не попадает в рабочий чат
 STUDY_TYPES = frozenset({
     "learning", "learning_result", "reflection", "rest", "figma_study",
-    "peer_learning", "peer_discussion",
+    "peer_learning", "peer_discussion", "learning_project",
 })
 
 WORK_TYPES = frozenset({
@@ -43,6 +43,13 @@ class RoomManager:
         self.pipeline = PipelineTracker(self)
         self._last_submitted_id: Optional[str] = None
         self.current_plan: Optional[dict] = None
+        self.learning_projects = None
+
+    def _learning_store(self):
+        if self.learning_projects is None:
+            from room.learning_projects import LearningProjects
+            self.learning_projects = LearningProjects()
+        return self.learning_projects
 
     def register_agent(self, agent):
         self.agents[agent.agent_id] = agent
@@ -216,14 +223,157 @@ class RoomManager:
             return True
         return agent.status in ("working", "thinking")
 
+    async def _handle_learning_command(self, parsed: dict):
+        """Slash /learn /practice /collab /маша — учебные проекты, не вкладка Задачи."""
+        text = (parsed.get("text") or parsed.get("label") or "Упражнение").strip()
+        collaborative = parsed.get("collaborative", False)
+        cmd = parsed.get("cmd", "learn")
+        store = self._learning_store()
+
+        if cmd in ("practice", "collab", "learn") and collaborative:
+            agent_ids = ["frontend", "backend", "qa"]
+        elif cmd == "practice":
+            agent_ids = ["frontend", "backend"]
+        elif parsed.get("target") == "evaluator":
+            agent_ids = ["frontend"]
+        else:
+            agent_ids = ["frontend", "backend"] if collaborative else ["frontend"]
+
+        project = store.create_user_submission(
+            title=text[:120],
+            description=text,
+            collaborative=collaborative,
+            cmd=cmd,
+            target_agents=agent_ids,
+        )
+
+        ev = self.agents.get("evaluator")
+        ev_name = ev.name if ev else "Маша"
+        ev_emoji = ev.emoji if ev else "🎓"
+
+        await self.broadcast_learning({
+            "type": "learning_project",
+            "project": project,
+            "agent_id": "evaluator",
+            "agent_name": ev_name,
+            "agent_emoji": ev_emoji,
+            "message": (
+                f"🎓 **{ev_name}** приняла упражнение:\n_{project['title']}_\n"
+                f"{'🤝 Совместная практика' if collaborative else '📚 Индивидуальная практика'}"
+            ),
+            "timestamp": datetime.now().isoformat(),
+        })
+
+        for aid in agent_ids[:3 if collaborative else 2]:
+            agent = self.agents.get(aid)
+            if agent and not self.agent_is_busy(aid):
+                asyncio.create_task(self._agent_learning_practice(agent, text, project["id"], collaborative))
+
+        await self.broadcast_work({
+            "type": "system",
+            "message": (
+                f"📚 Упражнение отправлено в **Обучение → Маша**. "
+                f"Агенты: {', '.join(agent_ids[:3])}."
+            ),
+            "timestamp": datetime.now().isoformat(),
+        })
+
+    async def _agent_learning_practice(
+        self, agent, topic: str, project_id: str, collaborative: bool = False,
+    ):
+        """Короткая практика без очереди задач."""
+        if agent.task_queue.empty() is False:
+            return
+        try:
+            agent.status = "learning"
+            agent.location = "library"
+            await agent._broadcast_learning(f"📚 Практика: *{topic[:80]}*", "learning")
+            material = await agent._fetch_learning_material(topic)
+            summary = material.get("summary", topic)[:300] if material else topic[:200]
+            title = material.get("title", topic)[:80] if material else topic[:80]
+
+            co_ids = []
+            if collaborative:
+                for aid, other in self.agents.items():
+                    if aid != agent.agent_id and aid not in ("pm", "evaluator") and not self.agent_is_busy(aid):
+                        co_ids.append(aid)
+                        if len(co_ids) >= 2:
+                            break
+
+            store = self._learning_store()
+            proj = store.create_agent_project(
+                agent.agent_id,
+                title=title,
+                summary=summary,
+                collaborative=bool(co_ids),
+                co_agent_ids=co_ids,
+                topic=topic,
+            )
+
+            await agent._broadcast_learning(
+                f"💡 **Проект практики:** _{title}_\n{summary[:200]}",
+                "learning_result",
+            )
+
+            evaluator = self.agents.get("evaluator")
+            if evaluator and hasattr(evaluator, "evaluate_output"):
+                result = await evaluator.evaluate_output(
+                    topic, agent.agent_id, agent.name, summary, context="peer_learning",
+                )
+                store.add_evaluation(
+                    agent.agent_id,
+                    result.get("score", 7),
+                    result.get("feedback", ""),
+                    task=topic,
+                    context="learning_practice",
+                    project_id=proj["id"],
+                )
+                await self.broadcast_learning({
+                    "type": "skill_evaluation",
+                    "agent_id": "evaluator",
+                    "agent_name": evaluator.name,
+                    "agent_emoji": evaluator.emoji,
+                    "project_id": proj["id"],
+                    "score": result.get("score", 7),
+                    "message": (
+                        f"🎓 **Оценка ({result.get('score', 7)}/10)** · {agent.name}\n"
+                        f"{result.get('feedback', '')[:350]}"
+                    ),
+                    "timestamp": datetime.now().isoformat(),
+                })
+        except Exception:
+            pass
+        finally:
+            agent.status = "idle"
+            agent.location = "studio"
+
     async def handle_user_message(self, data: dict):
         msg_type = data.get("type", "task")
         target = data.get("target", "all")
-        text = data.get("text", "")
+        raw_text = data.get("text", "")
 
-        if not text.strip():
+        if not raw_text.strip():
             return
 
+        from room.slash_commands import parse_slash_command, help_text
+        parsed = parse_slash_command(raw_text)
+        if parsed:
+            if parsed.get("show_help"):
+                await self.broadcast_work({
+                    "type": "system",
+                    "message": help_text(),
+                    "timestamp": datetime.now().isoformat(),
+                })
+                return
+            if parsed.get("learning_mode") or parsed.get("msg_type") == "learning":
+                await self._handle_learning_command(parsed)
+                return
+            msg_type = parsed.get("msg_type") or msg_type
+            if parsed.get("target"):
+                target = parsed["target"]
+            raw_text = parsed.get("text") or raw_text
+
+        text = raw_text
         from room.mention_parser import parse_mentions
         from room.user_intent import record_user_wish
         text, mention_target = parse_mentions(text)

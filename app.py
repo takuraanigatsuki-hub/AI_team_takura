@@ -2238,6 +2238,38 @@ async def mention_aliases():
     return {"aliases": list_aliases()}
 
 
+@app.get("/api/chat/commands")
+async def chat_slash_commands():
+    from room.slash_commands import list_commands, help_text
+    return {"commands": list_commands(), "help": help_text()}
+
+
+@app.get("/api/learning/masha-lab")
+async def masha_learning_lab():
+    return room._learning_store().get_dashboard()
+
+
+class LearningSubmitBody(BaseModel):
+    title: str = ""
+    description: str = ""
+    collaborative: bool = False
+
+
+@app.post("/api/learning/submit")
+async def submit_learning_exercise(body: LearningSubmitBody):
+    text = (body.description or body.title or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Text required")
+    await room._handle_learning_command({
+        "cmd": "collab" if body.collaborative else "learn",
+        "text": text,
+        "collaborative": body.collaborative,
+        "learning_mode": True,
+        "msg_type": "learning",
+    })
+    return {"ok": True, "dashboard": room._learning_store().get_dashboard()}
+
+
 @app.post("/api/deploy")
 async def deploy_preview():
     from integrations.deploy_export import create_deploy_bundle

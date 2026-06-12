@@ -69,4 +69,13 @@ class EvaluatorAgent(BaseAgent):
         if len(self.skill_scores[agent_id]) > 50:
             self.skill_scores[agent_id] = self.skill_scores[agent_id][-50:]
 
+        if context in ("peer_learning", "learning_practice", "learning"):
+            try:
+                from room.learning_projects import LearningProjects
+                LearningProjects().add_evaluation(
+                    agent_id, score, feedback, task=task_text[:200], context=context,
+                )
+            except Exception:
+                pass
+
         return {"score": score, "feedback": feedback, "agent_id": agent_id}

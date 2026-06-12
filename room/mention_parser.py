@@ -14,6 +14,7 @@ AGENT_ALIASES = {
     "cursor": "cursor", "лео": "cursor",
     "presenter": "presenter", "ника": "presenter", "презентац": "presenter",
     "modeler": "modeler", "зоя": "modeler", "3d": "modeler",
+    "evaluator": "evaluator", "маша": "evaluator", "оценка": "evaluator", "coach": "evaluator",
     "все": "all", "all": "all", "команда": "all",
 }
 

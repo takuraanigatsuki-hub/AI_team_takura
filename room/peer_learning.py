@@ -23,6 +23,17 @@ async def share_learning_to_work_chat(agent, material: dict, room_manager) -> No
         ),
         "timestamp": datetime.now().isoformat(),
     })
+    try:
+        from room.learning_projects import LearningProjects
+        LearningProjects().create_agent_project(
+            agent.agent_id,
+            title=title,
+            summary=summary,
+            collaborative=False,
+            topic=material.get("topic", title),
+        )
+    except Exception:
+        pass
 
 
 async def peer_discussion_round(room_manager, agents: dict) -> None:
@@ -57,6 +68,18 @@ async def peer_discussion_round(room_manager, agents: dict) -> None:
         ],
         "timestamp": datetime.now().isoformat(),
     })
+    try:
+        from room.learning_projects import LearningProjects
+        LearningProjects().create_agent_project(
+            a1.agent_id,
+            title=f"С {a2.name}: {t1.get('title', t1.get('topic', ''))[:60]}",
+            summary=msg[:400],
+            collaborative=True,
+            co_agent_ids=[a2.agent_id],
+            topic=t1.get("topic", ""),
+        )
+    except Exception:
+        pass
 
     evaluator = agents.get("evaluator")
     if evaluator and hasattr(evaluator, "evaluate_output"):
