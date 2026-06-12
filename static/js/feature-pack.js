@@ -107,6 +107,7 @@
             { label: '⚡ Pipeline', run: () => global.PowerPack?.runPipeline?.() },
             { label: '📊 Standup', run: () => global.WowFeatures?.showStandup?.() },
             { label: '🚀 Deploy', run: () => global.WowFeatures?.deployNow?.() },
+            { label: '📡 Лента событий', run: () => global.UICore?.toggleActivityPanel?.() },
             { label: '🔍 Поиск', run: openGlobalSearch },
             { label: '🎯 Фокус-режим', run: toggleFocusMode },
             { label: '📐 Компактный UI', run: toggleCompact },

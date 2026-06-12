@@ -39,7 +39,7 @@
         if (step === 0) formData.name = document.getElementById('swName')?.value || formData.name;
         if (step === 1) formData.goal = document.getElementById('swGoal')?.value || '';
         if (step === 2) {
-            formData.default_view = document.getElementById('swView')?.value || 'dashboard';
+            formData.default_view = document.getElementById('swView')?.value || 'tasks';
             formData.theme = document.getElementById('swTheme')?.value || 'dark';
         }
     }

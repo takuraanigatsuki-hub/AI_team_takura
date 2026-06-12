@@ -88,7 +88,7 @@
     async function goDashboard() {
         const user = currentUser || await initAuth();
         if (user) {
-            const view = user.default_view && user.default_view !== 'profile' ? user.default_view : 'dashboard';
+            const view = user.default_view && user.default_view !== 'profile' ? user.default_view : 'tasks';
             location.href = `/app?view=${encodeURIComponent(view)}`;
         } else {
             openModal('login');

@@ -98,9 +98,12 @@
         if (!taskId) return;
         const idx = PRIOS.indexOf(current);
         const next = PRIOS[(idx + 1) % PRIOS.length];
+        const revert = global.AITeamTasks?.patchOptimistic?.(taskId, { priority: next });
+        const prioEl = document.querySelector(`.kb-card[data-task-id="${taskId}"] .kb-prio`);
+        const prevLabel = prioEl?.textContent;
+        if (prioEl) prioEl.textContent = PRIO_LABELS[next] || next;
         const user = global.Auth?.getUser?.();
         if (!user && global.AITeamTasks?.sendWs?.({ type: 'task_priority', task_id: taskId, priority: next })) {
-            setTimeout(refresh, 300);
             return;
         }
         const r = await fetch(`/api/tasks/${taskId}/priority`, {
@@ -110,9 +113,13 @@
             body: JSON.stringify({ priority: next }),
         });
         if (r.ok) refresh();
-        else if (window.UIEnhancements) {
-            const d = await r.json().catch(() => ({}));
-            UIEnhancements.toast(d.detail || 'Нет доступа', 'warn');
+        else {
+            if (typeof revert === 'function') revert();
+            if (prioEl && prevLabel) prioEl.textContent = prevLabel;
+            if (window.UIEnhancements) {
+                const d = await r.json().catch(() => ({}));
+                UIEnhancements.toast(d.detail || 'Нет доступа', 'warn');
+            }
         }
     }
 

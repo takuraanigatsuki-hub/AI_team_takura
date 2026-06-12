@@ -14,7 +14,7 @@
         overlay.style.display = 'flex';
 
         try {
-            const r = await fetch(`/api/agents/${agentId}/activity`);
+            const r = await fetch(`/api/agents/${agentId}/activity`, { credentials: 'same-origin' });
             const d = await r.json();
             if (!r.ok) throw new Error(d.detail || 'Ошибка');
             render(d);

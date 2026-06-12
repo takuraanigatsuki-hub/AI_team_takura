@@ -167,7 +167,10 @@
 
         if (window.SidebarNav) SidebarNav.setActive(view);
         if (window.UICore) UICore.setMobileTabActive(view);
-        if (view === 'tasks') loadTasks();
+        if (view === 'tasks') {
+            loadTasks();
+            if (window.UICore) UICore.initGuestOnboarding();
+        }
         if (view === 'projects' && window.ProjectsUI) ProjectsUI.load();
         if (view === 'kanban' && window.KanbanUI) KanbanUI.refresh();
         if (view === 'sprint' && window.SprintUI) SprintUI.load();
@@ -506,6 +509,7 @@
     }
 
     function handleMessage(data) {
+        if (window.UICore?.ActivityStream) UICore.ActivityStream.onWsMessage(data);
         if (window.FeaturePack) FeaturePack.onWsMessage(data);
         if (!shouldShowWsMessage(data) && data.type !== 'agents_state' && data.type !== 'task_history' && data.type !== 'history') {
             return;
@@ -1248,10 +1252,60 @@
         rerunTaskById(taskHistory[idx]?.id);
     };
 
+    function refreshKanbanIfVisible() {
+        if (window.KanbanUI && document.getElementById('kanbanView') && !document.getElementById('kanbanView').classList.contains('hidden')) {
+            KanbanUI.refresh();
+        }
+    }
+
+    function patchTaskOptimistic(taskId, patch) {
+        const t = taskHistory.find((x) => x.id === taskId);
+        if (!t) return () => {};
+        const prev = { ...t };
+        Object.assign(t, patch);
+        updateTaskBadges();
+        renderTasks();
+        refreshKanbanIfVisible();
+        return () => {
+            Object.assign(t, prev);
+            updateTaskBadges();
+            renderTasks();
+            refreshKanbanIfVisible();
+        };
+    }
+
+    function patchTasksOptimistic(updater) {
+        const snapshots = new Map();
+        taskHistory.forEach((t) => {
+            const patch = updater(t);
+            if (patch) {
+                snapshots.set(t.id, { ...t });
+                Object.assign(t, patch);
+            }
+        });
+        const apply = () => {
+            updateTaskBadges();
+            renderTasks();
+            refreshKanbanIfVisible();
+        };
+        apply();
+        return () => {
+            snapshots.forEach((prev, id) => {
+                const t = taskHistory.find((x) => x.id === id);
+                if (t) Object.assign(t, prev);
+            });
+            apply();
+        };
+    }
+
     window.approveTask = async function (taskId) {
+        const now = new Date().toISOString();
+        const revert = patchTaskOptimistic(taskId, { status: 'completed', completed_at: now });
+        if (window.UICore) UICore.announceLive('Задача принята');
         const user = window.Auth?.getUser?.();
         if (!user && ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type: 'task_approve', task_id: taskId, note: '' }));
+            if (window.UIEnhancements) UIEnhancements.toast('✅ Задача принята', 'success');
             return;
         }
         try {
@@ -1263,20 +1317,25 @@
             });
             if (r.ok) {
                 if (window.UIEnhancements) UIEnhancements.toast('✅ Задача принята', 'success');
-                loadTasks();
             } else {
+                revert();
                 const d = await r.json().catch(() => ({}));
                 if (window.UIEnhancements) UIEnhancements.toast(d.detail || 'Нет доступа', 'warn');
             }
-        } catch (_) {}
+        } catch (_) {
+            revert();
+        }
     };
 
     window.requestTaskRevision = async function (taskId) {
         const feedback = prompt('Что исправить?');
         if (!feedback?.trim()) return;
+        const revert = patchTaskOptimistic(taskId, { status: 'revision_requested' });
+        if (window.UICore) UICore.announceLive('Задача отправлена на доработку');
         const user = window.Auth?.getUser?.();
         if (!user && ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type: 'task_revision', task_id: taskId, feedback: feedback.trim() }));
+            if (window.UIEnhancements) UIEnhancements.toast('✎ Отправлено на доработку', 'info');
             return;
         }
         try {
@@ -1288,12 +1347,14 @@
             });
             if (r.ok) {
                 if (window.UIEnhancements) UIEnhancements.toast('✎ Отправлено на доработку', 'info');
-                loadTasks();
             } else {
+                revert();
                 const d = await r.json().catch(() => ({}));
                 if (window.UIEnhancements) UIEnhancements.toast(d.detail || 'Нет доступа', 'warn');
             }
-        } catch (_) {}
+        } catch (_) {
+            revert();
+        }
     };
 
     window.addTaskComment = async function (taskId) {
@@ -1319,9 +1380,17 @@
 
     window.cancelAllTasks = async function () {
         if (!confirm('Отменить все активные задачи и очистить очереди агентов?')) return;
+        const activeStatuses = new Set([
+            'submitted', 'queued', 'in_progress', 'triaging', 'awaiting_approval', 'revision_requested',
+        ]);
+        const revert = patchTasksOptimistic((t) => (
+            activeStatuses.has(t.status) ? { status: 'cancelled' } : null
+        ));
+        if (window.UICore) UICore.announceLive('Активные задачи отменены');
         const user = window.Auth?.getUser?.();
         if (!user && ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type: 'task_cancel_all' }));
+            if (window.UIEnhancements) UIEnhancements.toast('🛑 Задачи отменены', 'success');
             return;
         }
         try {
@@ -1331,12 +1400,14 @@
                 if (window.UIEnhancements) {
                     UIEnhancements.toast(`🛑 Отменено: ${data.cancelled || 0}`, 'success');
                 }
-                loadTasks();
             } else {
+                revert();
                 const d = await r.json().catch(() => ({}));
-                if (window.UIEnhancements) UIEnhancements.toast(d.detail || 'Нужен вход', 'warn');
+                if (window.UIEnhancements) UIEnhancements.toast(d.detail || 'Нет доступа', 'warn');
             }
-        } catch (_) {}
+        } catch (_) {
+            revert();
+        }
     };
 
     window.clearTasksHistory = async function () {
@@ -1633,7 +1704,10 @@
         }
         switchView(startView);
 
-        if (window.UICore) UICore.initMobileNav();
+        if (window.UICore) {
+            UICore.initMobileNav();
+            UICore.initActivityPanel();
+        }
 
         if (window.Auth) Auth.updateNavVisibility(user);
         if (window.AdminPanel && user) AdminPanel.updateNavVisibility(user);
@@ -1744,5 +1818,6 @@
             return false;
         },
         isConnected: () => !!(ws && ws.readyState === WebSocket.OPEN),
+        patchOptimistic: patchTaskOptimistic,
     };
 })();

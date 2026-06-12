@@ -8,13 +8,13 @@
     let actionCosts = null;
 
     const VIEW_LABELS = {
-        studio: '🎮 3D Студия',
+        tasks: '📋 Inbox',
         dashboard: '📊 Dashboard',
         chat: '💬 Рабочий чат',
         kanban: '📌 Kanban',
+        studio: '🎮 3D Студия',
         design: '🎨 Design',
         'sonya-studio': '✨ Studio',
-        tasks: '📋 Задачи',
         projects: '📦 Проекты',
         sprint: '🏃 Sprint',
         timeline: '⏱ Timeline',
@@ -332,7 +332,7 @@
                             <li><span>Роль</span><strong>${esc(user.role_label || roleLabel(user.role))}</strong></li>
                             <li><span>Тариф</span><strong>${esc(sub.tier_name || 'Free')}</strong></li>
                             <li><span>Вкладок открыто</span><strong>${s.views_unlocked_count ?? (sub.views_unlocked || []).length}</strong></li>
-                            <li><span>Стартовая вкладка</span><strong>${VIEW_LABELS[user.default_view] || user.default_view || 'dashboard'}</strong></li>
+                            <li><span>Стартовая вкладка</span><strong>${VIEW_LABELS[user.default_view] || user.default_view || 'Inbox'}</strong></li>
                             <li><span>Тема</span><strong>${user.theme === 'light' ? 'Светлая' : user.theme === 'auto' ? 'Системная' : 'Тёмная'}</strong></li>
                         </ul>
                     </section>
