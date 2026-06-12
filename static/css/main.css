@@ -2171,7 +2171,7 @@ body.has-pipeline .header { box-shadow: 0 2px 20px rgba(0,0,0,0.15); }
     padding: 24px;
     min-width: 0;
 }
-.profile-tab-content { max-width: 560px; }
+.profile-tab-content { max-width: 1100px; width: 100%; }
 
 .profile-card {
     display: flex;
@@ -2247,6 +2247,180 @@ body.has-pipeline .header { box-shadow: 0 2px 20px rgba(0,0,0,0.15); }
     background: linear-gradient(135deg, rgba(108,99,255,0.15), rgba(86,207,225,0.08));
     border: 1px solid rgba(108,99,255,0.3);
 }
+
+/* ─── Synora-style личный кабинет ─── */
+.pf-overview { display: flex; flex-direction: column; gap: 20px; }
+
+.pf-hero {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    padding: 22px 24px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(108, 99, 255, 0.12) 0%, rgba(86, 207, 225, 0.06) 50%, rgba(157, 78, 221, 0.08) 100%);
+    border: 1px solid rgba(108, 99, 255, 0.22);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+.pf-hero-left { display: flex; gap: 18px; align-items: center; }
+.pf-hero-avatar { width: 64px; height: 64px; font-size: 26px; }
+.pf-hero-greet { margin: 0 0 2px; font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.pf-hero-name { margin: 0 0 4px; font-size: 24px; font-weight: 700; }
+.pf-hero-email { margin: 0 0 10px; font-size: 13px; }
+.pf-hero-badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pf-hero-stats { display: flex; gap: 28px; flex-wrap: wrap; }
+.pf-hero-stat { text-align: center; min-width: 72px; }
+.pf-hero-stat-val { display: block; font-size: 22px; font-weight: 700; color: var(--text); line-height: 1.2; }
+
+.pf-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+}
+.pf-kpi-grid-sm { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+.pf-kpi {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s, transform 0.2s;
+}
+.pf-kpi:hover { border-color: rgba(108, 99, 255, 0.35); transform: translateY(-1px); }
+.pf-kpi-icon { font-size: 22px; line-height: 1; opacity: 0.9; }
+.pf-kpi-val { font-size: 20px; font-weight: 700; line-height: 1.2; }
+.pf-kpi-label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.pf-kpi-hint { font-size: 10px; color: var(--text-muted); margin-top: 4px; opacity: 0.85; }
+
+.pf-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.pf-split-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 900px) {
+    .pf-split, .pf-split-3 { grid-template-columns: 1fr; }
+}
+
+.pf-panel {
+    padding: 18px 20px;
+    border-radius: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+}
+.pf-panel-compact { padding: 14px 16px; }
+.pf-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    gap: 8px;
+}
+.pf-panel-head h3, .pf-panel-title {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 600;
+}
+.pf-panel-head h3 { margin: 0; }
+
+.pf-progress { margin-bottom: 14px; }
+.pf-progress-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 6px;
+    color: var(--text-muted);
+}
+.pf-progress-head strong { color: var(--accent); }
+.pf-progress-track {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    overflow: hidden;
+}
+.pf-progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #6c63ff, #56cfe1);
+    transition: width 0.4s ease;
+}
+
+.pf-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.pf-timeline-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+}
+.pf-timeline-item:last-child { border-bottom: none; }
+.pf-timeline-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+    background: var(--text-muted);
+}
+.pf-timeline-item.ok .pf-timeline-dot { background: #34d399; box-shadow: 0 0 8px rgba(52, 211, 153, 0.4); }
+.pf-timeline-item.active .pf-timeline-dot { background: #6c63ff; box-shadow: 0 0 8px rgba(108, 99, 255, 0.45); }
+.pf-timeline-item.err .pf-timeline-dot { background: #f87171; }
+.pf-timeline-body { flex: 1; min-width: 0; }
+.pf-timeline-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 11px;
+    margin-bottom: 4px;
+}
+.pf-timeline-text { margin: 0 0 6px; font-size: 13px; line-height: 1.45; }
+.pf-timeline-agent { font-size: 11px; color: var(--text-muted); }
+
+.pf-account-list { margin-top: 8px; }
+.pf-mini-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.pf-mini-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 13px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: var(--surface-2);
+}
+.pf-mini-meta { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
+.pf-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.pf-chip {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(108, 99, 255, 0.12);
+    border: 1px solid rgba(108, 99, 255, 0.25);
+    color: var(--text-muted);
+}
+.pf-sub-label { font-size: 11px; margin: 12px 0 4px; }
+.pf-mono { font-family: ui-monospace, monospace; font-size: 11px; word-break: break-all; }
+.pf-empty { font-size: 13px; padding: 8px 0; }
+.pf-quick-bar { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--border); }
+.pf-profile-card { margin-bottom: 16px; }
+
 .sub-balance-value { font-size: 28px; font-weight: 700; }
 .sub-tier-value { font-size: 18px; font-weight: 600; }
 .sub-section-title { font-size: 14px; margin: 20px 0 10px; }

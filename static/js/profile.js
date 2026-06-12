@@ -211,6 +211,8 @@
             </div>
         </div>`;
     }
+
+    function canAccessView(user, view) {
         const sub = user?.subscription;
         if (!sub) return true;
         if (sub.unlimited || user.is_owner) return true;
@@ -251,6 +253,7 @@
         if (!nav) return;
         const user = global.Auth?.getUser();
         const tabs = [
+            { id: 'overview', label: '📊 Обзор' },
             { id: 'profile', label: '👤 Профиль' },
             { id: 'subscription', label: '💎 Подписка' },
             { id: 'settings', label: '⚙️ Настройки' },
@@ -279,20 +282,58 @@
             return;
         }
 
+        if (activeTab === 'overview') {
+            el.innerHTML = renderOverview(user);
+            return;
+        }
+
         if (activeTab === 'profile') {
+            const s = stats || {};
+            const sub = user.subscription || {};
             el.innerHTML = `
-                <div class="profile-card">
+                <div class="profile-card pf-profile-card">
                     <div class="profile-avatar">${esc((user.name || user.email || '?')[0]).toUpperCase()}</div>
                     <div class="profile-head">
                         <h2>${esc(user.name || 'Пользователь')}</h2>
                         <p class="muted">${esc(user.email)}</p>
                         <div class="ss-badges" style="margin-top:10px">
                             ${global.Auth?.roleBadgeHtml ? global.Auth.roleBadgeHtml(user) : `<span class="ss-badge">${roleLabel(user.role)}</span>`}
-                            <span class="ss-badge">${esc(user.subscription?.tier_emoji || '')} ${esc(user.subscription?.tier_name || 'Free')}</span>
+                            <span class="ss-badge">${esc(sub.tier_emoji || '')} ${esc(sub.tier_name || 'Free')}</span>
                             <span class="ss-badge">ур. ${user.access_level || 1}</span>
                         </div>
-                        <p class="muted profile-hint" style="margin-top:8px">Баланс: <strong>${esc(user.subscription?.balance_display ?? '—')}</strong> кредитов</p>
+                        <p class="muted profile-hint" style="margin-top:8px">Баланс: <strong>${esc(sub.balance_display ?? '—')}</strong> кредитов</p>
                     </div>
+                </div>
+                <div class="pf-split pf-split-3">
+                    <section class="pf-panel pf-panel-compact">
+                        <h3 class="pf-panel-title">Аккаунт</h3>
+                        <ul class="profile-meta-list">
+                            <li><span>ID</span><strong class="pf-mono">${esc(user.id)}</strong></li>
+                            <li><span>Регистрация</span><strong>${fmtDate(user.created_at)}</strong></li>
+                            <li><span>Дней в команде</span><strong>${s.days_member ?? '—'}</strong></li>
+                            <li><span>Сессий</span><strong>${s.active_sessions ?? 1}</strong></li>
+                            <li><span>Настройка</span><strong>${user.setup_complete ? '✓ пройдена' : 'не пройдена'}</strong></li>
+                        </ul>
+                    </section>
+                    <section class="pf-panel pf-panel-compact">
+                        <h3 class="pf-panel-title">Доступ</h3>
+                        <ul class="profile-meta-list">
+                            <li><span>Роль</span><strong>${esc(user.role_label || roleLabel(user.role))}</strong></li>
+                            <li><span>Тариф</span><strong>${esc(sub.tier_name || 'Free')}</strong></li>
+                            <li><span>Вкладок открыто</span><strong>${s.views_unlocked_count ?? (sub.views_unlocked || []).length}</strong></li>
+                            <li><span>Стартовая вкладка</span><strong>${VIEW_LABELS[user.default_view] || user.default_view || 'dashboard'}</strong></li>
+                            <li><span>Тема</span><strong>${user.theme === 'light' ? 'Светлая' : user.theme === 'auto' ? 'Системная' : 'Тёмная'}</strong></li>
+                        </ul>
+                    </section>
+                    <section class="pf-panel pf-panel-compact">
+                        <h3 class="pf-panel-title">Проект</h3>
+                        <ul class="profile-meta-list">
+                            <li><span>Brief</span><strong>${s.has_project_brief ? '✓' : '—'}</strong></li>
+                            <li><span>Цели</span><strong>${s.project_goals_count ?? 0}</strong></li>
+                            <li><span>Ограничения</span><strong>${s.project_constraints_count ?? 0}</strong></li>
+                            <li><span>Память обновлена</span><strong>${fmtDate(s.memory_updated_at)}</strong></li>
+                        </ul>
+                    </section>
                 </div>
                 <form class="profile-form" id="profileNameForm" onsubmit="ProfileCabinet.saveProfile(event)">
                     <label class="sw-label">Отображаемое имя</label>
@@ -395,19 +436,40 @@
         if (activeTab === 'activity') {
             const s = stats || {};
             el.innerHTML = `
-                <div class="profile-stats-grid">
-                    <div class="stat-card"><span class="stat-num">${s.tasks_total ?? '—'}</span><span class="stat-label">Задач всего</span></div>
-                    <div class="stat-card"><span class="stat-num">${s.tasks_completed ?? '—'}</span><span class="stat-label">Выполнено</span></div>
-                    <div class="stat-card active"><span class="stat-num">${s.tasks_active ?? '—'}</span><span class="stat-label">В работе</span></div>
-                    <div class="stat-card"><span class="stat-num">${s.sonya_projects ?? '—'}</span><span class="stat-label">Studio проектов</span></div>
-                    <div class="stat-card"><span class="stat-num">${s.sonya_published ?? '—'}</span><span class="stat-label">Опубликовано</span></div>
+                <div class="pf-kpi-grid pf-kpi-grid-sm">
+                    ${kpiCard('📋', s.tasks_total ?? '—', 'Всего', `${s.tasks_week ?? 0} за неделю`)}
+                    ${kpiCard('✅', s.tasks_completed ?? '—', 'Выполнено', `${s.success_rate ?? 0}%`)}
+                    ${kpiCard('⏳', s.tasks_active ?? '—', 'В работе', '')}
+                    ${kpiCard('❌', s.tasks_failed ?? '—', 'Ошибки', '')}
+                    ${kpiCard('✨', s.sonya_projects ?? '—', 'Studio', `${s.sonya_published ?? 0} pub`)}
+                    ${kpiCard('📦', s.artifacts_total ?? '—', 'Артефакты', '')}
                 </div>
-                <ul class="profile-meta-list">
+                ${progressBar(s.success_rate, 'Успешность выполнения')}
+                <section class="pf-panel" style="margin-top:16px">
+                    <div class="pf-panel-head"><h3>🕐 Лента задач</h3></div>
+                    ${renderTimeline(s.recent_tasks)}
+                </section>
+                <div class="pf-split" style="margin-top:16px">
+                    <section class="pf-panel">
+                        <h3 class="pf-panel-title">Studio проекты</h3>
+                        ${(s.recent_projects || []).length ? `<ul class="pf-mini-list">${(s.recent_projects || []).map((p) => `
+                            <li><span>${esc(p.title)}</span><span class="pf-mini-meta">${esc(p.status)}</span></li>`).join('')}</ul>`
+                            : '<p class="muted pf-empty">Нет проектов</p>'}
+                    </section>
+                    <section class="pf-panel">
+                        <h3 class="pf-panel-title">Артефакты команды</h3>
+                        ${(s.recent_artifacts || []).length ? `<ul class="pf-mini-list">${(s.recent_artifacts || []).map((a) => `
+                            <li><span>${esc(a.title || a.type)}</span><span class="pf-mini-meta">${esc(a.agent_name || a.agent_id)}</span></li>`).join('')}</ul>`
+                            : '<p class="muted pf-empty">Нет артефактов</p>'}
+                    </section>
+                </div>
+                <ul class="profile-meta-list" style="margin-top:16px">
                     <li><span>Участник с</span><strong>${fmtDate(s.member_since || user.created_at)}</strong></li>
-                    <li><span>Настройка завершена</span><strong>${user.setup_complete ? fmtDate(s.setup_at || user.setup_at) : 'не пройдена'}</strong></li>
-                    <li><span>Brief проекта</span><strong>${s.has_project_brief ? 'задан' : 'не задан'}</strong></li>
+                    <li><span>AI запросов</span><strong>${s.llm_requests ?? 0}</strong></li>
+                    <li><span>Токены LLM</span><strong>${((s.llm_tokens_in || 0) + (s.llm_tokens_out || 0)).toLocaleString('ru')}</strong></li>
+                    <li><span>Агенты онлайн</span><strong>${s.agents_online ?? 0} / ${s.agents_total ?? 0}</strong></li>
                 </ul>
-                <div class="profile-quick-links">
+                <div class="profile-quick-links" style="margin-top:16px">
                     <button type="button" class="btn-secondary btn-sm" onclick="switchView('studio')">🎮 3D</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="switchView('tasks')">📋 Задачи</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="switchView('sonya-studio')">✨ Studio</button>
@@ -427,7 +489,7 @@
         activeTab = tab;
         renderTabs();
         if (tab === 'subscription' && !plans) loadPlans().then(renderContent);
-        else if (tab === 'activity') loadStats().then(renderContent);
+        else if (tab === 'overview' || tab === 'activity' || tab === 'profile') loadStats().then(renderContent);
         else renderContent();
     }
 
