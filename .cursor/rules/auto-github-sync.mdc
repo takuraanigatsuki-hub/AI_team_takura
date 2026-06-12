@@ -1,0 +1,15 @@
+---
+description: Auto commit and push project changes to GitHub after code edits
+alwaysApply: true
+---
+
+After completing any code changes in this project:
+
+1. Run git sync using the project Git executable:
+   `"C:\Program Files\Git\bin\git.exe"` in `C:\Users\USER\Desktop\AI_team_takura-main`
+2. Stage all changes: `git add -A` (never commit `.env` — it is gitignored)
+3. Commit with a clear message describing what changed and why
+4. Push to `origin main` on `https://github.com/takuraanigatsuki-hub/AI_team_takura`
+5. If push fails, report the error — do not skip silently
+
+Remote: `https://github.com/takuraanigatsuki-hub/AI_team_takura.git`

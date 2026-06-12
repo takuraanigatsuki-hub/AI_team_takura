@@ -21,6 +21,8 @@
     "cursor_cloud_mode": true,
     "cursor_github_sync": true,
     "cursor_auto_create_pr": true,
-    "cursor_repo_url": "https://github.com/taksrules/AI_team_takura",
-    "cursor_repo_ref": "main"
+    "cursor_repo_url": "https://github.com/takuraanigatsuki-hub/AI_team_takura",
+    "cursor_repo_ref": "main",
+    "git_auto_sync": true,
+    "git_sync_interval_sec": 60
 }

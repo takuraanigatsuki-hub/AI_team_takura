@@ -278,6 +278,9 @@
                 addSystemMessage(data.message || '🔗 GitHub Sync');
                 if (window.Integrations) Integrations.onCursorMessage(data);
                 break;
+            case 'git_sync_done':
+                addSystemMessage(data.message || '📤 Изменения на GitHub');
+                break;
             case 'direct_user_echo':
                 break;
             default:
@@ -657,6 +660,7 @@
                 document.getElementById('cursorEnabledInput').checked = cfg.cursor_enabled !== false;
                 document.getElementById('cursorGithubSyncInput').checked = cfg.cursor_github_sync !== false;
                 document.getElementById('cursorAutoPrInput').checked = cfg.cursor_auto_create_pr !== false;
+                document.getElementById('gitAutoSyncInput').checked = cfg.git_auto_sync !== false;
             }
         } catch (_) {}
         if (window.Integrations) Integrations.loadCursorStatus();
@@ -680,6 +684,7 @@
                     cursor_enabled: document.getElementById('cursorEnabledInput').checked,
                     cursor_github_sync: document.getElementById('cursorGithubSyncInput').checked,
                     cursor_auto_create_pr: document.getElementById('cursorAutoPrInput').checked,
+                    git_auto_sync: document.getElementById('gitAutoSyncInput').checked,
                 }),
             });
             if (resp.ok) {

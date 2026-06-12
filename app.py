@@ -55,6 +55,40 @@ async def lifespan(app: FastAPI):
         repo = cfg_module.config.get("cursor_repo_url") or "(авто из Cursor API)"
         print(f"   Repo: {repo}")
 
+        try:
+            from integrations.github_sync import resolve_repo_url
+            resolved = await resolve_repo_url()
+            if resolved and resolved != cfg_module.config.get("cursor_repo_url"):
+                cfg_module.config["cursor_repo_url"] = resolved
+                config_file = os.path.join(os.path.dirname(__file__), "config.json")
+                try:
+                    with open(config_file, "r", encoding="utf-8") as f:
+                        current = json.load(f)
+                    current["cursor_repo_url"] = resolved
+                    with open(config_file, "w", encoding="utf-8") as f:
+                        json.dump(current, f, indent=4, ensure_ascii=False)
+                    print(f"   Repo (из Cursor API): {resolved}")
+                except Exception:
+                    pass
+            elif resolved:
+                print(f"   Repo: {resolved}")
+        except Exception as e:
+            print(f"   ⚠️ Repo resolve: {e}")
+
+    from integrations.local_git_sync import auto_sync_loop, sync_changes_async
+    git_interval = cfg_module.config.get("git_sync_interval_sec", 60)
+    git_sync_task = asyncio.create_task(auto_sync_loop(room, interval=git_interval))
+
+    if cfg_module.config.get("git_auto_sync", True):
+        print("📤 Git Auto-Sync: включён (commit + push каждые "
+              f"{git_interval}с при изменениях)")
+        try:
+            boot = await sync_changes_async("auto: startup sync")
+            if boot.get("action") == "pushed":
+                print(f"   Pushed: {boot.get('commit')} → origin/{boot.get('branch')}")
+        except Exception as e:
+            print(f"   ⚠️ Startup git sync: {e}")
+
     print("🚀 AI Team Room запущен!")
     print("📡 Открой браузер: http://localhost:8000")
 
@@ -63,6 +97,14 @@ async def lifespan(app: FastAPI):
     # Остановка
     state_task.cancel()
     github_poll_task.cancel()
+    git_sync_task.cancel()
+    try:
+        from integrations.local_git_sync import sync_changes_async
+        import config as cfg_module
+        if cfg_module.config.get("git_auto_sync", True):
+            await sync_changes_async("auto: shutdown sync")
+    except Exception:
+        pass
     await room.stop_all_agents()
     print("👋 AI Team Room остановлен")
 
@@ -187,6 +229,8 @@ class ConfigUpdate(BaseModel):
     cursor_github_sync: bool = None
     cursor_cloud_mode: bool = None
     cursor_auto_create_pr: bool = None
+    git_auto_sync: bool = None
+    git_sync_interval_sec: int = None
 
 
 class CursorRunRequest(BaseModel):
@@ -219,6 +263,8 @@ async def get_config():
         "cursor_auto_create_pr": cfg_module.config.get("cursor_auto_create_pr", True),
         "figma_configured": bool(cfg_module.config.get("figma_access_token")),
         "figma_default_url": cfg_module.config.get("figma_default_url", ""),
+        "git_auto_sync": cfg_module.config.get("git_auto_sync", True),
+        "git_sync_interval_sec": cfg_module.config.get("git_sync_interval_sec", 60),
     }
 
 
@@ -269,6 +315,14 @@ async def update_config(update: ConfigUpdate):
     if update.cursor_auto_create_pr is not None:
         current["cursor_auto_create_pr"] = update.cursor_auto_create_pr
         cfg_module.config["cursor_auto_create_pr"] = update.cursor_auto_create_pr
+
+    if update.git_auto_sync is not None:
+        current["git_auto_sync"] = update.git_auto_sync
+        cfg_module.config["git_auto_sync"] = update.git_auto_sync
+
+    if update.git_sync_interval_sec is not None:
+        current["git_sync_interval_sec"] = max(30, update.git_sync_interval_sec)
+        cfg_module.config["git_sync_interval_sec"] = current["git_sync_interval_sec"]
 
     with open(config_file, "w", encoding="utf-8") as f:
         json.dump(current, f, indent=4, ensure_ascii=False)
@@ -321,6 +375,30 @@ async def get_tasks():
         "completed": room.task_history.get_completed()[:50],
         "active": room.task_history.get_active()[:30],
     }
+
+
+# ─── Git Auto-Sync ────────────────────────────────────────────
+
+@app.get("/api/git/status")
+async def git_status():
+    from integrations.local_git_sync import get_status
+    return get_status()
+
+
+@app.post("/api/git/sync")
+async def git_sync_now():
+    """Немедленный commit + push в GitHub."""
+    from integrations.local_git_sync import sync_changes_async
+    result = await sync_changes_async("manual: sync from API")
+    if not result.get("ok") and result.get("action") not in ("skip",):
+        raise HTTPException(status_code=500, detail=result.get("error", "Git sync failed"))
+    if result.get("action") == "pushed":
+        await room.broadcast_work({
+            "type": "git_sync_done",
+            "message": f"📤 GitHub: `{result.get('commit')}` → {result.get('branch')}",
+            "timestamp": __import__("datetime").datetime.now().isoformat(),
+        })
+    return result
 
 
 # ─── Cursor SDK ─────────────────────────────────────────────

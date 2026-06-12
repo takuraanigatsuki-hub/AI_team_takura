@@ -271,7 +271,7 @@
                 <h3 class="settings-section-title">Cursor SDK</h3>
                 <div class="form-group">
                     <label>GitHub repo (cloud, опционально)</label>
-                    <input type="url" id="cursorRepoInput" placeholder="https://github.com/org/repo">
+                    <input type="url" id="cursorRepoInput" value="https://github.com/takuraanigatsuki-hub/AI_team_takura" placeholder="https://github.com/org/repo">
                 </div>
                 <div class="form-group">
                     <label>Ветка</label>
@@ -285,6 +285,9 @@
                 </div>
                 <div class="form-group checkbox">
                     <label><input type="checkbox" id="cursorAutoPrInput" checked> Авто-создание Pull Request</label>
+                </div>
+                <div class="form-group checkbox">
+                    <label><input type="checkbox" id="gitAutoSyncInput" checked> Git Auto-Sync (commit + push)</label>
                 </div>
                 <p class="modal-note">
                     API ключ: <code>CURSOR_API_KEY</code> в .env<br>

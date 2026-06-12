@@ -14,7 +14,7 @@ WORK_TYPES = frozenset({
     "user_message", "system", "error", "task_received", "task_done",
     "assignment", "orchestrating", "pm_plan", "message", "site_ready",
     "react_preview", "cursor_progress", "cursor_run_done", "figma_import",
-    "github_sync_started", "github_sync_done",
+    "github_sync_started", "github_sync_done", "git_sync_done",
 })
 
 
@@ -277,13 +277,22 @@ class RoomManager:
             self.task_history.mark_failed(task_id, error)
 
     async def _maybe_github_sync(self, task_text: str):
-        """Автосинхронизация с GitHub через Cursor Cloud Agent."""
+        """Автосинхронизация с GitHub через Cursor Cloud Agent + локальный git push."""
         try:
             from integrations.github_sync import sync_task_to_github
             await sync_task_to_github(task_text, room_manager=self, source="task")
         except Exception as e:
             await self.broadcast_work({
                 "type": "system",
-                "message": f"⚠️ GitHub Sync: {e}",
+                "message": f"⚠️ GitHub Sync (Cloud): {e}",
+                "timestamp": datetime.now().isoformat(),
+            })
+        try:
+            from integrations.local_git_sync import sync_after_task
+            await sync_after_task(task_text, room_manager=self)
+        except Exception as e:
+            await self.broadcast_work({
+                "type": "system",
+                "message": f"⚠️ Git Sync (local): {e}",
                 "timestamp": datetime.now().isoformat(),
             })
