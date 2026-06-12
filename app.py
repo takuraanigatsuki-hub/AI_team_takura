@@ -109,6 +109,7 @@ async def lifespan(app: FastAPI):
         fmax = cfg_module.config.get("figma_study_interval_max", 25)
         figma_studio_task = asyncio.create_task(sonya_figma_studio_loop(room, fmin, fmax))
         print(f"🎨 Sonya Figma Studio: включён (каждые {fmin}-{fmax} мин)")
+        asyncio.create_task(_bootstrap_figma_discovery(room))
 
     if cfg_module.config.get("git_auto_sync", True):
         print("📤 Git Auto-Sync: включён (commit + push каждые "
@@ -1258,11 +1259,14 @@ def _figma_is_configured() -> bool:
     return is_figma_connected()
 
 
-def _build_design_lab_payload() -> dict:
+async def _build_design_lab_payload() -> dict:
     """Полный ответ Дизайн-лаба — один источник для /api/figma/studio и /api/figma/design-lab."""
+    from integrations.figma_discovery import enrich_discovery_status
     from integrations.figma_learning import get_studio_stats, load_patterns, load_portfolio
 
     stats = get_studio_stats()
+    if stats.get("discovery"):
+        stats["discovery"] = await enrich_discovery_status(dict(stats["discovery"]))
     patterns = load_patterns()
     frontend = room.agents.get("frontend")
     knowledge = []
@@ -1339,14 +1343,14 @@ async def figma_disconnect():
 @app.get("/api/figma/studio")
 async def figma_studio_stats():
     """Studio + Design Lab (единый payload для совместимости UI)."""
-    return _build_design_lab_payload()
+    return await _build_design_lab_payload()
 
 
 @app.get("/api/figma/design-lab")
 @app.get("/api/design-lab")
 async def figma_design_lab():
     """Дизайн-лаб Сони — паттерны, память, статистика."""
-    return _build_design_lab_payload()
+    return await _build_design_lab_payload()
 
 
 @app.post("/api/figma/studio/study-url")
@@ -1382,12 +1386,13 @@ async def figma_study_url(body: FigmaStudyUrlRequest):
 
         result = await study_reference_file(frontend, url)
         if result and result.get("error"):
+            err = str(result.get("error", ""))[:160]
             ok = await study_builtin_pattern(frontend)
             return {
                 "ok": ok,
                 "mode": "fallback",
-                "error": result.get("error"),
-                "message": "Figma недоступен — изучен встроенный паттерн",
+                "error": err,
+                "message": f"Figma API: {err}. Изучен встроенный паттерн.",
             }
         if result:
             frontend.figma_studies = getattr(frontend, "figma_studies", 0) + 1
@@ -1453,13 +1458,14 @@ async def figma_studio_discover(scan_only: bool = False):
             frontend.location = prev_loc if prev_loc else "studio"
             await room.send_agents_state()
 
-    from integrations.figma_discovery import get_discovery_status
+    from integrations.figma_discovery import get_discovery_status, enrich_discovery_status
 
+    discovery = await enrich_discovery_status(get_discovery_status())
     return {
         "ok": True,
         "scan": scan,
         "studied": studied,
-        "discovery": get_discovery_status(),
+        "discovery": discovery,
     }
 
 

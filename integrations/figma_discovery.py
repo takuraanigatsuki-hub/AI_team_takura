@@ -191,13 +191,42 @@ def _enqueue(state: dict, targets: list[dict]) -> int:
     added = 0
     for t in targets:
         key = t.get("file_key")
-        if not key or key in existing or _is_known_key(state, key):
+        if not key or not is_valid_file_key(key):
+            continue
+        if key in existing or _is_known_key(state, key):
             continue
         queue.append(t)
         existing.add(key)
         added += 1
     state["queue"] = queue[:60]
     return added
+
+
+def _urls_to_targets(urls: list[str], *, source: str, name: str = "Web discovery") -> list[dict]:
+    targets: list[dict] = []
+    for url in urls:
+        if not is_figma_api_url(url):
+            continue
+        parsed = parse_figma_url(url)
+        if not parsed:
+            continue
+        key = parsed["file_key"]
+        targets.append({
+            "file_key": key,
+            "url": url,
+            "name": name,
+            "source": source,
+            "category": source,
+        })
+    return targets
+
+
+def _enqueue_cached_web_urls(state: dict) -> int:
+    """Вернуть в очередь URL из web_cache, которые ещё не изучены и не в failed."""
+    cache = state.get("web_cache") or []
+    if not cache:
+        return 0
+    return _enqueue(state, _urls_to_targets(cache, source="web"))
 
 
 async def scan_team_files(client) -> list[dict]:
@@ -250,24 +279,34 @@ async def discover_urls_from_web(agent) -> list[str]:
     """Поиск community-ссылок через веб-обучение агента."""
     topic = random.choice(WEB_DISCOVERY_TOPICS)
     material = await agent._fetch_learning_material(topic)
-    if not material:
-        return []
+    fresh: list[str] = []
 
-    blob = " ".join(
-        str(material.get(k) or "")
-        for k in ("title", "summary", "url", "content", "snippet")
-    )
-    urls = extract_figma_urls(blob)
-    if material.get("url"):
-        urls = extract_figma_urls(str(material["url"])) + urls
+    if material:
+        blob = " ".join(
+            str(material.get(k) or "")
+            for k in ("title", "summary", "url", "content", "snippet")
+        )
+        fresh = extract_figma_urls(blob)
+        if material.get("url"):
+            fresh = extract_figma_urls(str(material["url"])) + fresh
 
     state = load_discovery()
     cache = state.get("web_cache") or []
-    new_urls = [u for u in urls if u not in cache and is_figma_api_url(u)]
-    if new_urls:
-        state["web_cache"] = (new_urls + cache)[:30]
+    merged: list[str] = []
+    for url in fresh + cache:
+        if url not in merged and is_figma_api_url(url):
+            merged.append(url)
+
+    new_to_cache = [u for u in merged if u not in cache]
+    if new_to_cache:
+        state["web_cache"] = (new_to_cache + cache)[:30]
         save_discovery(state)
-    return new_urls[:5]
+
+    pending = [
+        u for u in merged
+        if not _is_known_key(state, (parse_figma_url(u) or {}).get("file_key", ""))
+    ]
+    return pending[:8]
 
 
 async def run_discovery_scan(agent=None, *, include_web: bool = True) -> dict:
@@ -308,25 +347,15 @@ async def run_discovery_scan(agent=None, *, include_web: bool = True) -> dict:
 
     if include_web and agent is not None:
         web_urls = await discover_urls_from_web(agent)
-        web_targets = []
-        for url in web_urls:
-            parsed = parse_figma_url(url)
-            if not parsed:
-                continue
-            key = parsed["file_key"]
-            if _is_known_key(state, key):
-                continue
-            web_targets.append({
-                "file_key": key,
-                "url": url,
-                "name": "Web discovery",
-                "source": "web",
-                "category": "web",
-            })
-        n = _enqueue(state, web_targets)
+        n = _enqueue(state, _urls_to_targets(web_urls, source="web"))
         if n:
             sources["web"] = n
             added += n
+
+    n = _enqueue_cached_web_urls(state)
+    if n:
+        sources["web_cache"] = sources.get("web_cache", 0) + n
+        added += n
 
     state["last_scan_at"] = datetime.now().isoformat()
     save_discovery(state)
@@ -403,13 +432,14 @@ def get_discovery_status() -> dict:
     state = load_discovery()
     catalog = get_catalog()
     next_target = pick_next_target(state)
-    return {
+    status = {
         "auto_discover_enabled": _is_auto_discover_enabled(),
         "discover_team_files": _team_scan_enabled(),
         "queue_size": len(state.get("queue") or []),
         "studied_keys_count": len(state.get("studied_keys") or []),
         "failed_keys_count": len(state.get("failed_keys") or []),
         "catalog_size": len(catalog),
+        "web_cache_size": len(state.get("web_cache") or []),
         "last_scan_at": state.get("last_scan_at"),
         "last_study_at": state.get("last_study_at"),
         "next_target": {
@@ -423,4 +453,61 @@ def get_discovery_status() -> dict:
         "queue_preview": (state.get("queue") or [])[:8],
         "recent_log": (state.get("log") or [])[:10],
         "reference_urls_count": len(cfg_module.config.get("figma_reference_urls") or []),
+        "hints": [],
     }
+    status["hints"] = _build_discovery_hints(status, state)
+    return status
+
+
+def _build_discovery_hints(status: dict, state: dict) -> list[str]:
+    hints: list[str] = []
+    if not status.get("auto_discover_enabled"):
+        hints.append("Авто-поиск выключен в config (figma_auto_discover).")
+    if status.get("queue_size", 0) == 0:
+        if status.get("catalog_size", 0) == 0 and status.get("reference_urls_count", 0) == 0:
+            hints.append("Нет стартового каталога и figma_reference_urls — добавьте ссылки в config.json.")
+        if status.get("web_cache_size", 0) > 0:
+            hints.append("Есть сохранённые web-ссылки — нажмите «Сканировать» для постановки в очередь.")
+        last_fail = next((e for e in (state.get("log") or []) if e.get("status") == "failed"), None)
+        if last_fail:
+            reason = (last_fail.get("reason") or "")[:80]
+            hints.append(f"Последняя ошибка: {reason or 'неизвестно'}.")
+    return hints[:4]
+
+
+async def enrich_discovery_status(status: dict) -> dict:
+    """Дополнить статус данными Figma API (auth, teams)."""
+    from integrations.figma_oauth import get_connection_status
+    from integrations.figma_client import get_client_async
+
+    conn = await get_connection_status()
+    status["api_connected"] = bool(conn.get("connected"))
+    status["auth_method"] = conn.get("auth_method")
+    status["oauth_configured"] = bool(conn.get("oauth_configured"))
+    status["teams_count"] = 0
+    status["scan_blockers"] = []
+
+    client = await get_client_async()
+    if not client.configured:
+        status["scan_blockers"].append("Figma API не подключён — задайте FIGMA_ACCESS_TOKEN или OAuth.")
+        return status
+
+    if conn.get("auth_method") == "pat":
+        status["hints"] = list(status.get("hints") or [])
+        status["hints"].append(
+            "PAT не возвращает список команд — авто-поиск идёт через каталог и web, не через team scan."
+        )
+        status["hints"] = status["hints"][:5]
+
+    try:
+        me = await client.get_me()
+        teams = me.get("teams") or []
+        status["teams_count"] = len(teams)
+        if status.get("discover_team_files") and not teams:
+            status["scan_blockers"].append(
+                "Team scan: у токена нет доступа к командам (нужен OAuth с org/team scope или свои file URLs)."
+            )
+    except Exception as e:
+        status["scan_blockers"].append(f"get_me: {str(e)[:80]}")
+
+    return status
