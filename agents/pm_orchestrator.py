@@ -1,7 +1,6 @@
 import random
 from agents.base_agent import BaseAgent
-
-WORK_MSG = "work"
+from room.task_routing import classify_task_kind
 
 
 class PMOrchestratorAgent(BaseAgent):
@@ -33,14 +32,16 @@ class PMOrchestratorAgent(BaseAgent):
         )
 
     def create_plan(self, task_text: str, assignments: dict, agents: dict) -> str:
-        task_lower = task_text.lower()
-        goal = task_text
-        if any(w in task_lower for w in ["сайт", "website", "лендинг"]):
-            goal = f"Создать рабочий сайт: {task_text}"
-        elif any(w in task_lower for w in ["api", "бэкенд", "backend"]):
-            goal = f"Реализовать backend/API: {task_text}"
-        else:
-            goal = f"Выполнить: {task_text}"
+        kind = classify_task_kind(task_text)
+        goal_map = {
+            "presentation": f"Подготовить презентацию: {task_text}",
+            "model_3d": f"Создать 3D-сцену: {task_text}",
+            "table": f"Сделать таблицу данных: {task_text}",
+            "site": f"Создать рабочий сайт: {task_text}",
+            "api": f"Реализовать backend/API: {task_text}",
+            "ui": f"Сделать UI-компонент: {task_text}",
+        }
+        goal = goal_map.get(kind, f"Выполнить: {task_text}")
 
         lines = [
             "📋 **ПЛАН РАБОТЫ**",
@@ -54,15 +55,18 @@ class PMOrchestratorAgent(BaseAgent):
             if a:
                 lines.append(f"{i}. {a.emoji} **{a.name}** — {subtask}")
 
-        lines += [
-            "",
-            "**Критерии готовности:**",
-            "• Все этапы выполнены и проверены ревьюером",
-            "• Результат виден в чате и вкладке «Задачи»",
-            "• Для UI — React Preview / готовый сайт",
-            "",
-            "👂 **Команда, слушайте план и приступайте!**",
-        ]
+        criteria = ["• Все этапы выполнены и проверены ревьюером", "• Результат виден в чате и вкладке «Задачи»"]
+        if kind == "site":
+            criteria.append("• Для UI — React Preview / готовый сайт")
+        elif kind == "presentation":
+            criteria.append("• Презентация — HTML-слайды во вкладке «Проекты»")
+        elif kind == "model_3d":
+            criteria.append("• 3D — интерактивная сцена Three.js")
+        elif kind == "table":
+            criteria.append("• Таблица — React Preview (не landing)")
+
+        lines += ["", "**Критерии готовности:**"] + criteria
+        lines += ["", "👂 **Команда, слушайте план и приступайте!**"]
         return "\n".join(lines)
 
     async def orchestrate_task(self, task_text: str, agents: dict, parent_id: str = None):
@@ -150,13 +154,26 @@ class PMOrchestratorAgent(BaseAgent):
             })
 
     def _analyze_and_assign(self, task_text: str, agents: dict) -> dict:
-        task_lower = task_text.lower()
-        assignments = {}
+        kind = classify_task_kind(task_text)
+        assignments: dict[str, str] = {}
 
-        if any(w in task_lower for w in [
-            "сайт", "website", "веб-сайт", "web-сайт", "web site",
-            "лендинг", "landing", "портал", "веб-страниц", "webpage", "веб приложен"
-        ]):
+        if kind == "presentation":
+            assignments["presenter"] = f"Создать презентацию (слайды): {task_text}"
+            assignments["doc_writer"] = f"Тексты слайдов и заметки: {task_text}"
+            assignments["reviewer"] = f"Проверить презентацию: {task_text}"
+            return assignments
+
+        if kind == "model_3d":
+            assignments["modeler"] = f"Создать 3D-сцену: {task_text}"
+            assignments["reviewer"] = f"Проверить 3D-результат: {task_text}"
+            return assignments
+
+        if kind == "table":
+            assignments["frontend"] = f"Сверстать таблицу данных (React, не landing): {task_text}"
+            assignments["reviewer"] = f"Проверить таблицу: {task_text}"
+            return assignments
+
+        if kind == "site":
             assignments["architect"] = f"Спроектировать структуру сайта: {task_text}"
             assignments["frontend"] = f"Сверстать сайт на React: {task_text}"
             assignments["backend"] = f"Подготовить API для сайта: {task_text}"
@@ -165,39 +182,55 @@ class PMOrchestratorAgent(BaseAgent):
             assignments["reviewer"] = f"Проверить качество сайта: {task_text}"
             return assignments
 
-        if any(w in task_lower for w in ["архитектур", "систем", "структур"]):
-            assignments["architect"] = f"Спроектировать архитектуру: {task_text}"
-
-        if any(w in task_lower for w in ["api", "бэкенд", "backend", "сервер", "база", "бд"]):
+        if kind == "api":
+            assignments["architect"] = f"Спроектировать API: {task_text}"
             assignments["backend"] = f"Реализовать backend: {task_text}"
+            assignments["qa"] = f"Написать тесты API: {task_text}"
+            assignments["reviewer"] = f"Code review API: {task_text}"
+            return assignments
 
-        if any(w in task_lower for w in [
-            "интерфейс", "ui", "ux", "фронтенд", "frontend", "компонент", "страниц",
-            "кнопк", "форм", "react", "верст", "дизайн", "css", "landing", "лендинг",
-            "макет", "hero", "дашборд", "dashboard", "превью", "preview", "палитр",
-        ]):
-            assignments["frontend"] = f"Разработать интерфейс: {task_text}"
+        if kind == "architecture":
+            assignments["architect"] = f"Спроектировать архитектуру: {task_text}"
+            assignments["reviewer"] = f"Проверить архитектуру: {task_text}"
+            return assignments
+
+        if kind == "tests":
+            assignments["qa"] = f"Написать тесты: {task_text}"
+            assignments["reviewer"] = f"Проверить покрытие: {task_text}"
+            return assignments
+
+        if kind == "infra":
+            assignments["devops"] = f"Настроить инфраструктуру: {task_text}"
+            assignments["reviewer"] = f"Проверить конфигурацию: {task_text}"
+            return assignments
+
+        if kind == "document":
+            assignments["doc_writer"] = f"Документировать: {task_text}"
+            assignments["reviewer"] = f"Проверить документ: {task_text}"
+            return assignments
+
+        if kind == "ui":
+            assignments["frontend"] = f"Разработать UI-компонент: {task_text}"
+            assignments["reviewer"] = f"Проверить UI: {task_text}"
+            return assignments
+
+        task_lower = task_text.lower()
+
+        if any(w in task_lower for w in ["figma", "design token", "дизайн-систем"]):
+            assignments["frontend"] = f"Импорт из Figma + UI: {task_text}"
+            assignments["reviewer"] = f"Проверить UI: {task_text}"
+            return assignments
 
         if any(w in task_lower for w in [
             "studio", "студия", "sonya studio", "design studio", "новый проект",
             "новый макет", "создай проект", "создай макет", "sonya design",
-        ]) or (
-            "проект" in task_lower and any(w in task_lower for w in ("ui", "макет", "дизайн", "интерфейс", "studio", "студи"))
-        ):
+        ]):
             assignments["frontend"] = f"Sonya Studio — {task_text}"
-
-        if any(w in task_lower for w in ["тест", "test", "баг", "bug", "качество", "проверь"]):
-            assignments["qa"] = f"Написать тесты: {task_text}"
-
-        if any(w in task_lower for w in ["докумен", "readme", "описани", "инструкци"]):
-            assignments["doc_writer"] = f"Документировать: {task_text}"
-
-        if any(w in task_lower for w in ["деплой", "deploy", "kubernetes", "docker", "ci/cd", "инфраструктур"]):
-            assignments["devops"] = f"Настроить деплой: {task_text}"
+            assignments["reviewer"] = f"Проверить проект: {task_text}"
+            return assignments
 
         if any(w in task_lower for w in [
-            "код", "code", "рефактор", "refactor", "исправ", "fix", "bug", "баг",
-            "implement", "напиши", "cursor", "sdk", "функци", "class", "модул",
+            "код", "code", "рефактор", "refactor", "implement", "cursor", "sdk",
         ]):
             try:
                 from config import config
@@ -206,21 +239,10 @@ class PMOrchestratorAgent(BaseAgent):
             except Exception:
                 assignments["cursor"] = f"Coding через Cursor SDK: {task_text}"
 
-        if any(w in task_lower for w in ["презентац", "slides", "pitch", "слайд", "deck", "доклад"]):
-            assignments["presenter"] = f"Создать презентацию: {task_text}"
-
-        if any(w in task_lower for w in ["3d", "3д", "three.js", "threejs", "модел", "glb", "gltf", "blender", "webgl"]):
-            assignments["modeler"] = f"Создать 3D-сцену: {task_text}"
-
-        if any(w in task_lower for w in ["figma", "макет", "design token", "дизайн-систем"]):
-            assignments["frontend"] = f"Импорт из Figma + UI: {task_text}"
-
         if not assignments:
-            assignments["architect"] = f"Спланировать: {task_text}"
-            assignments["backend"] = f"Реализовать: {task_text}"
-            assignments["frontend"] = f"Сделать UI: {task_text}"
+            assignments["architect"] = f"Спланировать подход: {task_text}"
 
-        assignments["reviewer"] = f"Проверить результат: {task_text}"
+        assignments.setdefault("reviewer", f"Проверить результат: {task_text}")
         return assignments
 
     def get_fallback_responses(self) -> list:
