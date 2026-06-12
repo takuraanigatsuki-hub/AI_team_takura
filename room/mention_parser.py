@@ -1,7 +1,7 @@
 """@mention парсер — @соня @pm @все"""
 
 AGENT_ALIASES = {
-    "pm": "pm", "виктор": "pm", "pm": "pm",
+    "pm": "pm", "виктор": "pm",
     "architect": "architect", "алекс": "architect", "архитектор": "architect",
     "backend": "backend", "макс": "backend", "бэкенд": "backend",
     "frontend": "frontend", "sonya": "frontend", "соня": "frontend", "фронт": "frontend",

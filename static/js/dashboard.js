@@ -8,13 +8,14 @@
         grid.innerHTML = '<div class="dash-loading">Загрузка…</div>';
 
         try {
-            const [dash, tasks, git, cursor, activity, figma] = await Promise.all([
+            const [dash, tasks, git, cursor, activity, figma, llmUsage] = await Promise.all([
                 fetch('/api/dashboard').then((r) => r.json()),
                 fetch('/api/tasks').then((r) => r.json()),
                 fetch('/api/git/status').then((r) => r.json()),
                 fetch('/api/cursor/status').then((r) => r.json()),
                 fetch('/api/activity?limit=15').then((r) => r.json()),
                 fetch('/api/figma/status').then((r) => r.json()),
+                fetch('/api/llm/usage').then((r) => r.json()).catch(() => ({})),
             ]);
 
             const agents = dash.agents || [];
@@ -24,6 +25,7 @@
                 <div class="dash-hero animate-in">
                     <h2>Командный центр</h2>
                     <p>${dash.team_size || 9} агентов · ${working} активны · ${tasks.stats?.total || 0} задач всего</p>
+                    <p class="llm-cost-inline">💰 LLM: ${llmUsage.total_requests || 0} запросов · ~$${llmUsage.estimated_cost_usd || 0} · ${llmUsage.estimated_cost_rub || 0}₽</p>
                 </div>
                 <div class="dash-cards">
                     <div class="dash-card">

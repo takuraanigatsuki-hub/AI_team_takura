@@ -10,3 +10,26 @@ services:
       - ./output:/app/output
       - ./knowledge:/app/knowledge
     restart: unless-stopped
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: aiteam
+      POSTGRES_PASSWORD: aiteam
+      POSTGRES_DB: aiteam
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:

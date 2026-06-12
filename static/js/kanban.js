@@ -1,4 +1,4 @@
-/** Kanban board — задачи по колонкам */
+/** Kanban board — задачи по колонкам + приоритет */
 (function (global) {
     const COLS = [
         { id: 'submitted', title: '📥 Входящие' },
@@ -6,6 +6,8 @@
         { id: 'completed', title: '✅ Готово' },
         { id: 'failed', title: '❌ Ошибки' },
     ];
+    const PRIOS = ['low', 'medium', 'high', 'urgent'];
+    const PRIO_LABELS = { urgent: '🔴', high: '🟠', medium: '🟡', low: '⚪' };
 
     async function refresh() {
         try {
@@ -23,18 +25,64 @@
         if (!el) return;
         el.innerHTML = COLS.map((col) => {
             const items = columns[col.id] || [];
-            const cards = items.map((t) => `
-                <div class="kb-card" onclick="switchView('tasks')">
-                    <div class="kb-title">${escape(t.text || t.task || '—').slice(0, 60)}</div>
+            const cards = items.map((t) => {
+                const prio = t.priority || 'medium';
+                return `
+                <div class="kb-card priority-${prio}" draggable="true"
+                     data-task-id="${escape(t.id || '')}"
+                     ondragstart="KanbanUI.onDragStart(event)"
+                     ondragover="KanbanUI.onDragOver(event)"
+                     ondrop="KanbanUI.onDrop(event)">
+                    <div class="kb-head">
+                        <span class="kb-prio" title="Сменить приоритет"
+                              onclick="event.stopPropagation();KanbanUI.cyclePriority('${escape(t.id)}','${prio}')">${PRIO_LABELS[prio] || prio}</span>
+                        <span class="kb-status">${col.id}</span>
+                    </div>
+                    <div class="kb-title" onclick="switchView('tasks')">${escape(t.text || t.task || '—').slice(0, 60)}</div>
                     <div class="kb-meta">${t.agent_emoji || ''} ${t.agent_name || t.agent_id || ''}</div>
-                </div>`).join('');
-            return `<div class="kb-col"><div class="kb-col-head">${col.title} <span>${items.length}</span></div>${cards || '<div class="kb-empty">—</div>'}</div>`;
+                </div>`;
+            }).join('');
+            return `<div class="kb-col" data-col="${col.id}"><div class="kb-col-head">${col.title} <span>${items.length}</span></div>${cards || '<div class="kb-empty">—</div>'}</div>`;
         }).join('');
+    }
+
+    let dragId = null;
+
+    function onDragStart(e) {
+        dragId = e.currentTarget.dataset.taskId;
+        e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function onDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    }
+
+    function onDrop(e) {
+        e.preventDefault();
+        if (!dragId) return;
+        const col = e.currentTarget.closest('.kb-col')?.dataset.col;
+        if (col && window.UIEnhancements) {
+            UIEnhancements.toast('Статус меняется при выполнении задачи', 'info');
+        }
+        dragId = null;
+    }
+
+    async function cyclePriority(taskId, current) {
+        if (!taskId) return;
+        const idx = PRIOS.indexOf(current);
+        const next = PRIOS[(idx + 1) % PRIOS.length];
+        await fetch(`/api/tasks/${taskId}/priority`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ priority: next }),
+        });
+        refresh();
     }
 
     function escape(s) {
         return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     }
 
-    global.KanbanUI = { refresh };
+    global.KanbanUI = { refresh, onDragStart, onDragOver, onDrop, cyclePriority };
 })(window);

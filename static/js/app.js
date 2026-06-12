@@ -54,12 +54,14 @@
         document.getElementById('designView')?.classList.toggle('hidden', view !== 'design');
         document.getElementById('dashboardView')?.classList.toggle('hidden', view !== 'dashboard');
         document.getElementById('kanbanView')?.classList.toggle('hidden', view !== 'kanban');
+        document.getElementById('sprintView')?.classList.toggle('hidden', view !== 'sprint');
         document.getElementById('timelineView')?.classList.toggle('hidden', view !== 'timeline');
         document.getElementById('projectsView')?.classList.toggle('hidden', view !== 'projects');
 
         if (view === 'tasks') loadTasks();
         if (view === 'projects' && window.ProjectsUI) ProjectsUI.load();
         if (view === 'kanban' && window.KanbanUI) KanbanUI.refresh();
+        if (view === 'sprint' && window.SprintUI) SprintUI.load();
         if (view === 'timeline' && window.TimelineUI) TimelineUI.load(1);
         if (view === 'design' && window.Integrations) {
             Integrations.loadDefaultFigmaUrl();
@@ -67,6 +69,7 @@
             Integrations.loadSonyaStudio();
         }
         if (view === 'dashboard' && window.Dashboard) Dashboard.load();
+        if (view === 'dashboard' && window.PowerPack) PowerPack.loadCostWidget();
 
         clearInterval(dashboardRefreshTimer);
         if (view === 'dashboard') {
@@ -974,6 +977,50 @@
         document.getElementById('messageInput')?.addEventListener('input', (e) => {
             e.target.style.height = 'auto';
             e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+            updateMentionDropdown(e.target);
         });
+
+        initMentionAutocomplete();
     });
+
+    // ─── @mention autocomplete ────────────────────────────
+    let mentionAliases = {};
+
+    async function initMentionAutocomplete() {
+        try {
+            const r = await fetch('/api/mentions/aliases');
+            const d = await r.json();
+            mentionAliases = d.aliases || {};
+        } catch (_) {}
+    }
+
+    function updateMentionDropdown(input) {
+        const dd = document.getElementById('mentionDropdown');
+        if (!dd || !input) return;
+        const val = input.value;
+        const at = val.lastIndexOf('@');
+        if (at < 0) {
+            dd.classList.add('hidden');
+            return;
+        }
+        const query = val.slice(at + 1).toLowerCase();
+        const matches = Object.keys(mentionAliases)
+            .filter((k) => k.startsWith(query))
+            .slice(0, 8);
+        if (!matches.length) {
+            dd.classList.add('hidden');
+            return;
+        }
+        dd.innerHTML = matches.map((m) =>
+            `<button type="button" class="mention-item" data-alias="${m}">@${m} → ${mentionAliases[m]}</button>`
+        ).join('');
+        dd.classList.remove('hidden');
+        dd.querySelectorAll('.mention-item').forEach((btn) => {
+            btn.onclick = () => {
+                input.value = val.slice(0, at) + '@' + btn.dataset.alias + ' ';
+                dd.classList.add('hidden');
+                input.focus();
+            };
+        });
+    }
 })();

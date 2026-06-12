@@ -1069,3 +1069,32 @@ body.has-pipeline .header { box-shadow: 0 2px 20px rgba(0,0,0,0.15); }
 .aa-actions { display: flex; gap: 6px; }
 .activity-task { display: flex; justify-content: space-between; font-size: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); }
 .activity-footer { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+/* Power Pack: Sprint, Diff, Mentions, Priority */
+.sprint-layout { padding: 16px 20px; height: calc(100vh - 56px); overflow: auto; }
+.sprint-panel { max-width: 720px; margin: 0 auto; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.sprint-hero h2 { margin: 0 0 6px; }
+.sprint-actions, .sprint-add { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; align-items: center; }
+.sprint-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: var(--surface-2); border-radius: 8px; margin-bottom: 6px; font-size: 13px; }
+.sprint-item.done { opacity: 0.55; text-decoration: line-through; }
+.sprint-item.priority-urgent { border-left: 3px solid #ff4757; }
+.sprint-item.priority-high { border-left: 3px solid #ffa502; }
+.prio-badge { font-size: 10px; opacity: 0.7; text-transform: uppercase; }
+.projects-toolbar { margin: 8px 0; }
+.kb-head { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 10px; }
+.kb-prio { cursor: pointer; padding: 0 4px; border-radius: 4px; }
+.kb-prio:hover { background: var(--accent-soft); }
+.kb-card.priority-urgent { border-left: 3px solid #ff4757; }
+.kb-card.priority-high { border-left: 3px solid #ffa502; }
+.kb-card.priority-low { opacity: 0.85; }
+.activity-card.wide { max-width: 900px; }
+.diff-view { background: var(--surface-2); border-radius: 8px; padding: 12px; font-family: ui-monospace, monospace; font-size: 12px; max-height: 50vh; overflow: auto; margin: 12px 0; }
+.diff-view .diff-add { color: #2ed573; }
+.diff-view .diff-del { color: #ff4757; }
+.llm-cost-bar { text-align: center; font-size: 12px; opacity: 0.75; padding: 8px; }
+.llm-cost-inline { font-size: 13px; opacity: 0.85; margin-top: 6px; }
+.input-wrap { position: relative; }
+.mention-dropdown { position: absolute; bottom: 100%; left: 0; right: 0; background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 4px; max-height: 160px; overflow: auto; z-index: 50; }
+.mention-dropdown.hidden { display: none; }
+.mention-item { display: block; width: 100%; text-align: left; padding: 8px 10px; border: none; background: transparent; color: inherit; cursor: pointer; font-size: 12px; }
+.mention-item:hover { background: var(--accent-soft); }

@@ -55,3 +55,18 @@ def test_integrations_status(client):
     assert r.status_code == 200
     data = r.json()
     assert "llm" in data
+
+
+def test_power_pack_endpoints(client):
+    r = client.get("/api/project-memory")
+    assert r.status_code == 200
+    r = client.get("/api/sprint")
+    assert r.status_code == 200
+    r = client.get("/api/llm/usage")
+    assert r.status_code == 200
+    r = client.get("/api/artifact-templates")
+    assert r.status_code == 200
+    assert len(r.json().get("templates", [])) >= 5
+    r = client.get("/api/mentions/aliases")
+    assert r.status_code == 200
+    assert "aliases" in r.json()

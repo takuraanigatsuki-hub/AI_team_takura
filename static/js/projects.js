@@ -60,11 +60,22 @@
                 <div class="pc-tags">${(p.tags || []).slice(0, 4).map((t) => `<span class="tag">${escape(t)}</span>`).join('')}</div>
                 <div class="pc-actions">
                     ${p.has_preview ? `<a href="/api/projects/${p.id}/preview" target="_blank" class="btn-primary btn-sm">Открыть</a>` : ''}
+                    <button type="button" class="btn-secondary btn-sm" onclick="window.open('/api/projects/${p.id}/export?format=print','_blank')">PDF</button>
+                    <button type="button" class="btn-secondary btn-sm" onclick="ProjectsUI.diffWith('${p.id}')">Diff</button>
+                    <button type="button" class="btn-secondary btn-sm" onclick="PowerPack.createPR('${p.id}')">PR</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="AgentActivity.open('${p.agent_id}')">Агент</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="ProjectsUI.revise('${p.agent_id}','${p.id}')">✏️</button>
                 </div>
-                <time class="pc-time">${(p.created_at || '').slice(0, 16).replace('T', ' ')}</time>
+                <time class="pc-time">${(p.created_at || '').slice(0, 16).replace('T', ' ')} · v${p.version || 1}</time>
             </article>`).join('');
+    }
+
+    async function diffWith(id) {
+        const other = prompt('ID второго проекта для сравнения:');
+        if (!other) return;
+        const r = await fetch(`/api/projects/${id}/diff/${other}`);
+        const d = await r.json();
+        if (window.PowerPack) PowerPack.showDiffModal(d);
     }
 
     function setFilter(agent, type) {
@@ -84,5 +95,5 @@
         return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     }
 
-    global.ProjectsUI = { load, setFilter, revise };
+    global.ProjectsUI = { load, setFilter, revise, diffWith };
 })(window);
