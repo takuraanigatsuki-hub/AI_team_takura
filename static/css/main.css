@@ -816,6 +816,8 @@ a.hdr-btn:hover { color: var(--text); }
     color: var(--text-muted);
 }
 .preview-badge.live { background: rgba(94, 207, 138, 0.15); color: var(--green); }
+.preview-badge.live.production { background: rgba(139, 92, 246, 0.18); color: var(--purple, #8b5cf6); }
+.preview-time { font-size: 10px; color: var(--text-muted); white-space: nowrap; }
 
 .preview-body {
     flex: 1;
@@ -890,6 +892,72 @@ a.hdr-btn:hover { color: var(--text); }
     gap: 8px;
 }
 .preview-empty-icon { font-size: 40px; opacity: 0.5; }
+.preview-empty-hint { font-size: 11px; max-width: 280px; line-height: 1.45; }
+
+.preview-loading {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+.preview-loading.show { display: flex; }
+.preview-spinner {
+    width: 28px; height: 28px;
+    border: 3px solid var(--border);
+    border-top-color: var(--purple, #8b5cf6);
+    border-radius: 50%;
+    animation: previewSpin 0.7s linear infinite;
+}
+@keyframes previewSpin { to { transform: rotate(360deg); } }
+
+.preview-error-banner {
+    margin: 8px 12px 0;
+    padding: 10px 14px;
+    background: rgba(240, 113, 120, 0.12);
+    border: 1px solid rgba(240, 113, 120, 0.3);
+    border-radius: var(--radius-sm);
+    color: var(--red);
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.preview-pane { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+.preview-toolbar-group { display: flex; gap: 4px; align-items: center; }
+.preview-tab-btn {
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+}
+.preview-tab-btn.active {
+    background: var(--purple-soft, rgba(139, 92, 246, 0.12));
+    border-color: var(--purple, #8b5cf6);
+    color: var(--purple, #8b5cf6);
+}
+.preview-vp-btn {
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    font-size: 12px;
+    cursor: pointer;
+    line-height: 1;
+}
+.preview-vp-btn.active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+.preview-viewports { margin-left: auto; }
 
 .agent-preview-btn {
     margin-top: 4px;
@@ -1075,7 +1143,10 @@ body.has-pipeline .main { padding-top: 56px; }
 body.has-pipeline .header { box-shadow: 0 2px 20px rgba(0,0,0,0.15); }
 
 /* ─── Figma Split ─── */
-.preview-toolbar { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.preview-toolbar {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    padding: 8px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
 .figma-split { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .figma-split.active { flex-direction: row; }
 .figma-split .split-figma { display: none; flex: 1; min-width: 0; padding: 8px; border-right: 1px solid var(--border); }

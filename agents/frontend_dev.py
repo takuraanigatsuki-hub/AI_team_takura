@@ -1,7 +1,7 @@
 from datetime import datetime
 import random
 from agents.base_agent import BaseAgent
-from agents.react_preview import generate_react_preview, is_site_task
+from agents.react_preview import generate_react_preview, is_polish_task, is_site_task
 from site_exporter import export_site_html
 from integrations.figma_client import parse_figma_url, get_client_async
 
@@ -105,8 +105,16 @@ class FrontendDevAgent(BaseAgent):
             "🎨 '{task}' — компонент готов!\n\nНажмите «Preview» или смотрите панель React Preview — там живой рендер.",
         ]
 
+    def _figma_colors(self) -> list[str]:
+        if not self.last_figma:
+            return []
+        summary = self.last_figma.get("summary", {})
+        return summary.get("colors") or self.last_figma.get("colors") or []
+
     def _build_preview(self, task_text: str) -> dict:
-        preview = generate_react_preview(task_text)
+        figma_colors = self._figma_colors()
+        previous = self.last_preview if is_polish_task(task_text) else None
+        preview = generate_react_preview(task_text, figma_colors=figma_colors, previous=previous)
         preview["task"] = task_text
         preview["timestamp"] = datetime.now().isoformat()
         self.last_preview = preview
@@ -134,6 +142,7 @@ class FrontendDevAgent(BaseAgent):
                 "timestamp": preview["timestamp"],
                 "is_site": preview.get("is_site", False),
                 "site_url": preview.get("site_url"),
+                "polished": preview.get("polished", False),
             })
             if preview.get("is_site"):
                 await self.room_manager.broadcast_work({

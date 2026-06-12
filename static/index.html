@@ -356,43 +356,63 @@
 <div id="privateChatsContainer"></div>
 
 <!-- React Preview — Соня -->
-<aside id="reactPreviewPanel">
+<aside id="reactPreviewPanel" aria-label="React Preview панель">
     <div class="preview-header">
-        <span>🎨</span>
+        <span aria-hidden="true">🎨</span>
         <h2 id="reactPreviewTitle">React Preview</h2>
         <span class="preview-badge" id="reactPreviewBadge">ожидание</span>
-        <button type="button" class="icon-btn" onclick="ReactPreview.close()" title="Закрыть">×</button>
+        <span class="preview-time" id="reactPreviewTime"></span>
+        <button type="button" class="icon-btn" onclick="ReactPreview.close()" title="Закрыть" aria-label="Закрыть панель">×</button>
     </div>
     <div class="preview-body" id="reactPreviewBody">
         <div class="preview-empty" id="reactPreviewEmpty">
-            <div class="preview-empty-icon">⚛️</div>
+            <div class="preview-empty-icon" aria-hidden="true">⚛️</div>
             <div>Дайте Соне задачу с UI</div>
-            <div style="font-size:11px">Например: «сделай форму логина» или «кнопку с анимацией»</div>
+            <div class="preview-empty-hint">Например: «сделай форму логина», «SaaS dashboard» или «production-ready UI»</div>
         </div>
+        <div id="reactPreviewLoading" class="preview-loading" aria-live="polite">
+            <div class="preview-spinner"></div>
+            <span>Загрузка preview…</span>
+        </div>
+        <div id="reactPreviewError" class="preview-error-banner" role="alert" style="display:none"></div>
         <div id="reactPreviewContent" style="display:none; flex:1; flex-direction:column; min-height:0;">
             <div class="preview-toolbar">
-                <button type="button" class="btn-secondary btn-sm" onclick="WowFeatures.toggleCompare()">⇔ Figma Compare</button>
-                <button type="button" class="btn-secondary btn-sm" onclick="WowFeatures.improveFromFigma()">🎨 Доработать по Figma</button>
-                <button type="button" class="btn-secondary btn-sm" onclick="WowFeatures.deployNow()">🚀 Deploy</button>
+                <div class="preview-toolbar-group">
+                    <button type="button" class="preview-tab-btn active" data-preview-tab="preview" onclick="ReactPreview.setTab('preview')">Preview</button>
+                    <button type="button" class="preview-tab-btn" data-preview-tab="code" onclick="ReactPreview.setTab('code')">Code</button>
+                </div>
+                <div class="preview-toolbar-group preview-viewports">
+                    <button type="button" class="preview-vp-btn" data-viewport="mobile" onclick="ReactPreview.setViewport('mobile')" title="Mobile 375px">📱</button>
+                    <button type="button" class="preview-vp-btn" data-viewport="tablet" onclick="ReactPreview.setViewport('tablet')" title="Tablet 768px">📋</button>
+                    <button type="button" class="preview-vp-btn active" data-viewport="desktop" onclick="ReactPreview.setViewport('desktop')" title="Desktop">🖥</button>
+                </div>
+                <div class="preview-toolbar-group">
+                    <button type="button" class="btn-secondary btn-sm" onclick="ReactPreview.refresh()" title="Обновить">↻</button>
+                    <button type="button" class="btn-secondary btn-sm" onclick="ReactPreview.copyCode()" title="Копировать код">📋</button>
+                    <button type="button" class="btn-secondary btn-sm" onclick="WowFeatures.toggleCompare()">⇔ Compare</button>
+                    <button type="button" class="btn-secondary btn-sm" onclick="WowFeatures.deployNow()">🚀 Deploy</button>
+                </div>
             </div>
             <div class="preview-task">
                 <span id="reactPreviewTaskText"></span>
-                <a id="siteOpenLink" href="/api/sites/latest" target="_blank" class="site-open-link" style="display:none">🌐 Открыть сайт в новой вкладке</a>
+                <a id="siteOpenLink" href="/api/sites/latest" target="_blank" rel="noopener" class="site-open-link" style="display:none">🌐 Открыть сайт</a>
             </div>
-            <div id="figmaSplitView" class="figma-split">
-                <div class="split-figma">
-                    <div class="split-label">Figma</div>
-                    <img id="figmaSplitImg" alt="Figma preview" class="figma-split-img">
-                    <div id="figmaMatchScore" class="figma-match-score"></div>
-                </div>
-                <div class="split-react">
-                    <div class="split-label">React Preview</div>
-                    <div class="preview-frame-wrap">
-                        <iframe id="reactPreviewFrame" title="React Preview" sandbox="allow-scripts allow-same-origin"></iframe>
+            <div id="reactPreviewPane" class="preview-pane">
+                <div id="figmaSplitView" class="figma-split">
+                    <div class="split-figma">
+                        <div class="split-label">Figma</div>
+                        <img id="figmaSplitImg" alt="Figma preview" class="figma-split-img">
+                        <div id="figmaMatchScore" class="figma-match-score"></div>
+                    </div>
+                    <div class="split-react">
+                        <div class="split-label">React Preview</div>
+                        <div id="reactPreviewFrameWrap" class="preview-frame-wrap">
+                            <iframe id="reactPreviewFrame" title="React Preview" sandbox="allow-scripts allow-same-origin"></iframe>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="preview-code-wrap">
+            <div id="reactPreviewCodePane" class="preview-code-wrap" style="display:none">
                 <pre id="reactPreviewCode"></pre>
             </div>
         </div>
