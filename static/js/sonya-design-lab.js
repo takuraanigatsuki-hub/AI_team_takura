@@ -24,16 +24,61 @@
         ]);
     }
 
+    function normalizeLabPayload(data) {
+        if (!data) return {};
+        const studied = data.studied || data.recent_studied || [];
+        const palette = data.color_palette || [];
+        const colorsFromStudied = studied.flatMap((s) => s.colors || []);
+        return {
+            ...data,
+            studied,
+            knowledge: data.knowledge || [],
+            color_palette: palette.length ? palette : [...new Set(colorsFromStudied)].slice(0, 32),
+            discovery: data.discovery || {
+                auto_discover_enabled: true,
+                queue_size: 0,
+                studied_keys_count: 0,
+                catalog_size: 0,
+                recent_log: [],
+            },
+            portfolio: data.portfolio || data.recent_portfolio || [],
+        };
+    }
+
+    async function fetchDesignLab() {
+        const urls = ['/api/figma/design-lab', '/api/design-lab', '/api/figma/studio'];
+        let lastErr = null;
+        for (const url of urls) {
+            try {
+                const r = await fetch(url);
+                if (r.ok) {
+                    return normalizeLabPayload(await r.json());
+                }
+                let detail = '';
+                try {
+                    const d = await r.json();
+                    detail = d.detail || r.statusText;
+                } catch (_) {
+                    detail = r.statusText;
+                }
+                lastErr = new Error(detail || `HTTP ${r.status}`);
+            } catch (e) {
+                lastErr = e;
+            }
+        }
+        throw lastErr || new Error('Не удалось загрузить лабораторию');
+    }
+
     async function loadLab() {
         const studiedEl = el('dlStudiedList');
         const knowEl = el('dlKnowledgeList');
         const paletteEl = el('dlPalette');
         const statsEl = el('dlStats');
+        const discoveryEl = el('dlDiscoveryStatus');
         if (studiedEl) studiedEl.innerHTML = '<div class="panel-empty">Загрузка…</div>';
+        if (discoveryEl) discoveryEl.innerHTML = '<div class="panel-empty">Загрузка статуса…</div>';
         try {
-            const r = await fetch('/api/figma/design-lab');
-            if (!r.ok) throw new Error('Не удалось загрузить лабораторию');
-            cache = await r.json();
+            cache = await fetchDesignLab();
             renderStats(statsEl, cache);
             renderStudied(studiedEl, cache.studied || []);
             renderKnowledge(knowEl, cache.knowledge || []);
@@ -42,7 +87,13 @@
             renderDiscovery(cache.discovery || {});
             updateAgentBadge(cache.agent);
         } catch (e) {
-            if (studiedEl) studiedEl.innerHTML = `<div class="panel-error">${escape(e.message)}</div>`;
+            const msg = escape(e.message || 'Ошибка загрузки');
+            if (studiedEl) {
+                studiedEl.innerHTML = `<div class="panel-error">${msg}<br><small class="muted">Перезапустите сервер (python main.py) и обновите страницу Ctrl+F5</small></div>`;
+            }
+            if (discoveryEl) {
+                discoveryEl.innerHTML = `<div class="panel-error">${msg}</div>`;
+            }
         }
     }
 
@@ -246,14 +297,37 @@
         }
         const preview = el('dlStudyPreview');
         if (preview) preview.innerHTML = '<div class="panel-empty">Соня изучает макет…</div>';
+        const studyEndpoints = ['/api/figma/studio/study-url', '/api/figma/study'];
         try {
-            const r = await fetch('/api/figma/studio/study-url', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url }),
-            });
-            const data = await r.json();
-            if (!r.ok) throw new Error(data.detail || 'Ошибка изучения');
+            let data = null;
+            let lastErr = null;
+            for (const endpoint of studyEndpoints) {
+                const r = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url }),
+                });
+                data = await r.json().catch(() => ({}));
+                if (r.ok) break;
+                lastErr = new Error(data.detail || `HTTP ${r.status}`);
+                if (r.status !== 404) throw lastErr;
+            }
+            if (!data?.ok && lastErr) {
+                const rImport = await fetch('/api/figma/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url }),
+                });
+                data = await rImport.json().catch(() => ({}));
+                if (!rImport.ok) throw new Error(data.detail || lastErr.message || 'Ошибка изучения');
+                data = {
+                    ok: true,
+                    mode: 'figma',
+                    summary: data.summary,
+                    preview_url: data.preview_url,
+                    knowledge: { summary: 'Макет импортирован и запомнен' },
+                };
+            }
             toast(data.mode === 'figma' ? '📚 Макет изучен и сохранён в память' : '📚 Изучен UI-референс', 'success');
             renderStudyPreview(preview, data);
             await loadLab();

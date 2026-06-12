@@ -1258,6 +1258,44 @@ def _figma_is_configured() -> bool:
     return is_figma_connected()
 
 
+def _build_design_lab_payload() -> dict:
+    """Полный ответ Дизайн-лаба — один источник для /api/figma/studio и /api/figma/design-lab."""
+    from integrations.figma_learning import get_studio_stats, load_patterns, load_portfolio
+
+    stats = get_studio_stats()
+    patterns = load_patterns()
+    frontend = room.agents.get("frontend")
+    knowledge = []
+    agent_state = {}
+    if frontend:
+        agent_state = {
+            "status": frontend.status,
+            "location": frontend.location,
+            "figma_studies": getattr(frontend, "figma_studies", 0),
+            "figma_creations": getattr(frontend, "figma_creations", 0),
+        }
+        design_sources = {"figma", "figma_auto", "figma_builtin", "figma_web", "figma_portfolio", "import"}
+        for k in reversed(frontend.learned_topics):
+            src = k.get("source") or ""
+            topic = (k.get("topic") or "").lower()
+            kws = k.get("keywords") or []
+            if src in design_sources or "figma" in topic or "figma" in kws or "design" in kws:
+                knowledge.append(k)
+            if len(knowledge) >= 40:
+                break
+    return {
+        **stats,
+        "agent": agent_state,
+        "knowledge": knowledge,
+        "studied": patterns.get("studied", []),
+        "color_palette": patterns.get("colors", [])[:32],
+        "fonts": patterns.get("fonts", [])[:16],
+        "frame_names": patterns.get("frames", [])[:20],
+        "portfolio": load_portfolio()[:20],
+        "recent_portfolio": stats.get("recent_portfolio") or load_portfolio()[:5],
+    }
+
+
 @app.get("/api/figma/status")
 async def figma_status():
     from integrations.figma_oauth import get_connection_status
@@ -1300,58 +1338,19 @@ async def figma_disconnect():
 
 @app.get("/api/figma/studio")
 async def figma_studio_stats():
-    from integrations.figma_learning import get_studio_stats, load_portfolio
-    stats = get_studio_stats()
-    frontend = room.agents.get("frontend")
-    if frontend:
-        state = frontend.get_state()
-        stats["agent"] = {
-            "figma_studies": state.get("figma_studies", 0),
-            "figma_creations": state.get("figma_creations", 0),
-            "status": frontend.status,
-        }
-    stats["portfolio"] = load_portfolio()[:20]
-    return stats
+    """Studio + Design Lab (единый payload для совместимости UI)."""
+    return _build_design_lab_payload()
 
 
 @app.get("/api/figma/design-lab")
+@app.get("/api/design-lab")
 async def figma_design_lab():
     """Дизайн-лаб Сони — паттерны, память, статистика."""
-    from integrations.figma_learning import get_studio_stats, load_patterns
-
-    stats = get_studio_stats()
-    patterns = load_patterns()
-    frontend = room.agents.get("frontend")
-    knowledge = []
-    agent_state = {}
-    if frontend:
-        agent_state = {
-            "status": frontend.status,
-            "location": frontend.location,
-            "figma_studies": getattr(frontend, "figma_studies", 0),
-            "figma_creations": getattr(frontend, "figma_creations", 0),
-        }
-        design_sources = {"figma", "figma_auto", "figma_builtin", "figma_web", "figma_portfolio", "import"}
-        for k in reversed(frontend.learned_topics):
-            src = k.get("source") or ""
-            topic = (k.get("topic") or "").lower()
-            kws = k.get("keywords") or []
-            if src in design_sources or "figma" in topic or "figma" in kws or "design" in kws:
-                knowledge.append(k)
-            if len(knowledge) >= 40:
-                break
-    return {
-        **stats,
-        "agent": agent_state,
-        "knowledge": knowledge,
-        "studied": patterns.get("studied", []),
-        "color_palette": patterns.get("colors", [])[:32],
-        "fonts": patterns.get("fonts", [])[:16],
-        "frame_names": patterns.get("frames", [])[:20],
-    }
+    return _build_design_lab_payload()
 
 
 @app.post("/api/figma/studio/study-url")
+@app.post("/api/figma/study")
 async def figma_study_url(body: FigmaStudyUrlRequest):
     """Соня изучает макет по URL и сохраняет в память."""
     from integrations.figma_learning import (
