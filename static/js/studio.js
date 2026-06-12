@@ -135,21 +135,79 @@
     }
 
     function createBodyMesh(color) {
-        const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.1 });
         const group = new THREE.Group();
+        group.name = 'body';
+        const skinMat = new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.52 });
+        const shirtMat = new THREE.MeshStandardMaterial({ color, roughness: 0.42, metalness: 0.12 });
+        const pantsMat = new THREE.MeshStandardMaterial({ color: 0x252a38, roughness: 0.72 });
 
-        const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.24, 0.5, 12), mat);
-        torso.position.y = 0.6;
+        const legGeo = new THREE.CylinderGeometry(0.075, 0.085, 0.32, 8);
+        const legL = new THREE.Mesh(legGeo, pantsMat);
+        legL.position.set(-0.09, 0.18, 0);
+        legL.name = 'legL';
+        const legR = legL.clone();
+        legR.position.x = 0.09;
+        legR.name = 'legR';
+        group.add(legL, legR);
+
+        const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.21, 0.4, 14), shirtMat);
+        torso.position.y = 0.54;
+        torso.name = 'torso';
+        torso.castShadow = true;
         group.add(torso);
 
-        const head = new THREE.Mesh(
-            new THREE.SphereGeometry(0.2, 14, 14),
-            new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.6 })
-        );
-        head.position.y = 1.05;
+        const armGeo = new THREE.CylinderGeometry(0.055, 0.048, 0.26, 8);
+        const armL = new THREE.Mesh(armGeo, shirtMat);
+        armL.position.set(-0.26, 0.5, 0.04);
+        armL.rotation.z = 0.35;
+        armL.name = 'armL';
+        armL.userData.baseRot = { x: 0, z: 0.35 };
+        const armR = armL.clone();
+        armR.position.x = 0.26;
+        armR.rotation.z = -0.35;
+        armR.name = 'armR';
+        armR.userData.baseRot = { x: 0, z: -0.35 };
+        group.add(armL, armR);
+
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), skinMat);
+        head.position.y = 0.9;
+        head.name = 'head';
+        head.castShadow = true;
         group.add(head);
 
+        const halo = new THREE.Mesh(
+            new THREE.TorusGeometry(0.11, 0.022, 8, 22),
+            new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.4, roughness: 0.3 })
+        );
+        halo.rotation.x = Math.PI / 2;
+        halo.position.y = 1.02;
+        halo.name = 'halo';
+        group.add(halo);
+
         return group;
+    }
+
+    function createOfficeChair(accentColor) {
+        const chair = new THREE.Group();
+        chair.name = 'chair';
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x3a4050, metalness: 0.55, roughness: 0.35 });
+        const seatMat = new THREE.MeshStandardMaterial({ color: 0x2e3340, roughness: 0.65 });
+        const accentMat = new THREE.MeshStandardMaterial({ color: accentColor, roughness: 0.5, emissive: accentColor, emissiveIntensity: 0.08 });
+
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.04, 16), frameMat);
+        base.position.y = 0.02;
+        chair.add(base);
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.22, 8), frameMat);
+        pole.position.y = 0.14;
+        chair.add(pole);
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.07, 0.44), seatMat);
+        seat.position.y = 0.28;
+        chair.add(seat);
+        const back = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.38, 0.06), accentMat);
+        back.position.set(0, 0.52, -0.18);
+        back.name = 'chairBack';
+        chair.add(back);
+        return chair;
     }
 
     function createLabelSprite(emoji) {
@@ -179,26 +237,64 @@
         const body = createBodyMesh(color);
         group.add(body);
 
+        const chair = createOfficeChair(color);
+        chair.position.set(0, 0, -0.08);
+        group.add(chair);
+
         const desk = new THREE.Mesh(
-            new THREE.BoxGeometry(0.9, 0.05, 0.55),
-            new THREE.MeshStandardMaterial({ color: 0x4a5060 })
+            new THREE.BoxGeometry(1.05, 0.05, 0.62),
+            new THREE.MeshStandardMaterial({ color: 0x3d4455, roughness: 0.35, metalness: 0.15 })
         );
-        desk.position.set(0, 0.42, 0.35);
+        desk.position.set(0, 0.4, 0.38);
+        desk.castShadow = true;
+        desk.receiveShadow = true;
         desk.visible = false;
         desk.name = 'desk';
         group.add(desk);
 
-        const screen = new THREE.Mesh(
-            new THREE.BoxGeometry(0.5, 0.32, 0.03),
-            new THREE.MeshStandardMaterial({ color: 0x1a2030, emissive: 0x3366cc, emissiveIntensity: 0.5 })
+        const deskLegMat = new THREE.MeshStandardMaterial({ color: 0x2a2e38, metalness: 0.4, roughness: 0.5 });
+        [[-0.42, 0.2, 0.12], [0.42, 0.2, 0.12], [-0.42, 0.2, 0.58], [0.42, 0.2, 0.58]].forEach(([x, y, z]) => {
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.38, 6), deskLegMat);
+            leg.position.set(x, y, z);
+            leg.visible = false;
+            leg.name = 'deskPart';
+            group.add(leg);
+        });
+
+        const screenFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(0.52, 0.34, 0.025),
+            new THREE.MeshStandardMaterial({ color: 0x111520, roughness: 0.4, metalness: 0.3 })
         );
-        screen.position.set(0, 0.68, 0.58);
+        screenFrame.position.set(0, 0.66, 0.62);
+        screenFrame.visible = false;
+        screenFrame.name = 'screenFrame';
+        group.add(screenFrame);
+
+        const screen = new THREE.Mesh(
+            new THREE.BoxGeometry(0.46, 0.28, 0.02),
+            new THREE.MeshStandardMaterial({
+                color: 0x0a1020,
+                emissive: 0x4488ff,
+                emissiveIntensity: 0.55,
+                roughness: 0.2,
+            })
+        );
+        screen.position.set(0, 0.66, 0.635);
         screen.visible = false;
         screen.name = 'screen';
         group.add(screen);
 
+        const keyboard = new THREE.Mesh(
+            new THREE.BoxGeometry(0.28, 0.015, 0.1),
+            new THREE.MeshStandardMaterial({ color: 0x222830, emissive: 0x223344, emissiveIntensity: 0.15 })
+        );
+        keyboard.position.set(0, 0.435, 0.48);
+        keyboard.visible = false;
+        keyboard.name = 'keyboard';
+        group.add(keyboard);
+
         const glow = new THREE.Mesh(
-            new THREE.RingGeometry(0.35, 0.42, 24),
+            new THREE.RingGeometry(0.38, 0.48, 28),
             new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0, side: THREE.DoubleSide })
         );
         glow.rotation.x = -Math.PI / 2;
@@ -207,25 +303,48 @@
         glow.name = 'glow';
         group.add(glow);
 
+        const book = new THREE.Mesh(
+            new THREE.BoxGeometry(0.18, 0.22, 0.04),
+            new THREE.MeshStandardMaterial({ color: 0xe8b84a, roughness: 0.6 })
+        );
+        book.position.set(0.15, 0.55, 0.2);
+        book.rotation.y = -0.4;
+        book.visible = false;
+        book.name = 'book';
+        group.add(book);
+
         group.add(createLabelSprite(emoji));
         group.userData.baseY = 0;
         group.userData.phase = Math.random() * Math.PI * 2;
+        group.userData.idlePhase = Math.random() * 100;
         group.userData.status = 'idle';
+        group.userData.faceAngle = 0;
+        group.userData.targetX = 0;
+        group.userData.targetZ = 0;
         return group;
     }
 
+    function addProp(mesh, cast, receive) {
+        if (cast) mesh.castShadow = true;
+        if (receive) mesh.receiveShadow = true;
+        scene.add(mesh);
+        return mesh;
+    }
+
     function buildRoom() {
-        const floor = new THREE.Mesh(
-            new THREE.PlaneGeometry(36, 28),
-            new THREE.MeshStandardMaterial({ color: 0x454b58, roughness: 0.82, metalness: 0.05 })
-        );
+        const floorMat = new THREE.MeshStandardMaterial({
+            color: 0x2a2e38,
+            roughness: 0.55,
+            metalness: 0.08,
+        });
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(36, 28), floorMat);
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
         scene.add(floor);
 
-        const grid = new THREE.GridHelper(36, 18, 0x6a7390, 0x323842);
-        grid.position.y = 0.02;
-        scene.add(grid);
+        addWoodPlanks(-2, -2, 16, 10, 0x3d3548);
+        addWoodPlanks(11, 7.5, 8, 8, 0x2a3832);
+        addWoodPlanks(-10, 9, 6, 10, 0x38342e);
 
         addZoneFloor(-2, -2, 16, 10, 0x3a3548, 0x9d4edd);
         addZoneFloor(11, 7.5, 8, 8, 0x2d4038, 0x5ecf8a);
@@ -235,11 +354,129 @@
         addZoneSign('ОТДЫХ', 11, 3.2, 0x5ecf8a);
         addZoneSign('БИБЛИОТЕКА', -10, 3.5, 0xe8b84a);
 
+        buildCeiling();
+        buildWindows();
         buildDesks();
         buildRestRoom();
         buildLibrary();
+        buildOfficeDecor();
         buildWalls();
         addAmbientParticles();
+    }
+
+    function addWoodPlanks(cx, cz, w, d, baseColor) {
+        const plankMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.65, metalness: 0.05 });
+        const rows = Math.floor(d / 0.8);
+        for (let i = 0; i < rows; i++) {
+            const plank = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.96, 0.35), plankMat.clone());
+            plank.material.color.offsetHSL(0, 0, (i % 2) * 0.03 - 0.015);
+            plank.rotation.x = -Math.PI / 2;
+            plank.position.set(cx, 0.015 + (i % 2) * 0.002, cz - d / 2 + 0.4 + i * 0.8);
+            scene.add(plank);
+        }
+    }
+
+    function buildCeiling() {
+        const ceilMat = new THREE.MeshStandardMaterial({ color: 0x1e222c, roughness: 0.9 });
+        const ceil = new THREE.Mesh(new THREE.PlaneGeometry(35, 27), ceilMat);
+        ceil.rotation.x = Math.PI / 2;
+        ceil.position.y = 3.2;
+        scene.add(ceil);
+
+        [[-2, -2], [11, 7], [-10, 9], [0, 0]].forEach(([x, z], i) => {
+            const lightPanel = new THREE.Mesh(
+                new THREE.BoxGeometry(1.8, 0.04, 0.9),
+                new THREE.MeshStandardMaterial({
+                    color: 0xffffff,
+                    emissive: i === 0 ? 0xc77dff : 0xfff4e0,
+                    emissiveIntensity: 0.85,
+                    roughness: 0.2,
+                })
+            );
+            lightPanel.position.set(x, 3.15, z);
+            scene.add(lightPanel);
+        });
+    }
+
+    function buildWindows() {
+        const glassMat = new THREE.MeshStandardMaterial({
+            color: 0x88bbff,
+            transparent: true,
+            opacity: 0.35,
+            roughness: 0.05,
+            metalness: 0.1,
+            emissive: 0x224466,
+            emissiveIntensity: 0.25,
+            side: THREE.DoubleSide,
+        });
+        for (let i = 0; i < 5; i++) {
+            const pane = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 2.2), glassMat);
+            pane.position.set(-7 + i * 3.5, 1.6, -13.92);
+            scene.add(pane);
+            const frame = new THREE.Mesh(
+                new THREE.BoxGeometry(2.9, 2.3, 0.08),
+                new THREE.MeshStandardMaterial({ color: 0x1a1e28, roughness: 0.4, metalness: 0.5 })
+            );
+            frame.position.set(-7 + i * 3.5, 1.6, -13.88);
+            scene.add(frame);
+        }
+        const cityGlow = new THREE.Mesh(
+            new THREE.PlaneGeometry(34, 8),
+            new THREE.MeshBasicMaterial({
+                color: 0x4488cc,
+                transparent: true,
+                opacity: 0.12,
+                blending: THREE.AdditiveBlending,
+            })
+        );
+        cityGlow.position.set(0, 2, -13.5);
+        scene.add(cityGlow);
+    }
+
+    function buildOfficeDecor() {
+        const plantPot = new THREE.MeshStandardMaterial({ color: 0x5a4030, roughness: 0.8 });
+        const plantLeaf = new THREE.MeshStandardMaterial({ color: 0x3d8a55, roughness: 0.7 });
+        [[-8, -6], [6, -5], [14, 2], [-14, 4]].forEach(([x, z]) => {
+            const pot = addProp(new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.28, 10), plantPot), false, true);
+            pot.position.set(x, 0.14, z);
+            for (let i = 0; i < 5; i++) {
+                const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.14 + Math.random() * 0.08, 8, 8), plantLeaf);
+                leaf.position.set(x + (Math.random() - 0.5) * 0.25, 0.35 + i * 0.12, z + (Math.random() - 0.5) * 0.25);
+                leaf.scale.y = 1.4;
+                scene.add(leaf);
+            }
+        });
+
+        const coffeeBase = addProp(new THREE.Mesh(
+            new THREE.BoxGeometry(0.7, 0.85, 0.55),
+            new THREE.MeshStandardMaterial({ color: 0x3a4048, metalness: 0.4, roughness: 0.45 })
+        ), true, true);
+        coffeeBase.position.set(15, 0.42, 6);
+
+        const board = addProp(new THREE.Mesh(
+            new THREE.BoxGeometry(3.5, 1.4, 0.06),
+            new THREE.MeshStandardMaterial({ color: 0xf5f5f0, roughness: 0.85 })
+        ), false, true);
+        board.position.set(-2, 1.5, -6.8);
+        const boardFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(3.7, 1.55, 0.04),
+            new THREE.MeshStandardMaterial({ color: 0x2a2e38, metalness: 0.3 })
+        );
+        boardFrame.position.set(-2, 1.5, -6.75);
+        scene.add(boardFrame);
+
+        const table = addProp(new THREE.Mesh(
+            new THREE.CylinderGeometry(0.9, 0.9, 0.06, 24),
+            new THREE.MeshStandardMaterial({ color: 0x4a5060, roughness: 0.35, metalness: 0.2 })
+        ), true, true);
+        table.position.set(0, 0.75, 6);
+        for (let i = 0; i < 4; i++) {
+            const chairAngle = (i / 4) * Math.PI * 2;
+            const c = createOfficeChair(0x6c63ff);
+            c.position.set(0 + Math.sin(chairAngle) * 1.3, 0, 6 + Math.cos(chairAngle) * 1.3);
+            c.rotation.y = chairAngle;
+            scene.add(c);
+        }
     }
 
     function addAmbientParticles() {
@@ -307,46 +544,115 @@
     }
 
     function buildDesks() {
+        const topMat = new THREE.MeshStandardMaterial({ color: 0x454c5c, roughness: 0.32, metalness: 0.18 });
+        const legMat = new THREE.MeshStandardMaterial({ color: 0x2a2e38, metalness: 0.45, roughness: 0.45 });
         Object.values(STUDIO_SLOTS).forEach(({ x, z }) => {
-            const desk = new THREE.Mesh(
-                new THREE.BoxGeometry(1.2, 0.08, 0.7),
-                new THREE.MeshStandardMaterial({ color: 0x5a6070 })
+            const desk = addProp(new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.06, 0.72), topMat), true, true);
+            desk.position.set(x, 0.72, z + 0.42);
+            [[-0.52, 0.36, 0.1], [0.52, 0.36, 0.1], [-0.52, 0.36, 0.62], [0.52, 0.36, 0.62]].forEach(([lx, ly, lz]) => {
+                const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.72, 6), legMat);
+                leg.position.set(x + lx, ly, z + lz);
+                leg.castShadow = true;
+                scene.add(leg);
+            });
+            const monitor = new THREE.Mesh(
+                new THREE.BoxGeometry(0.55, 0.36, 0.03),
+                new THREE.MeshStandardMaterial({ color: 0x0c1018, emissive: 0x3366aa, emissiveIntensity: 0.35 })
             );
-            desk.position.set(x, 0.42, z + 0.4);
-            scene.add(desk);
+            monitor.position.set(x, 1.02, z + 0.68);
+            scene.add(monitor);
+            const stand = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.06), legMat);
+            stand.position.set(x, 0.88, z + 0.65);
+            scene.add(stand);
         });
     }
 
     function buildRestRoom() {
+        const sofaMat = new THREE.MeshStandardMaterial({ color: 0x4a8068, roughness: 0.75 });
+        const cushionMat = new THREE.MeshStandardMaterial({ color: 0x5ecf8a, roughness: 0.8, emissive: 0x2a5038, emissiveIntensity: 0.1 });
         [[9, 5], [11, 5], [13, 5]].forEach(([x, z]) => {
-            const sofa = new THREE.Mesh(
-                new THREE.BoxGeometry(1.8, 0.45, 0.8),
-                new THREE.MeshStandardMaterial({ color: 0x5a9a6a })
-            );
-            sofa.position.set(x, 0.35, z);
-            scene.add(sofa);
+            const base = addProp(new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.35, 0.85), sofaMat), true, true);
+            base.position.set(x, 0.28, z);
+            const back = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.55, 0.18), sofaMat);
+            back.position.set(x, 0.55, z - 0.38);
+            back.castShadow = true;
+            scene.add(back);
+            const cushion = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.12, 0.5), cushionMat);
+            cushion.position.set(x, 0.48, z + 0.05);
+            scene.add(cushion);
         });
+        const tv = new THREE.Mesh(
+            new THREE.BoxGeometry(2.2, 1.2, 0.06),
+            new THREE.MeshStandardMaterial({ color: 0x111520, emissive: 0x4488ff, emissiveIntensity: 0.4 })
+        );
+        tv.position.set(11, 1.4, 3.5);
+        scene.add(tv);
+        const tvStand = new THREE.Mesh(
+            new THREE.BoxGeometry(2.4, 0.5, 0.4),
+            new THREE.MeshStandardMaterial({ color: 0x2a3038, roughness: 0.5 })
+        );
+        tvStand.position.set(11, 0.25, 3.5);
+        scene.add(tvStand);
     }
 
     function buildLibrary() {
-        for (let i = 0; i < 3; i++) {
-            const shelf = new THREE.Mesh(
-                new THREE.BoxGeometry(0.2, 1.3, 2),
-                new THREE.MeshStandardMaterial({ color: 0x6a5848 })
-            );
-            shelf.position.set(-11.5 + i * 1.1, 0.65, 8 + (i % 2) * 2.5);
-            scene.add(shelf);
+        const shelfMat = new THREE.MeshStandardMaterial({ color: 0x5a4838, roughness: 0.75 });
+        const bookColors = [0xe8b84a, 0x6c63ff, 0x5ecf8a, 0xf07178, 0x56cfe1, 0xc792ea];
+        for (let s = 0; s < 4; s++) {
+            const sx = -11.8 + s * 1.05;
+            for (let row = 0; row < 3; row++) {
+                const shelf = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.04, 2.2), shelfMat);
+                shelf.position.set(sx, 0.45 + row * 0.55, 8.5);
+                scene.add(shelf);
+                for (let b = 0; b < 6; b++) {
+                    const book = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.08, 0.28 + Math.random() * 0.12, 0.18),
+                        new THREE.MeshStandardMaterial({ color: bookColors[(s + b + row) % bookColors.length], roughness: 0.6 })
+                    );
+                    book.position.set(sx - 0.3 + b * 0.12, 0.58 + row * 0.55, 8.2 + (b % 3) * 0.35);
+                    book.rotation.y = (Math.random() - 0.5) * 0.15;
+                    scene.add(book);
+                }
+            }
         }
+        const table = new THREE.Mesh(
+            new THREE.BoxGeometry(1.6, 0.06, 0.9),
+            new THREE.MeshStandardMaterial({ color: 0x4a4035, roughness: 0.55 })
+        );
+        table.position.set(-8, 0.72, 12);
+        table.castShadow = true;
+        scene.add(table);
+        const lamp = new THREE.PointLight(0xffe8b0, 0.5, 6);
+        lamp.position.set(-8, 1.8, 12);
+        scene.add(lamp);
     }
 
     function buildWalls() {
-        const wallMat = new THREE.MeshStandardMaterial({ color: 0x2a2e38, roughness: 0.95 });
-        [[0, 1.5, -14, 36, 3, 0.15], [0, 1.5, 14, 36, 3, 0.15],
-         [-18, 1.5, 0, 0.15, 3, 28], [18, 1.5, 0, 0.15, 3, 28]].forEach(([x, y, z, w, h, d]) => {
-            const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
-            wall.position.set(x, y, z);
-            scene.add(wall);
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0x232830, roughness: 0.92 });
+        const accentMat = new THREE.MeshStandardMaterial({ color: 0x2e3340, roughness: 0.85 });
+        [[0, 1.6, -14, 36, 3.2, 0.18], [0, 1.6, 14, 36, 3.2, 0.18],
+         [-18, 1.6, 0, 0.18, 3.2, 28], [18, 1.6, 0, 0.18, 3.2, 28]].forEach(([x, y, z, w, h, d]) => {
+            addProp(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat), false, true).position.set(x, y, z);
         });
+        [[-2, 1.6, -13.85, 16, 3.2, 0.06], [11, 1.6, 7.85, 8, 3.2, 0.06]].forEach(([x, y, z, w, h, d], i) => {
+            const glass = new THREE.Mesh(
+                new THREE.BoxGeometry(w, h * 0.7, d),
+                new THREE.MeshStandardMaterial({
+                    color: i === 0 ? 0x9d4edd : 0x5ecf8a,
+                    transparent: true,
+                    opacity: 0.08,
+                    roughness: 0.1,
+                    side: THREE.DoubleSide,
+                })
+            );
+            glass.position.set(x, y, z);
+            scene.add(glass);
+        });
+        const baseboardMat = new THREE.MeshStandardMaterial({ color: 0x1a1e26 });
+        [[0, 0.08, -13.9, 35, 0.12, 0.1], [0, 0.08, 13.9, 35, 0.12, 0.1]].forEach(([x, y, z, w, h, d]) => {
+            addProp(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), baseboardMat), false, true).position.set(x, y, z);
+        });
+        addProp(new THREE.Mesh(new THREE.BoxGeometry(36, 0.15, 28), accentMat), false, true).position.set(0, 0.075, 0);
     }
 
     function getSlot(agent, location) {
