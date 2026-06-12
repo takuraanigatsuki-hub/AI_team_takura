@@ -1144,6 +1144,9 @@
         if (window.FeaturePack && data.stats) FeaturePack.onTaskStats(data.stats);
         updateTaskBadges();
         renderTasks();
+        if (window.KanbanUI && document.getElementById('kanbanView') && !document.getElementById('kanbanView').classList.contains('hidden')) {
+            KanbanUI.refresh();
+        }
     }
 
     async function loadTasks() {

@@ -286,6 +286,8 @@ body.sidebar-collapsed .app-content-wrap { margin-left: var(--sidebar-collapsed-
 }
 @keyframes dashSpin { to { transform: rotate(360deg); } }
 
+#workspaceSwitcher { display: inline-flex !important; align-items: center; gap: 4px; flex-wrap: wrap; max-width: 160px; }
+
 #awaitingChip:not(.hidden) {
     animation: awaitingPulse 2s ease-in-out infinite;
     border-color: rgba(255, 165, 2, 0.5);
