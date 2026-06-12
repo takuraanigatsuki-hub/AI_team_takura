@@ -31,58 +31,72 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/main.css?v=15">
 </head>
 <body>
 
 <header class="header">
-    <div class="logo">
-        <a href="/" class="logo-link" title="Главный сайт">
-        <div class="logo-mark">🤖</div>
-        <div class="logo-text">
-            <h1>AI Team Room</h1>
-            <p>3D студия · автономная команда</p>
-        </div>
+    <div class="header-row header-row-main">
+        <a href="/" class="logo logo-link" title="Главный сайт">
+            <div class="logo-mark">🤖</div>
+            <div class="logo-text">
+                <h1>AI Team Room</h1>
+                <p>3D студия · команда</p>
+            </div>
         </a>
+        <div class="header-status">
+            <div class="conn-pill" title="WebSocket">
+                <div class="conn-dot" id="connDot"></div>
+                <span id="connText">Подключение</span>
+            </div>
+            <span class="status-chip" id="activeAgentsPill" title="Агенты в работе">—</span>
+            <span class="status-chip" id="presencePill" title="В комнате">👤 …</span>
+        </div>
+        <div class="header-actions">
+            <details class="header-dropdown">
+                <summary class="hdr-btn">🛠 Инструменты</summary>
+                <div class="dropdown-menu">
+                    <button type="button" class="dropdown-item" onclick="WowFeatures.showStandup()">📊 Standup</button>
+                    <button type="button" class="dropdown-item" onclick="PowerPack.showMemory()">🧠 Project memory</button>
+                    <button type="button" class="dropdown-item" onclick="PowerPack.runPipeline()">⚡ Pipeline</button>
+                    <button type="button" class="dropdown-item" onclick="PowerPack.downloadBackup()">📦 Backup</button>
+                    <button type="button" class="dropdown-item" onclick="PowerPack.createViewLink()">🔗 View-link</button>
+                    <button type="button" class="dropdown-item" onclick="WowFeatures.deployNow()">🚀 Deploy</button>
+                </div>
+            </details>
+            <details class="header-dropdown">
+                <summary class="hdr-btn">🎙 Голос</summary>
+                <div class="dropdown-menu">
+                    <button type="button" class="dropdown-item" onclick="VoiceRoom.readStandup()">🔊 Standup TTS</button>
+                    <button type="button" class="dropdown-item" onclick="PowerPack.voiceStandupRound()">🎙️ Voice round</button>
+                    <button type="button" class="dropdown-item" onclick="VoiceRoom.startListening()">🎤 Голосовая задача</button>
+                </div>
+            </details>
+            <button type="button" class="hdr-btn hdr-accent-yellow" onclick="Integrations.toggleCursorPanel()" title="Cursor SDK">
+                ⚡ Cursor <span class="integration-badge" id="cursorBadge">…</span>
+            </button>
+            <button type="button" class="hdr-btn hdr-accent-purple" onclick="ReactPreview.toggle()" title="React Preview">🎨 Preview</button>
+            <button type="button" class="hdr-btn" onclick="showSettings()" title="Настройки">⚙️</button>
+            <div class="user-menu" id="userMenu">
+                <a href="/" class="user-link">На сайт</a>
+                <a href="/?auth=login" class="user-link">Вход</a>
+            </div>
+            <button type="button" class="hdr-btn hdr-icon" id="themeToggle" onclick="toggleTheme()" title="Тема">☀️</button>
+        </div>
     </div>
-    <nav class="view-tabs">
-        <button type="button" class="view-tab active" data-view="studio" onclick="switchView('studio')">3D Студия</button>
-        <button type="button" class="view-tab" data-view="chat" onclick="switchView('chat')">Рабочий чат</button>
-        <button type="button" class="view-tab" data-view="learning" onclick="switchView('learning')">Обучение</button>
-        <button type="button" class="view-tab" data-view="design" onclick="switchView('design')">Design</button>
-        <button type="button" class="view-tab" data-view="tasks" onclick="switchView('tasks')">Задачи</button>
-        <button type="button" class="view-tab" data-view="projects" onclick="switchView('projects')">Проекты</button>
-        <button type="button" class="view-tab" data-view="kanban" onclick="switchView('kanban')">Kanban</button>
-        <button type="button" class="view-tab" data-view="sprint" onclick="switchView('sprint')">Sprint</button>
-        <button type="button" class="view-tab" data-view="timeline" onclick="switchView('timeline')">Timeline</button>
-        <button type="button" class="view-tab" data-view="dashboard" onclick="switchView('dashboard')">Dashboard</button>
-    </nav>
-    <div class="header-actions">
-        <div class="conn-pill">
-            <div class="conn-dot" id="connDot"></div>
-            <span id="connText">Подключение</span>
-        </div>
-        <span class="active-pill" id="activeAgentsPill" title="Агенты в работе">—</span>
-        <span class="presence-pill" id="presencePill" title="В комнате">👤 …</span>
-        <button type="button" class="text-btn" onclick="WowFeatures.showStandup()" title="Standup">📊 Standup</button>
-        <button type="button" class="text-btn" onclick="VoiceRoom.readStandup()" title="Standup TTS">🔊 Voice</button>
-        <button type="button" class="text-btn" onclick="PowerPack.voiceStandupRound()" title="Voice standup round">🎙️ Round</button>
-        <button type="button" class="text-btn" onclick="VoiceRoom.startListening()" title="Голосовая задача">🎤</button>
-        <button type="button" class="text-btn" onclick="PowerPack.showMemory()" title="Project memory">🧠</button>
-        <button type="button" class="text-btn" onclick="PowerPack.runPipeline()" title="Figma → React → Deploy">⚡ Pipeline</button>
-        <button type="button" class="text-btn" onclick="PowerPack.downloadBackup()" title="Backup ZIP">📦</button>
-        <button type="button" class="text-btn" onclick="PowerPack.createViewLink()" title="View-only ссылка">🔗</button>
-        <button type="button" class="text-btn" onclick="WowFeatures.deployNow()" title="Deploy ZIP">🚀 Deploy</button>
-        <button type="button" class="cursor-toggle-btn" onclick="Integrations.toggleCursorPanel()" title="Cursor SDK">
-            ⚡ Cursor <span class="integration-badge" id="cursorBadge">…</span>
-        </button>
-        <button type="button" class="preview-toggle-btn" onclick="ReactPreview.toggle()" title="React Preview Сони">🎨 Preview</button>
-        <button type="button" class="text-btn" onclick="showSettings()">⚙️ Настройки</button>
-        <div class="user-menu" id="userMenu">
-            <a href="/" class="user-link">На сайт</a>
-            <a href="/?auth=login" class="user-link">Вход</a>
-        </div>
-        <button type="button" class="icon-btn" id="themeToggle" onclick="toggleTheme()" title="Сменить тему">☀️</button>
+    <div class="header-row header-row-nav">
+        <nav class="view-tabs" aria-label="Разделы">
+            <button type="button" class="view-tab active" data-view="studio" onclick="switchView('studio')">🎮 3D</button>
+            <button type="button" class="view-tab" data-view="chat" onclick="switchView('chat')">💬 Чат</button>
+            <button type="button" class="view-tab" data-view="learning" onclick="switchView('learning')">📚 Обучение</button>
+            <button type="button" class="view-tab" data-view="design" onclick="switchView('design')">🎨 Design</button>
+            <button type="button" class="view-tab" data-view="tasks" onclick="switchView('tasks')">📋 Задачи</button>
+            <button type="button" class="view-tab" data-view="projects" onclick="switchView('projects')">📦 Проекты</button>
+            <button type="button" class="view-tab" data-view="kanban" onclick="switchView('kanban')">📌 Kanban</button>
+            <button type="button" class="view-tab" data-view="sprint" onclick="switchView('sprint')">🏃 Sprint</button>
+            <button type="button" class="view-tab" data-view="timeline" onclick="switchView('timeline')">⏱ Timeline</button>
+            <button type="button" class="view-tab" data-view="dashboard" onclick="switchView('dashboard')">📊 Dashboard</button>
+        </nav>
     </div>
 </header>
 
@@ -290,7 +304,8 @@
                 <button type="button" class="clear-btn" onclick="clearMessages()">Очистить</button>
                 <input type="search" id="chatSearch" class="chat-search" placeholder="Поиск…" oninput="filterChatMessages(this.value)">
             </div>
-            <div class="quick-templates">
+            <div class="quick-templates" role="toolbar" aria-label="Шаблоны задач">
+                <div class="quick-templates-scroll">
                 <button type="button" class="tpl-btn" onclick="applyTemplate('Сделай landing page для стартапа')">🌐 Landing</button>
                 <button type="button" class="tpl-btn" onclick="applyTemplate('Напиши REST API для задач')">⚙️ API</button>
                 <button type="button" class="tpl-btn" onclick="applyTemplate('Создай форму регистрации в React')">🎨 UI</button>
@@ -301,6 +316,7 @@
                 <button type="button" class="tpl-btn" onclick="PowerPack.applyTemplate('pitch')">📽️ Pitch</button>
                 <button type="button" class="tpl-btn" onclick="PowerPack.applyTemplate('3d-hero')">🧊 3D</button>
                 <button type="button" class="tpl-btn" onclick="PowerPack.applyTemplate('docker-ci')">🔧 CI</button>
+                </div>
             </div>
 
             <div class="messages" id="messages">
