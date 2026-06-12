@@ -2242,9 +2242,12 @@ async def set_project_memory(body: ProjectMemoryUpdate):
 
 
 @app.get("/api/sprint")
-async def get_sprint_api():
+async def get_sprint_api(request: Request):
     from room.sprint_store import get_sprint
-    return get_sprint()
+    user = _optional_user(request)
+    if not user:
+        return {"active": False, "guest": True, "backlog": [], "stats": {"total": 0, "done": 0, "todo": 0}}
+    return get_sprint(user.get("id", ""))
 
 
 class SprintStart(BaseModel):

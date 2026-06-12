@@ -358,3 +358,27 @@ body.sidebar-collapsed .sb-badge {
 .task-card-top { gap: 6px; }
 .task-card.in_progress { border-color: rgba(59, 130, 246, 0.35); }
 .task-card.completed { opacity: 0.92; }
+
+/* Sprint progress */
+.sprint-progress {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    margin: 10px 0 6px;
+    overflow: hidden;
+}
+.sprint-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #6c63ff, #22c55e);
+    border-radius: 3px;
+    transition: width .4s ease;
+}
+.sprint-item.done label { text-decoration: line-through; opacity: 0.65; }
+.sprint-item.priority-urgent { border-left: 3px solid #ef4444; }
+.sprint-item.priority-high { border-left: 3px solid #f97316; }
+
+/* Timeline rows */
+.tl-row { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.05); display: grid; grid-template-columns: 52px 100px 1fr; gap: 8px; font-size: 13px; }
+.tl-time { color: var(--text-muted, #888); font-variant-numeric: tabular-nums; }
+.tl-who { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-actions .btn-sm.active { background: rgba(108,99,255,.25); }

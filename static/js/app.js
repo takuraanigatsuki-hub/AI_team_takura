@@ -207,8 +207,37 @@
                     }
                 });
             });
+        } else {
+            const viewElId = {
+                chat: 'chatView', tasks: 'tasksView', dashboard: 'dashboardView',
+                kanban: 'kanbanView', sprint: 'sprintView', timeline: 'timelineView',
+                projects: 'projectsView', profile: 'profileView', admin: 'adminView',
+                investor: 'investorView', 'sonya-studio': 'sonyaStudioView',
+                'agent-learning': 'agentLearningSubnav',
+            }[view];
+            const viewEl = viewElId ? document.getElementById(viewElId) : null;
+            if (viewEl && !viewEl.classList.contains('hidden')) {
+                viewEl.classList.add('view-enter');
+            }
         }
     };
+
+    function updateChatWelcome() {
+        const welcome = document.querySelector('[data-welcome]');
+        if (!welcome) return;
+        const user = window.Auth?.getUser?.();
+        const h2 = welcome.querySelector('h2');
+        const p = welcome.querySelector('p');
+        if (!h2 || !p) return;
+        if (user) {
+            const name = user.name || user.email?.split('@')[0] || 'друг';
+            h2.textContent = `Привет, ${name}!`;
+            p.textContent = 'Опишите задачу — Виктор распределит её по команде. Ваши задачи видны только вам.';
+        } else {
+            h2.textContent = 'Рабочий чат';
+            p.textContent = 'Задачи, планы Виктора и результаты работы. Войдите, чтобы сохранять историю.';
+        }
+    }
 
     function hideStudioLoading() {
         document.getElementById('studioLoading')?.classList.add('hidden');
@@ -1605,7 +1634,12 @@
         if (window.StudioMinimap) StudioMinimap.init();
         if (window.SonyaStudio) SonyaStudio.init();
 
-        document.addEventListener('auth:updated', () => loadTasks());
+        updateChatWelcome();
+
+        document.addEventListener('auth:updated', () => {
+            loadTasks();
+            updateChatWelcome();
+        });
 
         const needsSetup = user && !user.setup_complete;
         if (needsSetup || setupParam === '1') {
