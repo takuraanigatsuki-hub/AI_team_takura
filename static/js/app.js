@@ -13,6 +13,7 @@
     let reconnectTimer = null;
     let studioInited = false;
     const privateChats = {};
+    let privateChatZIndex = 350;
     let taskHistory = [];
     let taskFilter = 'all';
     let taskStats = { total: 0, completed: 0, active: 0 };
@@ -219,8 +220,10 @@
         if (!agent) return;
 
         if (privateChats[agentId]) {
-            privateChats[agentId].el.classList.remove('minimized');
-            privateChats[agentId].input.focus();
+            const pc = privateChats[agentId];
+            pc.el.classList.remove('minimized');
+            pc.el.style.zIndex = String(++privateChatZIndex);
+            pc.input.focus();
             return;
         }
 
@@ -291,8 +294,16 @@
     function appendPrivateMessage(agentId, role, text, agent) {
         const pc = privateChats[agentId];
         if (!pc) return;
+        const normalized = String(text || '').trim();
+        if (normalized) {
+            const last = pc.messagesEl.querySelector('.pc-msg:last-child');
+            if (last && last.dataset.msgText === normalized && last.classList.contains(role)) {
+                return;
+            }
+        }
         const div = document.createElement('div');
         div.className = `pc-msg ${role}`;
+        if (normalized) div.dataset.msgText = normalized;
         div.innerHTML = role === 'user'
             ? escapeHtml(text)
             : `<strong>${agent?.emoji || ''} ${agent?.name || ''}</strong><br>${formatText(text)}`;
@@ -352,7 +363,7 @@
             el.style.right = 'auto';
             el.style.bottom = 'auto';
             el.style.margin = '0';
-            el.style.zIndex = '350';
+            el.style.zIndex = String(++privateChatZIndex);
             el.classList.add('private-chat-floating');
 
             document.addEventListener('mousemove', onMouseMove);
@@ -421,9 +432,15 @@
                 addSystemMessage(data.message);
                 break;
             case 'direct_agent_message':
-                if (privateChats[data.agent_id]) {
-                    appendPrivateMessage(data.agent_id, 'agent', data.message, agents[data.agent_id]);
-                }
+                (async () => {
+                    await openPrivateChat(data.agent_id);
+                    appendPrivateMessage(
+                        data.agent_id,
+                        'agent',
+                        data.message,
+                        agents[data.agent_id]
+                    );
+                })();
                 break;
             case 'react_preview':
                 if (window.ReactPreview) ReactPreview.onMessage(data);
@@ -583,10 +600,9 @@
         el.innerHTML = AGENT_ORDER.map((id) => {
             const a = agents[id];
             if (!a) return '';
-            const loc = a.location_label || a.location || 'студия';
             return `<button type="button" class="legend-item" onclick="openPrivateChat('${id}')">
-                ${a.emoji} ${a.name}
-                <small>${statusLabel(a.status)} · ${loc}</small>
+                <span class="legend-emoji">${a.emoji}</span>
+                <span class="legend-name">${a.name}</span>
             </button>`;
         }).join('');
     }
@@ -737,22 +753,15 @@
         list.innerHTML = AGENT_ORDER.map((id) => {
             const a = agents[id];
             if (!a) return '';
-            const topic = a.last_topics?.length ? a.last_topics[a.last_topics.length - 1] : null;
             return `
-                <div class="agent-card ${selectedAgent === id ? 'selected' : ''}" onclick="selectAgent('${id}')">
+                <div class="agent-card agent-card-compact ${selectedAgent === id ? 'selected' : ''}" onclick="selectAgent('${id}')">
                     <div class="agent-top">
                         <div class="agent-emoji">${a.emoji}</div>
                         <div class="agent-info">
                             <div class="agent-name">${a.name}</div>
-                            <div class="agent-role">${a.location_label || a.role}</div>
                         </div>
                         <div class="status-dot status-${a.status}"></div>
                     </div>
-                    <div class="agent-meta">
-                        <span>${a.learned_count || 0} тем</span>
-                        <span>${a.memory_count || 0} задач</span>
-                    </div>
-                    ${topic ? `<div class="last-topics">${escapeHtml(topic)}</div>` : ''}
                     <button type="button" class="agent-dm" onclick="event.stopPropagation();openPrivateChat('${id}')">Личный чат</button>
                     ${id === 'frontend' ? `<button type="button" class="agent-preview-btn" onclick="event.stopPropagation();openSonyaPreview()">⚛️ React Preview</button>` : ''}
                 </div>`;

@@ -731,6 +731,9 @@ a.dropdown-item {
 }
 
 .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     padding: 8px 10px;
     border-radius: 8px;
     background: rgba(20, 21, 25, 0.82);
@@ -743,6 +746,8 @@ a.dropdown-item {
     transition: background var(--transition);
     width: 100%;
 }
+.legend-emoji { font-size: 16px; line-height: 1; flex-shrink: 0; }
+.legend-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .legend-item small { display: block; color: var(--text-muted); font-size: 10px; margin-top: 2px; }
 .legend-item:hover {
     border-color: var(--accent);
@@ -1017,6 +1022,12 @@ a.dropdown-item {
 }
 .private-chat.minimized { height: 40px; }
 .private-chat.minimized .pc-messages, .private-chat.minimized .pc-input-row { display: none; }
+.private-chat.private-chat-floating {
+    position: fixed;
+    margin: 0;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+.agent-card-compact .agent-dm { margin-top: 8px; }
 
 .pc-header {
     padding: 8px 12px; background: var(--surface-2); border-bottom: 1px solid var(--border);
