@@ -3,7 +3,7 @@
     const STEPS = ['welcome', 'goal', 'prefs', 'done'];
     let step = 0;
     let overlay = null;
-    let formData = { name: '', goal: '', default_view: 'dashboard', theme: 'dark' };
+    let formData = { name: '', goal: '', default_view: 'tasks', theme: 'dark' };
 
     async function maybeStart(user) {
         if (!user || user.setup_complete) return false;
@@ -58,6 +58,7 @@
                 <p>Выберите стартовый экран и тему.</p>
                 <label class="sw-label">Стартовая вкладка</label>
                 <select id="swView" class="design-input">
+                    <option value="tasks" ${formData.default_view === 'tasks' ? 'selected' : ''}>📋 Inbox</option>
                     <option value="dashboard" ${formData.default_view === 'dashboard' ? 'selected' : ''}>📊 Dashboard</option>
                     <option value="studio" ${formData.default_view === 'studio' ? 'selected' : ''}>🎮 3D Студия</option>
                     <option value="chat" ${formData.default_view === 'chat' ? 'selected' : ''}>💬 Рабочий чат</option>

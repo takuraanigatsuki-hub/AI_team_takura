@@ -16,7 +16,16 @@
     --semantic-info: var(--accent);
 }
 
-/* ─── Header context strip ─── */
+.header-status-compact {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.header-row-main {
+    flex-wrap: wrap;
+    gap: 8px;
+}
 .header-context {
     flex: 1;
     min-width: 0;
