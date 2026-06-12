@@ -469,41 +469,33 @@ async def sonya_figma_studio_loop(room_manager, interval_min: int = 12, interval
             continue
 
         from integrations.figma_oauth import is_figma_connected
-        from config import config
-
-        if not is_figma_connected():
-            continue
+        from integrations.figma_rate_limit import is_in_cooldown, cooldown_remaining
 
         try:
             frontend.status = "learning"
             frontend.location = "library"
 
-            from integrations.figma_rate_limit import is_in_cooldown, cooldown_remaining
             if is_in_cooldown():
                 await frontend._broadcast(
-                    f"⏳ Figma API: пауза {cooldown_remaining()}с (rate limit). Учусь из веб-источников…",
+                    f"⏳ Figma API: пауза {cooldown_remaining()}с. Использую локальные UI-референсы…",
                     "learning",
                 )
-                await _study_figma_web(frontend)
-                await room_manager.send_agents_state()
-                continue
 
-            action = random.choices(["study", "study", "create"], weights=[0.45, 0.35, 0.20])[0]
-
+            action = random.choices(["study", "study", "create"], weights=[0.4, 0.35, 0.25])[0]
+            ok = False
             if action == "create":
-                await run_figma_create_session(frontend)
+                ok = await run_figma_create_session(frontend)
+                if ok:
+                    frontend.figma_creations = getattr(frontend, "figma_creations", 0) + 1
             else:
-                await run_figma_study_session(frontend)
+                ok = await run_figma_study_session(frontend)
+                if ok:
+                    frontend.figma_studies = getattr(frontend, "figma_studies", 0) + 1
 
             await room_manager.send_agents_state()
         except Exception as e:
-            if room_manager:
-                await room_manager.broadcast_learning({
-                    "type": "error",
-                    "agent_id": "frontend",
-                    "message": f"⚠️ Figma studio: {e}",
-                    "timestamp": datetime.now().isoformat(),
-                })
+            import logging
+            logging.getLogger(__name__).warning("Figma studio loop: %s", e)
         finally:
             if frontend.status == "learning":
                 frontend.status = "idle"
@@ -512,6 +504,7 @@ async def sonya_figma_studio_loop(room_manager, interval_min: int = 12, interval
 
 
 def get_studio_stats() -> dict:
+    ensure_seed_patterns()
     patterns = load_patterns()
     portfolio = load_portfolio()
     return {

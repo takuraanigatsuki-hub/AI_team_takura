@@ -1,5 +1,4 @@
 from datetime import datetime
-import random
 from agents.base_agent import BaseAgent
 from agents.react_preview import generate_react_preview, is_site_task
 from site_exporter import export_site_html
@@ -29,34 +28,7 @@ class FrontendDevAgent(BaseAgent):
     async def _learn(self):
         if not self.task_queue.empty():
             return
-
-        import config as cfg_module
-        from integrations.figma_oauth import is_figma_connected
-
-        if cfg_module.config.get("figma_study_enabled", True) and is_figma_connected():
-            if random.random() < 0.55:
-                from integrations.figma_learning import run_figma_study_session, run_figma_create_session
-
-                self.status = "learning"
-                self.location = "library"
-                action = random.choices(["study", "create"], weights=[0.72, 0.28])[0]
-                try:
-                    if action == "create":
-                        ok = await run_figma_create_session(self)
-                        if ok:
-                            self.figma_creations += 1
-                    else:
-                        ok = await run_figma_study_session(self)
-                        if ok:
-                            self.figma_studies += 1
-                finally:
-                    self.location = "studio"
-                    self.status = "idle"
-                    if self.room_manager:
-                        await self.room_manager.send_agents_state()
-                await self._interruptible_sleep(self._learning_delay())
-                return
-
+        # Figma Studio — отдельный фоновый цикл sonya_figma_studio_loop (без дублирования API)
         await super()._learn()
 
     async def apply_figma_design(self, figma_result: dict):
@@ -209,13 +181,29 @@ class FrontendDevAgent(BaseAgent):
         try:
             figma_url = self._extract_figma_url(task_text)
             if figma_url:
+                from integrations.figma_client import is_figma_api_url
+                from integrations.figma_rate_limit import FigmaRateLimitError
+
                 client = await get_client_async()
-                if client.configured:
+                if client.configured and is_figma_api_url(figma_url):
                     try:
                         figma_data = await client.import_design(figma_url)
                         await self.apply_figma_design(figma_data)
+                    except FigmaRateLimitError:
+                        await self._broadcast_work(
+                            "⏳ Figma API временно недоступен — верстаю UI по описанию задачи.",
+                            "learning",
+                        )
                     except Exception as e:
-                        await self._broadcast_work(f"⚠️ Figma: {e}", "error")
+                        await self._broadcast_work(
+                            f"ℹ️ Figma: {e}. Продолжаю по тексту задачи.",
+                            "learning",
+                        )
+                elif figma_url:
+                    await self._broadcast_work(
+                        "ℹ️ Ссылка Figma Sites/Proto не поддерживается API — верстаю по описанию.",
+                        "learning",
+                    )
 
             await self._emit_preview(task_text)
 

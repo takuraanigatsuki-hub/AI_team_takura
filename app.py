@@ -98,7 +98,8 @@ async def lifespan(app: FastAPI):
     figma_studio_task = None
     git_sync_task = asyncio.create_task(auto_sync_loop(room, interval=git_interval))
     if cfg_module.config.get("figma_study_enabled", True):
-        from integrations.figma_learning import sonya_figma_studio_loop
+        from integrations.figma_learning import sonya_figma_studio_loop, ensure_seed_patterns
+        ensure_seed_patterns()
         fmin = cfg_module.config.get("figma_study_interval_min", 12)
         fmax = cfg_module.config.get("figma_study_interval_max", 25)
         figma_studio_task = asyncio.create_task(sonya_figma_studio_loop(room, fmin, fmax))
@@ -803,12 +804,9 @@ async def figma_studio_stats():
 @app.post("/api/figma/studio/trigger")
 async def figma_studio_trigger(action: str = "study"):
     """Ручной запуск обучения/создания Сони в Figma."""
-    from integrations.figma_learning import run_figma_study_session, run_figma_create_session
-    from integrations.figma_oauth import is_figma_connected
+    from integrations.figma_learning import run_figma_study_session, run_figma_create_session, ensure_seed_patterns
 
-    if not is_figma_connected():
-        raise HTTPException(status_code=400, detail="Figma не подключена")
-
+    ensure_seed_patterns()
     frontend = room.agents.get("frontend")
     if not frontend:
         raise HTTPException(status_code=404, detail="Соня не найдена")
@@ -817,6 +815,11 @@ async def figma_studio_trigger(action: str = "study"):
         ok = await run_figma_create_session(frontend)
     else:
         ok = await run_figma_study_session(frontend)
+    if ok:
+        if action == "create":
+            frontend.figma_creations = getattr(frontend, "figma_creations", 0) + 1
+        else:
+            frontend.figma_studies = getattr(frontend, "figma_studies", 0) + 1
     await room.send_agents_state()
     return {"ok": ok, "action": action}
 

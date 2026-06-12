@@ -269,7 +269,7 @@
                     <div class="studio-stat"><span>${data.portfolio_count || 0}</span><small>проектов</small></div>
                     <div class="studio-stat"><span>${data.patterns_colors || 0}</span><small>цветов</small></div>
                 </div>
-                <p class="muted studio-hint">Соня самостоятельно изучает Figma-макеты и создаёт свои UI в React Preview.</p>
+                <p class="muted studio-hint">Соня изучает UI-референсы и создаёт React Preview. Для импорта используйте ссылки <code>figma.com/design/</code> или <code>file/</code> (не Sites).</p>
                 <div class="studio-actions">
                     <button type="button" class="btn-secondary btn-sm" onclick="Integrations.triggerSonyaStudy()">📚 Изучить макет</button>
                     <button type="button" class="btn-primary btn-sm" onclick="Integrations.triggerSonyaCreate()">✨ Новый проект</button>
