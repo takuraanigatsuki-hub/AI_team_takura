@@ -301,12 +301,6 @@ class TaskHistory:
             if self._normalize_task_text(t.get("task", "")) == norm:
                 return t
         return None
-        for t in reversed(self.tasks):
-            if t.get("status") not in active:
-                continue
-            if self._normalize_task_text(t.get("task", "")) == norm:
-                return t
-        return None
 
     def cleanup_stale(self, max_minutes: int = 30):
         """Помечает зависшие in_progress и submitted задачи как cancelled."""

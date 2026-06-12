@@ -80,11 +80,16 @@ class RoomManager:
             "joined_at": datetime.now().isoformat(),
         }
 
+        meta = self.connection_meta[websocket]
+        viewer = {"user_id": meta.get("user_id", ""), "role": meta.get("role", "guest")}
+
         if self.work_history:
+            from room.message_filter import filter_messages_for_viewer
+            work_msgs = filter_messages_for_viewer(self.work_history[-100:], viewer)
             await websocket.send_text(json.dumps({
                 "type": "history",
                 "channel": "work",
-                "messages": self.work_history[-100:]
+                "messages": work_msgs
             }, ensure_ascii=False))
 
         if self.learning_history:
@@ -99,12 +104,8 @@ class RoomManager:
             "agents": [agent.get_state() for agent in self.agents.values()]
         }, ensure_ascii=False))
 
-        await websocket.send_text(json.dumps({
-            "type": "task_history",
-            "stats": self.task_history.stats(),
-            "tasks": self.task_history.get_all()[:80],
-            "timestamp": datetime.now().isoformat()
-        }, ensure_ascii=False))
+        await websocket.send_text(json.dumps(
+            self._task_history_payload(viewer), ensure_ascii=False))
 
         if self.current_plan:
             await websocket.send_text(json.dumps({
@@ -191,7 +192,75 @@ class RoomManager:
         self._append_history(message, "learning")
         await self._send_to_clients(message, exclude)
 
+    def _task_history_payload(self, viewer: dict) -> dict:
+        from room.message_filter import is_privileged
+        role = viewer.get("role", "")
+        uid = viewer.get("user_id", "")
+        if is_privileged(role):
+            tasks = self.task_history.get_all()[:80]
+            stats = self.task_history.stats()
+        else:
+            tasks = self.task_history.get_for_user(uid, 80)
+            stats = self.task_history.stats_for_user(uid)
+        return {
+            "type": "task_history",
+            "stats": stats,
+            "tasks": tasks,
+            "timestamp": datetime.now().isoformat(),
+        }
+
     async def _send_to_clients(self, message: dict, exclude: WebSocket = None):
+        from room.message_filter import should_show_message, filter_agents_for_viewer
+        msg_copy = dict(message)
+        if msg_copy.get("type") == "agents_state" and msg_copy.get("agents"):
+            disconnected = set()
+            for connection in self.active_connections:
+                if connection == exclude:
+                    continue
+                meta = self.connection_meta.get(connection, {})
+                viewer = {"user_id": meta.get("user_id", ""), "role": meta.get("role", "guest")}
+                payload = dict(msg_copy)
+                payload["agents"] = filter_agents_for_viewer(msg_copy["agents"], viewer)
+                try:
+                    await connection.send_text(json.dumps(payload, ensure_ascii=False))
+                except Exception:
+                    disconnected.add(connection)
+            for conn in disconnected:
+                self.active_connections.discard(conn)
+            return
+
+        if msg_copy.get("type") == "task_history":
+            disconnected = set()
+            for connection in self.active_connections:
+                if connection == exclude:
+                    continue
+                meta = self.connection_meta.get(connection, {})
+                viewer = {"user_id": meta.get("user_id", ""), "role": meta.get("role", "guest")}
+                try:
+                    await connection.send_text(json.dumps(
+                        self._task_history_payload(viewer), ensure_ascii=False))
+                except Exception:
+                    disconnected.add(connection)
+            for conn in disconnected:
+                self.active_connections.discard(conn)
+            return
+
+        disconnected = set()
+        for connection in self.active_connections:
+            if connection == exclude:
+                continue
+            meta = self.connection_meta.get(connection, {})
+            viewer = {"user_id": meta.get("user_id", ""), "role": meta.get("role", "guest")}
+            if not should_show_message(msg_copy, viewer):
+                continue
+            try:
+                await connection.send_text(json.dumps(msg_copy, ensure_ascii=False))
+            except Exception:
+                disconnected.add(connection)
+        for conn in disconnected:
+            self.active_connections.discard(conn)
+
+    async def _send_to_clients_legacy(self, message: dict, exclude: WebSocket = None):
         message_text = json.dumps(message, ensure_ascii=False)
         disconnected = set()
         for connection in self.active_connections:
