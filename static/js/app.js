@@ -234,6 +234,17 @@
         if (window.UIEnhancements && wasOk !== ok) {
             UIEnhancements.toast(ok ? '🟢 Подключено к комнате' : '🔴 Соединение потеряно — переподключение…', ok ? 'success' : 'error');
         }
+        if (ok && window.SoundFX) SoundFX.connect();
+    }
+
+    function onAgentEffects(data) {
+        if (!data.agent_id) return;
+        const plain = String(data.message || '').replace(/[*#_`]/g, '').slice(0, 48);
+        if (plain && window.StudioApp) StudioApp.showSpeechBubble(data.agent_id, plain);
+        if (data.type === 'task_done') {
+            if (window.StudioApp) StudioApp.burstConfetti(data.agent_id);
+            if (window.SoundFX) SoundFX.taskDone();
+        }
     }
 
     function handleMessage(data) {
@@ -270,6 +281,14 @@
                 break;
             case 'pipeline_update':
                 if (window.PipelineUI) PipelineUI.onUpdate(data);
+                if (data.pipeline?.finished_at && window.SoundFX) SoundFX.pipelineDone();
+                break;
+            case 'presence_update':
+                if (window.WowFeatures) WowFeatures.updatePresence(data);
+                break;
+            case 'deploy_ready':
+                addSystemMessage(data.message || '🚀 Deploy готов');
+                if (window.SoundFX) SoundFX.deploy();
                 break;
             case 'site_ready':
                 addSystemMessage(data.message || '🌐 Сайт готов! Откройте React Preview.');
@@ -301,10 +320,12 @@
             case 'github_sync_done':
                 addSystemMessage(data.message || '🔗 GitHub Sync');
                 if (window.Integrations) Integrations.onCursorMessage(data);
+                if (data.type === 'github_sync_done' && window.SoundFX) SoundFX.gitPush();
                 break;
             case 'git_sync_done':
                 addSystemMessage(data.message || '📤 Изменения на GitHub');
                 if (window.UIEnhancements) UIEnhancements.onGitSync(data);
+                if (window.SoundFX) SoundFX.gitPush();
                 break;
             case 'direct_user_echo':
                 break;
@@ -316,6 +337,7 @@
                     } else if (data.agent_id) addLearningAgentMessage(data);
                 } else if (data.agent_id) {
                     addAgentMessage(data);
+                    onAgentEffects(data);
                 }
         }
     }

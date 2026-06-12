@@ -200,6 +200,7 @@
             const data = await resp.json();
             if (!resp.ok) throw new Error(data.detail || 'Ошибка импорта');
             renderFigmaResult(data);
+            if (window.WowFeatures) WowFeatures.setLastFigma(data);
             if (typeof addSystemMessage === 'function') {
                 addSystemMessage(`🎨 Figma: ${data.summary?.file_name || 'импортирован'}`);
             }
@@ -325,6 +326,7 @@
                 css_tokens: data.css_tokens,
             };
             renderFigmaResult(normalized);
+            if (window.WowFeatures) WowFeatures.setLastFigma(normalized);
         },
     };
 })(window);

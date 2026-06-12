@@ -281,8 +281,8 @@
 
     function updateAgentVisual(mesh, agent) {
         const slot = getSlot(agent, agent.location || 'studio');
-        mesh.position.x += (slot.x - mesh.position.x) * 0.06;
-        mesh.position.z += (slot.z - mesh.position.z) * 0.06;
+        mesh.position.x += (slot.x - mesh.position.x) * 0.035;
+        mesh.position.z += (slot.z - mesh.position.z) * 0.035;
 
         const desk = mesh.getObjectByName('desk');
         const screen = mesh.getObjectByName('screen');
@@ -339,6 +339,42 @@
         const t = clock.getElapsedTime();
         const particles = scene.getObjectByName('ambientParticles');
         if (particles) particles.rotation.y = t * 0.015;
+
+        Object.entries(speechSprites).forEach(([id, sprite) => {
+            const mesh = agentMeshes[id];
+            if (mesh) sprite.position.set(mesh.position.x, mesh.position.y + 2.1 + Math.sin(t * 3) * 0.05, mesh.position.z);
+            if (sprite.userData.expires && performance.now() > sprite.userData.expires) {
+                scene.remove(sprite);
+                delete speechSprites[id];
+            }
+        });
+
+        if (confettiGroup) {
+            for (let i = confettiGroup.children.length - 1; i >= 0; i--) {
+                const p = confettiGroup.children[i];
+                p.userData.life -= 0.016;
+                p.position.x += p.userData.vx;
+                p.position.y += p.userData.vy;
+                p.position.z += p.userData.vz;
+                p.userData.vy -= 0.004;
+                p.rotation.x += 0.1;
+                p.rotation.z += 0.08;
+                if (p.userData.life <= 0) confettiGroup.remove(p);
+            }
+            if (!confettiGroup.children.length) { scene.remove(confettiGroup); confettiGroup = null; }
+        }
+
+        if (flyTarget && flyProgress < 1) {
+            flyProgress = Math.min(1, flyProgress + 0.025);
+            const e = 1 - Math.pow(1 - flyProgress, 3);
+            camera.position.x += (flyTarget.tx - camera.position.x) * e * 0.08;
+            camera.position.y += (flyTarget.ty - camera.position.y) * e * 0.08;
+            camera.position.z += (flyTarget.tz - camera.position.z) * e * 0.08;
+            controls.target.x += (flyTarget.cx - controls.target.x) * e * 0.12;
+            controls.target.z += (flyTarget.cz - controls.target.z) * e * 0.12;
+            if (flyProgress >= 1) flyTarget = null;
+        }
+
         Object.values(agentMeshes).forEach((mesh) => {
             const status = mesh.userData.status || 'idle';
             const phase = mesh.userData.phase;
@@ -367,6 +403,7 @@
             let obj = hit.object;
             while (obj && !obj.userData.agentId) obj = obj.parent;
             if (obj && obj.userData.agentId && onAgentClick) {
+                flyToAgent(obj.userData.agentId);
                 onAgentClick(obj.userData.agentId);
                 break;
             }
@@ -457,6 +494,93 @@
     }
 
     let pipelineHighlightId = null;
+    const speechSprites = {};
+    let confettiGroup = null;
+    let flyTarget = null;
+    let flyProgress = 0;
+
+    function makeSpeechSprite(text) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        const msg = String(text).slice(0, 42);
+        ctx.fillStyle = 'rgba(20,21,25,0.92)';
+        ctx.strokeStyle = '#7aa2ff';
+        ctx.lineWidth = 2;
+        roundRect(ctx, 4, 8, 248, 44, 10);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#f0f0f5';
+        ctx.font = '14px Inter, Segoe UI, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(msg, 128, 36);
+        const tex = new THREE.CanvasTexture(canvas);
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+        sprite.scale.set(2.2, 0.55, 1);
+        sprite.renderOrder = 20;
+        sprite.userData.expires = performance.now() + 4500;
+        return sprite;
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+    }
+
+    function showSpeechBubble(agentId, text) {
+        if (!scene || !text) return;
+        const mesh = agentMeshes[agentId];
+        if (!mesh) return;
+        if (speechSprites[agentId]) {
+            scene.remove(speechSprites[agentId]);
+        }
+        const sprite = makeSpeechSprite(text);
+        sprite.position.set(mesh.position.x, mesh.position.y + 2.1, mesh.position.z);
+        scene.add(sprite);
+        speechSprites[agentId] = sprite;
+    }
+
+    function burstConfetti(agentId) {
+        if (!scene) return;
+        const mesh = agentMeshes[agentId];
+        if (!mesh) return;
+        if (confettiGroup) scene.remove(confettiGroup);
+        confettiGroup = new THREE.Group();
+        const colors = [0x6c63ff, 0x5ecf8a, 0xffd866, 0xc792ea, 0xf07178];
+        for (let i = 0; i < 40; i++) {
+            const m = new THREE.Mesh(
+                new THREE.BoxGeometry(0.06, 0.06, 0.02),
+                new THREE.MeshBasicMaterial({ color: colors[i % colors.length] })
+            );
+            m.position.copy(mesh.position);
+            m.position.y += 1.2;
+            m.userData.vx = (Math.random() - 0.5) * 0.15;
+            m.userData.vy = Math.random() * 0.12 + 0.05;
+            m.userData.vz = (Math.random() - 0.5) * 0.15;
+            m.userData.life = 1.5 + Math.random();
+            confettiGroup.add(m);
+        }
+        scene.add(confettiGroup);
+    }
+
+    function flyToAgent(agentId) {
+        const mesh = agentMeshes[agentId];
+        if (!mesh || !camera || !controls) return;
+        flyTarget = {
+            tx: mesh.position.x,
+            tz: mesh.position.z + 4,
+            ty: 12,
+            cx: mesh.position.x,
+            cz: mesh.position.z,
+        };
+        flyProgress = 0;
+    }
 
     function updateAgents(agentsList) {
         if (!agentsList || !Object.keys(agentMeshes).length) return;
@@ -495,5 +619,8 @@
         if (renderer) renderer.dispose();
     }
 
-    global.StudioApp = { init, updateAgents, resize, setTheme, destroy, setPipelineHighlight };
+    global.StudioApp = {
+        init, updateAgents, resize, setTheme, destroy, setPipelineHighlight,
+        showSpeechBubble, burstConfetti, flyToAgent,
+    };
 })(window);

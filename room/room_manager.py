@@ -25,6 +25,8 @@ class RoomManager:
 
     def __init__(self):
         self.active_connections: Set[WebSocket] = set()
+        self.connection_meta: Dict[WebSocket, dict] = {}
+        self._visitor_counter = 0
         self.agents: Dict[str, Any] = {}
         self.work_history = []
         self.learning_history = []
@@ -46,6 +48,13 @@ class RoomManager:
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.add(websocket)
+        self._visitor_counter += 1
+        vid = f"guest-{self._visitor_counter}"
+        self.connection_meta[websocket] = {
+            "id": vid,
+            "name": f"Guest {self._visitor_counter}",
+            "joined_at": datetime.now().isoformat(),
+        }
 
         if self.work_history:
             await websocket.send_text(json.dumps({
@@ -86,6 +95,7 @@ class RoomManager:
             }, ensure_ascii=False))
 
         await self.pipeline.send_to(websocket)
+        await self._broadcast_presence(exclude=websocket)
 
         await self.broadcast_work({
             "type": "system",
@@ -95,6 +105,8 @@ class RoomManager:
 
     async def disconnect(self, websocket: WebSocket):
         self.active_connections.discard(websocket)
+        self.connection_meta.pop(websocket, None)
+        await self._broadcast_presence()
         await self.broadcast_work({
             "type": "system",
             "message": "🔴 Пользователь покинул комнату",
@@ -111,6 +123,18 @@ class RoomManager:
             self.work_history.append(message)
             if len(self.work_history) > self.max_history:
                 self.work_history = self.work_history[-self.max_history:]
+
+    async def _broadcast_presence(self, exclude: WebSocket = None):
+        visitors = [
+            {"id": m["id"], "name": m["name"]}
+            for m in self.connection_meta.values()
+        ]
+        await self.broadcast({
+            "type": "presence_update",
+            "count": len(visitors),
+            "visitors": visitors,
+            "timestamp": datetime.now().isoformat(),
+        }, exclude=exclude)
 
     async def broadcast(self, message: dict, exclude: WebSocket = None):
         """Обратная совместимость — маршрутизация по каналу."""

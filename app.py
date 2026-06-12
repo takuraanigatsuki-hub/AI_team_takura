@@ -718,6 +718,56 @@ async def figma_parse(url: str):
     return parsed
 
 
+class FigmaCompareRequest(BaseModel):
+    figma_colors: list = []
+    react_colors: list = []
+
+
+@app.post("/api/figma/compare")
+async def figma_compare(req: FigmaCompareRequest):
+    from integrations.figma_compare import compare_palettes
+    return compare_palettes(req.figma_colors, req.react_colors)
+
+
+@app.post("/api/figma/improve")
+async def figma_improve():
+    """Соня дорабатывает UI по последнему Figma-макету."""
+    frontend = room.agents.get("frontend")
+    if not frontend:
+        raise HTTPException(status_code=404, detail="Соня не найдена")
+    task = "Доработай React UI точнее по импортированному Figma-макету: цвета, spacing, типографика"
+    await room.handle_user_message({"type": "task", "text": task, "target": "frontend"})
+    return {"ok": True, "task": task}
+
+
+@app.get("/api/standup")
+async def get_standup():
+    from integrations.standup import generate_standup
+    return generate_standup(room)
+
+
+@app.post("/api/deploy")
+async def deploy_preview():
+    from integrations.deploy_export import create_deploy_bundle
+    info = create_deploy_bundle()
+    await room.broadcast_work({
+        "type": "deploy_ready",
+        "message": f"🚀 Deploy bundle готов: {info['download_url']}",
+        "download_url": info["download_url"],
+        "preview_url": info["preview_url"],
+        "timestamp": __import__("datetime").datetime.now().isoformat(),
+    })
+    return info
+
+
+@app.get("/api/deploy/download")
+async def deploy_download():
+    path = os.path.join(os.path.dirname(__file__), "output", "deploy", "latest.zip")
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="Сначала нажмите Deploy")
+    return FileResponse(path, filename="ai-team-preview.zip", media_type="application/zip")
+
+
 # ─── WebSocket ──────────────────────────────────────────────
 
 @app.websocket("/ws")

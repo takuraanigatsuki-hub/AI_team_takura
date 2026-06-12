@@ -124,6 +124,8 @@
             { label: '⚡ Cursor Panel', run: () => { if (window.Integrations) Integrations.toggleCursorPanel(); } },
             { label: '📊 Dashboard', run: () => switchView('dashboard') },
             { label: '📥 Export задач', run: () => { switchView('tasks'); if (window.exportTasks) exportTasks(); } },
+            { label: '📊 Standup', run: () => WowFeatures.showStandup() },
+            { label: '🚀 Deploy ZIP', run: () => WowFeatures.deployNow() },
             { label: '📤 Sync GitHub', run: syncNow },
             { label: '⚙️ Настройки', run: () => showSettings() },
             { label: '🌓 Сменить тему', run: () => toggleTheme() },

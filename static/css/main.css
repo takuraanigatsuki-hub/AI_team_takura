@@ -780,6 +780,33 @@ body::before {
 @keyframes pipelinePulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
 body.has-pipeline .main { padding-top: 56px; }
 body.has-pipeline .header { box-shadow: 0 2px 20px rgba(0,0,0,0.15); }
+
+/* ─── Presence ─── */
+.presence-pill {
+    font-size: 10px; padding: 3px 8px; border-radius: 12px;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text-muted);
+}
+
+/* ─── Figma Split ─── */
+.preview-toolbar { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.figma-split { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.figma-split.active { flex-direction: row; }
+.figma-split .split-figma { display: none; flex: 1; min-width: 0; padding: 8px; border-right: 1px solid var(--border); }
+.figma-split.active .split-figma { display: flex; flex-direction: column; }
+.figma-split .split-react { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.split-label { font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+.figma-split-img { max-width: 100%; max-height: 180px; object-fit: contain; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+.figma-match-score { font-size: 11px; margin-top: 8px; color: var(--text-muted); }
+.match-score { font-size: 22px; font-weight: 700; color: var(--green); margin-right: 6px; }
+.match-pairs { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.match-pairs .pair i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: middle; border: 1px solid var(--border); }
+
+/* ─── Standup ─── */
+.standup-modal { max-width: 520px; }
+.standup-body { max-height: 50vh; overflow-y: auto; }
+.standup-text { white-space: pre-wrap; font-family: var(--font); font-size: 13px; line-height: 1.55; margin: 0; }
+.standup-stats { display: flex; gap: 16px; margin-top: 12px; font-size: 12px; color: var(--text-muted); }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 .design-input {
     flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
     background: var(--surface-2); color: var(--text); font-family: inherit; font-size: 13px; outline: none;

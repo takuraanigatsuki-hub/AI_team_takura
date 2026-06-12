@@ -57,6 +57,9 @@
             <span id="connText">Подключение</span>
         </div>
         <span class="active-pill" id="activeAgentsPill" title="Агенты в работе">—</span>
+        <span class="presence-pill" id="presencePill" title="В комнате">👤 …</span>
+        <button type="button" class="text-btn" onclick="WowFeatures.showStandup()" title="Standup">📊 Standup</button>
+        <button type="button" class="text-btn" onclick="WowFeatures.deployNow()" title="Deploy ZIP">🚀 Deploy</button>
         <button type="button" class="cursor-toggle-btn" onclick="Integrations.toggleCursorPanel()" title="Cursor SDK">
             ⚡ Cursor <span class="integration-badge" id="cursorBadge">…</span>
         </button>
@@ -271,12 +274,27 @@
             <div style="font-size:11px">Например: «сделай форму логина» или «кнопку с анимацией»</div>
         </div>
         <div id="reactPreviewContent" style="display:none; flex:1; flex-direction:column; min-height:0;">
+            <div class="preview-toolbar">
+                <button type="button" class="btn-secondary btn-sm" onclick="WowFeatures.toggleCompare()">⇔ Figma Compare</button>
+                <button type="button" class="btn-secondary btn-sm" onclick="WowFeatures.improveFromFigma()">🎨 Доработать по Figma</button>
+                <button type="button" class="btn-secondary btn-sm" onclick="WowFeatures.deployNow()">🚀 Deploy</button>
+            </div>
             <div class="preview-task">
                 <span id="reactPreviewTaskText"></span>
                 <a id="siteOpenLink" href="/api/sites/latest" target="_blank" class="site-open-link" style="display:none">🌐 Открыть сайт в новой вкладке</a>
             </div>
-            <div class="preview-frame-wrap">
-                <iframe id="reactPreviewFrame" title="React Preview" sandbox="allow-scripts allow-same-origin"></iframe>
+            <div id="figmaSplitView" class="figma-split">
+                <div class="split-figma">
+                    <div class="split-label">Figma</div>
+                    <img id="figmaSplitImg" alt="Figma preview" class="figma-split-img">
+                    <div id="figmaMatchScore" class="figma-match-score"></div>
+                </div>
+                <div class="split-react">
+                    <div class="split-label">React Preview</div>
+                    <div class="preview-frame-wrap">
+                        <iframe id="reactPreviewFrame" title="React Preview" sandbox="allow-scripts allow-same-origin"></iframe>
+                    </div>
+                </div>
             </div>
             <div class="preview-code-wrap">
                 <pre id="reactPreviewCode"></pre>
@@ -357,13 +375,15 @@
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="/static/js/sounds.js?v=1"></script>
+<script src="/static/js/wow.js?v=1"></script>
 <script src="/static/js/pipeline.js?v=1"></script>
-<script src="/static/js/studio.js?v=7"></script>
-<script src="/static/js/react-preview.js?v=2"></script>
-<script src="/static/js/integrations.js?v=4"></script>
+<script src="/static/js/studio.js?v=8"></script>
+<script src="/static/js/react-preview.js?v=3"></script>
+<script src="/static/js/integrations.js?v=5"></script>
 <script src="/static/js/ui-enhancements.js?v=2"></script>
 <script src="/static/js/dashboard.js?v=2"></script>
-<script src="/static/js/app.js?v=9"></script>
+<script src="/static/js/app.js?v=10"></script>
 
 <!-- PWA: регистрация Service Worker -->
 <script>
