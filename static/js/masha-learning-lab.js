@@ -1,13 +1,23 @@
 /**
- * Лаборатория Маши — учебные проекты и оценки
+ * Лаборатория Маши — учебные проекты и чат оценок
  */
 (function (global) {
     let cache = null;
+    let activeTab = 'evals';
 
     function el(id) { return document.getElementById(id); }
 
     function esc(s) {
         return String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    }
+
+    function formatTime(ts) {
+        if (!ts) return '';
+        try {
+            return new Date(ts).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        } catch (_) {
+            return '';
+        }
     }
 
     function toast(msg, type) {
@@ -16,24 +26,36 @@
 
     function agentLabel(ids) {
         if (!ids?.length) return '—';
-        const map = {
-            pm: '🎯', frontend: '🎨', backend: '⚙️', qa: '🧪', evaluator: '🎓',
-        };
+        const map = { pm: '🎯', frontend: '🎨', backend: '⚙️', qa: '🧪', evaluator: '🎓' };
         return ids.map((id) => map[id] || id).join(' ');
     }
 
+    function switchTab(tab) {
+        activeTab = tab;
+        document.querySelectorAll('.ml-tab[data-ml-tab]').forEach((b) => {
+            b.classList.toggle('active', b.dataset.mlTab === tab);
+        });
+        el('mashaTabEvals')?.classList.toggle('hidden', tab !== 'evals');
+        el('mashaTabTasks')?.classList.toggle('hidden', tab !== 'tasks');
+        el('mashaTabProjects')?.classList.toggle('hidden', tab !== 'projects');
+    }
+
+    function setLoading(on) {
+        el('mashaLabLoading')?.classList.toggle('hidden', !on);
+    }
+
     async function load() {
-        const root = el('mashaLabRoot');
-        if (root) root.innerHTML = '<div class="panel-empty">Загрузка…</div>';
+        setLoading(true);
         try {
             const r = await fetch('/api/learning/masha-lab');
             if (!r.ok) throw new Error('HTTP ' + r.status);
             cache = await r.json();
             render();
+            hydrateEvalChat(cache.evaluations || []);
         } catch (e) {
-            if (root) {
-                root.innerHTML = `<div class="panel-error">${esc(e.message)}</div>`;
-            }
+            toast(e.message || 'Ошибка загрузки', 'error');
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -45,11 +67,11 @@
         const statsEl = el('mashaStats');
         if (statsEl) {
             statsEl.innerHTML = `
-                <div class="ml-stat"><span>${s.user_submissions || 0}</span><small>ваших заданий</small></div>
-                <div class="ml-stat"><span>${s.solo_projects || 0}</span><small>solo проектов</small></div>
-                <div class="ml-stat"><span>${s.collaborative_projects || 0}</span><small>совместных</small></div>
+                <div class="ml-stat"><span>${s.user_submissions || 0}</span><small>заданий</small></div>
+                <div class="ml-stat"><span>${s.solo_projects || 0}</span><small>solo</small></div>
+                <div class="ml-stat"><span>${s.collaborative_projects || 0}</span><small>совместн.</small></div>
                 <div class="ml-stat"><span>${s.evaluations_count || 0}</span><small>оценок</small></div>
-                <div class="ml-stat highlight"><span>${s.average_score || '—'}</span><small>средний балл</small></div>`;
+                <div class="ml-stat highlight"><span>${s.average_score || '—'}</span><small>средний</small></div>`;
         }
 
         const badge = el('mashaAgentStatus');
@@ -75,7 +97,7 @@
         container.innerHTML = items.map((p) => `
             <article class="ml-card">
                 <div class="ml-card-top">
-                    <span class="ml-kind">${kind === 'collab' ? '🤝' : kind === 'user' ? '👤' : '👤'}</span>
+                    <span class="ml-kind">${kind === 'collab' ? '🤝' : '👤'}</span>
                     <strong>${esc(p.title)}</strong>
                 </div>
                 <p class="ml-desc">${esc((p.description || '').slice(0, 220))}</p>
@@ -89,10 +111,10 @@
     function renderEvaluations(container, items) {
         if (!container) return;
         if (!items.length) {
-            container.innerHTML = '<div class="panel-empty">Маша оценит после практики агентов</div>';
+            container.innerHTML = '<div class="panel-empty">Оценки появятся здесь</div>';
             return;
         }
-        container.innerHTML = items.map((e) => `
+        container.innerHTML = items.slice(0, 40).map((e) => `
             <article class="ml-eval-card">
                 <div class="ml-eval-head">
                     <span>${esc(e.agent_emoji || '🤖')} ${esc(e.agent_name || e.agent_id)}</span>
@@ -101,6 +123,67 @@
                 <p class="ml-desc">${esc((e.feedback || e.task || '').slice(0, 280))}</p>
                 <small class="muted">${esc(e.context || '')} · ${esc((e.created_at || '').slice(0, 16).replace('T', ' '))}</small>
             </article>`).join('');
+    }
+
+    function appendEvalMessage(data) {
+        const container = el('mashaEvalChat');
+        if (!container) return;
+        container.querySelector('[data-masha-eval-welcome]')?.remove();
+
+        const target = data.target_agent_name
+            ? ` → ${data.target_agent_emoji || ''} ${data.target_agent_name}`.trim()
+            : (data.target_agent ? ` → ${data.target_agent}` : '');
+
+        const div = document.createElement('div');
+        div.className = 'message learning-msg skill_evaluation masha-eval-msg';
+        div.innerHTML = `
+            <div class="msg-avatar">${data.agent_emoji || '🎓'}</div>
+            <div class="msg-body">
+                <div class="msg-header">
+                    <span class="msg-name">${esc(data.agent_name || 'Маша')}${esc(target)}</span>
+                    <span class="msg-time">${formatTime(data.timestamp)}</span>
+                    <span class="learning-badge ml-score-badge">${data.score || '?'}/10</span>
+                </div>
+                <div class="msg-text">${esc(data.message || data.feedback || '')}</div>
+            </div>`;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function hydrateEvalChat(items) {
+        const container = el('mashaEvalChat');
+        if (!container || container.querySelector('.masha-eval-msg')) return;
+        if (!items.length) return;
+        container.querySelector('[data-masha-eval-welcome]')?.remove();
+        items.slice(0, 30).reverse().forEach((e) => {
+            appendEvalMessage({
+                agent_id: 'evaluator',
+                agent_name: 'Маша',
+                agent_emoji: '🎓',
+                target_agent: e.agent_id,
+                target_agent_name: e.agent_name,
+                target_agent_emoji: e.agent_emoji,
+                score: e.score,
+                message: e.feedback || e.task,
+                feedback: e.feedback,
+                timestamp: e.created_at,
+                context: e.context,
+            });
+        });
+    }
+
+    function onEvalMessage(data) {
+        appendEvalMessage(data);
+        switchTab('evals');
+        load();
+    }
+
+    function onMessage(data) {
+        if (data.type === 'skill_evaluation') {
+            onEvalMessage(data);
+        } else if (data.type === 'learning_project') {
+            load();
+        }
     }
 
     async function submitExercise() {
@@ -121,13 +204,14 @@
             toast('📚 Упражнение отправлено', 'success');
             if (el('mashaExerciseTitle')) el('mashaExerciseTitle').value = '';
             if (el('mashaExerciseDesc')) el('mashaExerciseDesc').value = '';
+            switchTab('tasks');
             await load();
         } catch (e) {
             toast(e.message || 'Ошибка', 'error');
         }
     }
 
-    global.MashaLearningLab = { load, submitExercise, onMessage(data) {
-        if (data.type === 'learning_project' || data.type === 'skill_evaluation') load();
-    }};
+    global.MashaLearningLab = {
+        load, submitExercise, switchTab, onMessage, onEvalMessage, appendEvalMessage,
+    };
 })(window);

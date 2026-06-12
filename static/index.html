@@ -262,23 +262,38 @@
             <label class="ml-check"><input type="checkbox" id="mashaExerciseCollab"> 🤝 Совместный проект</label>
             <button type="button" class="btn-primary btn-sm full-width" onclick="MashaLearningLab.submitExercise()">📚 Отправить на обучение</button>
         </aside>
-        <main class="ml-main" id="mashaLabRoot">
-            <section class="ml-panel">
-                <h3>👤 Ваши задания</h3>
-                <div id="mashaUserList" class="ml-list"></div>
-            </section>
-            <section class="ml-panel">
-                <h3>🎓 Оценки Маши</h3>
+        <main class="ml-main">
+            <div class="ml-tabs" role="tablist">
+                <button type="button" class="ml-tab active" data-ml-tab="evals" onclick="MashaLearningLab.switchTab('evals')">🎓 Оценки</button>
+                <button type="button" class="ml-tab" data-ml-tab="tasks" onclick="MashaLearningLab.switchTab('tasks')">📋 Задания</button>
+                <button type="button" class="ml-tab" data-ml-tab="projects" onclick="MashaLearningLab.switchTab('projects')">📁 Проекты</button>
+            </div>
+            <div id="mashaTabEvals" class="ml-tab-panel active">
+                <p class="ml-panel-hint muted">Все баллы и комментарии Маши — только здесь, не в рабочем чате.</p>
+                <div id="mashaEvalChat" class="ml-eval-chat messages">
+                    <div class="welcome" data-masha-eval-welcome>
+                        <div class="welcome-icon">🎓</div>
+                        <h2>Чат оценок</h2>
+                        <p>Маша оценивает работу агентов после задач и практики</p>
+                    </div>
+                </div>
+                <h4 class="ml-subhead">История оценок</h4>
                 <div id="mashaEvalList" class="ml-list"></div>
-            </section>
-            <section class="ml-panel">
-                <h3>📁 Solo-проекты агентов</h3>
-                <div id="mashaSoloList" class="ml-list"></div>
-            </section>
-            <section class="ml-panel">
-                <h3>🤝 Совместные проекты</h3>
-                <div id="mashaCollabList" class="ml-list"></div>
-            </section>
+            </div>
+            <div id="mashaTabTasks" class="ml-tab-panel hidden">
+                <div id="mashaUserList" class="ml-list"></div>
+            </div>
+            <div id="mashaTabProjects" class="ml-tab-panel hidden">
+                <section class="ml-panel-inline">
+                    <h3>📁 Solo-проекты</h3>
+                    <div id="mashaSoloList" class="ml-list"></div>
+                </section>
+                <section class="ml-panel-inline">
+                    <h3>🤝 Совместные</h3>
+                    <div id="mashaCollabList" class="ml-list"></div>
+                </section>
+            </div>
+            <div id="mashaLabLoading" class="ml-loading hidden">Загрузка…</div>
         </main>
     </div>
 

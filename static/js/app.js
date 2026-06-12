@@ -549,13 +549,8 @@
                 if (window.MashaLearningLab) MashaLearningLab.onMessage(data);
                 break;
             case 'skill_evaluation':
-                if (data.channel === 'learning') {
-                    if (canViewAgentLearning(window.Auth?.getUser())) {
-                        addLearningAgentMessage(data);
-                    }
-                    if (window.MashaLearningLab) MashaLearningLab.onMessage(data);
-                } else {
-                    addAgentMessage({ ...data, message: data.message || '' });
+                if (canViewAgentLearning(window.Auth?.getUser()) && window.MashaLearningLab) {
+                    MashaLearningLab.onEvalMessage(data);
                 }
                 break;
             case 'result_ready':
@@ -732,6 +727,12 @@
     }
 
     function addLearningMessage(msg) {
+        if (msg.type === 'skill_evaluation') {
+            if (canViewAgentLearning(window.Auth?.getUser()) && window.MashaLearningLab) {
+                MashaLearningLab.onEvalMessage(msg);
+            }
+            return;
+        }
         if (msg.agent_id) addLearningAgentMessage(msg);
     }
 

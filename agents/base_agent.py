@@ -1074,7 +1074,23 @@ class BaseAgent:
                     task_text, self.agent_id, self.name, response, context="task",
                 )
                 eval_msg = f"🎓 **Оценка ({ev.get('score', 7)}/10):** {ev.get('feedback', '')[:400]}"
-                await self._broadcast_work(eval_msg, "skill_evaluation")
+                if self.room_manager:
+                    await self.room_manager.broadcast_learning({
+                        "type": "skill_evaluation",
+                        "agent_id": evaluator.agent_id,
+                        "agent_name": evaluator.name,
+                        "agent_emoji": evaluator.emoji,
+                        "target_agent": self.agent_id,
+                        "target_agent_name": self.name,
+                        "target_agent_emoji": self.emoji,
+                        "score": ev.get("score", 7),
+                        "message": (
+                            f"🎓 **Оценка {self.name}** ({ev.get('score', 7)}/10)\n"
+                            f"Задача: _{task_text[:100]}_\n{ev.get('feedback', '')[:400]}"
+                        ),
+                        "context": "task",
+                        "timestamp": datetime.now().isoformat(),
+                    })
 
             await self._broadcast_work(
                 f"✅ Готово:\n{response[:800]}{'…' if len(response) > 800 else ''}\n\n"

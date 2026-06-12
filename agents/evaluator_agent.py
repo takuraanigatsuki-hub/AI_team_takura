@@ -69,7 +69,7 @@ class EvaluatorAgent(BaseAgent):
         if len(self.skill_scores[agent_id]) > 50:
             self.skill_scores[agent_id] = self.skill_scores[agent_id][-50:]
 
-        if context in ("peer_learning", "learning_practice", "learning"):
+        if context in ("peer_learning", "learning_practice", "learning", "task"):
             try:
                 from room.learning_projects import LearningProjects
                 LearningProjects().add_evaluation(

@@ -15,7 +15,7 @@ LEARNING_TYPES = frozenset({
 # Только обучение — никогда не попадает в рабочий чат
 STUDY_TYPES = frozenset({
     "learning", "learning_result", "reflection", "rest", "figma_study",
-    "peer_learning", "peer_discussion", "learning_project",
+    "peer_learning", "peer_discussion", "learning_project", "skill_evaluation",
 })
 
 WORK_TYPES = frozenset({
