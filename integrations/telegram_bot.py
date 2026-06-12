@@ -474,6 +474,7 @@ async def _handle_update_inner(update: dict, room):
         chat_id = cb["message"]["chat"]["id"]
         msg_id = cb["message"]["message_id"]
         data = cb.get("data", "")
+        _log(f"callback chat={chat_id} data={data!r}")
         if not _is_allowed(chat_id):
             _register_chat(chat_id, cb.get("from", {}).get("username", ""), cb.get("from", {}).get("first_name", ""))
         await _answer_callback(cb["id"], "⏳")
@@ -488,6 +489,7 @@ async def _handle_update_inner(update: dict, room):
     chat_id = chat.get("id")
     text = (message.get("text") or "").strip()
     user = message.get("from", {})
+    _log(f"msg chat={chat_id} text={text!r}")
 
     if text.startswith("/ping"):
         await send_message(chat_id, "🏓 pong — бот работает", reply_markup=main_reply_keyboard())
