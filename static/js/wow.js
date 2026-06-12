@@ -39,8 +39,10 @@
     async function refreshStandup() {
         const body = document.getElementById('standupBody');
         if (!body) return;
+        if (body) body.innerHTML = '<div class="dash-loading">Загрузка…</div>';
         try {
-            const r = await fetch('/api/standup');
+            const r = await fetch('/api/standup', { credentials: 'same-origin' });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
             const d = await r.json();
             body.innerHTML = `<pre class="standup-text">${escapeHtml(d.narrative || '')}</pre>
                 <div class="standup-stats">
@@ -56,7 +58,7 @@
     async function deployNow() {
         if (window.UIEnhancements) UIEnhancements.toast('🚀 Сборка deploy bundle…', 'info');
         try {
-            const r = await fetch('/api/deploy', { method: 'POST' });
+            const r = await fetch('/api/deploy', { method: 'POST', credentials: 'same-origin' });
             const d = await r.json();
             if (!r.ok) throw new Error(d.detail || 'Ошибка');
             if (window.SoundFX) SoundFX.deploy();
@@ -90,6 +92,7 @@
         try {
             const r = await fetch('/api/figma/compare', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ figma_colors: figmaColors, react_colors: reactColors }),
             });
@@ -112,7 +115,7 @@
 
     async function improveFromFigma() {
         try {
-            const r = await fetch('/api/figma/improve', { method: 'POST' });
+            const r = await fetch('/api/figma/improve', { method: 'POST', credentials: 'same-origin' });
             if (!r.ok) throw new Error((await r.json()).detail);
             if (window.UIEnhancements) UIEnhancements.toast('🎨 Соня дорабатывает по Figma…', 'info');
             if (typeof switchView === 'function') switchView('chat');

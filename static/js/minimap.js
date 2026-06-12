@@ -172,7 +172,7 @@
 
     async function refresh() {
         try {
-            const r = await fetch('/api/agents');
+            const r = await fetch('/api/agents', { credentials: 'same-origin' });
             const d = await r.json();
             draw(d.agents || []);
         } catch (_) { /* ignore */ }

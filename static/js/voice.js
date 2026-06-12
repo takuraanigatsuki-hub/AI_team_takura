@@ -14,7 +14,7 @@
 
     async function readStandup() {
         try {
-            const r = await fetch('/api/standup');
+            const r = await fetch('/api/standup', { credentials: 'same-origin' });
             const d = await r.json();
             const parts = (d.sections || []).map((s) => `${s.title}. ${s.items?.join('. ') || ''}`);
             speak(parts.join('. ') || d.summary || 'Standup готов');

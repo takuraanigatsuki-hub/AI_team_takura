@@ -118,6 +118,7 @@
             if (formData.goal) {
                 await fetch('/api/project-memory', {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ brief: formData.goal, goals: [], constraints: [] }),
                 });

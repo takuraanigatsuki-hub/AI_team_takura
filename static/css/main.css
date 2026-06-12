@@ -2038,6 +2038,8 @@ body.has-pipeline-collapsed .toast-container { bottom: 88px; }
 }
 .toast-success { border-color: var(--green); background: rgba(94, 207, 138, 0.12); }
 .toast-error { border-color: var(--red); background: rgba(240, 113, 120, 0.12); }
+.toast-warn { border-color: #ffa502; background: rgba(255, 165, 2, 0.12); }
+.toast-info { border-color: var(--accent); background: rgba(108, 99, 255, 0.12); }
 .toast-out { opacity: 0; transform: translateX(12px); transition: all 0.3s ease; }
 
 /* ─── Command palette ─── */

@@ -46,7 +46,7 @@
         const box = el('mashaSkillMatrix');
         if (!box) return;
         try {
-            const r = await fetch('/api/learning/skill-matrix');
+            const r = await fetch('/api/learning/skill-matrix', { credentials: 'same-origin' });
             const d = await r.json();
             box.innerHTML = (d.agents || []).map((a) =>
                 `<div class="skill-bar-row"><span>${a.emoji} ${esc(a.name)}</span><div class="skill-bar"><div class="skill-bar-fill" style="width:${(a.average || 0) * 10}%"></div></div><strong>${a.average}/10 <small class="muted">(${a.count})</small></strong></div>`
@@ -63,7 +63,7 @@
     async function load() {
         setLoading(true);
         try {
-            const r = await fetch('/api/learning/masha-lab');
+            const r = await fetch('/api/learning/masha-lab', { credentials: 'same-origin' });
             if (!r.ok) throw new Error('HTTP ' + r.status);
             cache = await r.json();
             render();
@@ -213,6 +213,7 @@
         try {
             const r = await fetch('/api/learning/submit', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ title, description: desc, collaborative: collab }),
             });
