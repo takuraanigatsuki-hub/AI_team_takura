@@ -465,21 +465,25 @@
             clearTimeout(reconnectTimer);
         };
         ws.onclose = () => {
-            setConnStatus(false);
+            setConnStatus(false, 'reconnecting');
             reconnectTimer = setTimeout(connect, 3000);
         };
-        ws.onerror = () => setConnStatus(false);
+        ws.onerror = () => setConnStatus(false, 'reconnecting');
         ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
     }
 
-    function setConnStatus(ok) {
+    function setConnStatus(ok, mode) {
         const dot = document.getElementById('connDot');
         const text = document.getElementById('connText');
         const wasOk = dot?.classList.contains('connected');
-        if (dot) dot.className = 'conn-dot' + (ok ? ' connected' : '');
-        if (text) text.textContent = ok ? 'Онлайн' : 'Оффлайн';
-        if (window.UIEnhancements && wasOk !== ok) {
-            UIEnhancements.toast(ok ? '🟢 Подключено к комнате' : '🔴 Соединение потеряно — переподключение…', ok ? 'success' : 'error');
+        if (dot) {
+            dot.className = 'conn-dot' + (ok ? ' connected' : (mode === 'reconnecting' ? ' reconnecting' : ''));
+        }
+        if (text) {
+            text.textContent = ok ? 'Онлайн' : (mode === 'reconnecting' ? 'Переподключение…' : 'Оффлайн');
+        }
+        if (window.UIEnhancements && wasOk && !ok) {
+            UIEnhancements.toast('🔴 Соединение потеряно — переподключение…', 'error');
         }
         if (ok && window.SoundFX) SoundFX.connect();
     }
@@ -1146,6 +1150,9 @@
         renderTasks();
         if (window.KanbanUI && document.getElementById('kanbanView') && !document.getElementById('kanbanView').classList.contains('hidden')) {
             KanbanUI.refresh();
+        }
+        if (window.Dashboard && document.getElementById('dashboardView') && !document.getElementById('dashboardView').classList.contains('hidden')) {
+            Dashboard.load();
         }
     }
 

@@ -38,12 +38,18 @@
             const admin = global.UIAccess?.canAccessConsole?.(user);
             const investor = user && (user.is_investor || user.can_view_investor_portal || admin);
 
-            const [dash, tasks, activity, layoutRes] = await Promise.all([
+            const [dash, tasksRes, activity, layoutRes] = await Promise.all([
                 fetchJson('/api/dashboard', {}),
                 fetchJson('/api/tasks', { stats: {}, tasks: [] }),
                 fetchJson('/api/activity?limit=15', { items: [] }),
                 fetchJson('/api/dashboard/layout', layout),
             ]);
+
+            let tasks = tasksRes;
+            if (!user && global.AITeamTasks?.getSnapshot) {
+                const snap = global.AITeamTasks.getSnapshot();
+                if (snap.tasks?.length) tasks = { stats: snap.stats, tasks: snap.tasks };
+            }
 
             let git = {};
             let cursor = {};

@@ -465,6 +465,10 @@ a.dropdown-item {
     box-shadow: 0 0 8px rgba(94, 207, 138, 0.6);
     animation: connPulse 2s ease-in-out infinite;
 }
+.conn-dot.reconnecting {
+    background: #ffa502;
+    animation: connPulse 0.8s ease-in-out infinite;
+}
 
 @keyframes connPulse {
     0%, 100% { opacity: 1; }

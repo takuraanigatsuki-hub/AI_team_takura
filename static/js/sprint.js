@@ -17,8 +17,8 @@
             }
             const d = await r.json();
             if (d.guest) {
-                el.innerHTML = `<div class="tasks-empty tasks-guest"><div class="tasks-empty-icon">🔐</div>
-                    <h3>Sprint — войдите</h3><p class="muted">У каждого пользователя свой спринт и backlog</p>
+                el.innerHTML = `<div class="tasks-empty tasks-guest"><div class="tasks-empty-icon">🏃</div>
+                    <h3>Sprint — нужен вход</h3><p class="muted">Планирование спринта сохраняется в аккаунте. Задачи из чата — во вкладке «Задачи».</p>
                     <a href="/?auth=login" class="btn-primary btn-sm">Войти</a></div>`;
                 return;
             }
