@@ -62,14 +62,14 @@
         const el = document.getElementById('llmCostWidget');
         if (!el) return;
         try {
-            const r = await fetch('/api/llm/usage');
+            const r = await fetch('/api/llm/usage', { credentials: 'same-origin' });
             const d = await r.json();
             el.innerHTML = `LLM: ${d.total_requests || 0} req · ~$${d.estimated_cost_usd || 0} · ${d.estimated_cost_rub || 0}₽`;
         } catch (_) { el.textContent = 'LLM: —'; }
     }
 
     async function createViewLink() {
-        const r = await fetch('/api/view-token', { method: 'POST' });
+        const r = await fetch('/api/view-token', { method: 'POST', credentials: 'same-origin' });
         const d = await r.json();
         if (d.url) {
             const full = location.origin + d.url;
@@ -79,7 +79,7 @@
     }
 
     async function voiceStandupRound() {
-        const r = await fetch('/api/agents');
+        const r = await fetch('/api/agents', { credentials: 'same-origin' });
         const agents = (await r.json()).agents || [];
         const working = agents.filter((a) => a.artifact_count > 0 || a.status === 'working').slice(0, 5);
         if (!window.VoiceRoom?.speak) return;
