@@ -1,6 +1,14 @@
 """Sonya Design Studio API tests."""
 
-import asyncio
+import pytest
+
+
+@pytest.fixture
+def client():
+    from app import app
+    from starlette.testclient import TestClient
+    with TestClient(app, follow_redirects=True) as c:
+        yield c
 
 
 def test_sonya_project_lifecycle(client):
