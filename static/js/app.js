@@ -3,10 +3,11 @@
  */
 (function () {
     const THEME_KEY = 'ai-team-room-theme';
-    const AGENT_ORDER = ['pm', 'architect', 'backend', 'frontend', 'qa', 'reviewer', 'doc_writer', 'devops', 'cursor'];
+    const AGENT_ORDER = ['pm', 'architect', 'backend', 'frontend', 'qa', 'reviewer', 'doc_writer', 'devops', 'cursor', 'evaluator'];
+    const LEARNING_AGENT_ORDER = ['evaluator', 'pm', 'architect', 'backend', 'frontend', 'qa', 'reviewer', 'doc_writer', 'devops', 'cursor'];
     const LEARNING_TYPES = new Set([
         'learning', 'learning_result', 'reflection', 'rest', 'figma_study',
-        'peer_learning', 'peer_discussion', 'skill_evaluation',
+        'peer_learning', 'peer_discussion', 'skill_evaluation', 'learning_project',
     ]);
 
     let ws = null;
@@ -51,7 +52,7 @@
     let dashboardRefreshTimer = null;
     let agentLearningPanel = 'learning';
 
-    const AGENT_LEARNING_VIEWS = new Set(['agent-learning', 'learning', 'design']);
+    const AGENT_LEARNING_VIEWS = new Set(['agent-learning', 'learning', 'design', 'masha']);
 
     function canViewAgentLearning(user) {
         if (!user) return false;
@@ -60,7 +61,9 @@
     }
 
     window.switchAgentLearningPanel = function (panel) {
-        agentLearningPanel = panel === 'design' ? 'design' : 'learning';
+        if (panel === 'design') agentLearningPanel = 'design';
+        else if (panel === 'masha') agentLearningPanel = 'masha';
+        else agentLearningPanel = 'learning';
         switchView('agent-learning');
     };
 
@@ -82,8 +85,8 @@
                 switchView('studio');
                 return;
             }
-            if (view === 'learning' || view === 'design') {
-                agentLearningPanel = view === 'design' ? 'design' : 'learning';
+            if (view === 'learning' || view === 'design' || view === 'masha') {
+                agentLearningPanel = view === 'design' ? 'design' : (view === 'masha' ? 'masha' : 'learning');
                 view = 'agent-learning';
             }
         } else if (user && window.ProfileCabinet && !ProfileCabinet.canAccessView(user, view)) {
@@ -107,12 +110,14 @@
         const isAgentLearning = view === 'agent-learning';
         document.getElementById('agentLearningSubnav')?.classList.toggle('hidden', !isAgentLearning);
         document.getElementById('alTabLearning')?.classList.toggle('active', isAgentLearning && agentLearningPanel === 'learning');
+        document.getElementById('alTabMasha')?.classList.toggle('active', isAgentLearning && agentLearningPanel === 'masha');
         document.getElementById('alTabDesign')?.classList.toggle('active', isAgentLearning && agentLearningPanel === 'design');
 
         document.getElementById('studioView').classList.toggle('hidden', view !== 'studio');
         document.getElementById('chatView').classList.toggle('hidden', view !== 'chat');
         document.getElementById('learningView').classList.toggle('hidden', !isAgentLearning || agentLearningPanel !== 'learning');
         document.getElementById('tasksView').classList.toggle('hidden', view !== 'tasks');
+        document.getElementById('mashaView')?.classList.toggle('hidden', !isAgentLearning || agentLearningPanel !== 'masha');
         document.getElementById('designView')?.classList.toggle('hidden', !isAgentLearning || agentLearningPanel !== 'design');
         document.getElementById('sonyaStudioView')?.classList.toggle('hidden', view !== 'sonya-studio');
         document.getElementById('dashboardView')?.classList.toggle('hidden', view !== 'dashboard');
@@ -133,6 +138,9 @@
         }
         if (isAgentLearning && agentLearningPanel === 'design' && window.SonyaDesignLab) {
             SonyaDesignLab.load();
+        }
+        if (isAgentLearning && agentLearningPanel === 'masha' && window.MashaLearningLab) {
+            MashaLearningLab.load();
         }
         if (view === 'sonya-studio' && window.SonyaStudio) SonyaStudio.load();
         if (view === 'dashboard' && window.Dashboard) Dashboard.load();
@@ -533,16 +541,19 @@
             case 'reflection':
             case 'rest':
             case 'figma_study':
+            case 'learning_project':
                 if (canViewAgentLearning(window.Auth?.getUser())) {
                     addLearningAgentMessage(data);
                 }
                 if (data.type === 'figma_study' && window.SonyaDesignLab) SonyaDesignLab.loadLab();
+                if (window.MashaLearningLab) MashaLearningLab.onMessage(data);
                 break;
             case 'skill_evaluation':
                 if (data.channel === 'learning') {
                     if (canViewAgentLearning(window.Auth?.getUser())) {
                         addLearningAgentMessage(data);
                     }
+                    if (window.MashaLearningLab) MashaLearningLab.onMessage(data);
                 } else {
                     addAgentMessage({ ...data, message: data.message || '' });
                 }
@@ -908,7 +919,7 @@
 
         const learnList = document.getElementById('learningAgentsList');
         if (learnList) {
-            learnList.innerHTML = AGENT_ORDER.map((id) => {
+            learnList.innerHTML = LEARNING_AGENT_ORDER.map((id) => {
                 const a = agents[id];
                 if (!a) return '';
                 const isLearning = a.status === 'learning' || a.location === 'library';
@@ -998,6 +1009,7 @@
         const input = document.getElementById('messageInput');
         const text = input.value.trim();
         if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+        if (window.ChatCommands) ChatCommands.hide();
         const target = document.getElementById('targetSelect').value;
         ws.send(JSON.stringify({ type: msgType, text, target }));
         if (msgType === 'task') {

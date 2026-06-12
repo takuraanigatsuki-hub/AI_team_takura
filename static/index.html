@@ -31,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/main.css?v=37">
+    <link rel="stylesheet" href="/static/css/main.css?v=38">
     <link rel="stylesheet" href="/static/css/feature-pack.css?v=3">
 </head>
 <body>
@@ -238,9 +238,48 @@
             </div>
             <div class="al-tabs" role="tablist">
                 <button type="button" class="al-tab active" id="alTabLearning" role="tab" onclick="switchAgentLearningPanel('learning')">📚 Лента</button>
+                <button type="button" class="al-tab" id="alTabMasha" role="tab" onclick="switchAgentLearningPanel('masha')">🎓 Маша</button>
                 <button type="button" class="al-tab" id="alTabDesign" role="tab" onclick="switchAgentLearningPanel('design')">🎨 Design Lab</button>
             </div>
         </div>
+    </div>
+
+    <!-- MASHA LEARNING LAB -->
+    <div id="mashaView" class="masha-lab-layout hidden">
+        <aside class="ml-sidebar">
+            <div class="ml-hero">
+                <div class="ml-avatar">🎓</div>
+                <div>
+                    <h3>Маша</h3>
+                    <p class="muted">Skill Evaluator · учебные проекты</p>
+                    <span class="ml-agent-status" id="mashaAgentStatus">—</span>
+                </div>
+            </div>
+            <div class="ml-stats" id="mashaStats"></div>
+            <div class="panel-label" style="margin-top:12px">Новое упражнение</div>
+            <input type="text" id="mashaExerciseTitle" class="design-input" placeholder="Тема (кратко)">
+            <textarea id="mashaExerciseDesc" class="design-input ml-textarea" rows="3" placeholder="Что отработать? Или используйте /learn в чате"></textarea>
+            <label class="ml-check"><input type="checkbox" id="mashaExerciseCollab"> 🤝 Совместный проект</label>
+            <button type="button" class="btn-primary btn-sm full-width" onclick="MashaLearningLab.submitExercise()">📚 Отправить на обучение</button>
+        </aside>
+        <main class="ml-main" id="mashaLabRoot">
+            <section class="ml-panel">
+                <h3>👤 Ваши задания</h3>
+                <div id="mashaUserList" class="ml-list"></div>
+            </section>
+            <section class="ml-panel">
+                <h3>🎓 Оценки Маши</h3>
+                <div id="mashaEvalList" class="ml-list"></div>
+            </section>
+            <section class="ml-panel">
+                <h3>📁 Solo-проекты агентов</h3>
+                <div id="mashaSoloList" class="ml-list"></div>
+            </section>
+            <section class="ml-panel">
+                <h3>🤝 Совместные проекты</h3>
+                <div id="mashaCollabList" class="ml-list"></div>
+            </section>
+        </main>
     </div>
 
     <!-- SONYA DESIGN LAB -->
@@ -502,6 +541,7 @@
                     <option value="cursor">Лео · Cursor SDK</option>
                     <option value="presenter">Ника · Презентации</option>
                     <option value="modeler">Зоя · 3D</option>
+                    <option value="evaluator">Маша · Оценка</option>
                 </select>
                 <div class="type-group">
                     <button type="button" class="type-btn active" id="typeTask" onclick="setMsgType('task')" title="Задача для команды или агента">📋 Задача</button>
@@ -550,7 +590,8 @@
 
             <div class="input-area">
                 <div class="input-wrap">
-                    <textarea id="messageInput" placeholder="Задача или @соня @pm @все …" rows="1" autocomplete="off"></textarea>
+                    <textarea id="messageInput" placeholder="/site … /learn … или @соня @pm" rows="1" autocomplete="off"></textarea>
+                    <div id="slashDropdown" class="slash-dropdown hidden"></div>
                     <div id="mentionDropdown" class="mention-dropdown hidden"></div>
                 </div>
                 <button type="button" class="send-btn" onclick="sendMessage()">↑</button>
@@ -755,7 +796,9 @@
 <script src="/static/js/sprint.js?v=1"></script>
 <script src="/static/js/power-pack.js?v=1"></script>
 <script src="/static/js/sonya-studio.js?v=3"></script>
-<script src="/static/js/app.js?v=32"></script>
+<script src="/static/js/chat-commands.js?v=1"></script>
+<script src="/static/js/masha-learning-lab.js?v=1"></script>
+<script src="/static/js/app.js?v=33"></script>
 
 <!-- PWA: регистрация Service Worker -->
 <script>
