@@ -7,7 +7,7 @@
 
     async function loadFigmaStatus() {
         try {
-            const resp = await fetch('/api/figma/status');
+            const resp = await fetch('/api/figma/status', { credentials: 'same-origin' });
             if (resp.ok) figmaStatus = await resp.json();
         } catch (_) {}
         renderFigmaAccount();
@@ -55,7 +55,7 @@
 
     async function connectFigma() {
         try {
-            const resp = await fetch('/api/figma/auth');
+            const resp = await fetch('/api/figma/auth', { credentials: 'same-origin' });
             const data = await resp.json();
             if (!resp.ok) throw new Error(data.detail || 'OAuth не настроен');
             window.location.href = data.auth_url;
@@ -67,7 +67,7 @@
     async function disconnectFigma() {
         if (!confirm('Отключить Figma OAuth?')) return;
         try {
-            await fetch('/api/figma/disconnect', { method: 'POST' });
+            await fetch('/api/figma/disconnect', { method: 'POST', credentials: 'same-origin' });
             await loadFigmaStatus();
             if (window.UIEnhancements) UIEnhancements.toast('Figma отключена', 'info');
         } catch (e) {
@@ -98,7 +98,7 @@
 
     async function loadCursorStatus() {
         try {
-            const resp = await fetch('/api/cursor/status');
+            const resp = await fetch('/api/cursor/status', { credentials: 'same-origin' });
             if (resp.ok) cursorStatus = await resp.json();
         } catch (_) {}
         updateCursorBadge();
@@ -122,7 +122,7 @@
         const el = document.getElementById('cursorPanelBody');
         if (!el) return;
         if (!cursorStatus) {
-            el.innerHTML = '<div class="panel-empty">Загрузка…</div>';
+            el.innerHTML = '<div class="dash-loading">Загрузка…</div>';
             return;
         }
         const user = cursorStatus.user?.email || cursorStatus.user?.userEmail || '—';
@@ -154,6 +154,7 @@
         try {
             await fetch('/api/config', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ cursor_repo_url: url }),
             });
@@ -169,6 +170,7 @@
         try {
             const resp = await fetch('/api/cursor/sync', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt }),
             });
@@ -196,6 +198,7 @@
         try {
             const resp = await fetch('/api/figma/import', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url }),
             });
@@ -244,7 +247,7 @@
     async function loadDefaultFigmaUrl() {
         await loadFigmaStatus();
         try {
-            const resp = await fetch('/api/config');
+            const resp = await fetch('/api/config', { credentials: 'same-origin' });
             if (!resp.ok) return;
             const cfg = await resp.json();
             const input = document.getElementById('dlFigmaUrl') || document.getElementById('figmaUrlInput');
@@ -257,7 +260,7 @@
         const el = document.getElementById('sonyaStudioPanel');
         if (!el) return;
         try {
-            const resp = await fetch('/api/figma/studio');
+            const resp = await fetch('/api/figma/studio', { credentials: 'same-origin' });
             if (!resp.ok) throw new Error('Ошибка загрузки');
             const data = await resp.json();
             const portfolio = (data.portfolio || []).slice(0, 5);
@@ -285,7 +288,7 @@
 
     async function triggerSonyaStudy() {
         try {
-            const resp = await fetch('/api/figma/studio/trigger?action=study', { method: 'POST' });
+            const resp = await fetch('/api/figma/studio/trigger?action=study', { method: 'POST', credentials: 'same-origin' });
             const data = await resp.json();
             if (!resp.ok) throw new Error(data.detail || 'Ошибка');
             if (window.UIEnhancements) UIEnhancements.toast('📚 Соня изучает Figma…', 'info');
@@ -299,7 +302,7 @@
             if (window.SonyaStudio?.createBySonya) {
                 project = await SonyaStudio.createBySonya();
             } else {
-                const resp = await fetch('/api/sonya/studio/create', { method: 'POST' });
+                const resp = await fetch('/api/sonya/studio/create', { method: 'POST', credentials: 'same-origin' });
                 const data = await resp.json().catch(() => ({}));
                 if (!resp.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Ошибка');
                 project = data.project;

@@ -238,7 +238,7 @@ try {
         const autoOpen = opts.autoOpen === true;
         setLoading(true);
         try {
-            const resp = await fetch('/api/agents/frontend/preview');
+            const resp = await fetch('/api/agents/frontend/preview', { credentials: 'same-origin' });
             if (!resp.ok) {
                 setLoading(false);
                 return;

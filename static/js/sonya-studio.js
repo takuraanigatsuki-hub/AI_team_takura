@@ -61,9 +61,14 @@
 
     async function loadProjects(selectId) {
         const listEl = document.getElementById('ssProjectList');
-        if (listEl) listEl.innerHTML = '<div class="panel-empty">Загрузка…</div>';
+        if (listEl) listEl.innerHTML = '<div class="dash-loading">Загрузка…</div>';
         try {
-            const r = await fetch('/api/sonya/projects');
+            const r = await fetch('/api/sonya/projects', { credentials: 'same-origin' });
+            if (r.status === 401) {
+                if (listEl) listEl.innerHTML = '<div class="panel-empty">🔐 Войдите для Studio проектов</div>';
+                return;
+            }
+            if (!r.ok) throw new Error('HTTP ' + r.status);
             const d = await r.json();
             projects = d.projects || [];
             renderProjectList();

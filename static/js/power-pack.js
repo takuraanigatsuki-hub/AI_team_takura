@@ -1,13 +1,14 @@
 /** Power Pack — memory, backup, pipeline, compare, cost, templates */
 (function (global) {
     async function showMemory() {
-        const r = await fetch('/api/project-memory');
+        const r = await fetch('/api/project-memory', { credentials: 'same-origin' });
         const d = await r.json();
         const brief = prompt('Brief проекта (контекст для всех агентов):', d.brief || '');
         if (brief === null) return;
         const goals = prompt('Цели (через ;):', (d.goals || []).join('; '));
         await fetch('/api/project-memory', {
             method: 'POST',
+            credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ brief, goals: (goals || '').split(';').map((s) => s.trim()).filter(Boolean), constraints: d.constraints || [] }),
         });
@@ -22,7 +23,7 @@
     async function runPipeline() {
         if (window.UIEnhancements) UIEnhancements.toast('🚀 Pipeline: Figma → React → Deploy…', 'info');
         try {
-            const r = await fetch('/api/pipeline/full', { method: 'POST' });
+            const r = await fetch('/api/pipeline/full', { method: 'POST', credentials: 'same-origin' });
             const d = await r.json();
             if (d.ok && window.UIEnhancements) UIEnhancements.toast('✅ Pipeline запущен', 'success');
         } catch (e) {
@@ -34,7 +35,7 @@
         const idA = prompt('ID проекта A (из вкладки Проекты):');
         const idB = prompt('ID проекта B:');
         if (!idA || !idB) return;
-        const r = await fetch(`/api/projects/${idA}/diff/${idB}`);
+        const r = await fetch(`/api/projects/${idA}/diff/${idB}`, { credentials: 'same-origin' });
         const d = await r.json();
         showDiffModal(d);
     }
