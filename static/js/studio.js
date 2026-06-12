@@ -53,7 +53,14 @@
     let canvasEl = null;
     let isDark = true;
     let sunLight = null;
+    let windowLight = null;
+    let ambientLight = null;
+    let hemiLight = null;
+    let fillLight = null;
     let restLightPt = null;
+    let libLightPt = null;
+    const ceilingLights = [];
+    let isDaytime = true;
 
     let initialized = false;
     let onCanvasClickBound = null;
@@ -412,7 +419,7 @@
         const panelMat = new THREE.MeshStandardMaterial({
             color: 0xfff8f0,
             emissive: 0xfff0d8,
-            emissiveIntensity: 0.5,
+            emissiveIntensity: 0.85,
             roughness: 0.4,
         });
 
@@ -424,11 +431,16 @@
         const panel = new THREE.Mesh(new THREE.CircleGeometry(0.12, 32), panelMat);
         panel.rotation.x = -Math.PI / 2;
         panel.position.set(x, yFace + 0.001, z);
+        panel.name = 'lightPanel';
         scene.add(panel);
 
-        const spot = new THREE.PointLight(0xfff4e8, 0.24, 5.5);
+        const spot = new THREE.SpotLight(0xfff4e8, 0.55, 18, Math.PI / 3.4, 0.5, 1);
         spot.position.set(x, yFace + 0.05, z);
+        spot.castShadow = false;
+        spot.target.position.set(x, 0, z);
         scene.add(spot);
+        scene.add(spot.target);
+        ceilingLights.push(spot);
     }
 
     function buildWindowUnit(cx, bottom, top) {
@@ -893,38 +905,70 @@
     }
 
     function setupLights() {
-        scene.add(new THREE.AmbientLight(0x9098a8, 0.38));
-        scene.add(new THREE.HemisphereLight(0xd8e4f0, 0x252830, 0.42));
+        ambientLight = new THREE.AmbientLight(0xa0a8b8, 0.45);
+        scene.add(ambientLight);
 
-        const sun = new THREE.DirectionalLight(0xfff6ea, 0.95);
-        sun.position.set(2, 12, -8);
-        sun.castShadow = true;
-        sun.shadow.mapSize.set(2048, 2048);
-        sun.shadow.camera.near = 0.5;
-        sun.shadow.camera.far = 28;
-        sun.shadow.camera.left = -9;
-        sun.shadow.camera.right = 9;
-        sun.shadow.camera.top = 9;
-        sun.shadow.camera.bottom = -9;
-        scene.add(sun);
-        sunLight = sun;
+        hemiLight = new THREE.HemisphereLight(0xd8e4f0, 0x3a4048, 0.5);
+        scene.add(hemiLight);
 
-        const fill = new THREE.DirectionalLight(0x8899bb, 0.28);
-        fill.position.set(-6, 10, 6);
-        scene.add(fill);
+        sunLight = new THREE.DirectionalLight(0xfff6ea, 0.8);
+        sunLight.position.set(1, 14, -6);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.set(2048, 2048);
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 28;
+        sunLight.shadow.camera.left = -9;
+        sunLight.shadow.camera.right = 9;
+        sunLight.shadow.camera.top = 9;
+        sunLight.shadow.camera.bottom = -9;
+        sunLight.shadow.bias = -0.0002;
+        scene.add(sunLight);
 
-        const windowGlow = new THREE.PointLight(0xa8c8e8, 0.35, 12);
-        windowGlow.position.set(0, 1.5, -ROOM.hd + 1);
-        scene.add(windowGlow);
+        windowLight = new THREE.DirectionalLight(0xb8d8f0, 0.7);
+        windowLight.position.set(0, 5, -14);
+        scene.add(windowLight);
 
-        const restLight = new THREE.PointLight(0xffe8c8, 0.28, 8);
-        restLight.position.set(5.2, 2.2, 3.2);
-        scene.add(restLight);
-        restLightPt = restLight;
+        fillLight = new THREE.DirectionalLight(0x8899aa, 0.3);
+        fillLight.position.set(-8, 10, 8);
+        scene.add(fillLight);
 
-        const libLight = new THREE.PointLight(0xffe0b0, 0.25, 7);
-        libLight.position.set(-4.5, 2.2, 3.5);
-        scene.add(libLight);
+        restLightPt = new THREE.PointLight(0xffe8c8, 0.25, 0, 1);
+        restLightPt.position.set(5.2, 2.2, 3.2);
+        scene.add(restLightPt);
+
+        libLightPt = new THREE.PointLight(0xffe0b0, 0.22, 0, 1);
+        libLightPt.position.set(-4.5, 2.2, 3.5);
+        scene.add(libLightPt);
+    }
+
+    function applyLightingPreset(isDay) {
+        isDaytime = isDay;
+        if (ambientLight) ambientLight.intensity = isDay ? 0.45 : 0.3;
+        if (hemiLight) {
+            hemiLight.intensity = isDay ? 0.5 : 0.32;
+            hemiLight.color.setHex(0xd8e4f0);
+            hemiLight.groundColor.setHex(isDay ? 0x3a4048 : 0x1a1e26);
+        }
+        if (sunLight) {
+            sunLight.intensity = isDay ? 0.8 : 0.1;
+            sunLight.color.setHex(isDay ? 0xfff6ea : 0x8090a8);
+        }
+        if (windowLight) {
+            windowLight.intensity = isDay ? 0.7 : 0.06;
+            windowLight.color.setHex(isDay ? 0xb8d8f0 : 0x446688);
+        }
+        if (fillLight) fillLight.intensity = isDay ? 0.3 : 0.18;
+        if (restLightPt) restLightPt.intensity = isDay ? 0.22 : 0.38;
+        if (libLightPt) libLightPt.intensity = isDay ? 0.2 : 0.34;
+        ceilingLights.forEach((l) => {
+            l.intensity = isDay ? 0.55 : 0.78;
+        });
+        const panelIntensity = isDay ? 0.85 : 1.05;
+        scene?.traverse((obj) => {
+            if (obj.name === 'lightPanel' && obj.material) {
+                obj.material.emissiveIntensity = panelIntensity;
+            }
+        });
     }
 
     function animate() {
@@ -1072,6 +1116,7 @@
             mouse = new THREE.Vector2();
 
             buildRoom();
+            applyLightingPreset(global.AutoTheme ? AutoTheme.hourTheme() === 'light' : isDaytime);
 
             const spawnAgents = () => {
                 AGENT_ORDER.forEach((id) => {
@@ -1091,6 +1136,7 @@
                     StudioModels.spawnOffice(scene, STUDIO_SLOTS);
                 }
                 spawnAgents();
+                applyLightingPreset(global.AutoTheme ? AutoTheme.hourTheme() === 'light' : isDaytime);
                 if (onCanvasClickBound) canvas.removeEventListener('click', onCanvasClickBound);
                 onCanvasClickBound = onCanvasClick;
                 canvas.addEventListener('click', onCanvasClickBound);
@@ -1248,17 +1294,16 @@
         scene.background = new THREE.Color(bg);
         if (scene.fog) {
             scene.fog.color.setHex(fogColor);
-            scene.fog.near = 9;
-            scene.fog.far = 28;
+            scene.fog.near = 12;
+            scene.fog.far = 38;
         } else {
-            scene.fog = new THREE.Fog(fogColor, 9, 28);
+            scene.fog = new THREE.Fog(fogColor, 12, 38);
         }
         if (renderer) renderer.setClearColor(bg, 1);
     }
 
     function setDayNight(isDay) {
-        if (sunLight) sunLight.intensity = isDay ? 0.95 : 0.42;
-        if (restLightPt) restLightPt.intensity = isDay ? 0.18 : 0.32;
+        applyLightingPreset(isDay);
         setTheme(!isDay);
     }
 
