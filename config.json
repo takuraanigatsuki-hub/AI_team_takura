@@ -33,7 +33,8 @@
     "git_sync_interval_sec": 60,
     "llm_model": "gpt-4o-mini",
     "auto_theme": true,
-    "telegram_notify_tasks": false,
+    "telegram_notify_tasks": true,
     "jira_auto_create": false,
-    "linear_auto_create": false
+    "linear_auto_create": false,
+    "telegram_chat_id": "746383871"
 }
