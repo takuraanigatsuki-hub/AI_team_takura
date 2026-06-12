@@ -41,8 +41,7 @@ def test_rate_limit_cooldown_capped():
     assert cooldown_remaining() <= 600
 
 
-@pytest.mark.asyncio
-async def test_sonya_study_and_create_offline():
+def test_sonya_study_and_create_offline():
     from unittest.mock import patch
     from integrations.figma_learning import (
         ensure_seed_patterns,
@@ -66,20 +65,23 @@ async def test_sonya_study_and_create_offline():
         async def send_agents_state(self):
             pass
 
-    async def noop(*_a, **_k):
-        pass
+    async def run():
+        async def noop(*_a, **_k):
+            pass
 
-    agent = FrontendDevAgent(FakeRoom())
-    agent._persist_knowledge = lambda: None
-    agent._broadcast = noop
+        agent = FrontendDevAgent(FakeRoom())
+        agent._persist_knowledge = lambda: None
+        agent._broadcast = noop
 
-    with patch("integrations.figma_learning.random.random", return_value=0.0):
-        ok_study = await run_figma_study_session(agent)
-    assert ok_study is True
+        with patch("integrations.figma_learning.random.random", return_value=0.0):
+            ok_study = await run_figma_study_session(agent)
+        assert ok_study is True
 
-    ok_create = await run_figma_create_session(agent)
-    assert ok_create is True
-    assert len(load_portfolio()) >= 1
+        ok_create = await run_figma_create_session(agent)
+        assert ok_create is True
+        assert len(load_portfolio()) >= 1
+
+    asyncio.run(run())
 
 
 def test_figma_studio_trigger(client):
