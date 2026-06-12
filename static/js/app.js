@@ -59,6 +59,9 @@
         document.querySelectorAll('.view-tab').forEach((t) => {
             t.classList.toggle('active', t.dataset.view === view);
         });
+        document.querySelectorAll('.main > [id$="View"]').forEach((el) => {
+            el.classList.remove('view-enter');
+        });
         document.getElementById('studioView').classList.toggle('hidden', view !== 'studio');
         document.getElementById('chatView').classList.toggle('hidden', view !== 'chat');
         document.getElementById('learningView').classList.toggle('hidden', view !== 'learning');
@@ -95,15 +98,18 @@
         }
 
         if (view === 'studio') {
-            if (!studioInited) {
-                initStudio();
-            } else {
+            document.getElementById('studioView')?.classList.add('view-enter');
+            requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    const canvas = document.getElementById('studioCanvas');
-                    if (canvas && window.StudioApp) StudioApp.resize(canvas);
-                    if (window.StudioMinimap) StudioMinimap.update(Object.values(agents));
+                    if (!studioInited) {
+                        initStudio();
+                    } else if (window.StudioApp) {
+                        const canvas = document.getElementById('studioCanvas');
+                        StudioApp.wake(canvas);
+                        if (window.StudioMinimap) StudioMinimap.update(Object.values(agents));
+                    }
                 });
-            }
+            });
         }
     };
 

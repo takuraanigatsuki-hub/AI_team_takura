@@ -30,8 +30,8 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/main.css?v=21">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/main.css?v=22">
 </head>
 <body>
 
@@ -104,8 +104,12 @@
 
 <div class="main">
     <!-- 3D STUDIO -->
-    <div id="studioView" class="studio-view">
+    <div id="studioView" class="studio-view view-enter">
         <canvas id="studioCanvas"></canvas>
+        <div id="studioLoading" class="studio-loading">
+            <div class="studio-loading-ring" aria-hidden="true"></div>
+            <span>Загрузка 3D-сцены…</span>
+        </div>
         <div id="studioError" class="studio-error" style="display:none"></div>
         <div class="studio-overlay">
             <div class="studio-hud studio-hud-left">
@@ -560,8 +564,8 @@
     </div>
 </aside>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="/static/vendor/three.min.js"></script>
+<script src="/static/vendor/OrbitControls.js"></script>
 <script src="/static/js/sounds.js?v=2"></script>
 <script src="/static/js/wow.js?v=2"></script>
 <script src="/static/js/pipeline.js?v=2"></script>
@@ -573,7 +577,7 @@
 <script src="/static/js/voice.js?v=1"></script>
 <script src="/static/js/minimap.js?v=3"></script>
 <script src="/static/js/themes-auto.js?v=1"></script>
-<script src="/static/js/studio.js?v=10"></script>
+<script src="/static/js/studio.js?v=11"></script>
 <script src="/static/js/react-preview.js?v=3"></script>
 <script src="/static/js/integrations.js?v=6"></script>
 <script src="/static/js/ui-enhancements.js?v=2"></script>
@@ -586,7 +590,7 @@
 <script src="/static/js/sprint.js?v=1"></script>
 <script src="/static/js/power-pack.js?v=1"></script>
 <script src="/static/js/sonya-studio.js?v=3"></script>
-<script src="/static/js/app.js?v=18"></script>
+<script src="/static/js/app.js?v=19"></script>
 
 <!-- PWA: регистрация Service Worker -->
 <script>

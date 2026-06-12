@@ -69,12 +69,68 @@
     }
 
     function getCanvasSize(canvas) {
-        const parent = canvas.parentElement;
-        const w = parent ? parent.clientWidth : canvas.clientWidth;
-        const h = parent ? parent.clientHeight : canvas.clientHeight;
+        const parent = canvas?.parentElement;
+        let w = parent?.clientWidth || canvas?.clientWidth || 0;
+        let h = parent?.clientHeight || canvas?.clientHeight || 0;
+        if (w < 200 || h < 150) {
+            const headerH = document.querySelector('.header')?.offsetHeight || 104;
+            const footerH = document.getElementById('statusFooter')?.offsetHeight || 28;
+            w = Math.max(w, window.innerWidth);
+            h = Math.max(h, window.innerHeight - headerH - footerH - 8);
+        }
         return {
-            width: Math.max(w || window.innerWidth, 320),
-            height: Math.max(h || window.innerHeight - 60, 240),
+            width: Math.max(w, 320),
+            height: Math.max(h, 240),
+        };
+    }
+
+    function showLoading(show) {
+        const el = document.getElementById('studioLoading');
+        if (el) el.classList.toggle('hidden', !show);
+    }
+
+    function createFallbackControls(cam, dom) {
+        const target = new THREE.Vector3(0, 0, 1);
+        let theta = 0.4;
+        let phi = 1.05;
+        let radius = 20;
+        let dragging = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        function syncCamera() {
+            cam.position.x = target.x + radius * Math.sin(phi) * Math.sin(theta);
+            cam.position.y = target.y + radius * Math.cos(phi);
+            cam.position.z = target.z + radius * Math.sin(phi) * Math.cos(theta);
+            cam.lookAt(target);
+        }
+        syncCamera();
+
+        dom.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            dragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+        });
+        window.addEventListener('mouseup', () => { dragging = false; });
+        dom.addEventListener('mousemove', (e) => {
+            if (!dragging) return;
+            theta -= (e.clientX - lastX) * 0.005;
+            phi = Math.max(0.25, Math.min(1.45, phi + (e.clientY - lastY) * 0.005));
+            lastX = e.clientX;
+            lastY = e.clientY;
+            syncCamera();
+        });
+        dom.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            radius = Math.max(6, Math.min(38, radius + e.deltaY * 0.02));
+            syncCamera();
+        }, { passive: false });
+
+        return {
+            target,
+            update() {},
+            enabled: true,
         };
     }
 
@@ -392,7 +448,7 @@
             if (!confettiGroup.children.length) { scene.remove(confettiGroup); confettiGroup = null; }
         }
 
-        if (flyTarget && flyProgress < 1) {
+        if (flyTarget && flyProgress < 1 && controls) {
             flyProgress = Math.min(1, flyProgress + 0.025);
             const e = 1 - Math.pow(1 - flyProgress, 3);
             camera.position.x += (flyTarget.tx - camera.position.x) * e * 0.08;
@@ -472,6 +528,7 @@
 
         try {
             hideError();
+            showLoading(true);
             canvasEl = canvas;
             onAgentClick = clickCallback;
             clock = new THREE.Clock();
@@ -500,7 +557,8 @@
                 controls.maxDistance = 38;
                 controls.target.set(0, 0, 1);
             } else {
-                console.warn('[Studio] OrbitControls недоступен — камера статична');
+                console.warn('[Studio] OrbitControls недоступен — fallback-управление');
+                controls = createFallbackControls(camera, canvas);
             }
 
             setupLights();
@@ -528,11 +586,23 @@
             resize(canvas);
             if (!animId) animate();
             initialized = true;
+            showLoading(false);
+            renderer.render(scene, camera);
             return true;
         } catch (err) {
+            showLoading(false);
             showError('Ошибка 3D: ' + (err.message || err));
             return false;
         }
+    }
+
+    function wake(canvas) {
+        canvas = canvas || canvasEl || document.getElementById('studioCanvas');
+        if (!canvas) return false;
+        if (!initialized) return init(canvas, onAgentClick);
+        resize(canvas);
+        if (renderer && scene && camera) renderer.render(scene, camera);
+        return true;
     }
 
     let pipelineHighlightId = null;
@@ -690,7 +760,7 @@
     }
 
     global.StudioApp = {
-        init, updateAgents, resize, setTheme, destroy, setPipelineHighlight,
+        init, wake, updateAgents, resize, setTheme, destroy, setPipelineHighlight,
         showSpeechBubble, burstConfetti, flyToAgent, setDayNight, pulseScreen,
         isReady: () => initialized,
     };
