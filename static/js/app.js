@@ -1008,6 +1008,22 @@
         if (c) c.scrollTop = c.scrollHeight;
     }
 
+    window.applyMention = function (text) {
+        const input = document.getElementById('messageInput');
+        if (input) {
+            input.value = (input.value ? `${input.value} ` : '') + text;
+            input.focus();
+            input.dispatchEvent(new Event('input'));
+        }
+        const alias = text.trim().replace(/^@/, '').toLowerCase();
+        const map = {
+            pm: 'pm', соня: 'frontend', sonia: 'frontend', frontend: 'frontend',
+            макс: 'backend', backend: 'backend', все: 'all', all: 'all',
+        };
+        const sel = document.getElementById('targetSelect');
+        if (sel && map[alias]) sel.value = map[alias];
+    };
+
     window.applyTemplate = function (text) {
         const input = document.getElementById('messageInput');
         if (input) {
