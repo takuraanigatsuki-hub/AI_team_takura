@@ -106,10 +106,25 @@
         <canvas id="studioCanvas"></canvas>
         <div id="studioError" class="studio-error" style="display:none"></div>
         <div class="studio-overlay">
-            <div class="studio-hint">🖱️ Вращение · колесо — zoom · клик по агенту — личный чат</div>
-            <canvas id="studioMinimap" class="studio-minimap" width="140" height="100" title="Mini-map"></canvas>
-            <div class="studio-legend" id="studioLegend"></div>
+            <div class="studio-hud studio-hud-left">
+                <div class="studio-hint">🖱️ Вращение · колесо — zoom · клик по агенту — личный чат</div>
+            </div>
+            <div class="studio-hud studio-hud-right">
+                <div class="studio-legend" id="studioLegend"></div>
+            </div>
         </div>
+        <aside class="studio-minimap-panel" aria-label="Карта команды">
+            <div class="minimap-head">
+                <span class="minimap-title">🗺️ Карта команды</span>
+                <span class="minimap-live" id="minimapLive">● live</span>
+            </div>
+            <canvas id="studioMinimap" class="studio-minimap" width="200" height="150"></canvas>
+            <div class="minimap-legend">
+                <span><i class="dot dot-active"></i> в работе</span>
+                <span><i class="dot dot-idle"></i> свободен</span>
+                <span><i class="dot dot-rest"></i> отдых / библиотека</span>
+            </div>
+        </aside>
     </div>
 
     <!-- DESIGN VIEW (Figma + tokens) -->
