@@ -43,6 +43,16 @@ a { color: inherit; text-decoration: none; }
 .lp-nav { display: flex; gap: 24px; }
 .lp-nav a { color: var(--lp-muted); font-size: 14px; transition: color 0.2s; }
 .lp-nav a:hover { color: var(--lp-text); }
+.lp-nav-toggle {
+    display: none;
+    background: transparent;
+    border: 1px solid var(--lp-border);
+    color: var(--lp-text);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 18px;
+    cursor: pointer;
+}
 .lp-header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .lp-btn-ghost, .lp-btn-primary, .lp-btn-accent {
@@ -145,12 +155,29 @@ a { color: inherit; text-decoration: none; }
 .lp-mock-msg { font-size: 13px; padding: 10px 12px; background: rgba(255,255,255,0.04); border-radius: 8px; max-width: 90%; }
 .lp-mock-msg.bot { background: rgba(108,99,255,0.12); align-self: flex-start; }
 
-.lp-features, .lp-team, .lp-cta {
+.lp-features, .lp-how, .lp-team, .lp-integrations, .lp-cta {
     max-width: 1200px;
     margin: 0 auto;
     padding: 64px 32px;
 }
-.lp-features h2, .lp-team h2, .lp-cta h2 { font-size: 32px; margin-bottom: 32px; text-align: center; }
+.lp-section-label {
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--lp-accent-2);
+    margin-bottom: 12px;
+}
+.lp-section-desc {
+    text-align: center;
+    color: var(--lp-muted);
+    max-width: 560px;
+    margin: 0 auto 40px;
+    font-size: 16px;
+}
+.lp-features h2, .lp-how h2, .lp-team h2, .lp-integrations h2, .lp-cta h2 { font-size: 32px; margin-bottom: 32px; text-align: center; }
 .lp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
 .lp-card {
     background: var(--lp-surface);
@@ -163,6 +190,53 @@ a { color: inherit; text-decoration: none; }
 .lp-card span { font-size: 32px; display: block; margin-bottom: 12px; }
 .lp-card h3 { font-size: 18px; margin-bottom: 8px; }
 .lp-card p { color: var(--lp-muted); font-size: 14px; }
+
+.lp-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+.lp-step {
+    background: var(--lp-surface);
+    border: 1px solid var(--lp-border);
+    border-radius: 12px;
+    padding: 28px 24px;
+    text-align: center;
+    transition: border-color 0.2s, transform 0.2s;
+}
+.lp-step:hover { border-color: var(--lp-accent); transform: translateY(-2px); }
+.lp-step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--lp-gradient);
+    color: #fff;
+    font-weight: 700;
+    font-size: 18px;
+    margin-bottom: 16px;
+}
+.lp-step h3 { font-size: 18px; margin-bottom: 10px; }
+.lp-step p { color: var(--lp-muted); font-size: 14px; }
+
+.lp-integrations-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+}
+.lp-integrations-grid span {
+    background: var(--lp-surface);
+    border: 1px solid var(--lp-border);
+    padding: 12px 20px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: border-color 0.2s;
+}
+.lp-integrations-grid span:hover { border-color: var(--lp-accent); }
 
 .lp-agents { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
 .lp-agents span {
@@ -180,11 +254,18 @@ a { color: inherit; text-decoration: none; }
 .lp-footer {
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
     padding: 24px 32px;
     border-top: 1px solid var(--lp-border);
     color: var(--lp-muted);
     font-size: 13px;
 }
+.lp-footer-brand { display: flex; align-items: center; gap: 8px; }
+.lp-footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+.lp-footer-links a { color: var(--lp-muted); transition: color 0.2s; }
+.lp-footer-links a:hover { color: var(--lp-text); }
 
 /* Modal */
 .lp-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
@@ -245,5 +326,14 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 900px) {
     .lp-hero { grid-template-columns: 1fr; }
     .lp-hero-visual { order: -1; }
-    .lp-nav { display: none; }
+    .lp-steps { grid-template-columns: 1fr; }
+    .lp-nav-toggle { display: block; }
+    .lp-nav {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        gap: 12px;
+        padding-top: 8px;
+    }
+    .lp-nav.open { display: flex; }
 }

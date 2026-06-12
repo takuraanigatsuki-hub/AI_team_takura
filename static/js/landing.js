@@ -138,4 +138,24 @@
         if (params.get('auth') === 'login') openModal('login');
         if (params.get('auth') === 'register') openModal('register');
     });
+
+    document.querySelectorAll('a[href^="#"]').forEach((link) => {
+        link.addEventListener('click', (e) => {
+            const id = link.getAttribute('href').slice(1);
+            const target = document.getElementById(id);
+            if (target) {
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                document.getElementById('lpNav')?.classList.remove('open');
+                document.getElementById('lpNavToggle')?.setAttribute('aria-expanded', 'false');
+            }
+        });
+    });
+
+    const navToggle = document.getElementById('lpNavToggle');
+    const nav = document.getElementById('lpNav');
+    navToggle?.addEventListener('click', () => {
+        const open = nav?.classList.toggle('open');
+        navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
 })();

@@ -16,9 +16,11 @@ def test_index(client):
     r = client.get("/")
     assert r.status_code == 200
     assert "AI Team Room" in r.text
-    assert "reactPreviewPanel" in r.text
-    assert "reactPreviewViewport" in r.text
-    assert "Регистрация" in r.text or "registration" in r.text.lower() or "btnRegister" in r.text
+    assert 'id="features"' in r.text
+    assert 'id="how"' in r.text
+    assert 'id="pricing"' in r.text
+    assert "lp-hero" in r.text
+    assert "Регистрация" in r.text or "btnRegister" in r.text
 
 
 def test_startup_landing(client):
