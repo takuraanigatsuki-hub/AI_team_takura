@@ -53,6 +53,7 @@
         document.getElementById('learningView').classList.toggle('hidden', view !== 'learning');
         document.getElementById('tasksView').classList.toggle('hidden', view !== 'tasks');
         document.getElementById('designView')?.classList.toggle('hidden', view !== 'design');
+        document.getElementById('sonyaStudioView')?.classList.toggle('hidden', view !== 'sonya-studio');
         document.getElementById('dashboardView')?.classList.toggle('hidden', view !== 'dashboard');
         document.getElementById('kanbanView')?.classList.toggle('hidden', view !== 'kanban');
         document.getElementById('sprintView')?.classList.toggle('hidden', view !== 'sprint');
@@ -69,6 +70,7 @@
             Integrations.loadFigmaStatus();
             Integrations.loadSonyaStudio();
         }
+        if (view === 'sonya-studio' && window.SonyaStudio) SonyaStudio.load();
         if (view === 'dashboard' && window.Dashboard) Dashboard.load();
         if (view === 'dashboard' && window.PowerPack) PowerPack.loadCostWidget();
 
@@ -363,6 +365,14 @@
                 if (window.UIEnhancements) UIEnhancements.toast(`✨ ${data.title || 'Новый проект'}`, 'success');
                 if (window.Integrations) Integrations.loadSonyaStudio();
                 addAgentMessage({ ...data, type: 'figma_portfolio', message: data.message || '' });
+                break;
+            case 'sonya_studio_project':
+            case 'sonya_studio_update':
+            case 'sonya_studio_published':
+                if (window.SonyaStudio) SonyaStudio.onMessage(data);
+                if (window.UIEnhancements) UIEnhancements.toast(data.message || 'Sonya Studio', 'success');
+                addAgentMessage({ ...data, type: data.type, message: data.message || '' });
+                if (data.preview && window.ReactPreview) ReactPreview.onMessage(data.preview);
                 break;
             case 'github_sync_started':
             case 'github_sync_done':
@@ -989,7 +999,7 @@
         connect();
 
         let startView = viewParam || (user?.default_view) || 'studio';
-        if (!['studio', 'chat', 'learning', 'design', 'tasks', 'projects', 'kanban', 'sprint', 'timeline', 'dashboard'].includes(startView)) {
+        if (!['studio', 'chat', 'learning', 'design', 'sonya-studio', 'tasks', 'projects', 'kanban', 'sprint', 'timeline', 'dashboard'].includes(startView)) {
             startView = 'studio';
         }
         switchView(startView);
@@ -1002,6 +1012,7 @@
         if (window.UIEnhancements) UIEnhancements.init();
         if (window.PipelineUI) PipelineUI.load();
         if (window.StudioMinimap) StudioMinimap.init();
+        if (window.SonyaStudio) SonyaStudio.init();
 
         const needsSetup = user && !user.setup_complete;
         if (needsSetup || setupParam === '1') {

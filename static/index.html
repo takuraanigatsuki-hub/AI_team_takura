@@ -31,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/main.css?v=17">
+    <link rel="stylesheet" href="/static/css/main.css?v=18">
 </head>
 <body>
 
@@ -90,6 +90,7 @@
             <button type="button" class="view-tab" data-view="chat" onclick="switchView('chat')">💬 Чат</button>
             <button type="button" class="view-tab" data-view="learning" onclick="switchView('learning')">📚 Обучение</button>
             <button type="button" class="view-tab" data-view="design" onclick="switchView('design')">🎨 Design</button>
+            <button type="button" class="view-tab" data-view="sonya-studio" onclick="switchView('sonya-studio')">✨ Studio</button>
             <button type="button" class="view-tab" data-view="tasks" onclick="switchView('tasks')">📋 Задачи</button>
             <button type="button" class="view-tab" data-view="projects" onclick="switchView('projects')">📦 Проекты</button>
             <button type="button" class="view-tab" data-view="kanban" onclick="switchView('kanban')">📌 Kanban</button>
@@ -124,6 +125,54 @@
                 <span><i class="dot dot-idle"></i> свободен</span>
                 <span><i class="dot dot-rest"></i> отдых / библиотека</span>
             </div>
+        </aside>
+    </div>
+
+    <!-- SONYA DESIGN STUDIO -->
+    <div id="sonyaStudioView" class="sonya-studio-layout hidden">
+        <aside class="ss-sidebar">
+            <div class="ss-sidebar-head">
+                <h3>✨ Sonya Studio</h3>
+                <div class="ss-sidebar-actions">
+                    <button type="button" class="btn-secondary btn-sm" onclick="SonyaStudio.createProject()">+ Новый</button>
+                    <button type="button" class="btn-primary btn-sm" onclick="SonyaStudio.askSonyaNew()">🎨 Соня</button>
+                </div>
+            </div>
+            <div class="ss-project-list" id="ssProjectList">
+                <div class="panel-empty">Загрузка…</div>
+            </div>
+        </aside>
+        <main class="ss-main">
+            <div class="ss-toolbar">
+                <div id="ssProjectMeta" class="ss-meta"></div>
+                <div class="ss-toolbar-actions">
+                    <button type="button" class="btn-secondary btn-sm" id="ssCommentModeBtn" onclick="SonyaStudio.toggleCommentMode()">💬 Комментарий</button>
+                    <button type="button" class="btn-secondary btn-sm" onclick="SonyaStudio.applyComments()">🔧 Применить правки</button>
+                    <button type="button" class="btn-primary btn-sm" onclick="SonyaStudio.publishProject()">📦 Опубликовать</button>
+                </div>
+            </div>
+            <div class="ss-canvas-wrap" id="ssCanvasWrap">
+                <iframe id="ssPreviewFrame" class="ss-preview-frame" title="Preview"></iframe>
+                <div class="ss-comment-layer" id="ssCommentLayer"></div>
+                <div class="ss-comment-form hidden" id="ssCommentForm">
+                    <div class="ss-comment-form-inner">
+                        <textarea id="ssCommentInput" rows="2" placeholder="Что изменить здесь?"></textarea>
+                        <div class="ss-comment-form-btns">
+                            <button type="button" class="btn-secondary btn-sm" id="ssCommentCancel">Отмена</button>
+                            <button type="button" class="btn-primary btn-sm" id="ssCommentSubmit">Отправить</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <aside class="ss-panel">
+            <div class="panel-label">Комментарии</div>
+            <div id="ssCommentsList" class="ss-comments-list"></div>
+            <div class="panel-label" style="margin-top:14px">Версии</div>
+            <div id="ssVersionsList" class="ss-versions-list"></div>
+            <div class="panel-label" style="margin-top:14px">Handoff · Figma</div>
+            <input type="url" id="ssFigmaUrl" class="design-input" placeholder="Ссылка Figma (опционально)">
+            <div id="ssHandoff" class="ss-handoff"></div>
         </aside>
     </div>
 
@@ -508,7 +557,8 @@
 <script src="/static/js/projects.js?v=2"></script>
 <script src="/static/js/sprint.js?v=1"></script>
 <script src="/static/js/power-pack.js?v=1"></script>
-<script src="/static/js/app.js?v=14"></script>
+<script src="/static/js/sonya-studio.js?v=1"></script>
+<script src="/static/js/app.js?v=15"></script>
 
 <!-- PWA: регистрация Service Worker -->
 <script>
