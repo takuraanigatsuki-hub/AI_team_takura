@@ -1951,3 +1951,42 @@ body.has-pipeline .header { box-shadow: 0 2px 20px rgba(0,0,0,0.15); }
     .profile-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
     .profile-tab-nav { flex-direction: row; flex-wrap: wrap; }
 }
+
+.sub-balance-card {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 16px;
+    padding: 16px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(108,99,255,0.15), rgba(86,207,225,0.08));
+    border: 1px solid rgba(108,99,255,0.3);
+}
+.sub-balance-value { font-size: 28px; font-weight: 700; }
+.sub-tier-value { font-size: 18px; font-weight: 600; }
+.sub-section-title { font-size: 14px; margin: 20px 0 10px; }
+.sub-plans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.sub-plan-card {
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+}
+.sub-plan-card.current { border-color: rgba(108,99,255,0.5); background: rgba(108,99,255,0.08); }
+.sub-plan-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.sub-plan-price { font-weight: 600; margin: 8px 0 4px; }
+
+.hdr-balance {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(108,99,255,0.15);
+    border: 1px solid rgba(108,99,255,0.25);
+    color: var(--text);
+    white-space: nowrap;
+}

@@ -4,6 +4,8 @@
 (function (global) {
     let activeTab = 'profile';
     let stats = null;
+    let plans = null;
+    let actionCosts = null;
 
     const VIEW_LABELS = {
         studio: '🎮 3D Студия',
@@ -36,6 +38,26 @@
         return { owner: 'Владелец', admin: 'Администратор', member: 'Участник' }[role] || role;
     }
 
+    function canAccessView(user, view) {
+        const sub = user?.subscription;
+        if (!sub) return true;
+        if (sub.unlimited || user.is_owner) return true;
+        return (sub.views_unlocked || []).includes(view);
+    }
+
+    async function loadPlans() {
+        try {
+            const r = await fetch('/api/subscription/plans');
+            if (r.ok) {
+                const d = await r.json();
+                plans = d.plans || [];
+                actionCosts = d.action_costs || {};
+            }
+        } catch (_) {
+            plans = null;
+        }
+    }
+
     async function loadStats() {
         try {
             const r = await fetch('/api/auth/profile/stats', { credentials: 'same-origin' });
@@ -50,6 +72,7 @@
         if (!nav) return;
         const tabs = [
             { id: 'profile', label: '👤 Профиль' },
+            { id: 'subscription', label: '💎 Подписка' },
             { id: 'settings', label: '⚙️ Настройки' },
             { id: 'security', label: '🔒 Безопасность' },
             { id: 'activity', label: '📈 Активность' },
@@ -82,8 +105,11 @@
                         <p class="muted">${esc(user.email)}</p>
                         <div class="ss-badges" style="margin-top:10px">
                             <span class="ss-badge">${roleLabel(user.role)}</span>
-                            ${user.is_owner ? '<span class="ss-badge warn">полный доступ</span>' : ''}
+                            <span class="ss-badge">${esc(user.subscription?.tier_emoji || '')} ${esc(user.subscription?.tier_name || 'Free')}</span>
+                            <span class="ss-badge">ур. ${user.access_level || 1}</span>
+                            ${user.is_owner ? '<span class="ss-badge warn">👑 Owner</span>' : ''}
                         </div>
+                        <p class="muted profile-hint" style="margin-top:8px">Баланс: <strong>${esc(user.subscription?.balance_display ?? '—')}</strong> кредитов</p>
                     </div>
                 </div>
                 <form class="profile-form" id="profileNameForm" onsubmit="ProfileCabinet.saveProfile(event)">
@@ -94,6 +120,51 @@
                     <p class="muted profile-hint">Email изменить нельзя — это ваш логин.</p>
                     <button type="submit" class="btn-primary btn-sm">Сохранить профиль</button>
                 </form>`;
+            return;
+        }
+
+        if (activeTab === 'subscription') {
+            const sub = user.subscription || {};
+            const curLevel = sub.level || 1;
+            const plansHtml = (plans || []).filter((p) => !p.owner_only).map((p) => {
+                const isCurrent = p.id === sub.tier;
+                const canUpgrade = p.level > curLevel && !user.is_owner;
+                return `
+                <article class="sub-plan-card ${isCurrent ? 'current' : ''}">
+                    <div class="sub-plan-head">${esc(p.emoji)} <strong>${esc(p.name_ru)}</strong> <span class="muted">ур. ${p.level}</span></div>
+                    <p class="muted">${esc(p.description)}</p>
+                    <p class="sub-plan-price">${p.price_rub ? `${p.price_rub} ₽/мес` : 'Бесплатно'}</p>
+                    <p class="muted">+${p.monthly_credits} кр./мес</p>
+                    ${isCurrent ? '<span class="ss-badge">текущий</span>' : ''}
+                    ${canUpgrade ? `<button type="button" class="btn-primary btn-sm" onclick="ProfileCabinet.upgrade('${p.id}')">Выбрать</button>` : ''}
+                </article>`;
+            }).join('');
+
+            const costsHtml = actionCosts ? Object.entries(actionCosts).map(([k, v]) =>
+                `<li><span>${esc(k)}</span><strong>${v} кр.</strong></li>`).join('') : '';
+
+            el.innerHTML = `
+                <div class="sub-balance-card">
+                    <div>
+                        <small class="muted">Баланс кредитов</small>
+                        <div class="sub-balance-value">${esc(sub.balance_display ?? '0')}</div>
+                    </div>
+                    <div>
+                        <small class="muted">Тариф</small>
+                        <div class="sub-tier-value">${esc(sub.tier_emoji || '')} ${esc(sub.tier_name || '')}</div>
+                    </div>
+                    <div>
+                        <small class="muted">Уровень доступа</small>
+                        <div class="sub-tier-value">${sub.level || 1} / 5</div>
+                    </div>
+                </div>
+                ${user.is_owner ? '<p class="muted">👑 <strong>Owner</strong> — безлимитный баланс и все функции без ограничений.</p>' : ''}
+                <h3 class="sub-section-title">Тарифные планы</h3>
+                <div class="sub-plans-grid">${plansHtml || '<p class="muted">Загрузка…</p>'}</div>
+                <h3 class="sub-section-title">Стоимость действий</h3>
+                <ul class="profile-meta-list">${costsHtml}</ul>
+                <h3 class="sub-section-title">Доступные вкладки</h3>
+                <p class="muted">${(sub.views_unlocked || []).map((v) => VIEW_LABELS[v] || v).join(' · ') || '—'}</p>`;
             return;
         }
 
@@ -164,15 +235,36 @@
 
     async function load() {
         renderTabs();
-        await loadStats();
+        await Promise.all([loadStats(), loadPlans()]);
         renderContent();
     }
 
     function switchTab(tab) {
         activeTab = tab;
         renderTabs();
-        renderContent();
-        if (tab === 'activity') loadStats().then(renderContent);
+        if (tab === 'subscription' && !plans) loadPlans().then(renderContent);
+        else if (tab === 'activity') loadStats().then(renderContent);
+        else renderContent();
+    }
+
+    async function upgrade(tier) {
+        if (!confirm(`Перейти на тариф «${tier}»? (демо без оплаты)`)) return;
+        try {
+            const r = await fetch('/api/subscription/upgrade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ tier }),
+            });
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.detail || 'Ошибка');
+            await global.Auth?.fetchMe();
+            await loadStats();
+            renderContent();
+            if (window.UIEnhancements) UIEnhancements.toast(d.message || 'Тариф обновлён', 'success');
+        } catch (e) {
+            alert(e.message);
+        }
     }
 
     async function saveProfile(e) {
@@ -261,5 +353,7 @@
         saveProfile,
         saveSettings,
         changePassword,
+        upgrade,
+        canAccessView,
     };
 })(window);

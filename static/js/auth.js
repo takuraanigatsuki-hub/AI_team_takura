@@ -51,7 +51,11 @@
             return;
         }
         const name = escape(currentUser.name || currentUser.email.split('@')[0]);
+        const sub = currentUser.subscription || {};
+        const bal = sub.balance_display != null ? sub.balance_display : (sub.balance ?? '—');
+        const tierShort = sub.tier_emoji ? `${sub.tier_emoji}` : '';
         el.innerHTML = `
+            <span class="hdr-balance" title="Баланс кредитов">${tierShort} ${bal} кр.</span>
             <button type="button" class="hdr-btn" onclick="switchView('profile')" title="Личный кабинет">👤 ${name}</button>
             <button type="button" class="hdr-btn" onclick="Auth.logout()">Выход</button>
             <a href="/" class="hdr-btn hdr-icon user-home" title="Главный сайт">🏠</a>`;

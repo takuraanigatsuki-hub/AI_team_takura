@@ -71,6 +71,9 @@ def test_ensure_owner(client):
     assert user["setup_complete"] is True
     assert "admin" in user["privileges"]
     assert "manage_users" in user["privileges"]
+    assert user["subscription"]["tier"] == "owner"
+    assert user["subscription"]["unlimited"] is True
+    assert user["access_level"] == 5
     u2, _ = login(email, "ownerpass1")
     assert u2["role"] == "owner"
 

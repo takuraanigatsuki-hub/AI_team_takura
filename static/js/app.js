@@ -45,6 +45,17 @@
     let dashboardRefreshTimer = null;
 
     window.switchView = function (view) {
+        const user = window.Auth?.getUser();
+        if (user && window.ProfileCabinet && !ProfileCabinet.canAccessView(user, view)) {
+            const sub = user.subscription || {};
+            const msg = `Нужен тариф выше. Ваш: ${sub.tier_name || 'Free'} (ур. ${sub.level || 1})`;
+            if (window.UIEnhancements) UIEnhancements.toast(msg, 'warn');
+            else alert(msg);
+            switchView('profile');
+            if (window.ProfileCabinet) ProfileCabinet.switchTab('subscription');
+            return;
+        }
+
         document.querySelectorAll('.view-tab').forEach((t) => {
             t.classList.toggle('active', t.dataset.view === view);
         });

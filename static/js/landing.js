@@ -53,7 +53,7 @@
 
         const name = user.name || user.email?.split('@')[0] || 'Пользователь';
         const pill = document.getElementById('lpUserPill');
-        if (pill) pill.textContent = `👤 ${name}`;
+        if (pill) pill.textContent = `👤 ${name} · ${user.subscription?.tier_emoji || ''} ${user.subscription?.tier_name || ''}`;
 
         const ws = user.default_view && user.default_view !== 'profile'
             ? `/app?view=${encodeURIComponent(user.default_view)}`

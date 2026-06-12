@@ -1064,6 +1064,7 @@ async def _sonya_agent_create_project(request: Request = None):
     project = await run_studio_create_session(frontend)
     if not project:
         raise HTTPException(status_code=500, detail="Не удалось создать проект в Studio")
+    frontend.figma_creations = getattr(frontend, "figma_creations", 0) + 1
     await notify_studio("project", project_title=project.get("title", ""), project_id=project.get("id", ""))
     await room.send_agents_state()
     return {"ok": True, "project": project}
