@@ -807,6 +807,7 @@
             peer_learning: 'практика',
             peer_discussion: 'диалог',
             skill_evaluation: '🎓 оценка',
+            learning_project: '🎓 упражнение',
         }[type] || 'обучение');
     }
 
@@ -1344,9 +1345,19 @@
         const map = {
             pm: 'pm', соня: 'frontend', sonia: 'frontend', frontend: 'frontend',
             макс: 'backend', backend: 'backend', все: 'all', all: 'all',
+            маша: 'evaluator', evaluator: 'evaluator',
         };
         const sel = document.getElementById('targetSelect');
         if (sel && map[alias]) sel.value = map[alias];
+    };
+
+    window.applySlash = function (text) {
+        const input = document.getElementById('messageInput');
+        if (input) {
+            input.value = text;
+            input.focus();
+            input.dispatchEvent(new Event('input'));
+        }
     };
 
     window.applyTemplate = function (text) {

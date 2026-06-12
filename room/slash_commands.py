@@ -29,7 +29,14 @@ _CMD_MAP = {c["cmd"]: c for c in SLASH_COMMANDS}
 
 
 def list_commands() -> list[dict]:
-    return [dict(c) for c in SLASH_COMMANDS if c["cmd"] != "help"]
+    out = []
+    for c in SLASH_COMMANDS:
+        if c["cmd"] == "help":
+            continue
+        item = dict(c)
+        item.setdefault("prefix", c.get("prefix", ""))
+        out.append(item)
+    return out
 
 
 def help_text() -> str:

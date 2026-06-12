@@ -46,7 +46,7 @@
         if (statsEl) {
             statsEl.innerHTML = `
                 <div class="ml-stat"><span>${s.user_submissions || 0}</span><small>ваших заданий</small></div>
-                <div class="ml-stat"><span>${s.solo_projects || 0}</span><small>сolo проектов</small></div>
+                <div class="ml-stat"><span>${s.solo_projects || 0}</span><small>solo проектов</small></div>
                 <div class="ml-stat"><span>${s.collaborative_projects || 0}</span><small>совместных</small></div>
                 <div class="ml-stat"><span>${s.evaluations_count || 0}</span><small>оценок</small></div>
                 <div class="ml-stat highlight"><span>${s.average_score || '—'}</span><small>средний балл</small></div>`;
