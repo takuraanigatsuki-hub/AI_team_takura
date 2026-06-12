@@ -23,7 +23,7 @@ def test_agents(client):
     assert r.status_code == 200
     data = r.json()
     assert "agents" in data
-    assert len(data["agents"]) >= 9
+    assert len(data["agents"]) >= 11
 
 
 def test_templates(client):
@@ -44,7 +44,10 @@ def test_kanban(client):
     assert "columns" in r.json()
 
 
-def test_integrations_status(client):
+def test_projects(client):
+    r = client.get("/api/projects")
+    assert r.status_code == 200
+    assert "projects" in r.json()
     r = client.get("/api/integrations/status")
     assert r.status_code == 200
     data = r.json()

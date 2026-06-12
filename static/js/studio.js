@@ -3,17 +3,18 @@
  * Совместимость: Three.js r128+
  */
 (function (global) {
-    const AGENT_ORDER = ['pm', 'architect', 'backend', 'frontend', 'qa', 'reviewer', 'doc_writer', 'devops', 'cursor'];
+    const AGENT_ORDER = ['pm', 'architect', 'backend', 'frontend', 'qa', 'reviewer', 'doc_writer', 'devops', 'cursor', 'presenter', 'modeler'];
 
     const AGENT_EMOJIS = {
         pm: '🎯', architect: '🏛️', backend: '⚙️', frontend: '🎨',
         qa: '🧪', reviewer: '🔍', doc_writer: '📝', devops: '🔧', cursor: '⚡',
+        presenter: '📽️', modeler: '🧊',
     };
 
     const AGENT_COLORS = {
         pm: 0xe8b84a, architect: 0x6c9eff, backend: 0x5ecf8a, frontend: 0xc792ea,
         qa: 0xf07178, reviewer: 0xffa657, doc_writer: 0x82aaff, devops: 0x56d4dd,
-        cursor: 0xffd866,
+        cursor: 0xffd866, presenter: 0xff6b9d, modeler: 0x56cfe1,
     };
 
     const STUDIO_SLOTS = {
@@ -21,20 +22,22 @@
         backend: { x: 0, z: -4 }, frontend: { x: 3.5, z: -4 },
         qa: { x: -7, z: 0 }, reviewer: { x: -3.5, z: 0 },
         doc_writer: { x: 0, z: 0 }, devops: { x: 3.5, z: 0 },
-        cursor: { x: 7, z: -2 },
+        cursor: { x: 7, z: -2 }, presenter: { x: 7, z: 1 }, modeler: { x: 7, z: 4 },
     };
 
     const REST_SLOTS = {
         pm: { x: 9, z: 5 }, architect: { x: 11, z: 5 }, backend: { x: 13, z: 5 },
         frontend: { x: 9, z: 7.5 }, qa: { x: 11, z: 7.5 }, reviewer: { x: 13, z: 7.5 },
-        doc_writer: { x: 10, z: 10 }, devops: { x: 12, z: 10 }, cursor: { x: 14, z: 10 },
+        doc_writer: { x: 10, z: 10 }, devops: { x: 12, z: 10 },
+        cursor: { x: 14, z: 10 }, presenter: { x: 15, z: 10 }, modeler: { x: 16, z: 10 },
     };
 
     const LIBRARY_SLOTS = {
         pm: { x: -11, z: 6 }, architect: { x: -9, z: 6 },
         backend: { x: -11, z: 8.5 }, frontend: { x: -9, z: 8.5 },
         qa: { x: -11, z: 11 }, reviewer: { x: -9, z: 11 },
-        doc_writer: { x: -10, z: 13 }, devops: { x: -8, z: 13 }, cursor: { x: -6, z: 13 },
+        doc_writer: { x: -10, z: 13 }, devops: { x: -8, z: 13 },
+        cursor: { x: -6, z: 13 }, presenter: { x: -5, z: 11 }, modeler: { x: -4, z: 9 },
     };
 
     let scene, camera, renderer, controls, raycaster, mouse;

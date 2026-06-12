@@ -54,7 +54,7 @@ addEventListener('resize',()=>{{camera.aspect=innerWidth/innerHeight;camera.upda
 </script></body></html>"""
 
 
-async def produce_artifact(agent, task_text: str, response: str, revision_of: str = None) -> dict | None:
+async def produce_artifact(agent, task_text: str, response: str, revision_of: str = None):
     if not task_text.strip():
         return None
 

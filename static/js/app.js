@@ -55,8 +55,10 @@
         document.getElementById('dashboardView')?.classList.toggle('hidden', view !== 'dashboard');
         document.getElementById('kanbanView')?.classList.toggle('hidden', view !== 'kanban');
         document.getElementById('timelineView')?.classList.toggle('hidden', view !== 'timeline');
+        document.getElementById('projectsView')?.classList.toggle('hidden', view !== 'projects');
 
         if (view === 'tasks') loadTasks();
+        if (view === 'projects' && window.ProjectsUI) ProjectsUI.load();
         if (view === 'kanban' && window.KanbanUI) KanbanUI.refresh();
         if (view === 'timeline' && window.TimelineUI) TimelineUI.load(1);
         if (view === 'design' && window.Integrations) {
@@ -307,6 +309,12 @@
                 break;
             case 'pr_ready':
                 addLinkMessage(data.message || '🔗 PR / Commit готов', data.pr_url || data.commit_url);
+                break;
+            case 'artifact_created':
+                addSystemMessage(data.message || `📦 ${data.title || 'Проект'}`);
+                if (window.ProjectsUI && document.getElementById('projectsView') && !document.getElementById('projectsView').classList.contains('hidden')) {
+                    ProjectsUI.load();
+                }
                 break;
             case 'site_ready':
                 addSystemMessage(data.message || '🌐 Сайт готов! Откройте React Preview.');
@@ -623,6 +631,9 @@
             : '<span class="muted">Пока пусто</span>';
         const sources = a.knowledge_sources?.length ? a.knowledge_sources.join(', ') : '—';
 
+        const caps = a.capabilities || {};
+        const skills = (caps.skills || []).map((s) => `<span class="topic-tag">${escapeHtml(s)}</span>`).join('') || '—';
+
         document.getElementById('agentDetail').innerHTML = `
             <div class="detail-hero">
                 <div class="detail-emoji">${a.emoji}</div>
@@ -634,12 +645,14 @@
                 </div>
             </div>
             <div class="detail-section">
-                <div class="detail-section-title">Описание</div>
-                <p>${escapeHtml(a.description || '')}</p>
+                <div class="detail-section-title">Возможности</div>
+                <p>${escapeHtml(caps.label || '')}</p>
+                <div>${skills}</div>
             </div>
             <div class="detail-section">
                 <div class="detail-section-title">Статистика</div>
                 <p>Изучено: <strong>${a.learned_count || 0}</strong></p>
+                <p>Проектов: <strong>${a.artifact_count || 0}</strong></p>
                 <p>Задач: <strong>${a.memory_count || 0}</strong></p>
                 ${a.agent_id === 'frontend' ? `<p>Figma макетов: <strong>${a.figma_studied_count || 0}</strong></p><p>Своих проектов: <strong>${a.figma_portfolio_count || 0}</strong></p>` : ''}
                 <p>Личных сообщений: <strong>${a.direct_chat_count || 0}</strong></p>
@@ -649,7 +662,8 @@
                 <div class="detail-section-title">Темы</div>
                 <div>${topics}</div>
             </div>
-            <button class="action-btn" onclick="openPrivateChat('${a.agent_id}')">Личный чат с ${a.name}</button>
+            <button class="action-btn" onclick="AgentActivity.open('${a.agent_id}')">📊 Деятельность</button>
+            <button class="action-btn" onclick="openPrivateChat('${a.agent_id}')">💬 Обсудить / доработать</button>
             ${a.agent_id === 'frontend' ? `<button class="action-btn secondary" onclick="openSonyaPreview()">⚛️ React Preview</button>` : ''}
             ${a.agent_id === 'cursor' ? `<button class="action-btn secondary" onclick="Integrations.toggleCursorPanel()">⚡ Cursor Panel</button>` : ''}
             <button class="action-btn secondary" onclick="sendToAgent('${a.agent_id}')">Задача в общий чат</button>`;

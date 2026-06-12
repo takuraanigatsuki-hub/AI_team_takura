@@ -26,6 +26,9 @@ if __name__ == "__main__":
     print("  🔍 Дэн     — Code Reviewer")
     print("  📝 Лена    — Technical Writer")
     print("  🔧 Кирилл  — DevOps Engineer")
+    print("  ⚡ Лео     — Cursor SDK")
+    print("  📽️ Ника    — Presentations")
+    print("  🧊 Зоя     — 3D Artist")
     print("=" * 60)
 
     uvicorn.run(

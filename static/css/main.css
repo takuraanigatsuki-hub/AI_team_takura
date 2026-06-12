@@ -1036,3 +1036,36 @@ body.has-pipeline .header { box-shadow: 0 2px 20px rgba(0,0,0,0.15); }
 .pr-link { color: var(--accent); font-weight: 600; margin-left: 6px; }
 @media (max-width: 900px) { .kanban-board { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 560px) { .kanban-board { grid-template-columns: 1fr; } }
+
+/* Projects & Agent Activity */
+.projects-layout { padding: 16px 20px; height: calc(100vh - 56px); overflow: auto; }
+.projects-panel { max-width: 1200px; margin: 0 auto; }
+.projects-header h2 { margin: 0 0 4px; }
+.projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-top: 16px; }
+.project-card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.project-card.presentation { border-color: #ff6b9d44; }
+.project-card.model_3d { border-color: #56cfe144; }
+.pc-head { display: flex; justify-content: space-between; font-size: 11px; opacity: 0.8; }
+.pc-title { margin: 0; font-size: 15px; }
+.pc-desc { font-size: 12px; opacity: 0.75; margin: 0; flex: 1; }
+.pc-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.pc-tags .tag { background: var(--surface-2); padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+.pc-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.pc-time { font-size: 10px; opacity: 0.5; }
+.projects-empty { text-align: center; padding: 48px; opacity: 0.6; }
+.activity-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.activity-card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px; max-width: 640px; width: 100%; max-height: 85vh; overflow: auto; }
+.activity-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.activity-header h2 { margin: 0; font-size: 18px; }
+.activity-skills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.skill-chip { background: var(--accent-soft); color: var(--accent); padding: 3px 8px; border-radius: 999px; font-size: 11px; }
+.activity-stats { display: flex; gap: 16px; font-size: 12px; margin-bottom: 16px; opacity: 0.85; }
+.activity-section { margin-bottom: 16px; }
+.activity-section h3 { font-size: 13px; margin: 0 0 8px; opacity: 0.8; }
+.activity-artifact { background: var(--surface-2); border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+.aa-head { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+.aa-type { font-size: 10px; background: var(--surface-1); padding: 2px 6px; border-radius: 4px; }
+.aa-desc { font-size: 12px; opacity: 0.75; margin: 0 0 8px; }
+.aa-actions { display: flex; gap: 6px; }
+.activity-task { display: flex; justify-content: space-between; font-size: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.activity-footer { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }

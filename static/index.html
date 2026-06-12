@@ -49,6 +49,7 @@
         <button type="button" class="view-tab" data-view="learning" onclick="switchView('learning')">Обучение</button>
         <button type="button" class="view-tab" data-view="design" onclick="switchView('design')">Design</button>
         <button type="button" class="view-tab" data-view="tasks" onclick="switchView('tasks')">Задачи</button>
+        <button type="button" class="view-tab" data-view="projects" onclick="switchView('projects')">Проекты</button>
         <button type="button" class="view-tab" data-view="kanban" onclick="switchView('kanban')">Kanban</button>
         <button type="button" class="view-tab" data-view="timeline" onclick="switchView('timeline')">Timeline</button>
         <button type="button" class="view-tab" data-view="dashboard" onclick="switchView('dashboard')">Dashboard</button>
@@ -167,6 +168,27 @@
         </div>
     </div>
 
+    <!-- PROJECTS VIEW -->
+    <div id="projectsView" class="projects-layout hidden">
+        <div class="projects-panel">
+            <div class="projects-header">
+                <h2>📦 Проекты команды</h2>
+                <p class="muted">Код, UI, презентации, 3D — артефакты каждого агента</p>
+            </div>
+            <div class="tasks-stats" id="projectsStats"></div>
+            <div class="projects-filters">
+                <button type="button" class="filter-btn proj-filter active" data-agent="" data-type="" onclick="ProjectsUI.setFilter('','')">Все</button>
+                <button type="button" class="filter-btn proj-filter" data-agent="" data-type="presentation" onclick="ProjectsUI.setFilter('','presentation')">📽️</button>
+                <button type="button" class="filter-btn proj-filter" data-agent="" data-type="model_3d" onclick="ProjectsUI.setFilter('','model_3d')">🧊</button>
+                <button type="button" class="filter-btn proj-filter" data-agent="" data-type="ui" onclick="ProjectsUI.setFilter('','ui')">🎨</button>
+                <button type="button" class="filter-btn proj-filter" data-agent="" data-type="code" onclick="ProjectsUI.setFilter('','code')">💻</button>
+            </div>
+            <div class="projects-grid" id="projectsGrid">
+                <div class="panel-empty">Загрузка…</div>
+            </div>
+        </div>
+    </div>
+
     <!-- KANBAN VIEW -->
     <div id="kanbanView" class="kanban-layout hidden">
         <div class="kanban-toolbar">
@@ -235,6 +257,8 @@
                     <option value="doc_writer">Лена · Docs</option>
                     <option value="devops">Кирилл · DevOps</option>
                     <option value="cursor">Лео · Cursor SDK</option>
+                    <option value="presenter">Ника · Презентации</option>
+                    <option value="modeler">Зоя · 3D</option>
                 </select>
                 <div class="type-group">
                     <button type="button" class="type-btn active" id="typeTask" onclick="setMsgType('task')" title="Агент выполнит работу">📋 Задача</button>
@@ -420,7 +444,9 @@
 <script src="/static/js/integrations.js?v=5"></script>
 <script src="/static/js/ui-enhancements.js?v=2"></script>
 <script src="/static/js/dashboard.js?v=2"></script>
-<script src="/static/js/app.js?v=11"></script>
+<script src="/static/js/agent-activity.js?v=1"></script>
+<script src="/static/js/projects.js?v=1"></script>
+<script src="/static/js/app.js?v=12"></script>
 
 <!-- PWA: регистрация Service Worker -->
 <script>
