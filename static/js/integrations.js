@@ -21,7 +21,11 @@
         if (!label) return;
 
         const s = figmaStatus || {};
-        if (s.auth_method === 'oauth') {
+        const rl = s.rate_limit || {};
+        if (rl.in_cooldown && rl.cooldown_sec_remaining) {
+            label.textContent = `⏳ Rate limit · ${rl.cooldown_sec_remaining}с`;
+            if (dot) dot.className = 'figma-account-dot error';
+        } else if (s.auth_method === 'oauth') {
             const who = s.user_handle || s.user_email || s.user_name || 'Figma';
             label.textContent = `✓ ${who}`;
             if (dot) dot.className = 'figma-account-dot connected';
@@ -198,7 +202,14 @@
                 body: JSON.stringify({ url }),
             });
             const data = await resp.json();
-            if (!resp.ok) throw new Error(data.detail || 'Ошибка импорта');
+            if (!resp.ok) {
+                const msg = data.detail || 'Ошибка импорта';
+                if (resp.status === 429) {
+                    const wait = resp.headers.get('Retry-After') || '120';
+                    throw new Error(`Figma rate limit — подождите ${wait} сек. и нажмите «Импорт» снова.`);
+                }
+                throw new Error(msg);
+            }
             renderFigmaResult(data);
             if (window.WowFeatures) WowFeatures.setLastFigma(data);
             if (typeof addSystemMessage === 'function') {
@@ -240,10 +251,7 @@
             const cfg = await resp.json();
             const input = document.getElementById('figmaUrlInput');
             if (input && cfg.figma_default_url) input.value = cfg.figma_default_url;
-            if (cfg.figma_configured && cfg.figma_default_url && !figmaAutoImported) {
-                figmaAutoImported = true;
-                await importFigma();
-            }
+            // Импорт только по кнопке — авто-импорт перегружал Figma API (429)
         } catch (_) {}
     }
 

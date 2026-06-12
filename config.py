@@ -30,6 +30,8 @@ _defaults = {
     "figma_study_enabled": True,
     "figma_study_interval_min": 12,
     "figma_study_interval_max": 25,
+    "figma_api_min_interval_sec": 2.5,
+    "figma_rate_limit_cooldown_sec": 120,
     "figma_reference_urls": [],
     "openai_api_key": "",
     "openai_base_url": "https://api.openai.com/v1",

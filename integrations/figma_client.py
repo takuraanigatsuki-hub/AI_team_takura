@@ -8,6 +8,14 @@ from urllib.parse import unquote, urlparse, parse_qs
 
 import httpx
 
+from integrations.figma_rate_limit import (
+    FigmaRateLimitError,
+    is_in_cooldown,
+    parse_retry_after,
+    set_cooldown,
+    throttle,
+)
+
 FIGMA_URL_RE = re.compile(
     r"figma\.com/(?:design|file|site|proto|board|deck|slides|community/file)/([a-zA-Z0-9]+)(?:/[^?]*)?",
     re.IGNORECASE,
@@ -58,53 +66,66 @@ class FigmaClient:
             headers["X-Figma-Token"] = self.access_token
         return headers
 
-    async def get_file(self, file_key: str, node_ids: Optional[str] = None) -> dict:
+    async def _request(self, method: str, url: str, *, retries: int = 3, **kwargs) -> httpx.Response:
+        last_resp = None
+        for attempt in range(retries):
+            if is_in_cooldown():
+                from integrations.figma_rate_limit import cooldown_remaining
+                raise FigmaRateLimitError(cooldown_remaining())
+            await throttle()
+            async with httpx.AsyncClient(timeout=kwargs.pop("timeout", 30.0)) as client:
+                resp = await client.request(method, url, headers=self._headers(), **kwargs)
+            last_resp = resp
+            if resp.status_code == 429:
+                wait = parse_retry_after(resp)
+                set_cooldown(wait)
+                if attempt < retries - 1:
+                    import asyncio
+                    await asyncio.sleep(min(wait, 30))
+                    continue
+                raise FigmaRateLimitError(wait, f"Figma API 429: {resp.text[:200]}")
+            return resp
+        return last_resp
+
+    async def get_file(self, file_key: str, node_ids: Optional[str] = None, depth: Optional[int] = None) -> dict:
         params = {}
         if node_ids:
             params["ids"] = node_ids
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.get(
-                f"{self.base}/files/{file_key}",
-                headers=self._headers(),
-                params=params,
-            )
-            if resp.status_code != 200:
-                raise RuntimeError(f"Figma API {resp.status_code}: {resp.text[:300]}")
-            return resp.json()
+        if depth is not None:
+            params["depth"] = depth
+        resp = await self._request("GET", f"{self.base}/files/{file_key}", params=params)
+        if resp.status_code != 200:
+            raise RuntimeError(f"Figma API {resp.status_code}: {resp.text[:300]}")
+        return resp.json()
 
-    async def get_file_meta(self, file_key: str) -> dict:
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            resp = await client.get(
-                f"{self.base}/files/{file_key}",
-                headers=self._headers(),
-                params={"depth": "1"},
-            )
-            if resp.status_code != 200:
-                raise RuntimeError(f"Figma API {resp.status_code}: {resp.text[:300]}")
-            return resp.json()
+    async def get_file_meta(self, file_key: str, depth: int = 1) -> dict:
+        resp = await self._request(
+            "GET", f"{self.base}/files/{file_key}", params={"depth": depth}, timeout=20.0
+        )
+        if resp.status_code != 200:
+            raise RuntimeError(f"Figma API {resp.status_code}: {resp.text[:300]}")
+        return resp.json()
 
     async def get_local_variables(self, file_key: str) -> dict:
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            resp = await client.get(
-                f"{self.base}/files/{file_key}/variables/local",
-                headers=self._headers(),
-            )
-            if resp.status_code == 404:
-                return {"variables": {}, "message": "Variables API недоступен для этого файла"}
-            if resp.status_code != 200:
-                raise RuntimeError(f"Figma API {resp.status_code}: {resp.text[:300]}")
-            return resp.json()
+        resp = await self._request(
+            "GET", f"{self.base}/files/{file_key}/variables/local", timeout=20.0
+        )
+        if resp.status_code == 404:
+            return {"variables": {}, "message": "Variables API недоступен для этого файла"}
+        if resp.status_code != 200:
+            raise RuntimeError(f"Figma API {resp.status_code}: {resp.text[:300]}")
+        return resp.json()
 
     async def export_images(self, file_key: str, node_ids: str, fmt: str = "png", scale: int = 2) -> dict:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.get(
-                f"{self.base}/images/{file_key}",
-                headers=self._headers(),
-                params={"ids": node_ids, "format": fmt, "scale": scale},
-            )
-            if resp.status_code != 200:
-                raise RuntimeError(f"Figma export {resp.status_code}: {resp.text[:300]}")
-            return resp.json()
+        resp = await self._request(
+            "GET",
+            f"{self.base}/images/{file_key}",
+            params={"ids": node_ids, "format": fmt, "scale": scale},
+            timeout=30.0,
+        )
+        if resp.status_code != 200:
+            raise RuntimeError(f"Figma export {resp.status_code}: {resp.text[:300]}")
+        return resp.json()
 
     def extract_design_summary(self, file_data: dict, node_id: Optional[str] = None) -> dict:
         """Сводка макета: цвета, шрифты, размеры фрейма."""
@@ -176,7 +197,7 @@ class FigmaClient:
         lines.append("}")
         return "\n".join(lines)
 
-    async def import_design(self, url: str) -> dict:
+    async def import_design(self, url: str, *, lightweight: bool = False) -> dict:
         parsed = parse_figma_url(url)
         if not parsed:
             raise ValueError("Некорректная ссылка Figma")
@@ -185,22 +206,34 @@ class FigmaClient:
 
         file_key = parsed["file_key"]
         node_id = parsed.get("node_id")
-        file_data = await self.get_file(file_key, node_ids=node_id) if node_id else await self.get_file_meta(file_key)
+
+        if lightweight:
+            file_data = await self.get_file_meta(file_key, depth=2)
+        elif node_id:
+            file_data = await self.get_file(file_key, node_ids=node_id)
+        else:
+            file_data = await self.get_file_meta(file_key, depth=2)
+
         summary = self.extract_design_summary(file_data, node_id)
 
         preview_url = None
-        if node_id:
+        if not lightweight and node_id:
             try:
                 img = await self.export_images(file_key, node_id)
                 preview_url = (img.get("images") or {}).get(node_id)
+            except FigmaRateLimitError:
+                raise
             except Exception:
                 pass
 
         variables = {}
-        try:
-            variables = await self.get_local_variables(file_key)
-        except Exception:
-            pass
+        if not lightweight:
+            try:
+                variables = await self.get_local_variables(file_key)
+            except FigmaRateLimitError:
+                pass
+            except Exception:
+                pass
 
         return {
             "file_key": file_key,

@@ -705,6 +705,13 @@ async def figma_import(request: FigmaImportRequest):
     try:
         result = await client.import_design(request.url)
     except Exception as e:
+        from integrations.figma_rate_limit import FigmaRateLimitError
+        if isinstance(e, FigmaRateLimitError):
+            raise HTTPException(
+                status_code=429,
+                detail=str(e),
+                headers={"Retry-After": str(int(e.retry_after))},
+            )
         raise HTTPException(status_code=502, detail=str(e))
 
     frontend = room.agents.get("frontend")

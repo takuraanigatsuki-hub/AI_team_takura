@@ -213,6 +213,8 @@ def is_figma_connected() -> bool:
 
 
 async def get_connection_status() -> dict:
+    from integrations.figma_rate_limit import get_status as figma_rate_status
+
     store = load_token_store()
     oauth_token = store.get("access_token")
     pat = config.get("figma_access_token", "")
@@ -239,4 +241,5 @@ async def get_connection_status() -> dict:
         except Exception:
             pass
 
+    status["rate_limit"] = figma_rate_status()
     return status

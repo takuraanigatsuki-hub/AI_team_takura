@@ -131,6 +131,10 @@ def _pick_colors(patterns: dict, count: int = 5) -> list[str]:
 
 async def study_reference_file(agent, url: str) -> Optional[dict]:
     from integrations.figma_client import get_client_async, parse_figma_url
+    from integrations.figma_rate_limit import FigmaRateLimitError, is_in_cooldown
+
+    if is_in_cooldown():
+        return {"error": "rate_limit", "url": url}
 
     if not parse_figma_url(url):
         return None
@@ -140,7 +144,9 @@ async def study_reference_file(agent, url: str) -> Optional[dict]:
         return None
 
     try:
-        result = await client.import_design(url)
+        result = await client.import_design(url, lightweight=True)
+    except FigmaRateLimitError as e:
+        return {"error": str(e), "rate_limit": True, "url": url}
     except Exception as e:
         return {"error": str(e), "url": url}
 
@@ -277,15 +283,22 @@ async def create_original_project(agent) -> Optional[dict]:
 
 
 async def run_figma_study_session(agent) -> bool:
+    from integrations.figma_rate_limit import is_in_cooldown
+
+    if is_in_cooldown():
+        return await _study_figma_web(agent)
+
     urls = get_reference_urls()
     if not urls:
         return await _study_figma_web(agent)
 
     random.shuffle(urls)
-    for url in urls[:3]:
+    for url in urls[:1]:
         result = await study_reference_file(agent, url)
         if result and not result.get("error"):
             return True
+        if result and result.get("rate_limit"):
+            return await _study_figma_web(agent)
 
     return await _study_figma_web(agent)
 
@@ -358,6 +371,17 @@ async def sonya_figma_studio_loop(room_manager, interval_min: int = 12, interval
         try:
             frontend.status = "learning"
             frontend.location = "library"
+
+            from integrations.figma_rate_limit import is_in_cooldown, cooldown_remaining
+            if is_in_cooldown():
+                await frontend._broadcast(
+                    f"⏳ Figma API: пауза {cooldown_remaining()}с (rate limit). Учусь из веб-источников…",
+                    "learning",
+                )
+                await _study_figma_web(frontend)
+                await room_manager.send_agents_state()
+                continue
+
             action = random.choices(["study", "study", "create"], weights=[0.45, 0.35, 0.20])[0]
 
             if action == "create":
