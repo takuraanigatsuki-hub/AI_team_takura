@@ -1025,8 +1025,12 @@ async def apply_project_template(body: TemplateApplyRequest):
 async def integrations_status():
     from integrations.external_hub import integration_status
     from integrations.llm_client import is_configured
+    from integrations.telegram_bot import bot_status
     status = integration_status()
     status["llm"] = is_configured()
+    tg = bot_status()
+    status["telegram_bot"] = tg.get("username")
+    status["telegram_polling"] = tg.get("polling")
     return status
 
 
