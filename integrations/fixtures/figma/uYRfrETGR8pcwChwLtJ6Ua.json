@@ -1,0 +1,38 @@
+{
+  "file_key": "uYRfrETGR8pcwChwLtJ6Ua",
+  "node_id": null,
+  "url": "https://www.figma.com/site/uYRfrETGR8pcwChwLtJ6Ua/Untitled?t=S7zOAy3vHRn3HWqR-0",
+  "file_type": "site",
+  "summary": {
+    "file_name": "Untitled",
+    "last_modified": "2026-06-12T00:00:00.000Z",
+    "colors": [
+      "#101828",
+      "#475467",
+      "#6941c6",
+      "#7f56d9",
+      "#9e77ed",
+      "#d0d5dd",
+      "#f2f4f7",
+      "#f9fafb",
+      "#ffffff"
+    ],
+    "fonts": [
+      "Inter 400",
+      "Inter 500",
+      "Inter 600",
+      "Inter 700"
+    ],
+    "frames": [
+      { "name": "Header", "type": "FRAME", "width": 1440, "height": 80, "id": "1:1" },
+      { "name": "Hero", "type": "FRAME", "width": 1440, "height": 720, "id": "1:2" },
+      { "name": "Features", "type": "FRAME", "width": 1440, "height": 560, "id": "1:3" },
+      { "name": "Social proof", "type": "FRAME", "width": 1440, "height": 320, "id": "1:4" },
+      { "name": "CTA", "type": "FRAME", "width": 1440, "height": 280, "id": "1:5" },
+      { "name": "Footer", "type": "FRAME", "width": 1440, "height": 200, "id": "1:6" }
+    ]
+  },
+  "css_tokens": ":root {\n    --accent: #7f56d9;\n    --surface: #ffffff;\n    --text: #101828;\n    --border: #d0d5dd;\n    --green: #9e77ed;\n    --purple: #6941c6;\n    --red: #475467;\n    --muted: #f9fafb;\n}",
+  "preview_url": null,
+  "variables": {}
+}

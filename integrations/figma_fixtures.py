@@ -4,7 +4,7 @@ import json
 import os
 from typing import Optional
 
-_FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "figma_imports")
+_FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "fixtures", "figma")
 
 
 def get_fixture(file_key: str) -> Optional[dict]:
