@@ -24,7 +24,11 @@ def test_init_schema_creates_tables(accounting_db):
     assert status["tables"]["accounting_journal_entries"] == 0
 
 
-def test_seed_runs_once(accounting_db):
+def test_seed_runs_once(tmp_path, monkeypatch):
+    db_file = tmp_path / "seed_once.sqlite"
+    monkeypatch.setenv("SQLITE_DB_PATH", str(db_file))
+    from room import accounting_db
+
     first = accounting_db.init_schema(seed_accounts=True)
     second = accounting_db.init_schema(seed_accounts=True)
     assert first["seeded_accounts"] == 11
