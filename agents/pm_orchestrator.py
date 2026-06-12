@@ -71,7 +71,13 @@ class PMOrchestratorAgent(BaseAgent):
     async def orchestrate_task(self, task_text: str, agents: dict, parent_id: str = None):
         assignments = self._analyze_and_assign(task_text, agents)
 
+        from room.role_triage import run_role_triage
+        assignments = await run_role_triage(
+            task_text, assignments, agents, self.room_manager, parent_id,
+        )
+
         plan = self.create_plan(task_text, assignments, agents)
+        plan += "\n\n🔍 **Triage:** каждый агент проверил роль — работают только подходящие."
 
         if self.room_manager:
             self.room_manager.current_plan = {
@@ -169,7 +175,7 @@ class PMOrchestratorAgent(BaseAgent):
 
         if kind == "table":
             assignments["frontend"] = f"Сверстать таблицу данных (React, не landing): {task_text}"
-            assignments["reviewer"] = f"Проверить таблицу: {task_text}"
+            assignments["evaluator"] = f"Оценить таблицу и навыки: {task_text}"
             return assignments
 
         if kind == "site":

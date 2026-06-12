@@ -109,8 +109,11 @@ class FrontendDevAgent(BaseAgent):
             "🎨 '{task}' — компонент готов!\n\nНажмите «Preview» или смотрите панель React Preview — там живой рендер.",
         ]
 
-    def _build_preview(self, task_text: str) -> dict:
-        preview = generate_react_preview(task_text)
+    async def _build_preview(self, task_text: str) -> dict:
+        from room.knowledge_applier import get_learned_hints
+        hints = get_learned_hints(self.agent_id, task_text, self.learned_topics)
+        from integrations.llm_codegen import generate_react_from_llm
+        preview = await generate_react_from_llm(task_text, hints)
         if self.last_figma:
             preview = apply_figma_tokens(preview, self.last_figma)
         preview["task"] = task_text
@@ -121,7 +124,7 @@ class FrontendDevAgent(BaseAgent):
     async def _emit_preview(self, task_text: str):
         if not should_emit_react_preview(task_text):
             return
-        preview = self._build_preview(task_text)
+        preview = await self._build_preview(task_text)
         if preview.get("is_site") or should_export_site(task_text):
             try:
                 site_path = export_site_html(preview["code"], task_text, preview["title"])
@@ -314,10 +317,15 @@ class FrontendDevAgent(BaseAgent):
             elif self.last_preview:
                 response += f"\n\n🖥️ Откройте **React Preview** — «{self.last_preview['title']}»"
 
-            await self._broadcast_work(f"✅ Выполнено:\n{response}", "task_done")
+            await self._broadcast_work(
+                f"✅ Готово к проверке:\n{response[:800]}{'…' if len(response) > 800 else ''}\n\n"
+                f"⏳ **Жду вашего подтверждения** во вкладке «Задачи».",
+                "task_done",
+            )
             if self.room_manager and task_id:
-                self.room_manager.record_task_completed(
-                    task_id, response, self.name, self.emoji
+                self.room_manager.record_task_awaiting_approval(
+                    task_id, response, self.name, self.emoji,
+                    preview_url=self.last_preview.get("site_url") if self.last_preview else None,
                 )
         except Exception as e:
             err = str(e)

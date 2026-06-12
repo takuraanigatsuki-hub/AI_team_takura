@@ -340,6 +340,17 @@ class BaseAgent:
                 f"💡 [{source_label}] *{title}*\n{summary}{url_part}",
                 "learning_result"
             )
+            try:
+                from room.peer_learning import share_learning_to_work_chat
+                await share_learning_to_work_chat(self, entry, self.room_manager)
+            except Exception:
+                pass
+            if self.room_manager and random.random() < 0.25:
+                try:
+                    from room.peer_learning import peer_discussion_round
+                    await peer_discussion_round(self.room_manager, self.room_manager.agents)
+                except Exception:
+                    pass
         else:
             entry = {
                 "topic": topic,
@@ -1054,11 +1065,29 @@ class BaseAgent:
         response = ""
         try:
             response = await self._build_response(task_text)
-            await self._broadcast_work(f"✅ Выполнено:\n{response}", "task_done")
             artifact = await self._save_task_artifact(task_text, response, task)
+            artifact_id = artifact.get("id") if artifact else None
+            preview_url = f"/api/projects/{artifact_id}/preview" if artifact_id and artifact.get("preview_html") else None
+
+            evaluator = self.room_manager.agents.get("evaluator") if self.room_manager else None
+            if evaluator and hasattr(evaluator, "evaluate_output"):
+                ev = await evaluator.evaluate_output(
+                    task_text, self.agent_id, self.name, response, context="task",
+                )
+                await self._broadcast_work(
+                    f"🎓 **Оценка ({ev.get('score', 7)}/10):** {ev.get('feedback', '')[:400]}",
+                    "skill_evaluation",
+                )
+
+            await self._broadcast_work(
+                f"✅ Готово к проверке:\n{response[:800]}{'…' if len(response) > 800 else ''}\n\n"
+                f"⏳ **Жду вашего подтверждения** во вкладке «Задачи».",
+                "task_done",
+            )
             if self.room_manager and task_id:
-                self.room_manager.record_task_completed(
-                    task_id, response, self.name, self.emoji
+                self.room_manager.record_task_awaiting_approval(
+                    task_id, response, self.name, self.emoji,
+                    artifact_id=artifact_id, preview_url=preview_url,
                 )
         except Exception as e:
             err = str(e)
@@ -1265,6 +1294,8 @@ class BaseAgent:
 
     async def _broadcast(self, message: str, msg_type: str = "message"):
         if msg_type in ("learning", "learning_result", "reflection", "rest"):
+            if msg_type in ("learning_result", "learning") and self.room_manager:
+                await self._broadcast_work(message, "peer_learning" if msg_type == "learning_result" else msg_type)
             await self._broadcast_learning(message, msg_type)
         else:
             await self._broadcast_work(message, msg_type)

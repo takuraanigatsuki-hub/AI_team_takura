@@ -12,7 +12,7 @@ from agents import (
     ArchitectAgent, BackendDevAgent, FrontendDevAgent,
     QATesterAgent, CodeReviewerAgent, DocWriterAgent,
     DevOpsAgent, PMOrchestratorAgent, CursorAgent,
-    PresenterAgent, Modeler3DAgent,
+    PresenterAgent, Modeler3DAgent, EvaluatorAgent,
 )
 
 # Глобальный менеджер комнаты
@@ -35,6 +35,7 @@ async def lifespan(app: FastAPI):
         CursorAgent(room),
         PresenterAgent(room),
         Modeler3DAgent(room),
+        EvaluatorAgent(room),
     ]
 
     # Регистрируем всех агентов
@@ -2177,6 +2178,32 @@ async def create_view_token(hours: int = 72, label: str = "client"):
 
 class TaskPriorityUpdate(BaseModel):
     priority: str
+
+
+class TaskApprovalBody(BaseModel):
+    note: str = ""
+
+
+class TaskRevisionBody(BaseModel):
+    feedback: str
+
+
+@app.post("/api/tasks/{task_id}/approve")
+async def approve_task(task_id: str, body: TaskApprovalBody = TaskApprovalBody()):
+    ok = await room.approve_task(task_id, body.note or "")
+    if not ok:
+        raise HTTPException(status_code=400, detail="Task not awaiting approval")
+    return {"ok": True, "task_id": task_id}
+
+
+@app.post("/api/tasks/{task_id}/revision")
+async def request_task_revision(task_id: str, body: TaskRevisionBody):
+    if not (body.feedback or "").strip():
+        raise HTTPException(status_code=400, detail="Feedback required")
+    ok = await room.request_task_revision(task_id, body.feedback.strip())
+    if not ok:
+        raise HTTPException(status_code=400, detail="Task not awaiting approval")
+    return {"ok": True, "task_id": task_id}
 
 
 @app.patch("/api/tasks/{task_id}/priority")

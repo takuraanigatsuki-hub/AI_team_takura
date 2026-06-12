@@ -170,15 +170,28 @@ class TaskHistory:
         return [t for t in reversed(self.tasks) if t.get("status") == "completed"]
 
     def get_active(self) -> List[Dict]:
-        return [t for t in reversed(self.tasks)
-                if t.get("status") in ("submitted", "queued", "in_progress")]
+        active_statuses = (
+            "submitted", "queued", "in_progress", "triaging",
+            "awaiting_approval", "revision_requested",
+        )
+        return [t for t in reversed(self.tasks) if t.get("status") in active_statuses]
 
     def stats(self) -> dict:
         completed = sum(1 for t in self.tasks if t.get("status") == "completed")
-        active = sum(1 for t in self.tasks
-                       if t.get("status") in ("submitted", "queued", "in_progress"))
+        active_statuses = (
+            "submitted", "queued", "in_progress", "triaging",
+            "awaiting_approval", "revision_requested",
+        )
+        active = sum(1 for t in self.tasks if t.get("status") in active_statuses)
+        awaiting = sum(1 for t in self.tasks if t.get("status") == "awaiting_approval")
         failed = sum(1 for t in self.tasks if t.get("status") == "failed")
-        return {"total": len(self.tasks), "completed": completed, "active": active, "failed": failed}
+        return {
+            "total": len(self.tasks),
+            "completed": completed,
+            "active": active,
+            "awaiting_approval": awaiting,
+            "failed": failed,
+        }
 
     def cleanup_stale(self, max_minutes: int = 30):
         """Помечает зависшие in_progress задачи как failed."""

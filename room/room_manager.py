@@ -326,6 +326,68 @@ class RoomManager:
             self.task_history.mark_completed(task_id, response, agent_name, agent_emoji)
             asyncio.create_task(self.pipeline.on_task_completed(task_id, failed=False))
 
+    def record_task_awaiting_approval(
+        self, task_id: str, response: str, agent_name: str = "", agent_emoji: str = "",
+        artifact_id: str = None, preview_url: str = None,
+    ):
+        if task_id:
+            self.task_history.mark_awaiting_approval(
+                task_id, response, agent_name, agent_emoji, artifact_id, preview_url,
+            )
+            asyncio.create_task(self._broadcast_task_history())
+            asyncio.create_task(self.broadcast_work({
+                "type": "task_awaiting_approval",
+                "task_id": task_id,
+                "agent_name": agent_name,
+                "agent_emoji": agent_emoji,
+                "message": (
+                    f"⏳ **{agent_name}** завершил работу — нужно ваше подтверждение.\n"
+                    f"Откройте вкладку **Задачи** → ✓ Принять или ✎ Правки."
+                ),
+                "timestamp": datetime.now().isoformat(),
+            }))
+
+    async def approve_task(self, task_id: str, note: str = "") -> bool:
+        t = self.task_history._find(task_id)
+        if not t or t.get("status") != "awaiting_approval":
+            return False
+        self.task_history.mark_user_approved(task_id, note)
+        await self.pipeline.on_task_completed(task_id, failed=False)
+        await self.broadcast_work({
+            "type": "task_approved",
+            "task_id": task_id,
+            "message": f"✅ Задача принята пользователем{f': {note}' if note else ''}.",
+            "timestamp": datetime.now().isoformat(),
+        })
+        await self._broadcast_task_history()
+        return True
+
+    async def request_task_revision(self, task_id: str, feedback: str) -> bool:
+        t = self.task_history._find(task_id)
+        if not t or t.get("status") != "awaiting_approval":
+            return False
+        agent_id = t.get("agent_id")
+        agent = self.agents.get(agent_id)
+        self.task_history.mark_revision_requested(task_id, feedback)
+        if agent:
+            revision_text = f"{t.get('task', '')}\n\n✎ Правки пользователя: {feedback}"
+            child_id = self.task_history.add_queued(
+                revision_text, agent_id, agent.name, agent.emoji,
+                parent_id=t.get("parent_id"), sender="Пользователь",
+            )
+            await agent.assign_task(
+                revision_text, sender="Пользователь (правки)",
+                parent_id=t.get("parent_id"), task_id=child_id,
+            )
+        await self.broadcast_work({
+            "type": "task_revision",
+            "task_id": task_id,
+            "message": f"✎ Отправлено на доработку: {feedback[:200]}",
+            "timestamp": datetime.now().isoformat(),
+        })
+        await self._broadcast_task_history()
+        return True
+
     def record_task_failed(self, task_id: str, error: str = ""):
         if task_id:
             self.task_history.mark_failed(task_id, error)
