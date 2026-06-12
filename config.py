@@ -31,6 +31,25 @@ _defaults = {
     "figma_study_interval_min": 12,
     "figma_study_interval_max": 25,
     "figma_reference_urls": [],
+    "openai_api_key": "",
+    "openai_base_url": "https://api.openai.com/v1",
+    "llm_model": "gpt-4o-mini",
+    "room_api_key": "",
+    "auto_theme": False,
+    "telegram_notify_tasks": False,
+    "telegram_bot_token": "",
+    "telegram_chat_id": "",
+    "jira_auto_create": False,
+    "jira_url": "",
+    "jira_token": "",
+    "jira_email": "",
+    "jira_project": "PROJ",
+    "linear_auto_create": False,
+    "linear_api_key": "",
+    "linear_team_id": "",
+    "notion_token": "",
+    "notion_parent_page_id": "",
+    "vercel_token": "",
 }
 
 
@@ -78,6 +97,23 @@ def _load_config() -> dict:
     cfg["figma_client_id"] = os.environ.get("FIGMA_CLIENT_ID") or cfg.get("figma_client_id") or ""
     cfg["figma_client_secret"] = os.environ.get("FIGMA_CLIENT_SECRET") or cfg.get("figma_client_secret") or ""
     cfg["figma_redirect_uri"] = os.environ.get("FIGMA_REDIRECT_URI") or cfg.get("figma_redirect_uri") or ""
+    cfg["openai_api_key"] = os.environ.get("OPENAI_API_KEY") or cfg.get("openai_api_key") or ""
+    cfg["openai_base_url"] = os.environ.get("OPENAI_BASE_URL") or cfg.get("openai_base_url") or "https://api.openai.com/v1"
+    cfg["llm_model"] = os.environ.get("LLM_MODEL") or cfg.get("llm_model") or "gpt-4o-mini"
+    cfg["room_api_key"] = os.environ.get("ROOM_API_KEY") or cfg.get("room_api_key") or ""
+    for key, env in (
+        ("telegram_bot_token", "TELEGRAM_BOT_TOKEN"),
+        ("telegram_chat_id", "TELEGRAM_CHAT_ID"),
+        ("jira_url", "JIRA_URL"),
+        ("jira_token", "JIRA_TOKEN"),
+        ("jira_email", "JIRA_EMAIL"),
+        ("linear_api_key", "LINEAR_API_KEY"),
+        ("linear_team_id", "LINEAR_TEAM_ID"),
+        ("notion_token", "NOTION_TOKEN"),
+        ("notion_parent_page_id", "NOTION_PARENT_PAGE_ID"),
+        ("vercel_token", "VERCEL_TOKEN"),
+    ):
+        cfg[key] = os.environ.get(env) or cfg.get(key) or ""
     return cfg
 
 

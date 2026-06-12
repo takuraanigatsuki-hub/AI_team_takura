@@ -981,7 +981,7 @@ class BaseAgent:
 
         response = ""
         try:
-            response = self.build_task_response(task_text, self._find_relevant_knowledge(task_text))
+            response = await self._build_response(task_text)
             await self._broadcast_work(f"✅ Выполнено:\n{response}", "task_done")
             if self.room_manager and task_id:
                 self.room_manager.record_task_completed(
@@ -1038,6 +1038,56 @@ class BaseAgent:
             if sources_used:
                 base += f" | Источники: {', '.join(sources_used[:4])}"
         return base
+
+    async def _build_response(self, task_text: str) -> str:
+        knowledge = self._find_relevant_knowledge(task_text)
+        try:
+            from integrations.llm_client import is_configured, agent_reply, chat_stream
+            if is_configured():
+                streamed = ""
+                messages = [
+                    {"role": "system", "content": f"Ты {self.name}, {self.role}. {self.description}\nОтвечай на русском."},
+                    {"role": "user", "content": f"Задача: {task_text}"},
+                ]
+                if self.room_manager:
+                    await self.room_manager.broadcast_work({
+                        "type": "agent_stream_start",
+                        "agent_id": self.agent_id,
+                        "agent_name": self.name,
+                        "agent_emoji": self.emoji,
+                        "timestamp": datetime.now().isoformat(),
+                    })
+                async for chunk in chat_stream(messages):
+                    streamed += chunk
+                    if self.room_manager:
+                        await self.room_manager.broadcast_work({
+                            "type": "agent_stream",
+                            "agent_id": self.agent_id,
+                            "chunk": chunk,
+                            "done": False,
+                        })
+                if self.room_manager:
+                    await self.room_manager.broadcast_work({
+                        "type": "agent_stream",
+                        "agent_id": self.agent_id,
+                        "chunk": "",
+                        "done": True,
+                    })
+                if streamed.strip():
+                    base = streamed.strip()
+                else:
+                    base = await agent_reply(self.name, self.role, self.description, task_text, knowledge)
+                if knowledge:
+                    lines = []
+                    for item in knowledge[:2]:
+                        title = item.get("title", item.get("topic", ""))
+                        summary = item.get("summary", "")[:150]
+                        lines.append(f"• *{title}*: {summary}")
+                    base += "\n\n📚 Применяю изученное:\n" + "\n".join(lines)
+                return base
+        except Exception:
+            pass
+        return self.build_task_response(task_text, knowledge)
 
     def get_fallback_responses(self) -> list:
         return [

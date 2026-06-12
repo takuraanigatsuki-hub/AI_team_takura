@@ -1,0 +1,50 @@
+"""Smoke tests — базовые API endpoints."""
+
+import httpx
+import pytest
+
+
+@pytest.fixture
+def client():
+    from app import app
+    from fastapi.testclient import TestClient
+    return TestClient(app)
+
+
+def test_index(client):
+    r = client.get("/")
+    assert r.status_code == 200
+    assert "AI Team Room" in r.text
+
+
+def test_agents(client):
+    r = client.get("/api/agents")
+    assert r.status_code == 200
+    data = r.json()
+    assert "agents" in data
+    assert len(data["agents"]) >= 9
+
+
+def test_templates(client):
+    r = client.get("/api/templates")
+    assert r.status_code == 200
+    assert len(r.json().get("templates", [])) >= 3
+
+
+def test_timeline(client):
+    r = client.get("/api/timeline/replay?hours=1")
+    assert r.status_code == 200
+    assert "events" in r.json()
+
+
+def test_kanban(client):
+    r = client.get("/api/kanban")
+    assert r.status_code == 200
+    assert "columns" in r.json()
+
+
+def test_integrations_status(client):
+    r = client.get("/api/integrations/status")
+    assert r.status_code == 200
+    data = r.json()
+    assert "llm" in data

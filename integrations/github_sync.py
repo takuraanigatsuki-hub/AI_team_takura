@@ -199,6 +199,14 @@ async def cloud_agent_poller(room_manager, interval: int = 20):
                         "message": "\n".join(msg_parts),
                         "timestamp": datetime.now().isoformat(),
                     })
+                    if pr_url:
+                        await room_manager.broadcast_work({
+                            "type": "pr_ready",
+                            "pr_url": pr_url,
+                            "branch_url": branch_url,
+                            "message": f"🔗 **Pull Request готов:** {pr_url}",
+                            "timestamp": datetime.now().isoformat(),
+                        })
                     await room_manager.pipeline.on_github("done")
                     active_cloud_agents.pop(agent_id, None)
 

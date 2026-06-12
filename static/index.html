@@ -49,6 +49,8 @@
         <button type="button" class="view-tab" data-view="learning" onclick="switchView('learning')">Обучение</button>
         <button type="button" class="view-tab" data-view="design" onclick="switchView('design')">Design</button>
         <button type="button" class="view-tab" data-view="tasks" onclick="switchView('tasks')">Задачи</button>
+        <button type="button" class="view-tab" data-view="kanban" onclick="switchView('kanban')">Kanban</button>
+        <button type="button" class="view-tab" data-view="timeline" onclick="switchView('timeline')">Timeline</button>
         <button type="button" class="view-tab" data-view="dashboard" onclick="switchView('dashboard')">Dashboard</button>
     </nav>
     <div class="header-actions">
@@ -59,6 +61,8 @@
         <span class="active-pill" id="activeAgentsPill" title="Агенты в работе">—</span>
         <span class="presence-pill" id="presencePill" title="В комнате">👤 …</span>
         <button type="button" class="text-btn" onclick="WowFeatures.showStandup()" title="Standup">📊 Standup</button>
+        <button type="button" class="text-btn" onclick="VoiceRoom.readStandup()" title="Standup TTS">🔊 Voice</button>
+        <button type="button" class="text-btn" onclick="VoiceRoom.startListening()" title="Голосовая задача">🎤</button>
         <button type="button" class="text-btn" onclick="WowFeatures.deployNow()" title="Deploy ZIP">🚀 Deploy</button>
         <button type="button" class="cursor-toggle-btn" onclick="Integrations.toggleCursorPanel()" title="Cursor SDK">
             ⚡ Cursor <span class="integration-badge" id="cursorBadge">…</span>
@@ -76,6 +80,7 @@
         <div id="studioError" class="studio-error" style="display:none"></div>
         <div class="studio-overlay">
             <div class="studio-hint">🖱️ Вращение · колесо — zoom · клик по агенту — личный чат</div>
+            <canvas id="studioMinimap" class="studio-minimap" width="140" height="100" title="Mini-map"></canvas>
             <div class="studio-legend" id="studioLegend"></div>
         </div>
     </div>
@@ -162,6 +167,27 @@
         </div>
     </div>
 
+    <!-- KANBAN VIEW -->
+    <div id="kanbanView" class="kanban-layout hidden">
+        <div class="kanban-toolbar">
+            <h2>📌 Kanban</h2>
+            <button type="button" class="btn-secondary btn-sm" onclick="KanbanUI.refresh()">Обновить</button>
+        </div>
+        <div class="kanban-board" id="kanbanBoard">
+            <div class="panel-empty">Загрузка…</div>
+        </div>
+    </div>
+
+    <!-- TIMELINE VIEW -->
+    <div id="timelineView" class="timeline-layout hidden">
+        <div class="timeline-toolbar">
+            <h2>⏱️ Timeline / Replay</h2>
+        </div>
+        <div class="timeline-panel" id="timelinePanel">
+            <div class="panel-empty">Загрузка…</div>
+        </div>
+    </div>
+
     <!-- LEARNING VIEW -->
     <div id="learningView" class="learning-layout hidden">
         <section class="learning-area">
@@ -222,6 +248,9 @@
                 <button type="button" class="tpl-btn" onclick="applyTemplate('Напиши REST API для задач')">⚙️ API</button>
                 <button type="button" class="tpl-btn" onclick="applyTemplate('Создай форму регистрации в React')">🎨 UI</button>
                 <button type="button" class="tpl-btn" onclick="applyTemplate('Напиши тесты для backend')">🧪 Tests</button>
+                <button type="button" class="tpl-btn" onclick="applyProjectTemplate('saas')">📊 SaaS</button>
+                <button type="button" class="tpl-btn" onclick="applyProjectTemplate('ecommerce')">🛒 Shop</button>
+                <button type="button" class="tpl-btn" onclick="applyProjectTemplate('admin')">🛡️ Admin</button>
             </div>
 
             <div class="messages" id="messages">
@@ -375,15 +404,23 @@
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="/static/js/sounds.js?v=1"></script>
-<script src="/static/js/wow.js?v=1"></script>
-<script src="/static/js/pipeline.js?v=1"></script>
-<script src="/static/js/studio.js?v=8"></script>
+<script src="/static/js/sounds.js?v=2"></script>
+<script src="/static/js/wow.js?v=2"></script>
+<script src="/static/js/pipeline.js?v=2"></script>
+<script src="/static/js/stream.js?v=1"></script>
+<script src="/static/js/debate.js?v=1"></script>
+<script src="/static/js/timeline.js?v=1"></script>
+<script src="/static/js/kanban.js?v=1"></script>
+<script src="/static/js/onboarding.js?v=1"></script>
+<script src="/static/js/voice.js?v=1"></script>
+<script src="/static/js/minimap.js?v=1"></script>
+<script src="/static/js/themes-auto.js?v=1"></script>
+<script src="/static/js/studio.js?v=9"></script>
 <script src="/static/js/react-preview.js?v=3"></script>
 <script src="/static/js/integrations.js?v=5"></script>
 <script src="/static/js/ui-enhancements.js?v=2"></script>
 <script src="/static/js/dashboard.js?v=2"></script>
-<script src="/static/js/app.js?v=10"></script>
+<script src="/static/js/app.js?v=11"></script>
 
 <!-- PWA: регистрация Service Worker -->
 <script>

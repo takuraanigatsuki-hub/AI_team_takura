@@ -115,7 +115,26 @@ class PMOrchestratorAgent(BaseAgent):
         self.sprint_tasks.append({"task": task_text, "assignments": assignments, "plan": plan})
         if self.room_manager:
             await self.room_manager.pipeline.start(task_text, assignments, agents)
+            from room.debate_engine import maybe_start_debate
+            await maybe_start_debate(task_text, assignments, agents, self.room_manager)
+            await self._notify_external(task_text, assignments)
             await self.room_manager._broadcast_task_history()
+
+    async def _notify_external(self, task_text: str, assignments: dict):
+        try:
+            from integrations.external_hub import send_telegram, create_jira_issue, create_linear_issue
+            import config as cfg
+            summary = task_text[:120]
+            agents_list = ", ".join(assignments.keys())
+            msg = f"📋 *AI Team*\n{summary}\nАгенты: {agents_list}"
+            if cfg.config.get("telegram_notify_tasks"):
+                await send_telegram(msg)
+            if cfg.config.get("jira_auto_create"):
+                await create_jira_issue(summary, f"Задача: {task_text}\nАгенты: {agents_list}")
+            if cfg.config.get("linear_auto_create"):
+                await create_linear_issue(summary, task_text[:500])
+        except Exception:
+            pass
 
     async def _broadcast_work(self, message: str, msg_type: str = "message"):
         if self.room_manager:

@@ -28,5 +28,10 @@
     "cursor_repo_url": "https://github.com/takuraanigatsuki-hub/AI_team_takura",
     "cursor_repo_ref": "main",
     "git_auto_sync": true,
-    "git_sync_interval_sec": 60
+    "git_sync_interval_sec": 60,
+    "llm_model": "gpt-4o-mini",
+    "auto_theme": true,
+    "telegram_notify_tasks": false,
+    "jira_auto_create": false,
+    "linear_auto_create": false
 }

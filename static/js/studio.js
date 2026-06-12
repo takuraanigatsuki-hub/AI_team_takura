@@ -45,6 +45,8 @@
     let resizeObserver = null;
     let canvasEl = null;
     let isDark = true;
+    let sunLight = null;
+    let restLightPt = null;
 
     function showError(msg) {
         const el = document.getElementById('studioError');
@@ -318,6 +320,7 @@
         sun.position.set(10, 20, 8);
         sun.castShadow = true;
         scene.add(sun);
+        sunLight = sun;
 
         const fill = new THREE.DirectionalLight(0xaaccff, 0.35);
         fill.position.set(-8, 12, -6);
@@ -326,6 +329,7 @@
         const restLight = new THREE.PointLight(0x5ecf8a, 0.6, 20);
         restLight.position.set(11, 4, 7);
         scene.add(restLight);
+        restLightPt = restLight;
 
         const libLight = new THREE.PointLight(0xc792ea, 0.5, 18);
         libLight.position.set(-10, 4, 9);
@@ -613,6 +617,27 @@
         else scene.fog = new THREE.Fog(bg, 30, 70);
     }
 
+    function setDayNight(isDay) {
+        if (sunLight) sunLight.intensity = isDay ? 1.15 : 0.55;
+        if (restLightPt) restLightPt.intensity = isDay ? 0.35 : 0.75;
+        setTheme(!isDay);
+    }
+
+    function pulseScreen(agentId) {
+        const mesh = agentMeshes[agentId];
+        const screen = mesh?.getObjectByName('screen');
+        if (!screen?.material) return;
+        screen.visible = true;
+        screen.material.emissive.setHex(0x44ffaa);
+        screen.material.emissiveIntensity = 2;
+        setTimeout(() => {
+            if (screen.material) {
+                screen.material.emissive.setHex(0x3366cc);
+                screen.material.emissiveIntensity = 0.9;
+            }
+        }, 900);
+    }
+
     function destroy() {
         if (animId) cancelAnimationFrame(animId);
         if (resizeObserver) resizeObserver.disconnect();
@@ -621,6 +646,6 @@
 
     global.StudioApp = {
         init, updateAgents, resize, setTheme, destroy, setPipelineHighlight,
-        showSpeechBubble, burstConfetti, flyToAgent,
+        showSpeechBubble, burstConfetti, flyToAgent, setDayNight, pulseScreen,
     };
 })(window);

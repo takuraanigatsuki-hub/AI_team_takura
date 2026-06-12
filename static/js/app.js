@@ -53,8 +53,12 @@
         document.getElementById('tasksView').classList.toggle('hidden', view !== 'tasks');
         document.getElementById('designView')?.classList.toggle('hidden', view !== 'design');
         document.getElementById('dashboardView')?.classList.toggle('hidden', view !== 'dashboard');
+        document.getElementById('kanbanView')?.classList.toggle('hidden', view !== 'kanban');
+        document.getElementById('timelineView')?.classList.toggle('hidden', view !== 'timeline');
 
         if (view === 'tasks') loadTasks();
+        if (view === 'kanban' && window.KanbanUI) KanbanUI.refresh();
+        if (view === 'timeline' && window.TimelineUI) TimelineUI.load(1);
         if (view === 'design' && window.Integrations) {
             Integrations.loadDefaultFigmaUrl();
             Integrations.loadFigmaStatus();
@@ -272,6 +276,7 @@
                 break;
             case 'react_preview':
                 if (window.ReactPreview) ReactPreview.onMessage(data);
+                if (window.StudioApp?.pulseScreen) StudioApp.pulseScreen('frontend');
                 break;
             case 'task_history':
                 updateTaskHistory(data);
@@ -289,6 +294,19 @@
             case 'deploy_ready':
                 addSystemMessage(data.message || '🚀 Deploy готов');
                 if (window.SoundFX) SoundFX.deploy();
+                notifyPush('Deploy готов', data.message || 'ZIP bundle создан');
+                break;
+            case 'agent_stream_start':
+                if (window.AgentStream) AgentStream.onStart(data);
+                break;
+            case 'agent_stream':
+                if (window.AgentStream) AgentStream.onChunk(data);
+                break;
+            case 'agent_debate':
+                if (window.DebateUI) DebateUI.show(data);
+                break;
+            case 'pr_ready':
+                addLinkMessage(data.message || '🔗 PR / Commit готов', data.pr_url || data.commit_url);
                 break;
             case 'site_ready':
                 addSystemMessage(data.message || '🌐 Сайт готов! Откройте React Preview.');
@@ -318,12 +336,13 @@
                 break;
             case 'github_sync_started':
             case 'github_sync_done':
-                addSystemMessage(data.message || '🔗 GitHub Sync');
+                addLinkMessage(data.message || '🔗 GitHub Sync', data.pr_url || data.branch_url);
                 if (window.Integrations) Integrations.onCursorMessage(data);
                 if (data.type === 'github_sync_done' && window.SoundFX) SoundFX.gitPush();
+                notifyPush('GitHub Sync', data.message || 'Синхронизация завершена');
                 break;
             case 'git_sync_done':
-                addSystemMessage(data.message || '📤 Изменения на GitHub');
+                addLinkMessage(data.message || '📤 Изменения на GitHub', data.commit_url);
                 if (window.UIEnhancements) UIEnhancements.onGitSync(data);
                 if (window.SoundFX) SoundFX.gitPush();
                 break;
@@ -338,8 +357,37 @@
                 } else if (data.agent_id) {
                     addAgentMessage(data);
                     onAgentEffects(data);
+                    if (data.type === 'task_done') notifyPush(data.agent_name || 'Агент', String(data.message || '').slice(0, 80));
                 }
         }
+    }
+
+    function addLinkMessage(text, url) {
+        const container = document.getElementById('messages');
+        if (!container) return;
+        const welcome = container.querySelector('[data-welcome]');
+        if (welcome) welcome.remove();
+        const div = document.createElement('div');
+        div.className = 'message system';
+        let html = formatText(text);
+        if (url) {
+            html += ` <a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="pr-link">Открыть →</a>`;
+        }
+        div.innerHTML = `<div class="msg-body">${html}</div>`;
+        container.appendChild(div);
+        scrollToBottom('messages');
+    }
+
+    async function notifyPush(title, body) {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        try {
+            const reg = await navigator.serviceWorker?.ready;
+            if (reg?.showNotification) {
+                reg.showNotification(title || 'AI Team', { body: body || '', icon: '/static/icons/icon-192.png' });
+            } else {
+                new Notification(title || 'AI Team', { body: body || '', icon: '/static/icons/icon-192.png' });
+            }
+        } catch (_) { /* ignore */ }
     }
 
     function updateAgents(agentsList) {
@@ -864,9 +912,32 @@
         setMsgType('task');
     };
 
+    window.applyProjectTemplate = async function (templateId) {
+        try {
+            const r = await fetch('/api/templates/apply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ template_id: templateId }),
+            });
+            const d = await r.json();
+            if (d.ok) {
+                switchView('chat');
+                addSystemMessage(`📋 Шаблон «${templateId}» запущен командой`);
+            }
+        } catch (e) {
+            addSystemMessage('Ошибка шаблона: ' + e);
+        }
+    };
+
     // ─── Init ────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
         applyTheme(getPreferredTheme());
+        fetch('/api/config').then((r) => r.json()).then((cfg) => {
+            if (cfg.auto_theme && window.AutoTheme) AutoTheme.start();
+        }).catch(() => {});
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission().catch(() => {});
+        }
         connect();
         switchView('studio');
         if (window.ReactPreview) ReactPreview.loadLatest();
@@ -876,6 +947,8 @@
         }
         if (window.UIEnhancements) UIEnhancements.init();
         if (window.PipelineUI) PipelineUI.load();
+        if (window.StudioMinimap) StudioMinimap.init();
+        if (window.Onboarding) Onboarding.start();
 
         document.getElementById('messageInput')?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {

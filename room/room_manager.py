@@ -16,7 +16,8 @@ WORK_TYPES = frozenset({
     "assignment", "orchestrating", "pm_plan", "message", "site_ready",
     "react_preview", "cursor_progress", "cursor_run_done", "figma_import",
     "github_sync_started", "github_sync_done", "git_sync_done",
-    "figma_portfolio", "pipeline_update",
+    "figma_portfolio", "pipeline_update", "agent_stream", "agent_stream_start",
+    "agent_debate", "deploy_ready", "pr_ready",
 })
 
 
@@ -115,6 +116,17 @@ class RoomManager:
 
     def _append_history(self, message: dict, channel: str):
         message["channel"] = channel
+        try:
+            from integrations.timeline_store import append_event
+            append_event({
+                "type": message.get("type"),
+                "agent_id": message.get("agent_id"),
+                "agent_name": message.get("agent_name"),
+                "message": (message.get("message") or "")[:200],
+                "timestamp": message.get("timestamp"),
+            })
+        except Exception:
+            pass
         if channel == "learning":
             self.learning_history.append(message)
             if len(self.learning_history) > self.max_history:

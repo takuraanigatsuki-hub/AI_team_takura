@@ -125,6 +125,9 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+from middleware.auth_rate import AuthRateMiddleware
+app.add_middleware(AuthRateMiddleware)
+
 # Подключаем статику
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):
@@ -275,7 +278,19 @@ async def get_config():
         "figma_default_url": cfg_module.config.get("figma_default_url", ""),
         "git_auto_sync": cfg_module.config.get("git_auto_sync", True),
         "git_sync_interval_sec": cfg_module.config.get("git_sync_interval_sec", 60),
+        "llm_configured": _llm_is_configured(),
+        "llm_model": cfg_module.config.get("llm_model", "gpt-4o-mini"),
+        "auto_theme": cfg_module.config.get("auto_theme", False),
+        "telegram_notify_tasks": cfg_module.config.get("telegram_notify_tasks", False),
     }
+
+
+def _llm_is_configured() -> bool:
+    try:
+        from integrations.llm_client import is_configured
+        return is_configured()
+    except Exception:
+        return False
 
 
 @app.post("/api/config")
@@ -744,6 +759,107 @@ async def figma_improve():
 async def get_standup():
     from integrations.standup import generate_standup
     return generate_standup(room)
+
+
+@app.get("/api/timeline")
+async def get_timeline(limit: int = 100):
+    from integrations.timeline_store import get_events
+    return {"events": get_events(limit=min(limit, 500))}
+
+
+@app.get("/api/timeline/replay")
+async def get_timeline_replay(hours: float = 1.0):
+    from integrations.timeline_store import replay_summary
+    return replay_summary(hours=min(max(hours, 0.25), 24))
+
+
+@app.get("/api/kanban")
+async def get_kanban():
+    columns = {"submitted": [], "in_progress": [], "completed": [], "failed": []}
+    for task in room.task_history.get_all():
+        status = task.get("status", "submitted")
+        key = status if status in columns else "submitted"
+        if status == "queued":
+            key = "submitted"
+        columns[key].append(task)
+    return {"columns": columns}
+
+
+@app.get("/api/templates")
+async def get_templates():
+    from integrations.project_templates import list_templates
+    return {"templates": list_templates()}
+
+
+class TemplateApplyRequest(BaseModel):
+    template_id: str
+
+
+@app.post("/api/templates/apply")
+async def apply_project_template(body: TemplateApplyRequest):
+    from integrations.project_templates import get_template
+    tpl = get_template(body.template_id)
+    if not tpl:
+        raise HTTPException(status_code=404, detail="Template not found")
+    await room.handle_user_message({"type": "task", "text": tpl["task"], "target": "all"})
+    return {"ok": True, "template": tpl["id"], "task": tpl["task"]}
+
+
+@app.get("/api/integrations/status")
+async def integrations_status():
+    from integrations.external_hub import integration_status
+    from integrations.llm_client import is_configured
+    status = integration_status()
+    status["llm"] = is_configured()
+    return status
+
+
+class IntegrationTextRequest(BaseModel):
+    text: str = ""
+    title: str = "AI Team Export"
+    content: str = ""
+
+
+@app.post("/api/integrations/telegram")
+async def send_telegram_msg(body: IntegrationTextRequest):
+    from integrations.external_hub import send_telegram
+    result = await send_telegram(body.text or body.content)
+    if not result:
+        return {"ok": False, "message": "TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not set"}
+    return {"ok": True, "result": result}
+
+
+@app.post("/api/integrations/notion/export")
+async def export_to_notion(body: IntegrationTextRequest):
+    from integrations.external_hub import export_notion_page
+    result = await export_notion_page(body.title, body.content or body.text)
+    if not result:
+        return {"ok": False, "message": "NOTION_TOKEN / NOTION_PARENT_PAGE_ID not set"}
+    return {"ok": True, "result": result}
+
+
+@app.post("/api/integrations/vercel/deploy")
+async def vercel_deploy_endpoint():
+    from integrations.external_hub import deploy_vercel
+    result = await deploy_vercel()
+    if not result:
+        return {"ok": False, "message": "VERCEL_TOKEN not set"}
+    return result
+
+
+@app.post("/api/telegram/webhook")
+async def telegram_webhook(payload: dict):
+    """Telegram Bot webhook → задача команде."""
+    message = payload.get("message") or payload.get("edited_message") or {}
+    text = (message.get("text") or "").strip()
+    if not text or text.startswith("/"):
+        return {"ok": True, "skipped": True}
+    await room.handle_user_message({
+        "type": "task",
+        "text": f"[Telegram] {text}",
+        "target": "all",
+    })
+    return {"ok": True}
 
 
 @app.post("/api/deploy")

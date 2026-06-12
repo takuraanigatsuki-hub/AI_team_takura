@@ -96,6 +96,15 @@ def sync_changes(message: Optional[str] = None) -> dict:
     _last_sync_at = datetime.now().isoformat()
     _last_error = None
     sha = _run_git(["rev-parse", "--short", "HEAD"])
+    commit_full = _run_git(["rev-parse", "HEAD"])
+    remote = _run_git(["remote", "get-url", "origin"])
+    commit_url = ""
+    remote_url = remote.stdout.strip() if remote.returncode == 0 else ""
+    if remote_url and commit_full.returncode == 0:
+        base = remote_url.rstrip(".git")
+        if base.startswith("git@"):
+            base = "https://" + base.split("@", 1)[1].replace(":", "/")
+        commit_url = f"{base}/commit/{commit_full.stdout.strip()}"
     return {
         "ok": True,
         "action": "pushed",
@@ -103,6 +112,7 @@ def sync_changes(message: Optional[str] = None) -> dict:
         "commit": sha.stdout.strip(),
         "branch": branch_name,
         "synced_at": _last_sync_at,
+        "commit_url": commit_url,
     }
 
 
@@ -123,15 +133,26 @@ async def auto_sync_loop(room_manager=None, interval: int = 60):
                 continue
             result = await sync_changes_async()
             if result.get("ok") and result.get("action") == "pushed" and room_manager:
+                msg = (
+                    f"📤 **GitHub:** изменения отправлены\n"
+                    f"• `{result.get('commit')}` · {result.get('branch')}\n"
+                    f"• {result.get('message')}"
+                )
+                if result.get("commit_url"):
+                    msg += f"\n• [Открыть commit]({result.get('commit_url')})"
                 await room_manager.broadcast_work({
                     "type": "git_sync_done",
-                    "message": (
-                        f"📤 **GitHub:** изменения отправлены\n"
-                        f"• `{result.get('commit')}` · {result.get('branch')}\n"
-                        f"• {result.get('message')}"
-                    ),
+                    "message": msg,
+                    "commit_url": result.get("commit_url"),
                     "timestamp": datetime.now().isoformat(),
                 })
+                if result.get("commit_url"):
+                    await room_manager.broadcast_work({
+                        "type": "pr_ready",
+                        "commit_url": result.get("commit_url"),
+                        "message": f"📦 **Commit на GitHub:** {result.get('commit_url')}",
+                        "timestamp": datetime.now().isoformat(),
+                    })
         except Exception as e:
             _last_error = str(e)
 
@@ -149,12 +170,21 @@ async def sync_after_task(task_text: str, room_manager=None) -> Optional[dict]:
     msg = f"auto: {preview}" if preview else None
     result = await sync_changes_async(msg)
     if room_manager and result.get("action") == "pushed":
+        msg = f"📤 Локальные изменения → GitHub (`{result.get('commit')}`)"
+        if result.get("commit_url"):
+            msg += f"\n🔗 {result.get('commit_url')}"
         await room_manager.broadcast_work({
             "type": "git_sync_done",
-            "message": (
-                f"📤 Локальные изменения → GitHub (`{result.get('commit')}`)"
-            ),
+            "message": msg,
+            "commit_url": result.get("commit_url"),
             "timestamp": datetime.now().isoformat(),
         })
+        if result.get("commit_url"):
+            await room_manager.broadcast_work({
+                "type": "pr_ready",
+                "commit_url": result.get("commit_url"),
+                "message": f"📦 Commit: {result.get('commit_url')}",
+                "timestamp": datetime.now().isoformat(),
+            })
         await room_manager.pipeline.on_github("done")
     return result
