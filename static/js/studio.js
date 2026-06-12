@@ -409,7 +409,6 @@
     function addRecessedLight(x, z, slabY, slabH) {
         const yFace = slabY - slabH / 2;
         const trimMat = new THREE.MeshStandardMaterial({ color: 0xd0d4dc, roughness: 0.45, metalness: 0.15 });
-        const wellMat = new THREE.MeshStandardMaterial({ color: 0x1a1e24, roughness: 0.95 });
         const panelMat = new THREE.MeshStandardMaterial({
             color: 0xfff8f0,
             emissive: 0xfff0d8,
@@ -422,17 +421,13 @@
         trim.position.set(x, yFace + 0.002, z);
         scene.add(trim);
 
-        const well = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, slabH * 0.75, 20), wellMat);
-        well.position.set(x, slabY + slabH * 0.08, z);
-        scene.add(well);
-
         const panel = new THREE.Mesh(new THREE.CircleGeometry(0.12, 32), panelMat);
         panel.rotation.x = -Math.PI / 2;
         panel.position.set(x, yFace + 0.001, z);
         scene.add(panel);
 
         const spot = new THREE.PointLight(0xfff4e8, 0.24, 5.5);
-        spot.position.set(x, yFace + 0.06, z);
+        spot.position.set(x, yFace + 0.05, z);
         scene.add(spot);
     }
 
@@ -1063,7 +1058,7 @@
                 controls = new THREE.OrbitControls(camera, canvas);
                 controls.enableDamping = true;
                 controls.dampingFactor = 0.08;
-                controls.maxPolarAngle = Math.PI / 2.35;
+                controls.maxPolarAngle = Math.PI / 2.08;
                 controls.minDistance = 3.5;
                 controls.maxDistance = 16;
                 controls.target.set(0, 0.5, 0);
