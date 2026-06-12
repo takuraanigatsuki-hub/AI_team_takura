@@ -29,6 +29,7 @@ if __name__ == "__main__":
     print("  ⚡ Лео     — Cursor SDK")
     print("  📽️ Ника    — Presentations")
     print("  🧊 Зоя     — 3D Artist")
+    print("  🎓 Маша    — Skill Evaluator")
     print("=" * 60)
 
     uvicorn.run(
