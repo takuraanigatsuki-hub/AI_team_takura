@@ -972,12 +972,15 @@ class DirectChatRequest(BaseModel):
 
 
 @app.post("/api/agents/{agent_id}/direct-chat")
-async def send_direct_chat(agent_id: str, request: DirectChatRequest):
+async def send_direct_chat(agent_id: str, http_request: Request, request: DirectChatRequest):
     """Отправить личное сообщение агенту"""
+    user = _optional_user(http_request)
     agent = room.agents.get(agent_id)
     if not agent:
         raise HTTPException(status_code=404, detail="Агент не найден")
-    await agent.handle_direct_chat(request.text)
+    uid = user.get("id", "") if user else ""
+    uname = (user.get("name") or user.get("email", "User").split("@")[0]) if user else ""
+    await agent.handle_direct_chat(request.text, user_id=uid, user_name=uname)
     return {"status": "ok", "messages": agent.direct_chat[-4:]}
 
 
@@ -2490,7 +2493,11 @@ async def submit_learning_exercise(body: LearningSubmitBody, request: Request):
 # ─── Investor Portal ─────────────────────────────────────────
 
 @app.get("/api/investor/dashboard")
-async def investor_dashboard():
+async def investor_dashboard(request: Request):
+    user = _current_user(request)
+    from room.message_filter import is_privileged
+    if not (is_privileged(user.get("role", "")) or user.get("is_investor") or user.get("can_view_investor_portal")):
+        raise HTTPException(status_code=403, detail="Investor Portal недоступен")
     stats = room.task_history.stats()
     learning = room._learning_store().get_dashboard()
     from room.security_monitor import get_monitor

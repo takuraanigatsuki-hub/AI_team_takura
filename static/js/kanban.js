@@ -11,12 +11,16 @@
 
     async function refresh() {
         try {
-            const r = await fetch('/api/kanban');
+            const r = await fetch('/api/kanban', { credentials: 'same-origin' });
+            if (!r.ok) {
+                const d = await r.json().catch(() => ({}));
+                throw new Error(d.detail || 'Не удалось загрузить Kanban');
+            }
             const d = await r.json();
             render(d.columns || {});
         } catch (e) {
             const el = document.getElementById('kanbanBoard');
-            if (el) el.innerHTML = `<div class="panel-empty">Ошибка: ${e}</div>`;
+            if (el) el.innerHTML = `<div class="panel-empty">${escape(String(e.message || e))}</div>`;
         }
     }
 
@@ -72,12 +76,17 @@
         if (!taskId) return;
         const idx = PRIOS.indexOf(current);
         const next = PRIOS[(idx + 1) % PRIOS.length];
-        await fetch(`/api/tasks/${taskId}/priority`, {
+        const r = await fetch(`/api/tasks/${taskId}/priority`, {
             method: 'PATCH',
+            credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ priority: next }),
         });
-        refresh();
+        if (r.ok) refresh();
+        else if (window.UIEnhancements) {
+            const d = await r.json().catch(() => ({}));
+            UIEnhancements.toast(d.detail || 'Нет доступа', 'warn');
+        }
     }
 
     function escape(s) {

@@ -540,14 +540,18 @@ class RoomManager:
 
         elif msg_type == "chat":
             record_user_wish(text, target if target not in ("all", None) else "pm")
+            uid = user.get("id", "") if user else ""
+            uname = (
+                user.get("name") or user.get("email", "User").split("@")[0]
+            ) if user else ""
             if target == "all":
                 pm = self.agents.get("pm")
                 if pm:
-                    await pm.handle_direct_chat(text, force_chat=True)
+                    await pm.handle_direct_chat(text, force_chat=True, user_id=uid, user_name=uname)
             else:
                 agent = self.agents.get(target)
                 if agent:
-                    await agent.handle_direct_chat(text, force_chat=True)
+                    await agent.handle_direct_chat(text, force_chat=True, user_id=uid, user_name=uname)
                 else:
                     await self.broadcast_work({
                         "type": "error",
@@ -557,8 +561,12 @@ class RoomManager:
 
         elif msg_type == "direct_chat":
             agent = self.agents.get(target)
+            uid = user.get("id", "") if user else ""
+            uname = (
+                user.get("name") or user.get("email", "User").split("@")[0]
+            ) if user else ""
             if agent:
-                await agent.handle_direct_chat(text)
+                await agent.handle_direct_chat(text, user_id=uid, user_name=uname)
             else:
                 await self.broadcast_work({
                     "type": "error",

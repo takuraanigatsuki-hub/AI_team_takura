@@ -958,10 +958,11 @@ class BaseAgent:
             "reflection"
         )
 
-    async def _start_user_task(self, text: str, sender: str = "Пользователь") -> str:
+    async def _start_user_task(self, text: str, sender: str = "Пользователь",
+                               user_id: str = "", user_name: str = "") -> str:
         """Поставить запрос пользователя в очередь выполнения."""
         if self.room_manager:
-            dup = self.room_manager.task_history.find_active_duplicate(text)
+            dup = self.room_manager.task_history.find_active_duplicate(text, user_id)
             if dup:
                 return (
                     f"Эта задача **уже в работе** (статус: {dup.get('status')}). "
@@ -969,7 +970,8 @@ class BaseAgent:
                 )
 
         if self.agent_id == "pm" and self.room_manager and hasattr(self, "orchestrate_task"):
-            parent_id = self.room_manager.task_history.add_submitted(text, "all", "direct")
+            parent_id = self.room_manager.task_history.add_submitted(
+                text, "all", "direct", user_id, user_name)
             await self.room_manager._broadcast_task_history()
             await self.orchestrate_task(text, self.room_manager.agents, parent_id=parent_id)
             return (
@@ -978,11 +980,13 @@ class BaseAgent:
             )
 
         if self.room_manager:
-            parent_id = self.room_manager.task_history.add_submitted(text, self.agent_id, "direct")
+            parent_id = self.room_manager.task_history.add_submitted(
+                text, self.agent_id, "direct", user_id, user_name)
             await self.room_manager._broadcast_task_history()
             child_id = self.room_manager.task_history.add_queued(
                 text, self.agent_id, self.name, self.emoji,
                 parent_id=parent_id, sender=sender,
+                user_id=user_id, user_name=user_name,
             )
             await self.assign_task(
                 text, sender=sender, parent_id=parent_id, task_id=child_id,
@@ -995,7 +999,8 @@ class BaseAgent:
             "Результат появится в **Задачах** и **Проектах**."
         )
 
-    async def handle_direct_chat(self, text: str, force_chat: bool = False):
+    async def handle_direct_chat(self, text: str, force_chat: bool = False,
+                                 user_id: str = "", user_name: str = ""):
         """Личный диалог — чат или реальное выполнение по запросу пользователя."""
         from room.user_intent import classify_user_message, record_user_wish
 
@@ -1019,7 +1024,8 @@ class BaseAgent:
         mode = classify_user_message(text, force_chat=force_chat)
 
         if mode == "work":
-            reply = await self._start_user_task(text, sender="Пользователь")
+            reply = await self._start_user_task(
+                text, sender="Пользователь", user_id=user_id, user_name=user_name)
         else:
             reply = await self._build_response(text)
 

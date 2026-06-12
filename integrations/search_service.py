@@ -1,6 +1,6 @@
 """Глобальный поиск по данным комнаты."""
 
-from typing import Any
+from typing import Any, Optional
 
 
 def _match(query: str, *parts: Any) -> bool:
@@ -8,14 +8,30 @@ def _match(query: str, *parts: Any) -> bool:
     return query in hay
 
 
-def search_room(query: str, room, limit: int = 30) -> dict:
+def search_room(
+    query: str,
+    room,
+    limit: int = 30,
+    user_id: str = "",
+    privileged: bool = False,
+    viewer: Optional[dict] = None,
+) -> dict:
     q = (query or "").strip().lower()
     if len(q) < 2:
         return {"query": query, "results": [], "count": 0}
 
+    from room.message_filter import filter_messages_for_viewer
+
     results: list[dict] = []
 
-    for task in room.task_history.get_all():
+    if privileged:
+        task_iter = room.task_history.get_all()
+    elif user_id:
+        task_iter = room.task_history.get_for_user(user_id, 200)
+    else:
+        task_iter = []
+
+    for task in task_iter:
         if not _match(q, task.get("task"), task.get("response"), task.get("agent_name"), task.get("target")):
             continue
         results.append({
@@ -41,7 +57,8 @@ def search_room(query: str, room, limit: int = 30) -> dict:
             "view": "projects",
         })
 
-    for msg in reversed(room.work_history):
+    work_msgs = filter_messages_for_viewer(room.work_history, viewer or {})
+    for msg in reversed(work_msgs):
         if msg.get("type") in ("agents_state", "history", "task_history", "direct_user_echo"):
             continue
         text = msg.get("message") or msg.get("text") or ""
@@ -56,18 +73,19 @@ def search_room(query: str, room, limit: int = 30) -> dict:
             "view": "chat",
         })
 
-    for msg in reversed(room.learning_history):
-        text = msg.get("message") or ""
-        if not text or not _match(q, text, msg.get("agent_name")):
-            continue
-        results.append({
-            "type": "learning",
-            "id": msg.get("timestamp") or msg.get("id"),
-            "title": (text[:100] + ("…" if len(text) > 100 else "")),
-            "snippet": text[:160],
-            "meta": f"{msg.get('agent_emoji', '')} {msg.get('agent_name', 'Обучение')}".strip(),
-            "view": "learning",
-        })
+    if privileged or (viewer or {}).get("role") in ("owner", "admin", "tech_admin"):
+        for msg in reversed(room.learning_history):
+            text = msg.get("message") or ""
+            if not text or not _match(q, text, msg.get("agent_name")):
+                continue
+            results.append({
+                "type": "learning",
+                "id": msg.get("timestamp") or msg.get("id"),
+                "title": (text[:100] + ("…" if len(text) > 100 else "")),
+                "snippet": text[:160],
+                "meta": f"{msg.get('agent_emoji', '')} {msg.get('agent_name', 'Обучение')}".strip(),
+                "view": "learning",
+            })
 
     try:
         from integrations.sonya_studio import list_projects

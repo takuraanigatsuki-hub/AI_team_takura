@@ -1162,12 +1162,16 @@
         try {
             const r = await fetch(`/api/tasks/${taskId}/approve`, {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ note: '' }),
             });
             if (r.ok) {
                 if (window.UIEnhancements) UIEnhancements.toast('✅ Задача принята', 'success');
                 loadTasks();
+            } else {
+                const d = await r.json().catch(() => ({}));
+                if (window.UIEnhancements) UIEnhancements.toast(d.detail || 'Нет доступа', 'warn');
             }
         } catch (_) {}
     };
@@ -1178,12 +1182,16 @@
         try {
             const r = await fetch(`/api/tasks/${taskId}/revision`, {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ feedback: feedback.trim() }),
             });
             if (r.ok) {
                 if (window.UIEnhancements) UIEnhancements.toast('✎ Отправлено на доработку', 'info');
                 loadTasks();
+            } else {
+                const d = await r.json().catch(() => ({}));
+                if (window.UIEnhancements) UIEnhancements.toast(d.detail || 'Нет доступа', 'warn');
             }
         } catch (_) {}
     };
@@ -1212,13 +1220,16 @@
     window.cancelAllTasks = async function () {
         if (!confirm('Отменить все активные задачи и очистить очереди агентов?')) return;
         try {
-            const r = await fetch('/api/tasks/cancel-all', { method: 'POST' });
+            const r = await fetch('/api/tasks/cancel-all', { method: 'POST', credentials: 'same-origin' });
             if (r.ok) {
                 const data = await r.json();
                 if (window.UIEnhancements) {
                     UIEnhancements.toast(`🛑 Отменено: ${data.cancelled || 0}`, 'success');
                 }
                 loadTasks();
+            } else {
+                const d = await r.json().catch(() => ({}));
+                if (window.UIEnhancements) UIEnhancements.toast(d.detail || 'Нужен вход', 'warn');
             }
         } catch (_) {}
     };
@@ -1226,13 +1237,16 @@
     window.clearTasksHistory = async function () {
         if (!confirm('Полностью удалить всю историю задач? Это нельзя отменить.')) return;
         try {
-            const r = await fetch('/api/tasks/clear', { method: 'POST' });
+            const r = await fetch('/api/tasks/clear', { method: 'POST', credentials: 'same-origin' });
             if (r.ok) {
                 const data = await r.json();
                 if (window.UIEnhancements) {
                     UIEnhancements.toast(`🗑 Удалено записей: ${data.cleared || 0}`, 'success');
                 }
                 loadTasks();
+            } else {
+                const d = await r.json().catch(() => ({}));
+                if (window.UIEnhancements) UIEnhancements.toast(d.detail || 'Только для администраторов', 'warn');
             }
         } catch (_) {}
     };

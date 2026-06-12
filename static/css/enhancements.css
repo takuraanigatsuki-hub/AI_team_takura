@@ -283,4 +283,28 @@ body.sidebar-collapsed .app-content-wrap { margin-left: var(--sidebar-collapsed-
     body.has-sidebar .status-footer { margin-left: 0 !important; }
 }
 
-.sb-mobile-toggle { display: none; }
+.header-row-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sb-mobile-toggle {
+    display: none;
+    flex-shrink: 0;
+    margin-right: 4px;
+}
+
+/* Kanban polish */
+.kb-card {
+    border-radius: 10px;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.kb-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+.kb-col-head {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
