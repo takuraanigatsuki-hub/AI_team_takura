@@ -35,10 +35,10 @@ def _uid(prefix: str) -> str:
 
 
 def get_db_path() -> str:
-  path = os.environ.get("SQLITE_DB_PATH", "data/ai_team.sqlite").strip()
-  if not os.path.isabs(path):
-    path = os.path.join(os.path.dirname(__file__), "..", path)
-  return os.path.normpath(path)
+    path = os.environ.get("SQLITE_DB_PATH", "data/ai_team.sqlite").strip()
+    if not os.path.isabs(path):
+        path = os.path.join(os.path.dirname(__file__), "..", path)
+    return os.path.normpath(path)
 
 
 def _row_to_dict(row: sqlite3.Row) -> dict:

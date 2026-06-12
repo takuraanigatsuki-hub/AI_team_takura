@@ -1,7 +1,5 @@
 """Тесты бухгалтерии — SQLite-таблицы и проводки."""
 
-import os
-import tempfile
 import uuid
 
 import pytest
