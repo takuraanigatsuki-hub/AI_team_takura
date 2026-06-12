@@ -1,0 +1,19 @@
+fastapi>=0.100.0
+uvicorn>=0.23.0
+websockets>=11.0
+httpx>=0.24.0
+beautifulsoup4>=4.12.0
+aiofiles>=23.0.0
+python-multipart>=0.0.6
+
+# Cursor SDK (локальный coding-агент + Cloud GitHub Sync)
+cursor-sdk>=0.1.6
+
+# Десктоп-режим
+pywebview>=4.4.1
+
+# Сборка в .exe
+# pyinstaller>=6.0.0   # раскомментируй при сборке
+
+# Для красивых иконок (опционально)
+# Pillow>=10.0.0

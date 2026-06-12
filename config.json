@@ -1,0 +1,26 @@
+{
+    "host": "0.0.0.0",
+    "port": 8000,
+    "learning_interval_min": 5,
+    "learning_interval_max": 15,
+    "learning_sources": [
+        "web_search",
+        "wikipedia",
+        "devto",
+        "github",
+        "habr",
+        "stackoverflow",
+        "hackernews",
+        "books",
+        "arxiv",
+        "gutenberg"
+    ],
+    "persist_knowledge": true,
+    "debug": false,
+    "figma_default_url": "https://www.figma.com/site/uYRfrETGR8pcwChwLtJ6Ua/Untitled?t=S7zOAy3vHRn3HWqR-0",
+    "cursor_cloud_mode": true,
+    "cursor_github_sync": true,
+    "cursor_auto_create_pr": true,
+    "cursor_repo_url": "https://github.com/taksrules/AI_team_takura",
+    "cursor_repo_ref": "main"
+}

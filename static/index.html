@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>AI Team Room — 3D Studio</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#6c63ff">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AI Team">
+
+    <!-- Иконки для iOS -->
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/static/icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/static/icons/icon-512.png">
+
+    <!-- Для Windows / Edge -->
+    <meta name="msapplication-TileImage" content="/static/icons/icon-192.png">
+    <meta name="msapplication-TileColor" content="#6c63ff">
+
+    <!-- SEO / Share -->
+    <meta name="description" content="Автономная команда ИИ-агентов — 3D студия и командный чат">
+    <meta property="og:title" content="AI Team Room">
+    <meta property="og:description" content="Автономная команда ИИ-агентов">
+    <meta property="og:image" content="/static/icons/icon-512.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+
+<header class="header">
+    <div class="logo">
+        <div class="logo-mark">🤖</div>
+        <div class="logo-text">
+            <h1>AI Team Room</h1>
+            <p>3D студия · автономная команда</p>
+        </div>
+    </div>
+    <nav class="view-tabs">
+        <button type="button" class="view-tab active" data-view="studio" onclick="switchView('studio')">3D Студия</button>
+        <button type="button" class="view-tab" data-view="chat" onclick="switchView('chat')">Рабочий чат</button>
+        <button type="button" class="view-tab" data-view="learning" onclick="switchView('learning')">Обучение</button>
+        <button type="button" class="view-tab" data-view="design" onclick="switchView('design')">Design</button>
+        <button type="button" class="view-tab" data-view="tasks" onclick="switchView('tasks')">Задачи</button>
+    </nav>
+    <div class="header-actions">
+        <div class="conn-pill">
+            <div class="conn-dot" id="connDot"></div>
+            <span id="connText">Подключение</span>
+        </div>
+        <button type="button" class="cursor-toggle-btn" onclick="Integrations.toggleCursorPanel()" title="Cursor SDK">
+            ⚡ Cursor <span class="integration-badge" id="cursorBadge">…</span>
+        </button>
+        <button type="button" class="preview-toggle-btn" onclick="ReactPreview.toggle()" title="React Preview Сони">🎨 Preview</button>
+        <button type="button" class="text-btn" onclick="showSettings()">⚙️ Настройки</button>
+        <button type="button" class="icon-btn" id="themeToggle" onclick="toggleTheme()" title="Сменить тему">☀️</button>
+    </div>
+</header>
+
+<div class="main">
+    <!-- 3D STUDIO -->
+    <div id="studioView" class="studio-view">
+        <canvas id="studioCanvas"></canvas>
+        <div id="studioError" class="studio-error" style="display:none"></div>
+        <div class="studio-overlay">
+            <div class="studio-hint">🖱️ Вращение · колесо — zoom · клик по агенту — личный чат</div>
+            <div class="studio-legend" id="studioLegend"></div>
+        </div>
+    </div>
+
+    <!-- DESIGN VIEW (Figma + tokens) -->
+    <div id="designView" class="design-layout hidden">
+        <section class="design-main">
+            <div class="design-hero">
+                <h2>🎨 Design · Figma</h2>
+                <p>Импортируйте макет — Соня создаст React Preview с цветами из Figma</p>
+            </div>
+            <div class="design-import-row">
+                <input type="url" id="figmaUrlInput" class="design-input" value="https://www.figma.com/site/uYRfrETGR8pcwChwLtJ6Ua/Untitled?t=S7zOAy3vHRn3HWqR-0" placeholder="https://www.figma.com/design/…?node-id=…">
+                <button type="button" class="btn-primary" onclick="Integrations.importFigma()">Импорт</button>
+            </div>
+            <div id="figmaImportResult" class="figma-result">
+                <div class="panel-empty">
+                    <div class="preview-empty-icon">🖼️</div>
+                    <p>Вставьте ссылку на фрейм в Figma</p>
+                    <p class="muted">Нужен FIGMA_ACCESS_TOKEN в .env</p>
+                </div>
+            </div>
+        </section>
+        <aside class="design-sidebar">
+            <div class="panel-label">Интеграции</div>
+            <div class="integration-cards">
+                <div class="int-card">
+                    <div class="int-icon">⚡</div>
+                    <h3>Cursor SDK</h3>
+                    <p>Coding-агент Лео — локальный проект или GitHub cloud</p>
+                    <button type="button" class="btn-secondary" onclick="Integrations.toggleCursorPanel()">Открыть панель</button>
+                </div>
+                <div class="int-card">
+                    <div class="int-icon">🎨</div>
+                    <h3>Figma REST</h3>
+                    <p>Design tokens, цвета, preview фреймов</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- TASKS VIEW -->
+    <div id="tasksView" class="tasks-layout hidden">
+        <div class="tasks-panel">
+            <div class="tasks-stats" id="tasksStats">
+                <div class="stat-card"><span class="stat-num" id="statCompleted">0</span><span class="stat-label">Выполнено</span></div>
+                <div class="stat-card active"><span class="stat-num" id="statActive">0</span><span class="stat-label">В работе</span></div>
+                <div class="stat-card"><span class="stat-num" id="statTotal">0</span><span class="stat-label">Всего</span></div>
+            </div>
+            <div class="tasks-hint">
+                <strong>Как отправить задачу:</strong> вкладка «Рабочий чат» → выберите агента → режим <strong>«Задача»</strong> (не «Чат») → Enter.
+                Задача «Вся команда» идёт через PM Виктора.
+            </div>
+            <div class="tasks-filters">
+                <button type="button" class="filter-btn active" data-filter="all" onclick="filterTasks('all')">Все</button>
+                <button type="button" class="filter-btn" data-filter="completed" onclick="filterTasks('completed')">Выполненные</button>
+                <button type="button" class="filter-btn" data-filter="active" onclick="filterTasks('active')">Активные</button>
+            </div>
+            <div class="tasks-list" id="tasksList">
+                <div class="tasks-empty">Задач пока нет — отправьте первую в чате</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEARNING VIEW -->
+    <div id="learningView" class="learning-layout hidden">
+        <section class="learning-area">
+            <div class="learning-toolbar">
+                <span class="toolbar-label">📚 Чат обучения</span>
+                <span class="learning-hint">Агенты делятся находками из Wikipedia, GitHub, Хабра и других источников</span>
+                <button type="button" class="clear-btn" onclick="clearLearningMessages()">Очистить</button>
+            </div>
+            <div class="messages learning-messages" id="learningMessages">
+                <div class="welcome" data-learning-welcome>
+                    <div class="welcome-icon">📚</div>
+                    <h2>Обучение команды</h2>
+                    <p>Здесь агенты публикуют то, что изучают. Рабочие задачи и планы — во вкладке «Рабочий чат».</p>
+                </div>
+            </div>
+        </section>
+        <aside class="learning-sidebar">
+            <div class="panel-label">Агенты в библиотеке</div>
+            <div class="agents-list" id="learningAgentsList">
+                <div class="no-selection">Загрузка…</div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- WORK CHAT VIEW -->
+    <div id="chatView" class="chat-layout hidden">
+        <aside class="sidebar">
+            <div class="panel-label">Команда</div>
+            <div class="agents-list" id="agentsList">
+                <div class="no-selection">Загрузка…</div>
+            </div>
+        </aside>
+
+        <section class="chat-area">
+            <div class="chat-toolbar">
+                <span class="toolbar-label">Кому</span>
+                <select class="select" id="targetSelect">
+                    <option value="all">Вся команда</option>
+                    <option value="pm">Виктор · PM</option>
+                    <option value="architect">Алекс · Architect</option>
+                    <option value="backend">Макс · Backend</option>
+                    <option value="frontend">Соня · Frontend</option>
+                    <option value="qa">Рита · QA</option>
+                    <option value="reviewer">Дэн · Reviewer</option>
+                    <option value="doc_writer">Лена · Docs</option>
+                    <option value="devops">Кирилл · DevOps</option>
+                    <option value="cursor">Лео · Cursor SDK</option>
+                </select>
+                <div class="type-group">
+                    <button type="button" class="type-btn active" id="typeTask" onclick="setMsgType('task')" title="Агент выполнит работу">📋 Задача</button>
+                    <button type="button" class="type-btn" id="typeChat" onclick="setMsgType('chat')" title="Только разговор, без выполнения">💬 Чат</button>
+                </div>
+                <button type="button" class="clear-btn" onclick="clearMessages()">Очистить</button>
+            </div>
+
+            <div class="messages" id="messages">
+                <div class="welcome" data-welcome>
+                    <div class="welcome-icon">💬</div>
+                    <h2>Рабочий чат</h2>
+                    <p>Задачи, планы Виктора и результаты работы. Обучение — во вкладке «Обучение».</p>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div class="input-wrap">
+                    <textarea id="messageInput" placeholder="Задача или сообщение…" rows="1"></textarea>
+                </div>
+                <button type="button" class="send-btn" onclick="sendMessage()">↑</button>
+            </div>
+        </section>
+
+        <aside class="agent-detail">
+            <div class="panel-label">Агент</div>
+            <div class="detail-content" id="agentDetail">
+                <div class="no-selection">
+                    <div style="font-size:24px;opacity:0.4">←</div>
+                    <div>Выберите агента</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<div id="privateChatsContainer"></div>
+
+<!-- React Preview — Соня -->
+<aside id="reactPreviewPanel">
+    <div class="preview-header">
+        <span>🎨</span>
+        <h2 id="reactPreviewTitle">React Preview</h2>
+        <span class="preview-badge" id="reactPreviewBadge">ожидание</span>
+        <button type="button" class="icon-btn" onclick="ReactPreview.close()" title="Закрыть">×</button>
+    </div>
+    <div class="preview-body" id="reactPreviewBody">
+        <div class="preview-empty" id="reactPreviewEmpty">
+            <div class="preview-empty-icon">⚛️</div>
+            <div>Дайте Соне задачу с UI</div>
+            <div style="font-size:11px">Например: «сделай форму логина» или «кнопку с анимацией»</div>
+        </div>
+        <div id="reactPreviewContent" style="display:none; flex:1; flex-direction:column; min-height:0;">
+            <div class="preview-task">
+                <span id="reactPreviewTaskText"></span>
+                <a id="siteOpenLink" href="/api/sites/latest" target="_blank" class="site-open-link" style="display:none">🌐 Открыть сайт в новой вкладке</a>
+            </div>
+            <div class="preview-frame-wrap">
+                <iframe id="reactPreviewFrame" title="React Preview" sandbox="allow-scripts allow-same-origin"></iframe>
+            </div>
+            <div class="preview-code-wrap">
+                <pre id="reactPreviewCode"></pre>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<div class="modal-overlay" id="settingsModal" onclick="if(event.target===this)hideSettings()">
+    <div class="modal modal-wide">
+        <h2>⚙️ Настройки</h2>
+        <div class="settings-grid">
+            <div>
+                <h3 class="settings-section-title">Обучение</h3>
+                <div class="form-group">
+                    <label>Интервал мин (сек)</label>
+                    <input type="number" id="learnMinInput" value="5" min="5" max="300">
+                </div>
+                <div class="form-group">
+                    <label>Интервал макс (сек)</label>
+                    <input type="number" id="learnMaxInput" value="15" min="10" max="600">
+                </div>
+                <div class="form-group checkbox">
+                    <label><input type="checkbox" id="persistInput" checked> Сохранять знания на диск</label>
+                </div>
+            </div>
+            <div>
+                <h3 class="settings-section-title">Cursor SDK</h3>
+                <div class="form-group">
+                    <label>GitHub repo (cloud, опционально)</label>
+                    <input type="url" id="cursorRepoInput" placeholder="https://github.com/org/repo">
+                </div>
+                <div class="form-group">
+                    <label>Ветка</label>
+                    <input type="text" id="cursorRefInput" value="main">
+                </div>
+                <div class="form-group checkbox">
+                    <label><input type="checkbox" id="cursorEnabledInput" checked> Cursor SDK включён</label>
+                </div>
+                <div class="form-group checkbox">
+                    <label><input type="checkbox" id="cursorGithubSyncInput" checked> GitHub Sync (Cloud Agent)</label>
+                </div>
+                <div class="form-group checkbox">
+                    <label><input type="checkbox" id="cursorAutoPrInput" checked> Авто-создание Pull Request</label>
+                </div>
+                <p class="modal-note">
+                    API ключ: <code>CURSOR_API_KEY</code> в .env<br>
+                    Repo: настройки или <code>CURSOR_REPO_URL</code> · GitHub подключите в
+                    <a href="https://cursor.com/dashboard?tab=cloud-agents" target="_blank" rel="noopener">Cursor Dashboard</a>
+                </p>
+            </div>
+        </div>
+        <p class="modal-note">
+            Figma: <code>FIGMA_ACCESS_TOKEN</code> в .env ·
+            Источники обучения: Wikipedia, Dev.to, GitHub, Хабр и др.
+        </p>
+        <div class="modal-btns">
+            <button type="button" class="btn-secondary" onclick="hideSettings()">Отмена</button>
+            <button type="button" class="btn-primary" onclick="saveSettings()">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Cursor SDK Panel -->
+<aside id="cursorPanel" class="side-panel">
+    <div class="side-panel-header">
+        <span>⚡</span>
+        <h2>Cursor SDK</h2>
+        <button type="button" class="icon-btn" onclick="Integrations.toggleCursorPanel()">×</button>
+    </div>
+    <div id="cursorPanelBody" class="side-panel-body">
+        <div class="panel-empty">Загрузка…</div>
+    </div>
+</aside>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="/static/js/studio.js?v=4"></script>
+<script src="/static/js/react-preview.js?v=1"></script>
+<script src="/static/js/integrations.js?v=1"></script>
+<script src="/static/js/app.js?v=6"></script>
+
+<!-- PWA: регистрация Service Worker -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/static/sw.js', { scope: '/' })
+      .then(reg => console.log('[SW] Зарегистрирован:', reg.scope))
+      .catch(err => console.warn('[SW] Ошибка регистрации:', err));
+  });
+}
+
+// PWA: кнопка «Установить приложение»
+let _pwaInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  _pwaInstallPrompt = e;
+  // Показываем кнопку установки если она есть на странице
+  const btn = document.getElementById('pwaInstallBtn');
+  if (btn) btn.style.display = 'inline-flex';
+});
+
+function installPWA() {
+  if (!_pwaInstallPrompt) return;
+  _pwaInstallPrompt.prompt();
+  _pwaInstallPrompt.userChoice.then(choice => {
+    _pwaInstallPrompt = null;
+    const btn = document.getElementById('pwaInstallBtn');
+    if (btn) btn.style.display = 'none';
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  console.log('[PWA] Установлено!');
+  _pwaInstallPrompt = null;
+});
+</script>
+</body>
+</html>

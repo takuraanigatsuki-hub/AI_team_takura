@@ -1,0 +1,158 @@
+import json
+import os
+import uuid
+from datetime import datetime
+from typing import List, Dict, Optional
+
+HISTORY_FILE = os.path.join(os.path.dirname(__file__), "data", "task_history.json")
+MAX_TASKS = 500
+
+
+class TaskHistory:
+    """Журнал задач с надёжным отслеживанием статусов."""
+
+    def __init__(self):
+        self.tasks: List[Dict] = []
+        self._load()
+
+    def _load(self):
+        if os.path.exists(HISTORY_FILE):
+            try:
+                with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    self.tasks = data if isinstance(data, list) else []
+            except Exception:
+                self.tasks = []
+
+    def _save(self):
+        os.makedirs(os.path.dirname(HISTORY_FILE), exist_ok=True)
+        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(self.tasks[-MAX_TASKS:], f, indent=2, ensure_ascii=False)
+
+    def _find(self, task_id: str) -> Optional[Dict]:
+        for t in self.tasks:
+            if t.get("id") == task_id:
+                return t
+        return None
+
+    def create_task(self, text: str, target: str, agent_id: str = None,
+                    agent_name: str = None, agent_emoji: str = None,
+                    parent_id: str = None, sender: str = "",
+                    status: str = "queued") -> str:
+        task_id = str(uuid.uuid4())[:8]
+        self.tasks.append({
+            "id": task_id,
+            "task": text,
+            "target": target,
+            "status": status,
+            "agent_id": agent_id,
+            "agent_name": agent_name,
+            "agent_emoji": agent_emoji,
+            "response": None,
+            "parent_id": parent_id,
+            "sender": sender,
+            "created_at": datetime.now().isoformat(),
+            "started_at": None,
+            "completed_at": None,
+        })
+        self._save()
+        return task_id
+
+    def add_submitted(self, text: str, target: str, msg_type: str = "task") -> str:
+        return self.create_task(text, target, status="submitted")
+
+    def add_queued(self, text: str, agent_id: str, agent_name: str, agent_emoji: str,
+                   parent_id: Optional[str] = None, sender: str = "") -> str:
+        return self.create_task(
+            text, agent_id, agent_id=agent_id,
+            agent_name=agent_name, agent_emoji=agent_emoji,
+            parent_id=parent_id, sender=sender, status="queued"
+        )
+
+    def mark_in_progress(self, task_id: str):
+        t = self._find(task_id)
+        if t and t["status"] in ("queued", "submitted"):
+            t["status"] = "in_progress"
+            t["started_at"] = datetime.now().isoformat()
+            self._save()
+
+    def mark_completed(self, task_id: str, response: str,
+                       agent_name: str = "", agent_emoji: str = ""):
+        t = self._find(task_id)
+        if not t:
+            return
+        t["status"] = "completed"
+        t["response"] = (response or "")[:2000]
+        t["completed_at"] = datetime.now().isoformat()
+        if agent_name:
+            t["agent_name"] = agent_name
+        if agent_emoji:
+            t["agent_emoji"] = agent_emoji
+        self._save()
+        if t.get("parent_id"):
+            self._try_complete_parent(t["parent_id"])
+
+    def mark_failed(self, task_id: str, error: str = ""):
+        t = self._find(task_id)
+        if not t:
+            return
+        t["status"] = "failed"
+        t["response"] = error[:500] if error else "Ошибка выполнения"
+        t["completed_at"] = datetime.now().isoformat()
+        self._save()
+
+    def _try_complete_parent(self, parent_id: str):
+        parent = self._find(parent_id)
+        if not parent:
+            return
+        children = [t for t in self.tasks if t.get("parent_id") == parent_id]
+        if not children:
+            return
+        if all(c.get("status") in ("completed", "failed") for c in children):
+            done = sum(1 for c in children if c.get("status") == "completed")
+            parent["status"] = "completed"
+            parent["completed_at"] = datetime.now().isoformat()
+            parent["response"] = f"Выполнено {done}/{len(children)} подзадач команды"
+            self._save()
+
+    def get_all(self) -> List[Dict]:
+        return list(reversed(self.tasks))
+
+    def get_completed(self) -> List[Dict]:
+        return [t for t in reversed(self.tasks) if t.get("status") == "completed"]
+
+    def get_active(self) -> List[Dict]:
+        return [t for t in reversed(self.tasks)
+                if t.get("status") in ("submitted", "queued", "in_progress")]
+
+    def stats(self) -> dict:
+        completed = sum(1 for t in self.tasks if t.get("status") == "completed")
+        active = sum(1 for t in self.tasks
+                       if t.get("status") in ("submitted", "queued", "in_progress"))
+        failed = sum(1 for t in self.tasks if t.get("status") == "failed")
+        return {"total": len(self.tasks), "completed": completed, "active": active, "failed": failed}
+
+    def cleanup_stale(self, max_minutes: int = 30):
+        """Помечает зависшие in_progress задачи как failed."""
+        from datetime import timedelta
+        now = datetime.now()
+        changed = False
+        for t in self.tasks:
+            if t.get("status") != "in_progress":
+                continue
+            started = t.get("started_at") or t.get("created_at")
+            if not started:
+                continue
+            try:
+                started_dt = datetime.fromisoformat(started)
+            except ValueError:
+                continue
+            if now - started_dt > timedelta(minutes=max_minutes):
+                t["status"] = "failed"
+                t["response"] = "Таймаут выполнения (перезапустите сервер)"
+                t["completed_at"] = now.isoformat()
+                changed = True
+                if t.get("parent_id"):
+                    self._try_complete_parent(t["parent_id"])
+        if changed:
+            self._save()
