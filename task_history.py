@@ -38,7 +38,13 @@ class TaskHistory:
     def create_task(self, text: str, target: str, agent_id: str = None,
                     agent_name: str = None, agent_emoji: str = None,
                     parent_id: str = None, sender: str = "",
-                    status: str = "queued") -> str:
+                    status: str = "queued", user_id: str = "",
+                    user_name: str = "") -> str:
+        if parent_id and not user_id:
+            parent = self._find(parent_id)
+            if parent:
+                user_id = parent.get("user_id", "")
+                user_name = user_name or parent.get("user_name", "")
         task_id = str(uuid.uuid4())[:8]
         self.tasks.append({
             "id": task_id,
@@ -51,6 +57,8 @@ class TaskHistory:
             "response": None,
             "parent_id": parent_id,
             "sender": sender,
+            "user_id": user_id or "",
+            "user_name": user_name or "",
             "created_at": datetime.now().isoformat(),
             "started_at": None,
             "completed_at": None,
@@ -61,15 +69,21 @@ class TaskHistory:
         self._save()
         return task_id
 
-    def add_submitted(self, text: str, target: str, msg_type: str = "task") -> str:
-        return self.create_task(text, target, status="submitted")
+    def add_submitted(self, text: str, target: str, msg_type: str = "task",
+                      user_id: str = "", user_name: str = "") -> str:
+        return self.create_task(
+            text, target, status="submitted",
+            user_id=user_id, user_name=user_name,
+        )
 
     def add_queued(self, text: str, agent_id: str, agent_name: str, agent_emoji: str,
-                   parent_id: Optional[str] = None, sender: str = "") -> str:
+                   parent_id: Optional[str] = None, sender: str = "",
+                   user_id: str = "", user_name: str = "") -> str:
         return self.create_task(
             text, agent_id, agent_id=agent_id,
             agent_name=agent_name, agent_emoji=agent_emoji,
-            parent_id=parent_id, sender=sender, status="queued"
+            parent_id=parent_id, sender=sender, status="queued",
+            user_id=user_id, user_name=user_name,
         )
 
     def mark_in_progress(self, task_id: str):
@@ -176,6 +190,68 @@ class TaskHistory:
     def get_all(self) -> List[Dict]:
         return list(reversed(self.tasks))
 
+    def _belongs_to_user(self, task: dict, user_id: str) -> bool:
+        if not user_id:
+            return False
+        tid = task.get("user_id") or ""
+        if tid == user_id:
+            return True
+        pid = task.get("parent_id")
+        if pid:
+            parent = self._find(pid)
+            if parent and parent.get("user_id") == user_id:
+                return True
+        return False
+
+    def get_for_user(self, user_id: str, limit: int = 100) -> List[Dict]:
+        if not user_id:
+            return []
+        matched = [t for t in self.tasks if self._belongs_to_user(t, user_id)]
+        return list(reversed(matched))[:limit]
+
+    def stats_for_user(self, user_id: str) -> dict:
+        tasks = [t for t in self.tasks if self._belongs_to_user(t, user_id)]
+        completed = sum(1 for t in tasks if t.get("status") == "completed")
+        active_statuses = (
+            "submitted", "queued", "in_progress", "triaging",
+            "awaiting_approval", "revision_requested",
+        )
+        active = sum(1 for t in tasks if t.get("status") in active_statuses)
+        awaiting = sum(1 for t in tasks if t.get("status") == "awaiting_approval")
+        failed = sum(1 for t in tasks if t.get("status") == "failed")
+        cancelled = sum(1 for t in tasks if t.get("status") == "cancelled")
+        return {
+            "total": len(tasks),
+            "completed": completed,
+            "active": active,
+            "awaiting_approval": awaiting,
+            "failed": failed,
+            "cancelled": cancelled,
+        }
+
+    def user_owns_task(self, task_id: str, user_id: str, privileged: bool = False) -> bool:
+        if privileged:
+            return True
+        t = self._find(task_id)
+        if not t:
+            return False
+        return self._belongs_to_user(t, user_id)
+
+    def cancel_active_for_user(self, user_id: str) -> int:
+        active = (
+            "submitted", "queued", "in_progress", "triaging",
+            "revision_requested", "awaiting_approval",
+        )
+        count = 0
+        for t in self.tasks:
+            if t.get("status") in active and self._belongs_to_user(t, user_id):
+                t["status"] = "cancelled"
+                t["completed_at"] = datetime.now().isoformat()
+                count += 1
+        if count:
+            self._save()
+        return count
+
     def get_completed(self) -> List[Dict]:
         return [t for t in reversed(self.tasks) if t.get("status") == "completed"]
 
@@ -208,8 +284,8 @@ class TaskHistory:
     def _normalize_task_text(self, text: str) -> str:
         return (text or "").strip().lower()[:120]
 
-    def find_active_duplicate(self, text: str) -> Optional[Dict]:
-        """Есть ли уже такая задача в активных статусах."""
+    def find_active_duplicate(self, text: str, user_id: str = "") -> Optional[Dict]:
+        """Есть ли уже такая задача в активных статусах (у того же пользователя)."""
         norm = self._normalize_task_text(text)
         if not norm:
             return None
@@ -217,6 +293,14 @@ class TaskHistory:
             "submitted", "queued", "in_progress", "triaging",
             "revision_requested", "awaiting_approval",
         )
+        for t in reversed(self.tasks):
+            if t.get("status") not in active:
+                continue
+            if user_id and not self._belongs_to_user(t, user_id):
+                continue
+            if self._normalize_task_text(t.get("task", "")) == norm:
+                return t
+        return None
         for t in reversed(self.tasks):
             if t.get("status") not in active:
                 continue
