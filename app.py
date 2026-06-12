@@ -11,7 +11,8 @@ from room.room_manager import RoomManager
 from agents import (
     ArchitectAgent, BackendDevAgent, FrontendDevAgent,
     QATesterAgent, CodeReviewerAgent, DocWriterAgent,
-    DevOpsAgent, PMOrchestratorAgent, CursorAgent
+    DevOpsAgent, PMOrchestratorAgent, CursorAgent,
+    PresenterAgent, Modeler3DAgent,
 )
 
 # Глобальный менеджер комнаты
@@ -32,11 +33,17 @@ async def lifespan(app: FastAPI):
         DocWriterAgent(room),
         DevOpsAgent(room),
         CursorAgent(room),
+        PresenterAgent(room),
+        Modeler3DAgent(room),
     ]
 
     # Регистрируем всех агентов
     for agent in agents:
         room.register_agent(agent)
+
+    from integrations.seed_knowledge import seed_all_agents
+    seeded = seed_all_agents(room.agents)
+    print(f"📚 Seed knowledge: {sum(seeded.values())} topics loaded")
 
     room.task_history.cleanup_stale(max_minutes=30)
 
@@ -790,6 +797,90 @@ async def get_kanban():
             key = "submitted"
         columns[key].append(task)
     return {"columns": columns}
+
+
+@app.get("/api/projects")
+async def list_projects(agent_id: str = "", type: str = "", limit: int = 80):
+    from room.artifact_store import list_all, stats
+    items = list_all(limit=min(limit, 200), agent_id=agent_id or None, art_type=type or None)
+    full = []
+    for meta in items:
+        from room.artifact_store import get_artifact
+        art = get_artifact(meta["id"])
+        if art:
+            preview = art.get("preview_html") or art.get("content", "")
+            full.append({**meta, "has_preview": bool(preview), "file_count": len(art.get("files") or {})})
+    return {"projects": full, "stats": stats()}
+
+
+@app.get("/api/projects/{artifact_id}")
+async def get_project(artifact_id: str):
+    from room.artifact_store import get_artifact
+    art = get_artifact(artifact_id)
+    if not art:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return art
+
+
+@app.get("/api/projects/{artifact_id}/preview", response_class=HTMLResponse)
+async def project_preview(artifact_id: str):
+    from room.artifact_store import get_artifact
+    art = get_artifact(artifact_id)
+    if not art:
+        raise HTTPException(status_code=404, detail="Not found")
+    html = art.get("preview_html") or ""
+    if not html and art.get("type") in ("presentation", "model_3d"):
+        html = art.get("content", "")
+    if not html:
+        content = art.get("content", art.get("description", ""))
+        html = f"<!DOCTYPE html><html><body><pre style='font-family:monospace;padding:24px'>{content}</pre></body></html>"
+    return HTMLResponse(html)
+
+
+@app.get("/api/agents/{agent_id}/activity")
+async def agent_activity(agent_id: str):
+    from room.artifact_store import get_agent_artifacts, stats as art_stats
+    from room.agent_capabilities import get_capabilities
+    agent = room.agents.get(agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    artifacts = get_agent_artifacts(agent_id, limit=40)
+    detailed = []
+    for meta in artifacts[:15]:
+        from room.artifact_store import get_artifact
+        a = get_artifact(meta["id"])
+        if a:
+            detailed.append(a)
+    tasks = [t for t in room.task_history.get_all() if t.get("agent_id") == agent_id][:20]
+    return {
+        "agent": agent.get_state(),
+        "capabilities": get_capabilities(agent_id),
+        "artifacts": detailed,
+        "artifact_stats": art_stats().get("by_agent", {}).get(agent_id, 0),
+        "recent_tasks": tasks,
+        "direct_chat_count": len(agent.direct_chat),
+    }
+
+
+class ReviseRequest(BaseModel):
+    artifact_id: str = ""
+    instruction: str
+
+
+@app.post("/api/agents/{agent_id}/revise")
+async def revise_artifact(agent_id: str, body: ReviseRequest):
+    agent = room.agents.get(agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    if not body.instruction.strip():
+        raise HTTPException(status_code=400, detail="instruction required")
+    from room.artifact_store import get_artifact
+    art = get_artifact(body.artifact_id) if body.artifact_id else None
+    title = art.get("title", "проект") if art else "проект"
+    task = f"Доработка «{title}»: {body.instruction.strip()}"
+    child_id = room.task_history.add_queued(task, agent_id, agent.name, agent.emoji, sender="Ревизия")
+    await agent.assign_task(task, sender="Ревизия", task_id=child_id)
+    return {"ok": True, "task": task, "artifact_id": body.artifact_id}
 
 
 @app.get("/api/templates")

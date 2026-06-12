@@ -197,6 +197,12 @@ class PMOrchestratorAgent(BaseAgent):
             except Exception:
                 assignments["cursor"] = f"Coding через Cursor SDK: {task_text}"
 
+        if any(w in task_lower for w in ["презентац", "slides", "pitch", "слайд", "deck", "доклад"]):
+            assignments["presenter"] = f"Создать презентацию: {task_text}"
+
+        if any(w in task_lower for w in ["3d", "3д", "three.js", "threejs", "модел", "glb", "gltf", "blender", "webgl"]):
+            assignments["modeler"] = f"Создать 3D-сцену: {task_text}"
+
         if any(w in task_lower for w in ["figma", "макет", "design token", "дизайн-систем"]):
             assignments["frontend"] = f"Импорт из Figma + UI: {task_text}"
 

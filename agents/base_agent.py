@@ -122,7 +122,19 @@ LEARNING_TOPICS = {
         "AI pair programming patterns",
         "semantic codebase search",
         "automated refactoring with AI"
-    ]
+    ],
+    "presenter": [
+        "presentation design best practices",
+        "pitch deck structure startup",
+        "storytelling for technical talks",
+        "slide design principles 2025",
+    ],
+    "modeler": [
+        "Three.js webgl best practices",
+        "glTF 3D model pipeline",
+        "Blender to web workflow",
+        "real-time 3D rendering techniques",
+    ],
 }
 
 SOURCE_LABELS = {
@@ -924,7 +936,7 @@ class BaseAgent:
         )
 
     async def handle_direct_chat(self, text: str):
-        """Личный диалог с пользователем — не попадает в общий чат."""
+        """Личный диалог с пользователем — обсуждение, доработки, ревизии."""
         self.direct_chat.append({
             "role": "user",
             "text": text,
@@ -941,10 +953,28 @@ class BaseAgent:
                 "timestamp": datetime.now().isoformat()
             })
 
-        response = await self._build_response(text)
+        revision_keys = ("переделай", "дополни", "измени", "улучши", "исправь", "доработай",
+                         "redo", "revise", "fix", "update", "переделать", "добавь")
+        is_revision = any(k in text.lower() for k in revision_keys)
+
+        if is_revision:
+            from room.artifact_store import get_latest_artifact
+            last = get_latest_artifact(self.agent_id)
+            if last:
+                task = f"Доработка «{last.get('title', 'проект')}»: {text}"
+                await self.assign_task(task, sender="Обсуждение")
+                reply = (
+                    f"Поняла! Беру последний артефакт «{last.get('title')}» и дорабатываю.\n"
+                    f"Запрос: {text}\n\nСледите за результатом в моей **Деятельности** и в «Проектах»."
+                )
+            else:
+                reply = "Пока нет готовых проектов для доработки. Дайте задачу в режиме «Задача» — создам первый артефакт."
+        else:
+            reply = await self._build_response(text)
+
         self.direct_chat.append({
             "role": "agent",
-            "text": response,
+            "text": reply,
             "timestamp": datetime.now().isoformat()
         })
         DirectChatStore.save(self.agent_id, self.direct_chat)
@@ -955,7 +985,7 @@ class BaseAgent:
                 "agent_id": self.agent_id,
                 "agent_name": self.name,
                 "agent_emoji": self.emoji,
-                "message": response,
+                "message": reply,
                 "status": self.status,
                 "location": self.location,
                 "timestamp": datetime.now().isoformat()
@@ -983,6 +1013,7 @@ class BaseAgent:
         try:
             response = await self._build_response(task_text)
             await self._broadcast_work(f"✅ Выполнено:\n{response}", "task_done")
+            artifact = await self._save_task_artifact(task_text, response, task)
             if self.room_manager and task_id:
                 self.room_manager.record_task_completed(
                     task_id, response, self.name, self.emoji
@@ -1089,6 +1120,40 @@ class BaseAgent:
             pass
         return self.build_task_response(task_text, knowledge)
 
+    async def _save_task_artifact(self, task_text: str, response: str, task: dict) -> Optional[dict]:
+        try:
+            from agents.artifact_producer import produce_artifact
+            from room.artifact_store import save_artifact, get_latest_artifact
+
+            revision_of = None
+            if task.get("sender") == "Обсуждение":
+                prev = get_latest_artifact(self.agent_id)
+                if prev:
+                    revision_of = prev.get("id")
+
+            artifact = await produce_artifact(self, task_text, response, revision_of=revision_of)
+            if not artifact:
+                return None
+            saved = save_artifact(self.agent_id, artifact)
+            if self.room_manager:
+                from room.agent_capabilities import get_capabilities
+                caps = get_capabilities(self.agent_id)
+                await self.room_manager.broadcast_work({
+                    "type": "artifact_created",
+                    "agent_id": self.agent_id,
+                    "agent_name": self.name,
+                    "agent_emoji": self.emoji,
+                    "artifact_id": saved["id"],
+                    "artifact_type": saved["type"],
+                    "title": saved["title"],
+                    "capabilities": caps.get("skills", [])[:6],
+                    "message": f"📦 **{saved['title']}** ({saved['type']}) — смотрите в «Проекты»",
+                    "timestamp": datetime.now().isoformat(),
+                })
+            return saved
+        except Exception:
+            return None
+
     def get_fallback_responses(self) -> list:
         return [
             "Задача '{task}' принята. Анализирую требования и готовлю решение.",
@@ -1168,5 +1233,7 @@ class BaseAgent:
             "last_topics": [t.get("topic", t.get("title", "")) for t in self.learned_topics[-3:]] if self.learned_topics else [],
             "knowledge_sources": list(dict.fromkeys(
                 t.get("source", "") for t in self.learned_topics[-10:] if t.get("source")
-            ))
+            )),
+            "capabilities": __import__("room.agent_capabilities", fromlist=["get_capabilities"]).get_capabilities(self.agent_id),
+            "artifact_count": len(__import__("room.artifact_store", fromlist=["get_agent_artifacts"]).get_agent_artifacts(self.agent_id, limit=100)),
         }

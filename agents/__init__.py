@@ -7,6 +7,8 @@ from agents.doc_writer import DocWriterAgent
 from agents.devops import DevOpsAgent
 from agents.pm_orchestrator import PMOrchestratorAgent
 from agents.cursor_agent import CursorAgent
+from agents.presenter_agent import PresenterAgent
+from agents.modeler_3d_agent import Modeler3DAgent
 
 __all__ = [
     "ArchitectAgent",
@@ -18,4 +20,6 @@ __all__ = [
     "DevOpsAgent",
     "PMOrchestratorAgent",
     "CursorAgent",
+    "PresenterAgent",
+    "Modeler3DAgent",
 ]

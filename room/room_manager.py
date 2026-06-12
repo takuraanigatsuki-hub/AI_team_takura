@@ -17,7 +17,7 @@ WORK_TYPES = frozenset({
     "react_preview", "cursor_progress", "cursor_run_done", "figma_import",
     "github_sync_started", "github_sync_done", "git_sync_done",
     "figma_portfolio", "pipeline_update", "agent_stream", "agent_stream_start",
-    "agent_debate", "deploy_ready", "pr_ready",
+    "agent_debate", "deploy_ready", "pr_ready", "artifact_created",
 })
 
 
