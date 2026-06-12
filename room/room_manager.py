@@ -489,6 +489,21 @@ class RoomManager:
             })
             return
 
+        if msg_type == "task_priority":
+            uid, _ = self._actor_identity(user, connection_meta)
+            task_id = data.get("task_id", "")
+            priority = data.get("priority", "medium")
+            if not task_id or not self.task_history.user_owns_task(task_id, uid, False):
+                await self.broadcast_work({
+                    "type": "error",
+                    "message": "🔒 Нет доступа к этой задаче",
+                    "timestamp": datetime.now().isoformat(),
+                })
+                return
+            if self.task_history.set_priority(task_id, priority):
+                await self._broadcast_task_history()
+            return
+
         target = data.get("target", "all")
         raw_text = data.get("text", "")
 

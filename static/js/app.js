@@ -1758,5 +1758,13 @@
 
     global.AITeamTasks = {
         getSnapshot: () => ({ stats: { ...taskStats }, tasks: taskHistory.slice() }),
+        sendWs: (payload) => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(payload));
+                return true;
+            }
+            return false;
+        },
+        isConnected: () => !!(ws && ws.readyState === WebSocket.OPEN),
     };
 })();

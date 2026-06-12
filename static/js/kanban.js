@@ -112,6 +112,11 @@
         if (!taskId) return;
         const idx = PRIOS.indexOf(current);
         const next = PRIOS[(idx + 1) % PRIOS.length];
+        const user = global.Auth?.getUser?.();
+        if (!user && global.AITeamTasks?.sendWs?.({ type: 'task_priority', task_id: taskId, priority: next })) {
+            setTimeout(refresh, 300);
+            return;
+        }
         const r = await fetch(`/api/tasks/${taskId}/priority`, {
             method: 'PATCH',
             credentials: 'same-origin',

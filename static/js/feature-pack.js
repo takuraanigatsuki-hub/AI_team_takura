@@ -158,9 +158,16 @@
     function updateFooterMeta(stats) {
         const el = document.getElementById('fpFooterMeta');
         if (!el) return;
-        const pct = stats?.total ? Math.round((stats.completed / stats.total) * 100) : 0;
+        let s = stats;
+        if ((!s?.total && s?.total !== 0) && global.AITeamTasks?.getSnapshot) {
+            s = global.AITeamTasks.getSnapshot().stats || s;
+        }
+        const pct = s?.total ? Math.round((s.completed / s.total) * 100) : 0;
+        const awaiting = s?.awaiting_approval || 0;
         const mins = Math.floor((Date.now() - sessionStart) / 60000);
-        el.textContent = `Задачи ${pct}% · ${mins}м в комнате`;
+        el.textContent = awaiting
+            ? `⏳ ${awaiting} на проверке · ${mins}м`
+            : `Задачи ${pct}% · ${mins}м в комнате`;
     }
 
     function updateFabVisibility(view) {
