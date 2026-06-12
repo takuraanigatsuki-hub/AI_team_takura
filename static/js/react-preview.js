@@ -177,7 +177,7 @@ try {
 
         iframe.srcdoc = buildIframeHtml(data.code);
         applyViewport();
-        openPanel();
+        if (autoOpen) openPanel();
     }
 
     function onIframeMessage(ev) {
@@ -234,7 +234,8 @@ try {
         }
     }
 
-    async function loadLatest() {
+    async function loadLatest(opts = {}) {
+        const autoOpen = opts.autoOpen === true;
         setLoading(true);
         try {
             const resp = await fetch('/api/agents/frontend/preview');
@@ -243,7 +244,7 @@ try {
                 return;
             }
             const data = await resp.json();
-            if (data.preview) renderPreview(data.preview);
+            if (data.preview) renderPreview(data.preview, { autoOpen });
             else setLoading(false);
         } catch (e) {
             setLoading(false);

@@ -4,6 +4,7 @@
 (function (global) {
     let current = null;
     let activeAgentId = null;
+    let hideTimer = null;
 
     function ensureBar() {
         if (document.getElementById('pipelineBar')) return;
@@ -27,10 +28,34 @@
         return ({ pending: '', active: 'step-active', done: 'step-done', failed: 'step-failed' }[s] || '');
     }
 
+    function clearHideTimer() {
+        if (hideTimer) {
+            clearTimeout(hideTimer);
+            hideTimer = null;
+        }
+    }
+
+    function scheduleHide(ms = 12000) {
+        clearHideTimer();
+        hideTimer = setTimeout(() => {
+            const bar = document.getElementById('pipelineBar');
+            bar?.classList.add('hidden');
+            document.body.classList.remove('has-pipeline');
+            if (window.StudioApp) StudioApp.setPipelineHighlight(null);
+        }, ms);
+    }
+
+    function isStaleFinished(pipeline) {
+        if (!pipeline?.finished_at) return false;
+        const finished = new Date(pipeline.finished_at).getTime();
+        return Number.isFinite(finished) && (Date.now() - finished > 20000);
+    }
+
     function render(pipeline) {
         ensureBar();
         const bar = document.getElementById('pipelineBar');
-        if (!pipeline || !pipeline.steps?.length) {
+        if (!pipeline || !pipeline.steps?.length || isStaleFinished(pipeline)) {
+            clearHideTimer();
             bar?.classList.add('hidden');
             document.body.classList.remove('has-pipeline');
             current = null;
@@ -44,8 +69,10 @@
         document.body.classList.add('has-pipeline');
         if (pipeline.finished_at) {
             bar.classList.add('pipeline-complete');
+            scheduleHide();
         } else {
             bar.classList.remove('pipeline-complete');
+            clearHideTimer();
         }
 
         const taskEl = document.getElementById('pipelineTask');

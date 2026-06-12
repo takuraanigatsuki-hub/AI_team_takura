@@ -1755,7 +1755,7 @@ a.dropdown-item {
 
 /* ─── Live Pipeline ─── */
 .pipeline-bar {
-    position: fixed; top: 52px; left: 0; right: 0; z-index: 45;
+    position: fixed; top: var(--header-h); left: 0; right: 0; z-index: 45;
     background: var(--glass); backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
     padding: 8px 16px; transition: transform 0.35s ease, opacity 0.35s ease;

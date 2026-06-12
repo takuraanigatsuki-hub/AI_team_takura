@@ -1203,7 +1203,7 @@
         if (window.Auth) Auth.updateNavVisibility(user);
         if (window.AdminPanel && user) AdminPanel.updateNavVisibility(user);
 
-        if (window.ReactPreview) ReactPreview.loadLatest();
+        if (window.ReactPreview) ReactPreview.loadLatest({ autoOpen: false });
         if (window.Integrations) {
             Integrations.loadCursorStatus();
             Integrations.loadFigmaStatus();

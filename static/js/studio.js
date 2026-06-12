@@ -1249,14 +1249,15 @@
     }
 
     function setPipelineHighlight(agentId) {
-        pipelineHighlightId = agentId;
+        pipelineHighlightId = agentId || null;
         Object.entries(agentMeshes).forEach(([id, mesh]) => {
-            const s = id === agentId ? 1.12 : 1;
+            const active = agentId && id === agentId;
+            const s = active ? 1.12 : 1;
             mesh.scale.set(s, s, s);
             const glow = mesh.getObjectByName('glow');
-            if (glow?.material && id === agentId) {
-                glow.visible = true;
-                glow.material.opacity = 0.65;
+            if (glow?.material) {
+                glow.visible = !!active;
+                if (active) glow.material.opacity = 0.65;
             }
         });
     }
