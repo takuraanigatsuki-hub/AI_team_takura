@@ -40,6 +40,8 @@
         cursor: { x: -6, z: 13 }, presenter: { x: -5, z: 11 }, modeler: { x: -4, z: 9 },
     };
 
+    const WALK_SPEED = 0.048;
+
     let scene, camera, renderer, controls, raycaster, mouse;
     let agentMeshes = {};
     let clock;
@@ -664,60 +666,208 @@
 
     function updateAgentVisual(mesh, agent) {
         const slot = getSlot(agent, agent.location || 'studio');
-        mesh.position.x += (slot.x - mesh.position.x) * 0.035;
-        mesh.position.z += (slot.z - mesh.position.z) * 0.035;
+        mesh.userData.targetX = slot.x;
+        mesh.userData.targetZ = slot.z;
+        mesh.position.x += (slot.x - mesh.position.x) * WALK_SPEED;
+        mesh.position.z += (slot.z - mesh.position.z) * WALK_SPEED;
 
-        const desk = mesh.getObjectByName('desk');
+        const loc = agent.location || 'studio';
+        const inStudio = loc === 'studio';
+        const inRest = loc === 'rest_room';
+        const inLib = loc === 'library';
+        const status = agent.status || 'idle';
+
+        ['screen', 'screenFrame', 'keyboard'].forEach((name) => {
+            const o = mesh.getObjectByName(name);
+            if (o) o.visible = inStudio;
+        });
+        const agentDesk = mesh.getObjectByName('desk');
+        if (agentDesk) agentDesk.visible = false;
+        mesh.traverse((c) => {
+            if (c.name === 'deskPart') c.visible = false;
+        });
+
+        const chair = mesh.getObjectByName('chair');
+        if (chair) chair.visible = !inRest;
+
+        const book = mesh.getObjectByName('book');
+        if (book) book.visible = inLib || status === 'learning';
+
+        if (inRest) {
+            mesh.userData.baseY = 0.12;
+            mesh.userData.faceAngle = Math.atan2(11 - slot.x, 3.5 - slot.z);
+        } else if (inLib) {
+            mesh.userData.baseY = 0;
+            mesh.userData.faceAngle = Math.atan2(-11.5 - slot.x, 8.5 - slot.z);
+        } else {
+            mesh.userData.baseY = 0;
+            mesh.userData.faceAngle = 0;
+        }
+
         const screen = mesh.getObjectByName('screen');
-        const inStudio = (agent.location || 'studio') === 'studio';
-
-        if (desk) desk.visible = inStudio;
+        const screenFrame = mesh.getObjectByName('screenFrame');
         if (screen) {
-            screen.visible = inStudio && (agent.status === 'working' || agent.status === 'thinking');
+            screen.visible = inStudio && ['working', 'thinking', 'learning'].includes(status);
             if (screen.material) {
-                const intensity = agent.status === 'working' ? 1.2 : agent.status === 'thinking' ? 0.8 : 0.3;
-                screen.material.emissiveIntensity = intensity;
+                const hues = { working: 0x4488ff, thinking: 0xaa66ff, learning: 0x44ccaa };
+                screen.material.emissive.setHex(hues[status] || 0x3366cc);
+                screen.material.emissiveIntensity = status === 'working' ? 1.1 : status === 'thinking' ? 0.75 : 0.5;
+            }
+        }
+        if (screenFrame) screenFrame.visible = screen?.visible;
+
+        const keyboard = mesh.getObjectByName('keyboard');
+        if (keyboard) {
+            keyboard.visible = inStudio && status === 'working';
+            if (keyboard.material && status === 'working') {
+                keyboard.material.emissiveIntensity = 0.25 + Math.sin(performance.now() * 0.008) * 0.12;
             }
         }
 
         const glow = mesh.getObjectByName('glow');
         if (glow) {
-            const active = ['working', 'learning', 'thinking'].includes(agent.status);
+            const active = ['working', 'learning', 'thinking'].includes(status);
             glow.visible = active;
             if (glow.material) {
-                glow.material.opacity = agent.status === 'working' ? 0.45 : 0.25;
+                glow.material.opacity = status === 'working' ? 0.5 : status === 'thinking' ? 0.35 : 0.28;
             }
         }
 
-        mesh.userData.status = agent.status || 'idle';
-        mesh.userData.location = agent.location || 'studio';
+        const halo = mesh.getObjectByName('halo');
+        if (halo?.material) {
+            halo.material.emissiveIntensity = status === 'working' ? 0.65 : 0.35;
+        }
+
+        mesh.userData.status = status;
+        mesh.userData.location = loc;
+    }
+
+    function animateAgent(mesh, t) {
+        const status = mesh.userData.status || 'idle';
+        const loc = mesh.userData.location || 'studio';
+        const phase = mesh.userData.phase;
+        const idlePhase = mesh.userData.idlePhase || 0;
+
+        const dx = (mesh.userData.targetX ?? mesh.position.x) - mesh.position.x;
+        const dz = (mesh.userData.targetZ ?? mesh.position.z) - mesh.position.z;
+        const moving = Math.hypot(dx, dz) > 0.06;
+
+        const armL = mesh.getObjectByName('armL');
+        const armR = mesh.getObjectByName('armR');
+        const head = mesh.getObjectByName('head');
+        const torso = mesh.getObjectByName('torso');
+        const legL = mesh.getObjectByName('legL');
+        const legR = mesh.getObjectByName('legR');
+        const chairBack = mesh.getObjectByName('chairBack');
+
+        const resetLimb = () => {
+            if (armL) {
+                armL.rotation.x = armL.userData.baseRot?.x || 0;
+                armL.rotation.z = armL.userData.baseRot?.z || 0.35;
+            }
+            if (armR) {
+                armR.rotation.x = armR.userData.baseRot?.x || 0;
+                armR.rotation.z = armR.userData.baseRot?.z || -0.35;
+            }
+            if (head) { head.rotation.x = 0; head.rotation.y = 0; }
+            if (torso) torso.rotation.x = 0;
+            if (legL) legL.rotation.x = 0;
+            if (legR) legR.rotation.x = 0;
+        };
+
+        if (moving) {
+            const walkPhase = t * 11 + phase;
+            mesh.position.y = mesh.userData.baseY + Math.abs(Math.sin(walkPhase)) * 0.045;
+            mesh.rotation.y += (Math.atan2(dx, dz) - mesh.rotation.y) * 0.12;
+            if (legL) legL.rotation.x = Math.sin(walkPhase) * 0.55;
+            if (legR) legR.rotation.x = Math.sin(walkPhase + Math.PI) * 0.55;
+            if (armL) armL.rotation.x = Math.sin(walkPhase + Math.PI) * 0.35;
+            if (armR) armR.rotation.x = Math.sin(walkPhase) * 0.35;
+            return;
+        }
+
+        resetLimb();
+        const face = mesh.userData.faceAngle || 0;
+        mesh.rotation.y += (face - mesh.rotation.y) * 0.08;
+
+        if (loc === 'rest_room' || status === 'resting') {
+            mesh.position.y = mesh.userData.baseY + Math.sin(t * 1.2 + phase) * 0.012;
+            if (torso) torso.rotation.x = -0.22;
+            if (chairBack) chairBack.rotation.x = -0.15;
+            if (head) head.rotation.x = -0.08;
+            return;
+        }
+
+        if (status === 'working' && loc === 'studio') {
+            mesh.position.y = mesh.userData.baseY + Math.sin(t * 8 + phase) * 0.018;
+            const typePhase = t * 14 + phase;
+            if (armL) { armL.rotation.x = Math.sin(typePhase) * 0.42 - 0.2; armL.rotation.z = 0.15; }
+            if (armR) { armR.rotation.x = Math.sin(typePhase + 1.2) * 0.42 - 0.2; armR.rotation.z = -0.15; }
+            if (head) head.rotation.x = Math.sin(t * 5 + phase) * 0.06;
+            if (torso) torso.rotation.x = 0.06;
+            return;
+        }
+
+        if (status === 'thinking') {
+            mesh.position.y = mesh.userData.baseY + Math.sin(t * 2.5 + phase) * 0.015;
+            if (head) {
+                head.rotation.y = Math.sin(t * 1.2 + idlePhase) * 0.3;
+                head.rotation.x = -0.1;
+            }
+            if (armR) { armR.rotation.x = -0.55; armR.rotation.z = -0.1; }
+            return;
+        }
+
+        if (status === 'learning' || loc === 'library') {
+            mesh.position.y = mesh.userData.baseY + Math.sin(t * 2 + phase) * 0.01;
+            if (armR) { armR.rotation.x = -0.45; armR.rotation.z = -0.2; }
+            if (head) head.rotation.x = 0.15;
+            return;
+        }
+
+        mesh.position.y = mesh.userData.baseY + Math.sin(t * 1.8 + phase) * 0.014;
+        mesh.rotation.y = face + Math.sin(t * 0.6 + idlePhase) * 0.15;
+        if (Math.sin(t * 0.3 + idlePhase) > 0.92) {
+            if (armL) armL.rotation.z = 0.35 + Math.sin(t * 4) * 0.2;
+            if (armR) armR.rotation.z = -0.35 - Math.sin(t * 4) * 0.2;
+        }
     }
 
     function setupLights() {
-        scene.add(new THREE.AmbientLight(0xffffff, 0.72));
-        scene.add(new THREE.HemisphereLight(0xb8d4ff, 0x2a3038, 0.62));
+        scene.add(new THREE.AmbientLight(0x8899bb, 0.45));
+        scene.add(new THREE.HemisphereLight(0xa8c8ff, 0x1a2030, 0.55));
 
-        const sun = new THREE.DirectionalLight(0xfff4e6, 1.05);
-        sun.position.set(10, 22, 8);
+        const sun = new THREE.DirectionalLight(0xfff0d8, 1.15);
+        sun.position.set(8, 24, 10);
         sun.castShadow = true;
-        sun.shadow.mapSize.set(1024, 1024);
+        sun.shadow.mapSize.set(2048, 2048);
+        sun.shadow.camera.near = 0.5;
+        sun.shadow.camera.far = 60;
+        sun.shadow.camera.left = -20;
+        sun.shadow.camera.right = 20;
+        sun.shadow.camera.top = 20;
+        sun.shadow.camera.bottom = -20;
         scene.add(sun);
         sunLight = sun;
 
-        const fill = new THREE.DirectionalLight(0x88aaff, 0.42);
-        fill.position.set(-8, 14, -6);
+        const fill = new THREE.DirectionalLight(0x6688cc, 0.35);
+        fill.position.set(-12, 16, -8);
         scene.add(fill);
 
-        const studioLight = new THREE.PointLight(0xc77dff, 0.85, 22);
-        studioLight.position.set(-2, 5, -2);
+        const rim = new THREE.DirectionalLight(0xc77dff, 0.25);
+        rim.position.set(0, 8, -15);
+        scene.add(rim);
+
+        const studioLight = new THREE.PointLight(0xc77dff, 1.0, 24);
+        studioLight.position.set(-2, 4.5, -2);
         scene.add(studioLight);
 
-        const restLight = new THREE.PointLight(0x5ecf8a, 0.7, 20);
+        const restLight = new THREE.PointLight(0x5ecf8a, 0.85, 22);
         restLight.position.set(11, 4, 7);
         scene.add(restLight);
         restLightPt = restLight;
 
-        const libLight = new THREE.PointLight(0xe8b84a, 0.65, 18);
+        const libLight = new THREE.PointLight(0xe8b84a, 0.75, 20);
         libLight.position.set(-10, 4, 9);
         scene.add(libLight);
     }
@@ -766,12 +916,7 @@
         }
 
         Object.values(agentMeshes).forEach((mesh) => {
-            const status = mesh.userData.status || 'idle';
-            const phase = mesh.userData.phase;
-            let bob = Math.sin(t * 2 + phase) * 0.02;
-            if (status === 'working') bob = Math.sin(t * 8 + phase) * 0.035;
-            if (status === 'learning') bob = Math.sin(t * 3 + phase) * 0.025;
-            mesh.position.y = mesh.userData.baseY + bob;
+            animateAgent(mesh, t);
         });
 
         if (controls) controls.update();
@@ -875,6 +1020,9 @@
                 const mesh = createAgentAvatar(id, AGENT_EMOJIS[id] || '👤', AGENT_COLORS[id] || 0x888888);
                 const slot = STUDIO_SLOTS[id];
                 mesh.position.set(slot.x, 0, slot.z);
+                mesh.userData.targetX = slot.x;
+                mesh.userData.targetZ = slot.z;
+                mesh.castShadow = true;
                 scene.add(mesh);
                 agentMeshes[id] = mesh;
             });
@@ -1023,13 +1171,15 @@
     function setTheme(dark) {
         isDark = dark;
         if (!scene) return;
-        const bg = dark ? 0x12141a : 0xd4dae6;
-        const fogColor = dark ? 0x181b24 : 0xe0e5ef;
+        const bg = dark ? 0x0e1018 : 0xd4dae6;
+        const fogColor = dark ? 0x141820 : 0xe0e5ef;
         scene.background = new THREE.Color(bg);
         if (scene.fog) {
             scene.fog.color.setHex(fogColor);
+            scene.fog.near = 22;
+            scene.fog.far = 72;
         } else {
-            scene.fog = new THREE.Fog(fogColor, 28, 85);
+            scene.fog = new THREE.Fog(fogColor, 22, 72);
         }
         if (renderer) renderer.setClearColor(bg, 1);
     }
