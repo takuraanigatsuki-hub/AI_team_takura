@@ -213,6 +213,10 @@
     }
 
     function canAccessView(user, view) {
+        if (['learning', 'design', 'agent-learning'].includes(view)) {
+            if (global.Auth?.canViewAgentLearning) return Auth.canViewAgentLearning(user);
+            return user?.role === 'owner' || user?.role === 'admin' || user?.role === 'tech_admin';
+        }
         const sub = user?.subscription;
         if (!sub) return true;
         if (sub.unlimited || user.is_owner) return true;
@@ -392,7 +396,9 @@
         }
 
         if (activeTab === 'settings') {
-            const viewOpts = Object.entries(VIEW_LABELS).map(([v, label]) =>
+            const viewOpts = Object.entries(VIEW_LABELS)
+                .filter(([v]) => canAccessView(user, v))
+                .map(([v, label]) =>
                 `<option value="${v}" ${user.default_view === v ? 'selected' : ''}>${label}</option>`).join('');
             el.innerHTML = `
                 <form class="profile-form" id="profileSettingsForm" onsubmit="ProfileCabinet.saveSettings(event)">

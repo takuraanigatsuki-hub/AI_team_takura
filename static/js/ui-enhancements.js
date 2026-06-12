@@ -5,10 +5,11 @@
     const SHORTCUTS = [
         { keys: 'Ctrl+1', action: () => switchView('studio'), label: '3D Студия' },
         { keys: 'Ctrl+2', action: () => switchView('chat'), label: 'Рабочий чат' },
-        { keys: 'Ctrl+3', action: () => switchView('learning'), label: 'Обучение' },
-        { keys: 'Ctrl+4', action: () => switchView('design'), label: 'Дизайн-лаб' },
-        { keys: 'Ctrl+5', action: () => switchView('tasks'), label: 'Задачи' },
-        { keys: 'Ctrl+6', action: () => switchView('dashboard'), label: 'Dashboard' },
+        { keys: 'Ctrl+3', action: () => {
+            if (global.Auth?.canViewAgentLearning?.(global.Auth.getUser())) switchView('agent-learning');
+        }, label: 'Обучение агентов (admin)' },
+        { keys: 'Ctrl+4', action: () => switchView('tasks'), label: 'Задачи' },
+        { keys: 'Ctrl+5', action: () => switchView('dashboard'), label: 'Dashboard' },
         { keys: 'Ctrl+K', action: () => toggleCommandPalette(), label: 'Командная палитра' },
         { keys: 'Ctrl+/', action: () => toggleShortcutsHelp(), label: 'Справка' },
     ];
@@ -169,7 +170,7 @@
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key >= '1' && e.key <= '6') {
                 e.preventDefault();
-                const views = ['studio', 'chat', 'learning', 'design', 'tasks', 'dashboard'];
+                const views = ['studio', 'chat', 'tasks', 'dashboard'];
                 switchView(views[+e.key - 1]);
             }
             if (e.ctrlKey && e.key === 'k') {

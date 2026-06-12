@@ -1436,6 +1436,37 @@ a.dropdown-item {
 .design-layout.hidden { display: none !important; }
 
 /* ─── Sonya Design Lab ─── */
+.agent-learning-subnav {
+    padding: 12px 20px 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-elevated);
+}
+.agent-learning-subnav.hidden { display: none !important; }
+.al-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    max-width: 1200px;
+}
+.al-title { font-size: 16px; margin: 0 0 4px; }
+.al-sub { font-size: 11px; margin: 0; }
+.al-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.al-tab {
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-muted);
+    font-size: 12px;
+    cursor: pointer;
+}
+.al-tab.active {
+    border-color: var(--accent);
+    color: var(--text);
+    background: rgba(108, 99, 255, 0.12);
+}
 .design-lab-layout {
     flex: 1;
     display: flex;

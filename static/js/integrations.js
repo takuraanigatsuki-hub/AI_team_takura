@@ -88,7 +88,10 @@
         if (msg && window.UIEnhancements) UIEnhancements.toast(msg, type);
         window.history.replaceState({}, '', window.location.pathname);
         if (result === 'connected' && typeof switchView === 'function') {
-            switchView('design');
+            if (global.Auth?.canViewAgentLearning?.(global.Auth.getUser())) {
+                switchView('agent-learning');
+                if (typeof switchAgentLearningPanel === 'function') switchAgentLearningPanel('design');
+            }
             loadFigmaStatus();
         }
     }

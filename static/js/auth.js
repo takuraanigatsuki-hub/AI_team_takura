@@ -14,6 +14,7 @@
             updateHeader();
             applyUserTheme(currentUser);
             if (window.AdminPanel) AdminPanel.updateNavVisibility(currentUser);
+            updateNavVisibility(currentUser);
             return currentUser;
         } catch (_) {
             currentUser = null;
@@ -71,6 +72,19 @@
         return p.includes('admin') || p.includes('manage_users') || p.includes('manage_settings');
     }
 
+    function canViewAgentLearning(user) {
+        if (!user) return false;
+        if (user.can_view_agent_learning) return true;
+        return user.role === 'owner' || user.role === 'admin' || user.role === 'tech_admin';
+    }
+
+    function updateNavVisibility(user) {
+        const showAdmin = canAccessAdmin(user);
+        const showLearning = canViewAgentLearning(user);
+        document.getElementById('adminNavTab')?.classList.toggle('hidden', !showAdmin);
+        document.getElementById('agentLearningNavTab')?.classList.toggle('hidden', !showLearning);
+    }
+
     function updateHeader() {
         const el = document.getElementById('userMenu');
         const summary = document.getElementById('userMenuSummary');
@@ -103,5 +117,5 @@
         return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     }
 
-    global.Auth = { fetchMe, getUser, isLoggedIn, logout, updateHeader, roleBadgeHtml, canAccessAdmin };
+    global.Auth = { fetchMe, getUser, isLoggedIn, logout, updateHeader, updateNavVisibility, roleBadgeHtml, canAccessAdmin, canViewAgentLearning };
 })(window);

@@ -56,6 +56,7 @@
     function updateNavVisibility(user) {
         const tab = document.getElementById('adminNavTab');
         if (tab) tab.classList.toggle('hidden', !canAccess(user));
+        if (global.Auth?.updateNavVisibility) Auth.updateNavVisibility(user);
     }
 
     function renderNav(user) {
