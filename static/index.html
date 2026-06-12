@@ -71,6 +71,7 @@
                 <span id="connText">Подключение</span>
             </div>
             <span class="status-chip" id="activeAgentsPill" title="Агенты в работе">—</span>
+            <button type="button" class="status-chip status-chip-action hidden" id="awaitingChip" title="Задачи на проверке" onclick="switchView('tasks');filterTasks('awaiting')">⏳</button>
             <span class="status-chip fp-hide-mobile" id="presencePill" title="В комнате">👤 …</span>
             <span class="status-chip fp-hide-mobile" id="workspaceSwitcher" title="Workspace"></span>
         </div>

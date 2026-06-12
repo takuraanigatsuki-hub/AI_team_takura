@@ -1131,6 +1131,11 @@
         document.title = awaiting > 0
             ? `(${awaiting}) AI Team Room`
             : 'AI Team Room — 3D Studio';
+        const chip = document.getElementById('awaitingChip');
+        if (chip) {
+            chip.classList.toggle('hidden', awaiting <= 0);
+            chip.textContent = awaiting > 0 ? `⏳ ${awaiting} на проверке` : '';
+        }
     }
 
     function updateTaskHistory(data) {

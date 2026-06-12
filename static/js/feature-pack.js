@@ -243,17 +243,42 @@
         if (existing) { existing.remove(); return; }
         unreadCount = 0;
         updateNotifyBadge();
-        notifications.forEach((n) => { n.unread = false; });
         const panel = document.createElement('div');
         panel.id = 'fpNotifyPanel';
         panel.className = 'fp-notify-panel';
+        const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         panel.innerHTML = `
             <div class="fp-notify-head"><span>Уведомления</span><button type="button" class="icon-btn" id="fpNotifyClose">×</button></div>
             <div id="fpNotifyList">${notifications.length
-                ? notifications.map((n) => `<div class="fp-notify-item"><strong>${n.title}</strong><br>${n.body}<div class="fp-notify-time">${n.time}</div></div>`).join('')
+                ? notifications.map((n, i) => `<button type="button" class="fp-notify-item${n.unread ? ' unread' : ''}" data-idx="${i}">
+                    <strong>${esc(n.title)}</strong><span>${esc(n.body)}</span><div class="fp-notify-time">${esc(n.time)}</div>
+                </button>`).join('')
                 : '<div class="fp-search-empty">Пока пусто</div>'}</div>`;
         document.body.appendChild(panel);
         panel.querySelector('#fpNotifyClose').onclick = () => panel.remove();
+        panel.querySelectorAll('.fp-notify-item').forEach((btn) => {
+            btn.onclick = async () => {
+                const n = notifications[+btn.dataset.idx];
+                if (n?.serverId) {
+                    await fetch('/api/notifications/read', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: n.serverId }),
+                    }).catch(() => {});
+                }
+                n.unread = false;
+                panel.remove();
+                if (n?.link?.includes('tasks') || n?.title?.includes('проверке')) {
+                    sw('tasks');
+                } else if (n?.link?.includes('investor')) {
+                    sw('investor');
+                } else {
+                    sw('tasks');
+                }
+            };
+        });
+        notifications.forEach((n) => { n.unread = false; });
     }
 
     function showShortcutsModal() {
@@ -444,6 +469,7 @@
                         serverId: n.id,
                         title: n.title,
                         body: n.body,
+                        link: n.link || '',
                         time: n.created_at ? new Date(n.created_at).toLocaleString('ru') : '',
                         unread: !n.read,
                     });
