@@ -883,6 +883,10 @@ class FigmaImportRequest(BaseModel):
     url: str
 
 
+class FigmaStudyUrlRequest(BaseModel):
+    url: str = ""
+
+
 class SonyaProjectCreate(BaseModel):
     title: str = ""
     task: str = ""
@@ -1310,6 +1314,99 @@ async def figma_studio_stats():
     return stats
 
 
+@app.get("/api/figma/design-lab")
+async def figma_design_lab():
+    """Дизайн-лаб Сони — паттерны, память, статистика."""
+    from integrations.figma_learning import get_studio_stats, load_patterns
+
+    stats = get_studio_stats()
+    patterns = load_patterns()
+    frontend = room.agents.get("frontend")
+    knowledge = []
+    agent_state = {}
+    if frontend:
+        agent_state = {
+            "status": frontend.status,
+            "location": frontend.location,
+            "figma_studies": getattr(frontend, "figma_studies", 0),
+            "figma_creations": getattr(frontend, "figma_creations", 0),
+        }
+        design_sources = {"figma", "figma_builtin", "figma_web", "figma_portfolio", "import"}
+        for k in reversed(frontend.learned_topics):
+            src = k.get("source") or ""
+            topic = (k.get("topic") or "").lower()
+            kws = k.get("keywords") or []
+            if src in design_sources or "figma" in topic or "figma" in kws or "design" in kws:
+                knowledge.append(k)
+            if len(knowledge) >= 40:
+                break
+    return {
+        **stats,
+        "agent": agent_state,
+        "knowledge": knowledge,
+        "studied": patterns.get("studied", []),
+        "color_palette": patterns.get("colors", [])[:32],
+        "fonts": patterns.get("fonts", [])[:16],
+        "frame_names": patterns.get("frames", [])[:20],
+    }
+
+
+@app.post("/api/figma/studio/study-url")
+async def figma_study_url(body: FigmaStudyUrlRequest):
+    """Соня изучает макет по URL и сохраняет в память."""
+    from integrations.figma_learning import (
+        study_reference_file,
+        study_builtin_pattern,
+        ensure_seed_patterns,
+    )
+    from integrations.figma_rate_limit import is_in_cooldown
+
+    url = (body.url or "").strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="URL обязателен")
+
+    ensure_seed_patterns()
+    frontend = room.agents.get("frontend")
+    if not frontend:
+        raise HTTPException(status_code=404, detail="Соня не найдена")
+
+    prev_status = frontend.status
+    prev_loc = frontend.location
+    frontend.status = "learning"
+    frontend.location = "library"
+    await room.send_agents_state()
+
+    try:
+        if is_in_cooldown():
+            ok = await study_builtin_pattern(frontend)
+            return {"ok": ok, "mode": "builtin", "message": "Локальный UI-референс (Figma API на паузе)"}
+
+        result = await study_reference_file(frontend, url)
+        if result and result.get("error"):
+            ok = await study_builtin_pattern(frontend)
+            return {
+                "ok": ok,
+                "mode": "fallback",
+                "error": result.get("error"),
+                "message": "Figma недоступен — изучен встроенный паттерн",
+            }
+        if result:
+            frontend.figma_studies = getattr(frontend, "figma_studies", 0) + 1
+            return {
+                "ok": True,
+                "mode": "figma",
+                "knowledge": result.get("knowledge"),
+                "summary": (result.get("result") or {}).get("summary"),
+                "preview_url": (result.get("result") or {}).get("preview_url"),
+            }
+        ok = await study_builtin_pattern(frontend)
+        return {"ok": ok, "mode": "builtin"}
+    finally:
+        frontend.status = prev_status if prev_status != "learning" else "idle"
+        frontend.location = prev_loc if prev_loc else "studio"
+        await room.send_agents_state()
+
+
 @app.post("/api/figma/studio/trigger")
 async def figma_studio_trigger(action: str = "study", request: Request = None):
     """Ручной запуск обучения/создания Сони в Studio."""
@@ -1572,6 +1669,8 @@ async def figma_import(request: FigmaImportRequest):
     frontend = room.agents.get("frontend")
     if frontend and hasattr(frontend, "apply_figma_design"):
         await frontend.apply_figma_design(result)
+        from integrations.figma_learning import remember_figma_from_import
+        await remember_figma_from_import(frontend, result, request.url.strip())
 
     await room.broadcast_work({
         "type": "figma_import",
