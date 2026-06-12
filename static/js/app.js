@@ -268,6 +268,9 @@
             case 'pm_plan':
                 addPlanMessage(data);
                 break;
+            case 'pipeline_update':
+                if (window.PipelineUI) PipelineUI.onUpdate(data);
+                break;
             case 'site_ready':
                 addSystemMessage(data.message || '🌐 Сайт готов! Откройте React Preview.');
                 fetch('/api/agents/frontend/preview').then((r) => r.json()).then((d) => {
@@ -849,6 +852,8 @@
             Integrations.loadCursorStatus();
             Integrations.loadFigmaStatus();
         }
+        if (window.UIEnhancements) UIEnhancements.init();
+        if (window.PipelineUI) PipelineUI.load();
 
         document.getElementById('messageInput')?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {

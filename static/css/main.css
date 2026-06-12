@@ -739,6 +739,47 @@ body::before {
 }
 .portfolio-item strong { font-size: 11px; display: block; margin-bottom: 4px; }
 .portfolio-item .color-row { margin: 4px 0; }
+
+/* ─── Live Pipeline ─── */
+.pipeline-bar {
+    position: fixed; top: 52px; left: 0; right: 0; z-index: 45;
+    background: var(--glass); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 16px; transition: transform 0.35s ease, opacity 0.35s ease;
+}
+.pipeline-bar.hidden { transform: translateY(-110%); opacity: 0; pointer-events: none; }
+.pipeline-bar.pipeline-complete { border-bottom-color: var(--green); }
+.pipeline-inner { max-width: 1200px; margin: 0 auto; }
+.pipeline-title { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 11px; }
+.pipeline-label {
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--accent); font-size: 10px;
+}
+.pipeline-task { flex: 1; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pipeline-pct { font-weight: 700; color: var(--green); }
+.pipeline-track {
+    height: 3px; background: var(--surface-2); border-radius: 2px; overflow: hidden; margin-bottom: 8px;
+}
+.pipeline-fill {
+    height: 100%; width: 0; background: var(--gradient-accent);
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 2px;
+}
+.pipeline-steps { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.pipeline-step {
+    display: flex; align-items: center; gap: 4px; padding: 4px 8px;
+    border-radius: 16px; border: 1px solid var(--border); background: var(--surface);
+    font-size: 10px; white-space: nowrap; opacity: 0.55; transition: all 0.3s ease;
+}
+.pipeline-step.step-active {
+    opacity: 1; border-color: var(--accent); background: var(--accent-soft);
+    box-shadow: 0 0 12px rgba(122, 162, 255, 0.35); animation: pipelinePulse 1.2s ease infinite;
+}
+.pipeline-step.step-done { opacity: 1; border-color: var(--green); background: rgba(94, 207, 138, 0.1); }
+.pipeline-step.step-failed { opacity: 1; border-color: var(--red); }
+@keyframes pipelinePulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+body.has-pipeline .main { padding-top: 56px; }
+body.has-pipeline .header { box-shadow: 0 2px 20px rgba(0,0,0,0.15); }
 .design-input {
     flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
     background: var(--surface-2); color: var(--text); font-family: inherit; font-size: 13px; outline: none;

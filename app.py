@@ -581,6 +581,11 @@ async def cursor_github_sync(request: CursorRunRequest):
     return run
 
 
+@app.get("/api/pipeline")
+async def get_pipeline():
+    return {"pipeline": room.pipeline.get_state()}
+
+
 # ─── Figma ────────────────────────────────────────────────────
 
 def _figma_is_configured() -> bool:

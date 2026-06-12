@@ -157,6 +157,7 @@ async def sync_task_to_github(
             ),
             "timestamp": datetime.now().isoformat(),
         })
+        await room_manager.pipeline.on_github("started")
 
     return run
 
@@ -198,6 +199,7 @@ async def cloud_agent_poller(room_manager, interval: int = 20):
                         "message": "\n".join(msg_parts),
                         "timestamp": datetime.now().isoformat(),
                     })
+                    await room_manager.pipeline.on_github("done")
                     active_cloud_agents.pop(agent_id, None)
 
                     run_id = info.get("run_id")

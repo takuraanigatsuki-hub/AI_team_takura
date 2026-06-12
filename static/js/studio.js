@@ -456,11 +456,27 @@
         }
     }
 
+    let pipelineHighlightId = null;
+
     function updateAgents(agentsList) {
         if (!agentsList || !Object.keys(agentMeshes).length) return;
         agentsList.forEach((agent) => {
             const mesh = agentMeshes[agent.agent_id];
             if (mesh) updateAgentVisual(mesh, agent);
+        });
+        if (pipelineHighlightId) setPipelineHighlight(pipelineHighlightId);
+    }
+
+    function setPipelineHighlight(agentId) {
+        pipelineHighlightId = agentId;
+        Object.entries(agentMeshes).forEach(([id, mesh]) => {
+            const s = id === agentId ? 1.12 : 1;
+            mesh.scale.set(s, s, s);
+            const glow = mesh.getObjectByName('glow');
+            if (glow?.material && id === agentId) {
+                glow.visible = true;
+                glow.material.opacity = 0.65;
+            }
         });
     }
 
@@ -479,5 +495,5 @@
         if (renderer) renderer.dispose();
     }
 
-    global.StudioApp = { init, updateAgents, resize, setTheme, destroy };
+    global.StudioApp = { init, updateAgents, resize, setTheme, destroy, setPipelineHighlight };
 })(window);

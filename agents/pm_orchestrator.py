@@ -114,6 +114,7 @@ class PMOrchestratorAgent(BaseAgent):
 
         self.sprint_tasks.append({"task": task_text, "assignments": assignments, "plan": plan})
         if self.room_manager:
+            await self.room_manager.pipeline.start(task_text, assignments, agents)
             await self.room_manager._broadcast_task_history()
 
     async def _broadcast_work(self, message: str, msg_type: str = "message"):

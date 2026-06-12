@@ -5,6 +5,7 @@ from typing import Dict, Set, Any, Optional
 from fastapi import WebSocket
 
 from task_history import TaskHistory
+from room.pipeline_tracker import PipelineTracker
 
 LEARNING_TYPES = frozenset({
     "learning", "learning_result", "reflection", "rest", "figma_study"
@@ -15,7 +16,7 @@ WORK_TYPES = frozenset({
     "assignment", "orchestrating", "pm_plan", "message", "site_ready",
     "react_preview", "cursor_progress", "cursor_run_done", "figma_import",
     "github_sync_started", "github_sync_done", "git_sync_done",
-    "figma_portfolio",
+    "figma_portfolio", "pipeline_update",
 })
 
 
@@ -29,6 +30,7 @@ class RoomManager:
         self.learning_history = []
         self.max_history = 500
         self.task_history = TaskHistory()
+        self.pipeline = PipelineTracker(self)
         self._last_submitted_id: Optional[str] = None
         self.current_plan: Optional[dict] = None
 
@@ -82,6 +84,8 @@ class RoomManager:
                 "channel": "work",
                 "timestamp": datetime.now().isoformat()
             }, ensure_ascii=False))
+
+        await self.pipeline.send_to(websocket)
 
         await self.broadcast_work({
             "type": "system",
@@ -267,15 +271,18 @@ class RoomManager:
     def record_task_started(self, task_id: str):
         if task_id:
             self.task_history.mark_in_progress(task_id)
+            asyncio.create_task(self.pipeline.on_task_started(task_id))
 
     def record_task_completed(self, task_id: str, response: str,
                               agent_name: str = "", agent_emoji: str = ""):
         if task_id:
             self.task_history.mark_completed(task_id, response, agent_name, agent_emoji)
+            asyncio.create_task(self.pipeline.on_task_completed(task_id, failed=False))
 
     def record_task_failed(self, task_id: str, error: str = ""):
         if task_id:
             self.task_history.mark_failed(task_id, error)
+            asyncio.create_task(self.pipeline.on_task_completed(task_id, failed=True))
 
     async def _maybe_github_sync(self, task_text: str):
         """Автосинхронизация с GitHub через Cursor Cloud Agent + локальный git push."""

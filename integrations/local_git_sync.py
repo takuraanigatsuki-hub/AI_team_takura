@@ -156,4 +156,5 @@ async def sync_after_task(task_text: str, room_manager=None) -> Optional[dict]:
             ),
             "timestamp": datetime.now().isoformat(),
         })
+        await room_manager.pipeline.on_github("done")
     return result
