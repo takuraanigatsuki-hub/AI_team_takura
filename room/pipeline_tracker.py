@@ -125,6 +125,14 @@ class PipelineTracker:
     def get_state(self) -> Optional[dict]:
         return self.active
 
+    async def clear(self) -> None:
+        self.active = None
+        await self.room.broadcast_work({
+            "type": "pipeline_update",
+            "pipeline": None,
+            "timestamp": datetime.now().isoformat(),
+        })
+
     async def send_to(self, websocket) -> None:
         if self.active:
             import json

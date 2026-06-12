@@ -47,6 +47,9 @@ async def lifespan(app: FastAPI):
     print(f"📚 Seed knowledge: {sum(seeded.values())} topics loaded")
 
     room.task_history.cleanup_stale(max_minutes=30)
+    stale = sum(1 for t in room.task_history.tasks if t.get("status") == "cancelled")
+    if stale:
+        print(f"🧹 Очищено зависших задач: {stale}")
 
     owner_email = os.environ.get("OWNER_EMAIL", "").strip()
     owner_password = os.environ.get("OWNER_PASSWORD", "").strip()

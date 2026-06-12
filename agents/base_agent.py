@@ -263,23 +263,9 @@ class BaseAgent:
         if self._work_mode_active():
             return
         action = random.choices(
-            ["learn", "reflect", "rest", "user_wish"],
-            weights=[0.42, 0.12, 0.08, 0.18]
+            ["learn", "reflect", "rest"],
+            weights=[0.52, 0.18, 0.12]
         )[0]
-        if action == "user_wish":
-            try:
-                from room.user_intent import pick_idle_user_task
-                wish = pick_idle_user_task(self.agent_id)
-                if wish:
-                    await self._broadcast(
-                        f"🎯 Продолжаю ваш запрос: *{wish[:80]}{'…' if len(wish) > 80 else ''}*",
-                        "message"
-                    )
-                    await self._start_user_task(wish, sender="Ваш запрос")
-                    return
-            except Exception:
-                pass
-            action = "learn"
         if action == "learn":
             await self._learn()
         elif action == "reflect":
@@ -974,6 +960,14 @@ class BaseAgent:
 
     async def _start_user_task(self, text: str, sender: str = "Пользователь") -> str:
         """Поставить запрос пользователя в очередь выполнения."""
+        if self.room_manager:
+            dup = self.room_manager.task_history.find_active_duplicate(text)
+            if dup:
+                return (
+                    f"Эта задача **уже в работе** (статус: {dup.get('status')}). "
+                    f"Откройте вкладку **Задачи**."
+                )
+
         if self.agent_id == "pm" and self.room_manager and hasattr(self, "orchestrate_task"):
             parent_id = self.room_manager.task_history.add_submitted(text, "all", "direct")
             await self.room_manager._broadcast_task_history()

@@ -1,27 +1,41 @@
 /**
- * Live Pipeline — визуальный прогресс задачи по команде
+ * Live Pipeline — компактная панель внизу экрана
  */
 (function (global) {
     let current = null;
     let activeAgentId = null;
     let hideTimer = null;
+    let collapsed = false;
 
     function ensureBar() {
         if (document.getElementById('pipelineBar')) return;
         const bar = document.createElement('div');
         bar.id = 'pipelineBar';
-        bar.className = 'pipeline-bar hidden';
+        bar.className = 'pipeline-dock hidden';
         bar.innerHTML = `
-            <div class="pipeline-inner">
-                <div class="pipeline-title">
-                    <span class="pipeline-label">Pipeline</span>
-                    <span id="pipelineTask" class="pipeline-task"></span>
-                    <span id="pipelinePct" class="pipeline-pct">0%</span>
+            <div class="pipeline-dock-inner">
+                <div class="pipeline-dock-head">
+                    <div class="pipeline-dock-head-left">
+                        <span class="pipeline-label">⚡ Задача в работе</span>
+                        <span id="pipelinePct" class="pipeline-pct">0%</span>
+                    </div>
+                    <div class="pipeline-dock-head-actions">
+                        <button type="button" class="pipeline-dock-btn" onclick="switchView('tasks')" title="Открыть задачи">📋</button>
+                        <button type="button" class="pipeline-dock-btn" id="pipelineCollapseBtn" onclick="PipelineUI.toggleCollapse()" title="Свернуть">▼</button>
+                    </div>
                 </div>
-                <div class="pipeline-track"><div id="pipelineFill" class="pipeline-fill"></div></div>
-                <div id="pipelineSteps" class="pipeline-steps"></div>
+                <div class="pipeline-dock-body" id="pipelineDockBody">
+                    <p id="pipelineTask" class="pipeline-task-text"></p>
+                    <div class="pipeline-track"><div id="pipelineFill" class="pipeline-fill"></div></div>
+                    <div id="pipelineSteps" class="pipeline-steps"></div>
+                </div>
             </div>`;
-        document.body.appendChild(bar);
+        const footer = document.getElementById('statusFooter');
+        if (footer?.parentNode) {
+            footer.parentNode.insertBefore(bar, footer);
+        } else {
+            document.body.appendChild(bar);
+        }
     }
 
     function statusClass(s) {
@@ -35,14 +49,20 @@
         }
     }
 
-    function scheduleHide(ms = 12000) {
+    function scheduleHide(ms = 15000) {
         clearHideTimer();
         hideTimer = setTimeout(() => {
-            const bar = document.getElementById('pipelineBar');
-            bar?.classList.add('hidden');
-            document.body.classList.remove('has-pipeline');
-            if (window.StudioApp) StudioApp.setPipelineHighlight(null);
+            hide();
         }, ms);
+    }
+
+    function hide() {
+        const bar = document.getElementById('pipelineBar');
+        bar?.classList.add('hidden');
+        document.body.classList.remove('has-pipeline');
+        current = null;
+        activeAgentId = null;
+        if (window.StudioApp) StudioApp.setPipelineHighlight(null);
     }
 
     function isStaleFinished(pipeline) {
@@ -56,11 +76,7 @@
         const bar = document.getElementById('pipelineBar');
         if (!pipeline || !pipeline.steps?.length || isStaleFinished(pipeline)) {
             clearHideTimer();
-            bar?.classList.add('hidden');
-            document.body.classList.remove('has-pipeline');
-            current = null;
-            activeAgentId = null;
-            if (window.StudioApp) StudioApp.setPipelineHighlight(null);
+            hide();
             return;
         }
 
@@ -80,7 +96,11 @@
         const fillEl = document.getElementById('pipelineFill');
         const stepsEl = document.getElementById('pipelineSteps');
 
-        if (taskEl) taskEl.textContent = (pipeline.task || '').slice(0, 60);
+        const taskText = (pipeline.task || 'Без названия').trim();
+        if (taskEl) {
+            taskEl.textContent = taskText;
+            taskEl.title = taskText;
+        }
         const pct = pipeline.progress || 0;
         if (pctEl) pctEl.textContent = `${pct}%`;
         if (fillEl) fillEl.style.width = `${pct}%`;
@@ -89,9 +109,10 @@
         if (stepsEl) {
             stepsEl.innerHTML = pipeline.steps.map((step) => {
                 if (step.status === 'active') activeAgentId = step.agent_id;
-                return `<div class="pipeline-step ${statusClass(step.status)}" title="${step.label || ''}">
+                const label = step.label ? ` — ${step.label}` : '';
+                return `<div class="pipeline-step ${statusClass(step.status)}" title="${(step.label || step.name || '').replace(/"/g, '')}">
                     <span class="step-emoji">${step.emoji || '🤖'}</span>
-                    <span class="step-name">${step.name || step.agent_id}</span>
+                    <span class="step-name">${step.name || step.agent_id}${label ? '' : ''}</span>
                 </div>`;
             }).join('');
         }
@@ -100,6 +121,11 @@
     }
 
     function onUpdate(data) {
+        if (data.pipeline === null || data.pipeline === undefined) {
+            clearHideTimer();
+            hide();
+            return;
+        }
         if (data.pipeline) render(data.pipeline);
     }
 
@@ -109,9 +135,21 @@
             if (r.ok) {
                 const d = await r.json();
                 if (d.pipeline) render(d.pipeline);
+                else hide();
             }
-        } catch (_) {}
+        } catch (_) { /* ignore */ }
     }
 
-    global.PipelineUI = { render, onUpdate, load };
+    function toggleCollapse() {
+        collapsed = !collapsed;
+        const bar = document.getElementById('pipelineBar');
+        const body = document.getElementById('pipelineDockBody');
+        const btn = document.getElementById('pipelineCollapseBtn');
+        bar?.classList.toggle('pipeline-collapsed', collapsed);
+        if (body) body.hidden = collapsed;
+        if (btn) btn.textContent = collapsed ? '▲' : '▼';
+        document.body.classList.toggle('has-pipeline-collapsed', collapsed);
+    }
+
+    global.PipelineUI = { render, onUpdate, load, toggleCollapse, hide };
 })(window);

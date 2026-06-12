@@ -203,13 +203,33 @@ class TaskHistory:
             "cancelled": cancelled,
         }
 
+    def _normalize_task_text(self, text: str) -> str:
+        return (text or "").strip().lower()[:120]
+
+    def find_active_duplicate(self, text: str) -> Optional[Dict]:
+        """Есть ли уже такая задача в активных статусах."""
+        norm = self._normalize_task_text(text)
+        if not norm:
+            return None
+        active = (
+            "submitted", "queued", "in_progress", "triaging",
+            "revision_requested", "awaiting_approval",
+        )
+        for t in reversed(self.tasks):
+            if t.get("status") not in active:
+                continue
+            if self._normalize_task_text(t.get("task", "")) == norm:
+                return t
+        return None
+
     def cleanup_stale(self, max_minutes: int = 30):
-        """Помечает зависшие in_progress задачи как failed."""
+        """Помечает зависшие in_progress и submitted задачи как cancelled."""
         from datetime import timedelta
         now = datetime.now()
         changed = False
         for t in self.tasks:
-            if t.get("status") != "in_progress":
+            status = t.get("status")
+            if status not in ("in_progress", "submitted"):
                 continue
             started = t.get("started_at") or t.get("created_at")
             if not started:
@@ -218,9 +238,13 @@ class TaskHistory:
                 started_dt = datetime.fromisoformat(started)
             except ValueError:
                 continue
-            if now - started_dt > timedelta(minutes=max_minutes):
-                t["status"] = "failed"
-                t["response"] = "Таймаут выполнения (перезапустите сервер)"
+            limit = max_minutes if status == "in_progress" else min(max_minutes, 20)
+            if now - started_dt > timedelta(minutes=limit):
+                t["status"] = "cancelled"
+                t["response"] = (
+                    "Таймаут (задача зависла)" if status == "in_progress"
+                    else "Отменено — задача не была обработана"
+                )
                 t["completed_at"] = now.isoformat()
                 changed = True
                 if t.get("parent_id"):

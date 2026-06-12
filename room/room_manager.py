@@ -232,6 +232,19 @@ class RoomManager:
         })
 
         if msg_type == "task":
+            dup = self.task_history.find_active_duplicate(text)
+            if dup:
+                await self.broadcast_work({
+                    "type": "system",
+                    "message": (
+                        f"ℹ️ Такая задача уже в работе (статус: **{dup.get('status')}**). "
+                        f"Смотрите вкладку **Задачи** — дубликат не создан."
+                    ),
+                    "timestamp": datetime.now().isoformat(),
+                })
+                await self._broadcast_task_history()
+                return
+
             record_user_wish(text, target if target not in ("all", "pm") else None)
             self._last_submitted_id = self.task_history.add_submitted(text, target, msg_type)
             await self._broadcast_task_history()
@@ -483,6 +496,7 @@ class RoomManager:
                 agent.status = "idle"
                 agent.location = "studio"
             agent.current_task = None
+        await self.pipeline.clear()
         if count:
             await self.broadcast_work({
                 "type": "system",
@@ -504,6 +518,7 @@ class RoomManager:
             agent.status = "idle"
             agent.location = "studio"
             agent.current_task = None
+        await self.pipeline.clear()
         await self.broadcast_work({
             "type": "system",
             "message": "🗑️ История задач полностью очищена",
