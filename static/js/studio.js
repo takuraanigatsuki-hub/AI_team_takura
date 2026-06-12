@@ -17,27 +17,29 @@
         cursor: 0xffd866, presenter: 0xff6b9d, modeler: 0x56cfe1,
     };
 
+    const ROOM = { w: 14, d: 10, h: 2.75, hw: 7, hd: 5 };
+
     const STUDIO_SLOTS = {
-        pm: { x: -7, z: -4 }, architect: { x: -3.5, z: -4 },
-        backend: { x: 0, z: -4 }, frontend: { x: 3.5, z: -4 },
-        qa: { x: -7, z: 0 }, reviewer: { x: -3.5, z: 0 },
-        doc_writer: { x: 0, z: 0 }, devops: { x: 3.5, z: 0 },
-        cursor: { x: 7, z: -2 }, presenter: { x: 7, z: 1 }, modeler: { x: 7, z: 4 },
+        pm: { x: -3.5, z: -2.6 }, architect: { x: -1.75, z: -2.6 },
+        backend: { x: 0, z: -2.6 }, frontend: { x: 1.75, z: -2.6 },
+        qa: { x: -3.5, z: -0.5 }, reviewer: { x: -1.75, z: -0.5 },
+        doc_writer: { x: 0, z: -0.5 }, devops: { x: 1.75, z: -0.5 },
+        cursor: { x: 3.1, z: -2.1 }, presenter: { x: 3.1, z: 0 }, modeler: { x: 3.1, z: 2.1 },
     };
 
     const REST_SLOTS = {
-        pm: { x: 9, z: 5 }, architect: { x: 11, z: 5 }, backend: { x: 13, z: 5 },
-        frontend: { x: 9, z: 7.5 }, qa: { x: 11, z: 7.5 }, reviewer: { x: 13, z: 7.5 },
-        doc_writer: { x: 10, z: 10 }, devops: { x: 12, z: 10 },
-        cursor: { x: 14, z: 10 }, presenter: { x: 15, z: 10 }, modeler: { x: 16, z: 10 },
+        pm: { x: 4.2, z: 2.6 }, architect: { x: 5.3, z: 2.6 }, backend: { x: 6.2, z: 2.6 },
+        frontend: { x: 4.2, z: 3.5 }, qa: { x: 5.3, z: 3.5 }, reviewer: { x: 6.2, z: 3.5 },
+        doc_writer: { x: 4.7, z: 4.2 }, devops: { x: 5.7, z: 4.2 },
+        cursor: { x: 6.4, z: 4.2 }, presenter: { x: 6.4, z: 3.2 }, modeler: { x: 6.4, z: 2.4 },
     };
 
     const LIBRARY_SLOTS = {
-        pm: { x: -11, z: 6 }, architect: { x: -9, z: 6 },
-        backend: { x: -11, z: 8.5 }, frontend: { x: -9, z: 8.5 },
-        qa: { x: -11, z: 11 }, reviewer: { x: -9, z: 11 },
-        doc_writer: { x: -10, z: 13 }, devops: { x: -8, z: 13 },
-        cursor: { x: -6, z: 13 }, presenter: { x: -5, z: 11 }, modeler: { x: -4, z: 9 },
+        pm: { x: -5.4, z: 2.5 }, architect: { x: -4.2, z: 2.5 },
+        backend: { x: -5.4, z: 3.4 }, frontend: { x: -4.2, z: 3.4 },
+        qa: { x: -5.4, z: 4.1 }, reviewer: { x: -4.2, z: 4.1 },
+        doc_writer: { x: -4.8, z: 4.6 }, devops: { x: -3.8, z: 4.6 },
+        cursor: { x: -3.2, z: 4.6 }, presenter: { x: -3.2, z: 3.6 }, modeler: { x: -3.2, z: 2.7 },
     };
 
     const WALK_SPEED = 0.048;
@@ -92,10 +94,10 @@
     }
 
     function createFallbackControls(cam, dom) {
-        const target = new THREE.Vector3(0, 0, 1);
-        let theta = 0.4;
-        let phi = 1.05;
-        let radius = 20;
+        const target = new THREE.Vector3(0, 0.4, 0);
+        let theta = 0.35;
+        let phi = 1.12;
+        let radius = 11;
         let dragging = false;
         let lastX = 0;
         let lastY = 0;
