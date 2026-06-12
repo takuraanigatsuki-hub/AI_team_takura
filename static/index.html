@@ -33,7 +33,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css?v=40">
     <link rel="stylesheet" href="/static/css/feature-pack.css?v=3">
-    <link rel="stylesheet" href="/static/css/enhancements.css?v=1">
+    <link rel="stylesheet" href="/static/css/enhancements.css?v=2">
 </head>
 <body class="has-sidebar">
 
@@ -74,18 +74,18 @@
         <div class="header-actions">
             <details class="header-dropdown">
                 <summary class="hdr-btn" title="AI, инструменты, голос">⋯ Меню</summary>
-                <div class="dropdown-menu dropdown-menu-wide">
-                    <div class="dropdown-section-label">AI & Cursor</div>
-                    <button type="button" class="dropdown-item" onclick="Integrations.toggleCursorPanel()">⚡ Cursor SDK <span class="integration-badge" id="cursorBadgeMenu">…</span></button>
-                    <button type="button" class="dropdown-item" onclick="switchView('admin'); AdminPanel?.focusConsole?.()">🖥 Консоль</button>
-                    <button type="button" class="dropdown-item" onclick="PowerPack.runPipeline()">⚡ Pipeline</button>
+                <div class="dropdown-menu dropdown-menu-wide" id="headerToolsMenu">
+                    <div class="dropdown-section-label" data-ui="team-tools">AI & Cursor</div>
+                    <button type="button" class="dropdown-item hidden" data-ui="team-tools" onclick="Integrations.toggleCursorPanel()">⚡ Cursor SDK <span class="integration-badge" id="cursorBadgeMenu">…</span></button>
+                    <button type="button" class="dropdown-item hidden" data-ui="console" onclick="switchView('admin'); AdminPanel?.focusConsole?.()">🖥 Консоль</button>
+                    <button type="button" class="dropdown-item hidden" data-ui="team-tools" onclick="PowerPack.runPipeline()">⚡ Pipeline</button>
                     <button type="button" class="dropdown-item" onclick="ReactPreview.toggle()">🎨 React Preview</button>
                     <div class="dropdown-section-label">Инструменты</div>
                     <button type="button" class="dropdown-item" onclick="WowFeatures.showStandup()">📊 Standup</button>
                     <button type="button" class="dropdown-item" onclick="PowerPack.showMemory()">🧠 Project memory</button>
-                    <button type="button" class="dropdown-item" onclick="PowerPack.downloadBackup()">📦 Backup</button>
-                    <button type="button" class="dropdown-item" onclick="PowerPack.createViewLink()">🔗 View-link</button>
-                    <button type="button" class="dropdown-item" onclick="WowFeatures.deployNow()">🚀 Deploy</button>
+                    <button type="button" class="dropdown-item hidden" data-ui="admin-tools" onclick="PowerPack.downloadBackup()">📦 Backup</button>
+                    <button type="button" class="dropdown-item hidden" data-ui="team-tools" onclick="PowerPack.createViewLink()">🔗 View-link</button>
+                    <button type="button" class="dropdown-item hidden" data-ui="team-tools" onclick="WowFeatures.deployNow()">🚀 Deploy</button>
                     <div class="dropdown-section-label">Голос</div>
                     <button type="button" class="dropdown-item" onclick="VoiceRoom.readStandup()">🔊 Standup TTS</button>
                     <button type="button" class="dropdown-item" onclick="PowerPack.voiceStandupRound()">🎙 Voice round</button>
@@ -101,7 +101,7 @@
             <button type="button" class="hdr-btn hdr-icon" title="Поиск (Ctrl+Shift+F)" onclick="SiteSearch?.open?.()">🔍</button>
             <button type="button" class="hdr-btn hdr-icon" title="Команды (Ctrl+K)" onclick="FeaturePack?.openCommandPalette?.()">⌘</button>
             <button type="button" class="hdr-btn hdr-icon hidden" id="pwaInstallBtn" onclick="installPWA()" title="Установить приложение">📲</button>
-            <button type="button" class="hdr-btn hdr-icon" onclick="showSettings()" title="Настройки">⚙️</button>
+            <button type="button" class="hdr-btn hdr-icon" id="settingsBtn" onclick="showSettings()" title="Настройки">⚙️</button>
             <button type="button" class="hdr-btn hdr-icon" id="themeToggle" onclick="toggleTheme()" title="Тема">☀️</button>
             <details class="header-dropdown header-dropdown-account">
                 <summary class="hdr-btn hdr-icon" id="userMenuSummary" title="Аккаунт">👤</summary>
@@ -112,7 +112,7 @@
             </details>
         </div>
     </div>
-    <div class="header-row header-row-nav">
+    <div class="header-row header-row-nav header-legacy-nav" aria-hidden="true">
         <nav class="view-nav-groups" aria-label="Разделы">
             <div class="nav-group">
                 <span class="nav-group-label">Студия</span>
@@ -744,7 +744,7 @@
                     <label><input type="checkbox" id="persistInput" checked> Сохранять знания на диск</label>
                 </div>
             </div>
-            <div>
+            <div id="settingsAdminSection" class="hidden" data-ui="admin-tools">
                 <h3 class="settings-section-title">Cursor SDK</h3>
                 <div class="form-group">
                     <label>GitHub repo (cloud, опционально)</label>
@@ -774,7 +774,7 @@
                     GitHub Sync на задачи — только для coding (таблицы/UI/презентации идут в чат и M365).
                 </p>
             </div>
-            <div>
+            <div id="settingsM365Section" class="hidden" data-ui="admin-tools">
                 <h3 class="settings-section-title">Microsoft 365</h3>
                 <div class="form-group checkbox">
                     <label><input type="checkbox" id="m365EnabledInput" checked> Microsoft 365 (таблицы, Word, презентации)</label>
@@ -791,8 +791,8 @@
             Источники обучения: Wikipedia, Dev.to, GitHub, Хабр и др.
         </p>
         <div class="modal-btns">
-            <button type="button" class="btn-secondary" onclick="hideSettings()">Отмена</button>
-            <button type="button" class="btn-primary" onclick="saveSettings()">Сохранить</button>
+            <button type="button" class="btn-secondary" onclick="hideSettings()">Закрыть</button>
+            <button type="button" class="btn-primary hidden" id="settingsSaveBtn" data-ui="admin-tools" onclick="saveSettings()">Сохранить</button>
         </div>
     </div>
 </div>
@@ -848,7 +848,8 @@
 <script src="/static/js/dashboard.js?v=3"></script>
 <script src="/static/js/workspaces.js?v=1"></script>
 <script src="/static/js/agent-activity.js?v=1"></script>
-<script src="/static/js/auth.js?v=8"></script>
+<script src="/static/js/ui-access.js?v=1"></script>
+<script src="/static/js/auth.js?v=9"></script>
 <script src="/static/js/profile.js?v=5"></script>
 <script src="/static/js/admin-panel.js?v=3"></script>
 <script src="/static/js/setup-wizard.js?v=2"></script>
