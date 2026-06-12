@@ -863,6 +863,8 @@ async def sonya_create_project(body: SonyaProjectCreate, request: Request):
         task=body.task or f"UI проект от {author}. Современный интерфейс, React.",
         created_by=author,
     )
+    from integrations.sonya_studio_notify import notify_studio
+    await notify_studio("project", project_title=project.get("title", ""), project_id=project.get("id", ""))
     return {"ok": True, "project": project}
 
 
@@ -896,6 +898,15 @@ async def sonya_add_comment(project_id: str, body: SonyaCommentCreate, request: 
     if not comment:
         raise HTTPException(status_code=404, detail="Проект не найден")
     project = get_project(project_id)
+    from integrations.sonya_studio_notify import notify_studio
+    await notify_studio(
+        "comment",
+        project_title=project.get("title", ""),
+        project_id=project_id,
+        author=author,
+        text=body.text,
+        open_comments=project.get("open_comments", 0),
+    )
     return {"ok": True, "comment": comment, "project": project}
 
 
@@ -913,6 +924,14 @@ async def sonya_apply_comments(project_id: str):
         raise HTTPException(status_code=400, detail=str(e))
     if not project:
         raise HTTPException(status_code=404, detail="Проект не найден")
+    from integrations.sonya_studio_notify import notify_studio
+    ver = project.get("current_version") or {}
+    await notify_studio(
+        "version",
+        project_title=project.get("title", ""),
+        project_id=project_id,
+        version_num=ver.get("version_num", 1),
+    )
     await room.send_agents_state()
     return {"ok": True, "project": project}
 
@@ -925,8 +944,53 @@ async def sonya_create_new_by_agent():
     if not frontend:
         raise HTTPException(status_code=404, detail="Соня не найдена")
     project = await create_studio_project(frontend)
+    from integrations.sonya_studio_notify import notify_studio
+    await notify_studio("project", project_title=project.get("title", ""), project_id=project.get("id", ""))
     await room.send_agents_state()
     return {"ok": True, "project": project}
+
+
+@app.get("/api/sonya/projects/{project_id}/diff")
+async def sonya_project_diff(project_id: str, from_ref: str = "1", to_ref: str = ""):
+    from integrations.sonya_studio_export import compare_versions
+    from integrations.sonya_studio import get_project
+
+    project = get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Проект не найден")
+    versions = project.get("versions") or []
+    if not to_ref:
+        to_ref = str((project.get("current_version") or {}).get("version_num") or len(versions))
+    diff = compare_versions(project_id, from_ref, to_ref)
+    if not diff:
+        raise HTTPException(status_code=400, detail="Не удалось сравнить версии")
+    return diff
+
+
+@app.get("/api/sonya/projects/{project_id}/handoff")
+async def sonya_project_handoff(project_id: str):
+    from integrations.sonya_studio_export import build_handoff_package
+
+    pkg = build_handoff_package(project_id)
+    if not pkg:
+        raise HTTPException(status_code=404, detail="Проект не найден")
+    return pkg
+
+
+@app.get("/api/sonya/projects/{project_id}/handoff/download")
+async def sonya_project_handoff_download(project_id: str):
+    from integrations.sonya_studio_export import build_handoff_zip
+
+    result = build_handoff_zip(project_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Проект не найден")
+    filename, data = result
+    import io
+    return FileResponse(
+        io.BytesIO(data),
+        media_type="application/zip",
+        filename=filename,
+    )
 
 
 @app.post("/api/sonya/projects/{project_id}/publish")
@@ -954,6 +1018,14 @@ async def sonya_publish(project_id: str, body: SonyaPublishRequest):
             "handoff": handoff,
             "timestamp": handoff.get("published_at"),
         })
+
+    from integrations.sonya_studio_notify import notify_studio
+    await notify_studio(
+        "published",
+        project_title=project.get("title", ""),
+        project_id=project_id,
+        version_num=(project.get("figma_handoff") or {}).get("version_num", 1),
+    )
 
     return {"ok": True, "project": project}
 

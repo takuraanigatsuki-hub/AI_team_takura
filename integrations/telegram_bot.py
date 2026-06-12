@@ -34,6 +34,7 @@ REPLY_BUTTONS = {
     "🧊 3D Hero": "task:3d",
     "🚀 Deploy": "cmd:deploy",
     "📤 Git Sync": "cmd:sync",
+    "✨ Studio": "cmd:studio",
     "💬 Своя задача": "mode:task",
     "📌 Меню": "cmd:menu",
 }
@@ -179,7 +180,8 @@ def main_reply_keyboard() -> dict:
             [{"text": "🎨 UI форма"}, {"text": "🧪 Тесты"}],
             [{"text": "📽️ Pitch"}, {"text": "🧊 3D Hero"}],
             [{"text": "🚀 Deploy"}, {"text": "📤 Git Sync"}],
-            [{"text": "💬 Своя задача"}, {"text": "📌 Меню"}],
+            [{"text": "✨ Studio"}, {"text": "💬 Своя задача"}],
+            [{"text": "📌 Меню"}],
         ],
         "resize_keyboard": True,
         "is_persistent": True,
@@ -200,6 +202,9 @@ def main_inline_keyboard() -> dict:
             ],
             [
                 {"text": "💬 Своя задача", "callback_data": "mode:task"},
+                {"text": "✨ Studio", "callback_data": "cmd:studio"},
+            ],
+            [
                 {"text": "📌 Обновить меню", "callback_data": "cmd:menu"},
             ],
         ]
@@ -394,6 +399,26 @@ async def _run_action(chat_id: str, action: str, room, message_id: int = None):
         await send_message(chat_id, f"❌ Ошибка: {e}", reply_markup=main_reply_keyboard())
 
 
+def _format_studio() -> tuple[str, str]:
+    from integrations.sonya_studio import list_projects
+
+    base = f"{_app_url()}/app?view=sonya-studio"
+    projects = list_projects()[:8]
+    if not projects:
+        text = f"✨ Sonya Design Studio\n\nПроектов пока нет.\nОткройте Studio в браузере:\n{base}"
+        return text, _esc(text)
+
+    lines = ["✨ **Sonya Design Studio**", "", "Последние проекты:"]
+    for p in projects:
+        st = {"draft": "черновик", "review": "ревью", "published": "опубликован"}.get(p.get("status"), p.get("status"))
+        oc = f" · 💬 {p['open_comments']}" if p.get("open_comments") else ""
+        lines.append(f"• «{p.get('title')}» — {st}, v{p.get('version_count', 1)}{oc}")
+    lines.append("")
+    lines.append(f"→ {base}")
+    text = "\n".join(lines)
+    return text, _md_to_html(text)
+
+
 async def _handle_command(chat_id: str, cmd: str, room, message_id: int = None):
     html_body = None
     if cmd == "menu":
@@ -425,6 +450,8 @@ async def _handle_command(chat_id: str, cmd: str, room, message_id: int = None):
         except Exception as e:
             text = f"❌ Deploy: {e}"
         html_body = _esc(text)
+    elif cmd == "studio":
+        text, html_body = _format_studio()
     elif cmd == "sync":
         text = "📤 Git Sync запущен…"
         html_body = _esc(text)
@@ -526,12 +553,12 @@ async def _handle_update_inner(update: dict, room):
     if text.startswith("/help"):
         await send_message(
             chat_id,
-            "Команды: /start /menu /status /tasks /standup\nИли кнопки внизу экрана.",
+            "Команды: /start /menu /status /tasks /standup /studio\nИли кнопки внизу экрана.",
             reply_markup=main_reply_keyboard(),
         )
         return
 
-    for cmd in ("menu", "status", "tasks", "standup"):
+    for cmd in ("menu", "status", "tasks", "standup", "studio"):
         if text.startswith(f"/{cmd}"):
             await _handle_command(chat_id, cmd, room)
             return
@@ -660,6 +687,7 @@ def bot_status() -> dict:
         "chat_id": _default_chat_id() or (chats[0]["chat_id"] if chats else ""),
         "authorized_chats": len(chats),
         "notify_tasks": __import__("config").config.get("telegram_notify_tasks", False),
+        "notify_studio": __import__("config").config.get("telegram_notify_studio", True),
         "reply_keyboard": True,
     }
 

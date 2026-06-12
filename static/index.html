@@ -31,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/main.css?v=18">
+    <link rel="stylesheet" href="/static/css/main.css?v=19">
 </head>
 <body>
 
@@ -170,7 +170,17 @@
             <div id="ssCommentsList" class="ss-comments-list"></div>
             <div class="panel-label" style="margin-top:14px">Версии</div>
             <div id="ssVersionsList" class="ss-versions-list"></div>
+            <div class="panel-label" style="margin-top:14px">Diff версий</div>
+            <div class="ss-diff-controls">
+                <label class="ss-diff-label">Из <select id="ssDiffFrom" class="design-input ss-diff-select"></select></label>
+                <label class="ss-diff-label">В <select id="ssDiffTo" class="design-input ss-diff-select"></select></label>
+                <button type="button" class="btn-secondary btn-sm" id="ssDiffBtn" onclick="SonyaStudio.compareVersions()">Сравнить</button>
+            </div>
+            <pre id="ssDiffOutput" class="ss-diff-output muted">Выберите две версии</pre>
             <div class="panel-label" style="margin-top:14px">Handoff · Figma</div>
+            <div class="ss-handoff-actions">
+                <button type="button" class="btn-secondary btn-sm" onclick="SonyaStudio.downloadHandoff()">⬇ handoff.zip</button>
+            </div>
             <input type="url" id="ssFigmaUrl" class="design-input" placeholder="Ссылка Figma (опционально)">
             <div id="ssHandoff" class="ss-handoff"></div>
         </aside>
@@ -557,7 +567,7 @@
 <script src="/static/js/projects.js?v=2"></script>
 <script src="/static/js/sprint.js?v=1"></script>
 <script src="/static/js/power-pack.js?v=1"></script>
-<script src="/static/js/sonya-studio.js?v=1"></script>
+<script src="/static/js/sonya-studio.js?v=2"></script>
 <script src="/static/js/app.js?v=15"></script>
 
 <!-- PWA: регистрация Service Worker -->

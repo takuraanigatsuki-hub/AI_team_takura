@@ -40,6 +40,7 @@ _defaults = {
     "room_api_key": "",
     "auto_theme": False,
     "telegram_notify_tasks": False,
+    "telegram_notify_studio": True,
     "telegram_bot_token": "",
     "telegram_chat_id": "",
     "jira_auto_create": False,

@@ -24,7 +24,8 @@
             const d = await r.json();
             projects = d.projects || [];
             renderProjectList();
-            const id = selectId || activeId || (projects[0] && projects[0].id);
+            const urlProject = new URLSearchParams(location.search).get('project');
+            const id = selectId || urlProject || activeId || (projects[0] && projects[0].id);
             if (id) await openProject(id);
             else clearCanvas();
         } catch (e) {
@@ -102,7 +103,62 @@
         renderCommentPins();
         renderCommentsList();
         renderVersionsList();
+        renderDiffControls();
         renderHandoff();
+    }
+
+    function renderDiffControls() {
+        const fromEl = document.getElementById('ssDiffFrom');
+        const toEl = document.getElementById('ssDiffTo');
+        const outEl = document.getElementById('ssDiffOutput');
+        if (!fromEl || !toEl || !activeProject) return;
+        const versions = (activeProject.versions || []).slice().sort((a, b) => a.version_num - b.version_num);
+        const opts = versions.map((v) => `<option value="${v.version_num}">v${v.version_num}</option>`).join('');
+        fromEl.innerHTML = opts;
+        toEl.innerHTML = opts;
+        if (versions.length >= 2) {
+            fromEl.value = String(versions[versions.length - 2].version_num);
+            toEl.value = String(versions[versions.length - 1].version_num);
+        } else if (versions.length === 1) {
+            fromEl.value = toEl.value = String(versions[0].version_num);
+        }
+        if (outEl && !outEl.dataset.loaded) {
+            outEl.textContent = versions.length >= 2 ? 'Нажмите «Сравнить»' : 'Нужно минимум 2 версии';
+        }
+    }
+
+    async function compareVersions() {
+        if (!activeId) return;
+        const fromRef = document.getElementById('ssDiffFrom')?.value || '1';
+        const toRef = document.getElementById('ssDiffTo')?.value || '';
+        const outEl = document.getElementById('ssDiffOutput');
+        if (outEl) outEl.textContent = 'Загрузка diff…';
+        try {
+            const q = new URLSearchParams({ from_ref: fromRef, to_ref: toRef });
+            const r = await fetch(`/api/sonya/projects/${activeId}/diff?${q}`);
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.detail || 'Ошибка diff');
+            const s = d.summary || {};
+            const header = [
+                `v${d.from?.version_num} → v${d.to?.version_num}`,
+                `+${s.lines_added || 0} / -${s.lines_removed || 0} строк`,
+                s.colors_added?.length ? `цвета +: ${s.colors_added.join(', ')}` : '',
+                s.colors_removed?.length ? `цвета −: ${s.colors_removed.join(', ')}` : '',
+                s.task_changed ? 'задача изменена' : '',
+                d.diff_truncated ? '(diff обрезан)' : '',
+            ].filter(Boolean).join(' · ');
+            if (outEl) {
+                outEl.dataset.loaded = '1';
+                outEl.textContent = `${header}\n\n${d.diff || '(нет изменений в коде)'}`;
+            }
+        } catch (e) {
+            if (outEl) outEl.textContent = e.message;
+        }
+    }
+
+    function downloadHandoff() {
+        if (!activeId) return;
+        window.location.href = `/api/sonya/projects/${activeId}/handoff/download`;
     }
 
     function renderCommentPins() {
@@ -154,7 +210,8 @@
             <p class="muted">Опубликовано ${(h.published_at || '').slice(0, 16).replace('T', ' ')}</p>
             ${h.figma_url ? `<p><a href="${esc(h.figma_url)}" target="_blank" rel="noopener">Figma ↗</a></p>` : ''}
             <pre class="token-preview">${esc(h.css_tokens || '')}</pre>
-            <p class="muted">${esc(h.instructions || '')}</p>`;
+            <p class="muted">${esc(h.instructions || '')}</p>
+            <p class="muted"><a href="/api/sonya/projects/${activeId}/handoff/download">⬇ Скачать handoff.zip</a></p>`;
     }
 
     function toggleCommentMode() {
@@ -333,6 +390,8 @@
         askSonyaNew,
         applyComments,
         publishProject,
+        compareVersions,
+        downloadHandoff,
         toggleCommentMode,
         onMessage: onStudioMessage,
     };

@@ -1791,6 +1791,42 @@ body.has-pipeline .header { box-shadow: 0 2px 20px rgba(0,0,0,0.15); }
     border: 1px solid var(--border);
 }
 
+.ss-diff-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: flex-end;
+    margin-bottom: 8px;
+}
+.ss-diff-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 11px;
+    color: var(--text-muted);
+    flex: 1;
+    min-width: 70px;
+}
+.ss-diff-select {
+    padding: 4px 6px;
+    font-size: 12px;
+}
+.ss-diff-output {
+    max-height: 160px;
+    overflow: auto;
+    font-size: 10px;
+    line-height: 1.35;
+    padding: 8px;
+    border-radius: 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+.ss-handoff-actions {
+    margin-bottom: 8px;
+}
+
 @media (max-width: 900px) {
     .ss-panel { display: none; }
     .ss-sidebar { width: 200px; }
