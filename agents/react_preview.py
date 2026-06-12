@@ -1,10 +1,116 @@
 """Генерация runnable React-кода для live preview Сони."""
+import json
 import re
 import random
+from pathlib import Path
+
+_COMPONENTS_DIR = Path(__file__).resolve().parent.parent / "static" / "components"
+
+_DEFAULT_FIGMA_TOKENS = {
+    "primary": "#7f56d9",
+    "primarySoft": "#f4ebff",
+    "text": "#101828",
+    "mutedText": "#475467",
+    "surface": "#ffffff",
+    "surfaceAlt": "#f9fafb",
+    "border": "#d0d5dd",
+    "fontFamily": "Inter, system-ui, sans-serif",
+}
 
 
 def _esc(s: str) -> str:
     return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ")[:80]
+
+
+def _load_component(filename: str) -> str:
+    path = _COMPONENTS_DIR / filename
+    if path.is_file():
+        return path.read_text(encoding="utf-8")
+    return ""
+
+
+def _inject_task(template: str, task: str) -> str:
+    escaped = _esc(task)
+    return template.replace("__TASK__", escaped).replace("{task}", escaped)
+
+
+def _tokens_from_summary(summary: dict) -> dict:
+    colors = summary.get("colors") or []
+    fonts = summary.get("fonts") or []
+
+    def pick(i: int, default: str) -> str:
+        return colors[i] if len(colors) > i else default
+
+    font_family = _DEFAULT_FIGMA_TOKENS["fontFamily"]
+    if fonts:
+        family = fonts[0].split()[0]
+        font_family = f"{family}, system-ui, sans-serif"
+
+    return {
+        "primary": pick(3, _DEFAULT_FIGMA_TOKENS["primary"]),
+        "primarySoft": pick(7, _DEFAULT_FIGMA_TOKENS["primarySoft"]),
+        "text": pick(0, _DEFAULT_FIGMA_TOKENS["text"]),
+        "mutedText": pick(1, _DEFAULT_FIGMA_TOKENS["mutedText"]),
+        "surface": pick(8, _DEFAULT_FIGMA_TOKENS["surface"]),
+        "surfaceAlt": pick(7, _DEFAULT_FIGMA_TOKENS["surfaceAlt"]),
+        "border": pick(6, _DEFAULT_FIGMA_TOKENS["border"]),
+        "fontFamily": font_family,
+    }
+
+
+def _frame_names(summary: dict) -> list[str]:
+    names = []
+    for frame in summary.get("frames") or []:
+        name = frame.get("name") if isinstance(frame, dict) else str(frame)
+        if name:
+            names.append(name)
+    return names[:8] or ["Hero", "Features", "CTA", "Footer"]
+
+
+def _build_figma_site(figma_result: dict, task: str) -> str:
+    summary = figma_result.get("summary") or {}
+    tokens = _tokens_from_summary(summary)
+    frames = _frame_names(summary)
+    file_name = summary.get("file_name", "Untitled")
+    component = _load_component("FigmaImportedSite.jsx")
+    if not component:
+        return _inject_task(_WEBSITE, task)
+
+    body = re.sub(r"^/\*\*.*?\*/\s*", "", component, count=1, flags=re.DOTALL).strip()
+    preamble = (
+        f"const figmaTokens = {json.dumps(tokens, ensure_ascii=False)};\n"
+        f"const figmaFrames = {json.dumps(frames, ensure_ascii=False)};\n"
+        f'const task = "{_esc(task)}";\n'
+        f'const fileName = "{_esc(file_name)}";\n'
+    )
+    return preamble + body
+
+
+def generate_react_from_figma(figma_result: dict, task: str) -> dict:
+    """Собрать React Preview из импортированного Figma-макета."""
+    summary = figma_result.get("summary") or {}
+    file_name = summary.get("file_name", "Figma")
+    file_type = (figma_result.get("file_type") or "").lower()
+    is_site = file_type == "site" or is_site_task(task) or is_figma_import_task(task)
+
+    code = _build_figma_site(figma_result, task)
+    title = f"Figma · {file_name}"
+    result = {
+        "title": title[:60],
+        "code": code,
+        "figma_imported": True,
+        "figma_colors": summary.get("colors", [])[:12],
+    }
+    if is_site:
+        result["is_site"] = True
+    return result
+
+
+def is_figma_import_task(task: str) -> bool:
+    t = (task or "").lower()
+    return any(w in t for w in [
+        "figma", "макет", "импорт", "import", "design", "дизайн", "ui по макету",
+    ])
 
 
 def is_site_task(task: str) -> bool:
@@ -15,49 +121,51 @@ def is_site_task(task: str) -> bool:
     ])
 
 
-def generate_react_preview(task: str) -> dict:
+def generate_react_preview(task: str, figma_result: dict = None) -> dict:
+    if figma_result:
+        return generate_react_from_figma(figma_result, task)
+
     t = task.lower()
-    title = task[:60] if task else "Компонент"
 
     if is_site_task(task):
-        return {"title": "Готовый сайт", "code": _WEBSITE.format(task=_esc(task)), "is_site": True}
+        return {"title": "Готовый сайт", "code": _inject_task(_WEBSITE, task), "is_site": True}
 
     if any(w in t for w in ["логин", "login", "авториз", "вход", "sign in"]):
-        return {"title": "Форма входа", "code": _LOGIN_FORM.format(task=_esc(task))}
+        return {"title": "Форма входа", "code": _inject_task(_LOGIN_FORM, task)}
 
     if any(w in t for w in ["регистрац", "register", "signup", "sign up"]):
-        return {"title": "Регистрация", "code": _REGISTER_FORM.format(task=_esc(task))}
+        return {"title": "Регистрация", "code": _inject_task(_REGISTER_FORM, task)}
 
     if any(w in t for w in ["кнопк", "button", "btn"]):
-        return {"title": "Интерактивная кнопка", "code": _BUTTON.format(task=_esc(task))}
+        return {"title": "Интерактивная кнопка", "code": _inject_task(_BUTTON, task)}
 
     if any(w in t for w in ["todo", "список дел", "задач", "чеклист", "checklist"]):
-        return {"title": "Todo-лист", "code": _TODO.format(task=_esc(task))}
+        return {"title": "Todo-лист", "code": _inject_task(_TODO, task)}
 
     if any(w in t for w in ["счётчик", "счетчик", "counter", "клик"]):
-        return {"title": "Счётчик", "code": _COUNTER.format(task=_esc(task))}
+        return {"title": "Счётчик", "code": _inject_task(_COUNTER, task)}
 
     if any(w in t for w in ["карточ", "card", "товар", "product"]):
-        return {"title": "Карточка", "code": _CARD.format(task=_esc(task))}
+        return {"title": "Карточка", "code": _inject_task(_CARD, task)}
 
     if any(w in t for w in ["таблиц", "table", "данн", "data grid"]):
-        return {"title": "Таблица данных", "code": _TABLE.format(task=_esc(task))}
+        return {"title": "Таблица данных", "code": _inject_task(_TABLE, task)}
 
     if any(w in t for w in ["модал", "modal", "диалог", "popup", "попап"]):
-        return {"title": "Модальное окно", "code": _MODAL.format(task=_esc(task))}
+        return {"title": "Модальное окно", "code": _inject_task(_MODAL, task)}
 
     if any(w in t for w in ["дашборд", "dashboard", "панел", "аналитик", "статистик"]):
-        return {"title": "Дашборд", "code": _DASHBOARD.format(task=_esc(task))}
+        return {"title": "Дашборд", "code": _inject_task(_DASHBOARD, task)}
 
     if any(w in t for w in ["навигац", "navbar", "меню", "header", "шапк"]):
-        return {"title": "Навигация", "code": _NAVBAR.format(task=_esc(task))}
+        return {"title": "Навигация", "code": _inject_task(_NAVBAR, task)}
 
     if any(w in t for w in ["форм", "form", "input", "поле"]):
-        return {"title": "Форма", "code": _GENERIC_FORM.format(task=_esc(task))}
+        return {"title": "Форма", "code": _inject_task(_GENERIC_FORM, task)}
 
     palettes = [_HERO, _CARD, _COUNTER, _BUTTON, _TODO]
     pick = random.choice(palettes)
-    return {"title": "UI компонент", "code": pick.format(task=_esc(task))}
+    return {"title": "UI компонент", "code": _inject_task(pick, task)}
 
 
 _COMMON_STYLES = """

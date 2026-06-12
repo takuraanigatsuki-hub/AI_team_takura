@@ -66,8 +66,7 @@ class FrontendDevAgent(BaseAgent):
         task_text = f"UI по макету Figma: {summary.get('file_name', 'Design')}"
         colors = summary.get("colors", [])
         color_hint = ", ".join(colors[:5]) if colors else ""
-        enhanced = f"{task_text}. Цвета: {color_hint}. Адаптивный React-компонент."
-        await self._emit_preview(enhanced)
+        await self._emit_preview(task_text, figma_result=figma_result)
         if self.room_manager:
             await self.room_manager.broadcast_work({
                 "type": "figma_import",
@@ -105,15 +104,18 @@ class FrontendDevAgent(BaseAgent):
             "🎨 '{task}' — компонент готов!\n\nНажмите «Preview» или смотрите панель React Preview — там живой рендер.",
         ]
 
-    def _build_preview(self, task_text: str) -> dict:
-        preview = generate_react_preview(task_text)
+    def _build_preview(self, task_text: str, figma_result: dict = None) -> dict:
+        preview = generate_react_preview(task_text, figma_result=figma_result)
         preview["task"] = task_text
         preview["timestamp"] = datetime.now().isoformat()
+        if figma_result:
+            preview["figma_file_key"] = figma_result.get("file_key")
+            preview["figma_colors"] = (figma_result.get("summary") or {}).get("colors", [])[:12]
         self.last_preview = preview
         return preview
 
-    async def _emit_preview(self, task_text: str):
-        preview = self._build_preview(task_text)
+    async def _emit_preview(self, task_text: str, figma_result: dict = None):
+        preview = self._build_preview(task_text, figma_result=figma_result)
         if preview.get("is_site") or is_site_task(task_text):
             try:
                 site_path = export_site_html(preview["code"], task_text, preview["title"])
@@ -206,18 +208,19 @@ class FrontendDevAgent(BaseAgent):
         )
 
         response = ""
+        figma_data = None
         try:
             figma_url = self._extract_figma_url(task_text)
             if figma_url:
                 client = await get_client_async()
-                if client.configured:
-                    try:
-                        figma_data = await client.import_design(figma_url)
-                        await self.apply_figma_design(figma_data)
-                    except Exception as e:
-                        await self._broadcast_work(f"⚠️ Figma: {e}", "error")
+                try:
+                    figma_data = await client.import_design(figma_url)
+                    await self.apply_figma_design(figma_data)
+                except Exception as e:
+                    await self._broadcast_work(f"⚠️ Figma: {e}", "error")
 
-            await self._emit_preview(task_text)
+            if not figma_data:
+                await self._emit_preview(task_text)
 
             response = self.build_task_response(task_text, self._find_relevant_knowledge(task_text))
             if self.last_preview and (self.last_preview.get("is_site") or is_site_task(task_text)):

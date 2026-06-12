@@ -33,9 +33,11 @@ def parse_figma_url(url: str) -> Optional[dict]:
     parsed = urlparse(url)
     qs = parse_qs(parsed.query)
     path_parts = parsed.path.strip("/").split("/")
-    file_type = path_parts[1] if len(path_parts) >= 2 else "design"
+    file_type = "design"
     if path_parts[:2] == ["community", "file"]:
         file_type = "community"
+    elif path_parts and path_parts[0] in ("design", "file", "site", "proto", "board", "deck", "slides"):
+        file_type = path_parts[0]
     node_raw = qs.get("node-id", [""])[0]
     node_id = unquote(node_raw).replace("-", ":") if node_raw else None
     return {
@@ -201,10 +203,15 @@ class FigmaClient:
         parsed = parse_figma_url(url)
         if not parsed:
             raise ValueError("Некорректная ссылка Figma")
+        file_key = parsed["file_key"]
         if not self.configured:
+            from integrations.figma_fixtures import get_fixture
+
+            fixture = get_fixture(file_key)
+            if fixture:
+                return fixture
             raise ValueError("FIGMA_ACCESS_TOKEN не задан в .env")
 
-        file_key = parsed["file_key"]
         node_id = parsed.get("node_id")
 
         if lightweight:
