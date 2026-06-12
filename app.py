@@ -1023,39 +1023,40 @@ async def figma_studio_stats():
 
 
 @app.post("/api/figma/studio/trigger")
-async def figma_studio_trigger(action: str = "study"):
+async def figma_studio_trigger(action: str = "study", request: Request = None):
     """Ручной запуск обучения/создания Сони в Studio."""
     from integrations.figma_learning import run_figma_study_session, ensure_seed_patterns
-    from integrations.sonya_studio import run_studio_create_session
 
     ensure_seed_patterns()
+    if action == "create":
+        return await _sonya_agent_create_project(request)
+
     frontend = room.agents.get("frontend")
     if not frontend:
         raise HTTPException(status_code=404, detail="Соня не найдена")
 
-    project = None
-    if action == "create":
-        project = await run_studio_create_session(frontend)
-        if not project:
-            raise HTTPException(status_code=500, detail="Не удалось создать проект в Studio")
-        frontend.figma_creations = getattr(frontend, "figma_creations", 0) + 1
-        ok = True
-    else:
-        ok = await run_figma_study_session(frontend)
-        if ok:
-            frontend.figma_studies = getattr(frontend, "figma_studies", 0) + 1
+    ok = await run_figma_study_session(frontend)
+    if ok:
+        frontend.figma_studies = getattr(frontend, "figma_studies", 0) + 1
     await room.send_agents_state()
-    out = {"ok": ok, "action": action}
-    if project:
-        out["project"] = project
-    return out
+    return {"ok": ok, "action": action}
 
 
 # ─── Sonya Design Studio ───────────────────────────────────
 
-async def _sonya_agent_create_project():
+async def _sonya_agent_create_project(request: Request = None):
     from integrations.sonya_studio import run_studio_create_session
     from integrations.sonya_studio_notify import notify_studio
+    from room.subscriptions import can_access_view, access_denied_message
+
+    if request:
+        token = _get_session_token(request)
+        from room.user_auth import get_user_from_token
+        u = get_user_from_token(token)
+        if u and not can_access_view(u, "sonya-studio"):
+            raise HTTPException(status_code=403, detail=access_denied_message("sonya-studio", u))
+        if u:
+            _charge_or_forbid(u, "sonya_create")
 
     frontend = room.agents.get("frontend")
     if not frontend:
@@ -1093,14 +1094,14 @@ async def sonya_create_project(body: SonyaProjectCreate, request: Request):
 
 
 @app.post("/api/sonya/projects/create-new")
-async def sonya_create_new_by_agent():
-    return await _sonya_agent_create_project()
+async def sonya_create_new_by_agent(request: Request):
+    return await _sonya_agent_create_project(request)
 
 
 @app.post("/api/sonya/studio/create")
-async def sonya_studio_create_alias():
+async def sonya_studio_create_alias(request: Request):
     """Алиас — статический путь без {project_id}, чтобы не ловить 404."""
-    return await _sonya_agent_create_project()
+    return await _sonya_agent_create_project(request)
 
 
 @app.get("/api/sonya/projects/{project_id}")

@@ -110,9 +110,14 @@ def tier_level(tier_id: str) -> int:
 
 def effective_tier(user: dict) -> str:
     """Owner-роль всегда получает тариф owner."""
-    if user.get("role") == "owner":
+    if user.get("role") == "owner" or user.get("is_owner"):
         return "owner"
-    tier = (user.get("subscription_tier") or "free").lower()
+    if user.get("subscription_tier"):
+        tier = user.get("subscription_tier", "free").lower()
+    elif isinstance(user.get("subscription"), dict):
+        tier = (user["subscription"].get("tier") or "free").lower()
+    else:
+        tier = "free"
     if tier not in SUBSCRIPTION_PLANS:
         return "free"
     return tier
