@@ -87,8 +87,9 @@
         if (w < 200 || h < 150) {
             const headerH = document.querySelector('.header')?.offsetHeight || 104;
             const footerH = document.getElementById('statusFooter')?.offsetHeight || 28;
+            const pipelineH = document.getElementById('pipelineBar')?.offsetHeight || 0;
             w = Math.max(w, window.innerWidth);
-            h = Math.max(h, window.innerHeight - headerH - footerH - 8);
+            h = Math.max(h, window.innerHeight - headerH - footerH - pipelineH - 8);
         }
         return {
             width: Math.max(w, 320),
