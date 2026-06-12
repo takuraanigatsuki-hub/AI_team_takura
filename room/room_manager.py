@@ -8,7 +8,8 @@ from task_history import TaskHistory
 from room.pipeline_tracker import PipelineTracker
 
 LEARNING_TYPES = frozenset({
-    "learning", "learning_result", "reflection", "rest", "figma_study"
+    "learning", "learning_result", "reflection", "rest", "figma_study",
+    "peer_learning", "peer_discussion", "skill_evaluation",
 })
 
 WORK_TYPES = frozenset({
@@ -185,7 +186,9 @@ class RoomManager:
         })
 
     def has_pending_work(self) -> bool:
-        if self.task_history.get_active():
+        """Есть ли задачи в работе (не «ждут подтверждения» — тогда агенты могут учиться)."""
+        blocking = ("submitted", "queued", "in_progress", "triaging", "revision_requested")
+        if any(t.get("status") in blocking for t in self.task_history.tasks):
             return True
         for agent in self.agents.values():
             if not agent.task_queue.empty():

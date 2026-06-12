@@ -1074,10 +1074,17 @@ class BaseAgent:
                 ev = await evaluator.evaluate_output(
                     task_text, self.agent_id, self.name, response, context="task",
                 )
-                await self._broadcast_work(
-                    f"🎓 **Оценка ({ev.get('score', 7)}/10):** {ev.get('feedback', '')[:400]}",
-                    "skill_evaluation",
-                )
+                eval_msg = f"🎓 **Оценка ({ev.get('score', 7)}/10):** {ev.get('feedback', '')[:400]}"
+                await self._broadcast_work(eval_msg, "skill_evaluation")
+                if self.room_manager:
+                    await self.room_manager.broadcast_learning({
+                        "type": "skill_evaluation",
+                        "agent_id": evaluator.agent_id,
+                        "agent_name": evaluator.name,
+                        "agent_emoji": evaluator.emoji,
+                        "message": eval_msg,
+                        "timestamp": datetime.now().isoformat(),
+                    })
 
             await self._broadcast_work(
                 f"✅ Готово к проверке:\n{response[:800]}{'…' if len(response) > 800 else ''}\n\n"
@@ -1294,8 +1301,6 @@ class BaseAgent:
 
     async def _broadcast(self, message: str, msg_type: str = "message"):
         if msg_type in ("learning", "learning_result", "reflection", "rest"):
-            if msg_type in ("learning_result", "learning") and self.room_manager:
-                await self._broadcast_work(message, "peer_learning" if msg_type == "learning_result" else msg_type)
             await self._broadcast_learning(message, msg_type)
         else:
             await self._broadcast_work(message, msg_type)

@@ -4,7 +4,10 @@
 (function () {
     const THEME_KEY = 'ai-team-room-theme';
     const AGENT_ORDER = ['pm', 'architect', 'backend', 'frontend', 'qa', 'reviewer', 'doc_writer', 'devops', 'cursor'];
-    const LEARNING_TYPES = new Set(['learning', 'learning_result', 'reflection', 'rest', 'figma_study']);
+    const LEARNING_TYPES = new Set([
+        'learning', 'learning_result', 'reflection', 'rest', 'figma_study',
+        'peer_learning', 'peer_discussion', 'skill_evaluation',
+    ]);
 
     let ws = null;
     let msgType = 'task';
@@ -125,6 +128,9 @@
         if (view === 'kanban' && window.KanbanUI) KanbanUI.refresh();
         if (view === 'sprint' && window.SprintUI) SprintUI.load();
         if (view === 'timeline' && window.TimelineUI) TimelineUI.load(1);
+        if (isAgentLearning && agentLearningPanel === 'learning') {
+            loadLearningHistory();
+        }
         if (isAgentLearning && agentLearningPanel === 'design' && window.SonyaDesignLab) {
             SonyaDesignLab.load();
         }
@@ -511,10 +517,19 @@
                 break;
             case 'peer_learning':
             case 'peer_discussion':
-                addAgentMessage({ ...data, type: 'peer_learning', message: data.message || '' });
-                break;
             case 'skill_evaluation':
-                addAgentMessage({ ...data, type: 'skill_evaluation', message: data.message || '' });
+            case 'learning':
+            case 'learning_result':
+            case 'reflection':
+            case 'rest':
+            case 'figma_study':
+                if (canViewAgentLearning(window.Auth?.getUser())) {
+                    addLearningAgentMessage(data);
+                }
+                if (['peer_learning', 'peer_discussion', 'skill_evaluation'].includes(data.type)) {
+                    addAgentMessage({ ...data, message: data.message || '' });
+                }
+                if (data.type === 'figma_study' && window.SonyaDesignLab) SonyaDesignLab.loadLab();
                 break;
             case 'result_ready':
                 addResultReadyMessage(data);
@@ -760,7 +775,30 @@
             reflection: 'размышление',
             rest: 'отдых',
             figma_study: '🎨 дизайн',
+            peer_learning: 'практика',
+            peer_discussion: 'диалог',
+            skill_evaluation: '🎓 оценка',
         }[type] || 'обучение');
+    }
+
+    let learningHistoryLoaded = false;
+
+    async function loadLearningHistory() {
+        if (!canViewAgentLearning(window.Auth?.getUser())) return;
+        try {
+            const r = await fetch('/api/history');
+            if (!r.ok) return;
+            const data = await r.json();
+            const msgs = data.learning || [];
+            const container = document.getElementById('learningMessages');
+            if (!container) return;
+            if (!learningHistoryLoaded && msgs.length) {
+                container.innerHTML = '';
+                learningHistoryLoaded = true;
+                msgs.slice(-120).forEach((m) => addLearningAgentMessage(m));
+                scrollToBottom('learningMessages');
+            }
+        } catch (_) { /* ignore */ }
     }
 
     function addUserMessage(text, target) {

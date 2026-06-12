@@ -23,6 +23,17 @@ async def share_learning_to_work_chat(agent, material: dict, room_manager) -> No
         ),
         "timestamp": datetime.now().isoformat(),
     })
+    await room_manager.broadcast_learning({
+        "type": "learning_result",
+        "agent_id": agent.agent_id,
+        "agent_name": agent.name,
+        "agent_emoji": agent.emoji,
+        "message": (
+            f"💡 **{title}**\n{summary}\n\n"
+            f"_Применю в следующей задаче._"
+        ),
+        "timestamp": datetime.now().isoformat(),
+    })
 
 
 async def peer_discussion_round(room_manager, agents: dict) -> None:
@@ -53,6 +64,17 @@ async def peer_discussion_round(room_manager, agents: dict) -> None:
         ],
         "timestamp": datetime.now().isoformat(),
     })
+    await room_manager.broadcast_learning({
+        "type": "peer_discussion",
+        "agent_id": a1.agent_id,
+        "agent_name": a1.name,
+        "agent_emoji": a1.emoji,
+        "message": (
+            f"💬 **Обмен с {a2.name}**\n"
+            f"«{t1.get('title', t1.get('topic'))}» + «{t2.get('title', t2.get('topic'))}»"
+        ),
+        "timestamp": datetime.now().isoformat(),
+    })
 
     evaluator = agents.get("evaluator")
     if evaluator and hasattr(evaluator, "evaluate_output"):
@@ -71,5 +93,13 @@ async def peer_discussion_round(room_manager, agents: dict) -> None:
             "target_agent": a1.agent_id,
             "score": result.get("score", 7),
             "message": f"🎓 **Оценка навыков** ({result.get('score', 7)}/10)\n{result.get('feedback', '')}",
+            "timestamp": datetime.now().isoformat(),
+        })
+        await room_manager.broadcast_learning({
+            "type": "skill_evaluation",
+            "agent_id": "evaluator",
+            "agent_name": evaluator.name,
+            "agent_emoji": evaluator.emoji,
+            "message": f"🎓 **Оценка ({result.get('score', 7)}/10):** {result.get('feedback', '')[:400]}",
             "timestamp": datetime.now().isoformat(),
         })
