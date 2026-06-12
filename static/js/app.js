@@ -1150,6 +1150,27 @@
         } catch (_) {}
     };
 
+    window.addTaskComment = async function (taskId) {
+        const input = document.getElementById('task-comment-input-' + taskId);
+        const text = input?.value?.trim();
+        if (!text) return;
+        try {
+            const r = await fetch('/api/tasks/' + taskId + '/comments', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text }),
+            });
+            if (r.ok) {
+                if (input) input.value = '';
+                loadTasks();
+            } else {
+                const d = await r.json().catch(() => ({}));
+                if (window.UIEnhancements) UIEnhancements.toast(d.detail || 'Нужен вход', 'warn');
+            }
+        } catch (_) {}
+    };
+
     window.cancelAllTasks = async function () {
         if (!confirm('Отменить все активные задачи и очистить очереди агентов?')) return;
         try {
@@ -1241,6 +1262,16 @@
                         <button type="button" class="task-act-btn" onclick="rerunTaskByIndex(${taskHistory.indexOf(t)})" title="Повторить">↻</button>
                     </div>
                     ${approvalBtns}
+                    <div class="task-comments" id="task-comments-${escapeHtml(t.id)}">
+                        ${(t.comments || []).map((c) =>
+                            `<div class="task-comment"><strong>${escapeHtml(c.user_name)}</strong>: ${escapeHtml(c.text)} <small>${formatTime(c.created_at)}</small></div>`
+                        ).join('')}
+                    </div>
+                    <div class="task-comment-form">
+                        <input type="text" class="design-input task-comment-input" placeholder="Комментарий…" id="task-comment-input-${escapeHtml(t.id)}"
+                            onkeydown="if(event.key==='Enter')addTaskComment('${escapeHtml(t.id)}')">
+                        <button type="button" class="btn-secondary btn-xs" onclick="addTaskComment('${escapeHtml(t.id)}')">💬</button>
+                    </div>
                 </article>`;
         }).join('');
     }

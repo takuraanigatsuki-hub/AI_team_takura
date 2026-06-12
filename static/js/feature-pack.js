@@ -420,6 +420,27 @@
         }
     }
 
+    async function syncServerNotifications() {
+        try {
+            const r = await fetch('/api/notifications', { credentials: 'same-origin' });
+            if (!r.ok) return;
+            const d = await r.json();
+            (d.items || []).forEach((n) => {
+                if (!notifications.find((x) => x.serverId === n.id)) {
+                    notifications.unshift({
+                        serverId: n.id,
+                        title: n.title,
+                        body: n.body,
+                        time: n.created_at ? new Date(n.created_at).toLocaleString('ru') : '',
+                        unread: !n.read,
+                    });
+                    if (!n.read) unreadCount++;
+                }
+            });
+            updateNotifyBadge();
+        } catch (_) {}
+    }
+
     function init() {
         setupChrome();
         applyPrefs();
@@ -428,6 +449,8 @@
         bindKeyboard();
         hookViewSwitch();
         updateFabVisibility('studio');
+        syncServerNotifications();
+        setInterval(syncServerNotifications, 45000);
         setInterval(() => updateFooterMeta({ total: 1, completed: dailyGoal._last }), 60000);
     }
 

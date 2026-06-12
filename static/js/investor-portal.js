@@ -33,6 +33,7 @@
             <header class="investor-hero">
                 <h2>💼 Investor Portal</h2>
                 <p class="muted">Live metrics · AI team performance · read-only</p>
+                <button type="button" class="btn-secondary btn-sm hidden" id="investorDigestBtn" onclick="InvestorPortal.sendDigest()">📧 Send digest</button>
             </header>
             <div class="ucard-grid">${[
                 kpi(m.tasks_completed, 'Задач выполнено'),
@@ -62,4 +63,15 @@
     }
 
     global.InvestorPortal = { load, render };
+
+    async function sendDigest() {
+        try {
+            const r = await fetch('/api/investor/digest', { method: 'POST', credentials: 'same-origin' });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            if (global.UIEnhancements) UIEnhancements.toast('Digest отправлен в уведомления', 'success');
+        } catch (e) {
+            if (global.UIEnhancements) UIEnhancements.toast(e.message, 'error');
+        }
+    }
+    global.InvestorPortal.sendDigest = sendDigest;
 })(window);

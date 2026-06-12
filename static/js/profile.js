@@ -369,7 +369,7 @@
                     <p class="sub-plan-price">${p.price_rub ? `${p.price_rub} ₽/мес` : 'Бесплатно'}</p>
                     <p class="muted">+${p.monthly_credits} кр./мес</p>
                     ${isCurrent ? '<span class="ss-badge">текущий</span>' : ''}
-                    ${canUpgrade ? `<button type="button" class="btn-primary btn-sm" onclick="ProfileCabinet.upgrade('${p.id}')">Выбрать</button>` : ''}
+                    ${canUpgrade ? `<button type="button" class="btn-primary btn-sm" onclick="ProfileCabinet.upgrade('${p.id}')">${p.price_rub ? '💳 Оплатить' : 'Выбрать'}</button>` : ''}
                 </article>`;
             }).join('');
 
@@ -506,6 +506,31 @@
     }
 
     async function upgrade(tier) {
+        try {
+            const flagsR = await fetch('/api/feature-flags');
+            const flagsD = flagsR.ok ? await flagsR.json() : {};
+            const stripeR = await fetch('/api/billing/stripe/status');
+            const stripeD = stripeR.ok ? await stripeR.json() : {};
+            if (flagsD.flags?.stripe_billing && stripeD.configured) {
+                if (!confirm(`Оплатить тариф «${tier}» через Stripe?`)) return;
+                const r = await fetch('/api/billing/stripe/checkout', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tier,
+                        success_url: location.origin + '/app?view=profile',
+                        cancel_url: location.origin + '/app?view=profile',
+                    }),
+                });
+                const d = await r.json();
+                if (!r.ok) throw new Error(d.detail || 'Stripe error');
+                if (d.url) { location.href = d.url; return; }
+            }
+        } catch (e) {
+            if (window.UIEnhancements) UIEnhancements.toast(e.message, 'error');
+            return;
+        }
         if (!confirm(`Перейти на тариф «${tier}»? (демо без оплаты)`)) return;
         try {
             const r = await fetch('/api/subscription/upgrade', {

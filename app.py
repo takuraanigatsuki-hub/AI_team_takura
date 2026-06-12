@@ -941,9 +941,9 @@ class TaskRequest(BaseModel):
 
 
 @app.post("/api/task")
-async def assign_task(req: Request, request: TaskRequest):
+async def assign_task(http_request: Request, body: TaskRequest):
     """Назначить задачу через REST API"""
-    user = _optional_user(req)
+    user = _optional_user(http_request)
     if user:
         from room.task_limits import check_and_record
         ok, msg = check_and_record(user)
@@ -952,10 +952,10 @@ async def assign_task(req: Request, request: TaskRequest):
         _charge_or_forbid(user, "task")
     await room.handle_user_message({
         "type": "task",
-        "text": request.text,
-        "target": request.target
+        "text": body.text,
+        "target": body.target
     }, user=user)
-    return {"status": "ok", "message": f"Задача назначена: {request.text}"}
+    return {"status": "ok", "message": f"Задача назначена: {body.text}"}
 
 
 @app.get("/api/agents/{agent_id}/direct-chat")
@@ -2532,7 +2532,11 @@ async def create_workspace(body: WorkspaceCreate, request: Request):
 @app.get("/api/feature-flags")
 async def get_feature_flags():
     from room.feature_flags import get_flags
-    return {"flags": get_flags()}
+    from integrations.stripe_billing import is_configured
+    flags = get_flags()
+    if is_configured():
+        flags["stripe_billing"] = True
+    return {"flags": flags}
 
 
 class FlagUpdate(BaseModel):

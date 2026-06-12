@@ -15,6 +15,7 @@
             applyUserTheme(currentUser);
             if (window.AdminPanel) AdminPanel.updateNavVisibility(currentUser);
             updateNavVisibility(currentUser);
+            if (window.Workspaces) Workspaces.load();
             return currentUser;
         } catch (_) {
             currentUser = null;

@@ -177,7 +177,45 @@ body.sidebar-collapsed .app-content-wrap { margin-left: var(--sidebar-collapsed-
 
 .role-badge.role-investor { background: rgba(212,175,55,.2); color: #d4af37; }
 
-@media (max-width: 900px) {
+/* Dashboard widgets drag */
+.dash-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.dash-widget-grid { display: flex; flex-direction: column; gap: 12px; }
+.dash-widget {
+    background: var(--surface-2, #16161f);
+    border: 1px solid var(--border, rgba(255,255,255,.08));
+    border-radius: 14px;
+    overflow: hidden;
+    transition: opacity .15s;
+}
+.dash-widget.dragging { opacity: .5; }
+.dash-widget-handle {
+    padding: 8px 14px;
+    background: rgba(108,99,255,.08);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: grab;
+    user-select: none;
+}
+.dash-widget-body { padding: 14px 16px; }
+
+/* Task comments */
+.task-comments { margin-top: 10px; font-size: 13px; }
+.task-comment { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
+.task-comment-form { display: flex; gap: 8px; margin-top: 8px; }
+.task-comment-input { flex: 1; font-size: 13px; padding: 6px 10px; }
+
+/* Workspace switcher */
+.ws-select {
+    padding: 4px 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: inherit;
+    font-size: 12px;
+    max-width: 140px;
+}
+#workspaceSwitcher { display: inline-flex; align-items: center; gap: 4px; }
+
     .app-sidebar { transform: translateX(-100%); }
     body.sidebar-open .app-sidebar { transform: translateX(0); }
     .app-content-wrap { margin-left: 0 !important; }
