@@ -24,11 +24,14 @@ def _save(tokens: list) -> None:
         json.dump(tokens[-20:], f, ensure_ascii=False, indent=2)
 
 
-def create_token(hours: int = 72, label: str = "client") -> dict:
+def create_token(hours: int = 72, label: str = "client", scope: str = "view", nda_required: bool = False) -> dict:
     token = secrets.token_urlsafe(24)
     entry = {
         "token": token,
         "label": label,
+        "scope": scope,
+        "nda_required": bool(nda_required),
+        "nda_accepted": False,
         "created_at": datetime.now().isoformat(),
         "expires_at": (datetime.now() + timedelta(hours=hours)).isoformat(),
     }
@@ -38,14 +41,31 @@ def create_token(hours: int = 72, label: str = "client") -> dict:
     return entry
 
 
-def validate_token(token: str) -> bool:
+def validate_token(token: str, accept_nda: bool = False) -> dict | None:
     if not token:
-        return False
+        return None
     now = datetime.now()
     for t in _load():
         if t.get("token") == token:
             try:
-                return now < datetime.fromisoformat(t["expires_at"])
+                if now >= datetime.fromisoformat(t["expires_at"]):
+                    return None
             except Exception:
-                return True
-    return False
+                pass
+            if t.get("nda_required") and not t.get("nda_accepted") and not accept_nda:
+                return {"valid": False, "nda_required": True, "label": t.get("label", "")}
+            if accept_nda and t.get("nda_required"):
+                t["nda_accepted"] = True
+                tokens = _load()
+                for i, x in enumerate(tokens):
+                    if x.get("token") == token:
+                        tokens[i] = t
+                        break
+                _save(tokens)
+            return {"valid": True, "scope": t.get("scope", "view"), "label": t.get("label", "")}
+    return None
+
+
+def validate_token_simple(token: str) -> bool:
+    r = validate_token(token)
+    return bool(r and r.get("valid"))

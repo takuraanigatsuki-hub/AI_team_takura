@@ -164,3 +164,24 @@ class LearningProjects:
             "evaluations": self.evaluations[:60],
             "projects": self.projects[:80],
         }
+
+    def get_skill_matrix(self) -> dict:
+        """Radar chart data — средние оценки по агентам."""
+        scores: dict[str, list] = {}
+        for ev in self.evaluations:
+            aid = ev.get("agent_id", "unknown")
+            scores.setdefault(aid, []).append(ev.get("score", 0))
+        matrix = []
+        for aid, vals in scores.items():
+            emoji, name = AGENT_META.get(aid, ("🤖", aid))
+            avg = round(sum(vals) / len(vals), 1) if vals else 0
+            matrix.append({
+                "agent_id": aid,
+                "name": name,
+                "emoji": emoji,
+                "average": avg,
+                "count": len(vals),
+                "latest": vals[0] if vals else 0,
+            })
+        matrix.sort(key=lambda x: -x["average"])
+        return {"agents": matrix, "total_evaluations": len(self.evaluations)}

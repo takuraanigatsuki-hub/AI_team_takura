@@ -51,6 +51,10 @@ ROLE_PRIVILEGES = {
         "view_link",
         "all_views",
     ],
+    "investor": [
+        "view_investor_portal",
+        "view_link",
+    ],
     "member": [],
 }
 
@@ -59,6 +63,7 @@ ROLE_LABELS = {
     "admin": "Админ",
     "tech_admin": "Тех. админ",
     "support": "Поддержка",
+    "investor": "Инвестор",
     "member": "Пользователь",
 }
 
@@ -185,6 +190,8 @@ def _public_user(user: dict) -> dict:
         "is_tech_admin": role == "tech_admin",
         "is_support": role == "support",
         "can_view_agent_learning": can_view_agent_learning(user),
+        "can_view_investor_portal": can_view_investor_portal(user),
+        "is_investor": role == "investor",
         "setup_complete": bool(user.get("setup_complete")),
         "default_view": user.get("default_view", "dashboard"),
         "theme": user.get("theme", "dark"),
@@ -253,6 +260,15 @@ def can_view_agent_learning(user: dict | None) -> bool:
     if role in ("owner", "admin", "tech_admin"):
         return True
     return has_privilege(user, "view_agent_learning")
+
+
+def can_view_investor_portal(user: dict | None) -> bool:
+    if not user:
+        return False
+    role = user.get("role", "member")
+    if role in ("owner", "admin", "tech_admin", "investor"):
+        return True
+    return has_privilege(user, "view_investor_portal")
 
 
 def register(email: str, password: str, name: str = "") -> tuple[dict, str]:

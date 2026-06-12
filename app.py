@@ -12,7 +12,7 @@ from agents import (
     ArchitectAgent, BackendDevAgent, FrontendDevAgent,
     QATesterAgent, CodeReviewerAgent, DocWriterAgent,
     DevOpsAgent, PMOrchestratorAgent, CursorAgent,
-    PresenterAgent, Modeler3DAgent, EvaluatorAgent,
+    PresenterAgent, Modeler3DAgent, EvaluatorAgent, SecurityAgent,
 )
 
 # Глобальный менеджер комнаты
@@ -36,6 +36,7 @@ async def lifespan(app: FastAPI):
         PresenterAgent(room),
         Modeler3DAgent(room),
         EvaluatorAgent(room),
+        SecurityAgent(room),
     ]
 
     # Регистрируем всех агентов
@@ -131,6 +132,9 @@ async def lifespan(app: FastAPI):
     from integrations.telegram_bot import start_bot
     await start_bot(room)
 
+    from room.security_monitor import get_monitor
+    security_task = asyncio.create_task(_security_monitor_loop(room))
+
     yield  # Приложение работает
 
     from integrations.telegram_bot import stop_bot
@@ -140,6 +144,7 @@ async def lifespan(app: FastAPI):
     state_task.cancel()
     github_poll_task.cancel()
     git_sync_task.cancel()
+    security_task.cancel()
     if figma_studio_task:
         figma_studio_task.cancel()
     try:
@@ -160,8 +165,8 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-from middleware.auth_rate import AuthRateMiddleware
-app.add_middleware(AuthRateMiddleware)
+from middleware.security import SecurityMiddleware
+app.add_middleware(SecurityMiddleware)
 
 # Подключаем статику
 static_dir = os.path.join(os.path.dirname(__file__), "static")
@@ -205,6 +210,36 @@ async def app_spa():
 async def cabinet_page():
     """Личный кабинет — редирект в приложение."""
     return RedirectResponse("/app?view=profile")
+
+
+@app.get("/investor", response_class=HTMLResponse)
+async def investor_portal_page():
+    """Investor Portal — read-only метрики и pitch."""
+    html_file = os.path.join(static_dir, "investor.html")
+    if os.path.exists(html_file):
+        with open(html_file, "r", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    return RedirectResponse("/app?view=investor")
+
+
+async def _security_monitor_loop(room_mgr: RoomManager):
+    """Фоновая обработка событий безопасности агентом Олег."""
+    from room.security_monitor import get_monitor
+    from room.feature_flags import is_enabled
+    while True:
+        try:
+            await asyncio.sleep(5)
+            if not is_enabled("security_agent"):
+                continue
+            agent = room_mgr.agents.get("security")
+            if not agent:
+                continue
+            for event in get_monitor().pop_pending(3):
+                await agent.handle_security_event(event)
+        except asyncio.CancelledError:
+            break
+        except Exception:
+            await asyncio.sleep(10)
 
 
 # ─── Auth API ───────────────────────────────────────────────
@@ -287,6 +322,12 @@ def _current_user(request: Request):
     if not user:
         raise HTTPException(status_code=401, detail="Не авторизован")
     return user
+
+
+def _optional_user(request: Request):
+    from room.user_auth import get_user_from_token
+    token = _get_session_token(request)
+    return get_user_from_token(token) if token else None
 
 
 def _require_feature(user: dict, feature: str):
@@ -2173,10 +2214,25 @@ async def backup_download():
 
 
 @app.post("/api/view-token")
-async def create_view_token(hours: int = 72, label: str = "client"):
+async def create_view_token(request: Request, hours: int = 72, label: str = "client", nda: bool = False):
+    user = _optional_user(request)
+    if user:
+        from room.user_auth import has_privilege
+        if not has_privilege(user, "view_link") and user.get("role") not in ("owner", "admin", "tech_admin"):
+            raise HTTPException(status_code=403, detail="View-link недоступен на вашем тарифе")
     from room.view_tokens import create_token
-    t = create_token(hours=hours, label=label)
-    return {"ok": True, "url": f"/?view={t['token']}", **t}
+    scope = "investor" if nda else "view"
+    t = create_token(hours=hours, label=label, scope=scope, nda_required=nda)
+    return {"ok": True, "url": f"/investor?view={t['token']}", **t}
+
+
+@app.get("/api/view-token/validate")
+async def validate_view_token(token: str = "", accept_nda: bool = False):
+    from room.view_tokens import validate_token
+    result = validate_token(token, accept_nda=accept_nda)
+    if not result:
+        raise HTTPException(status_code=404, detail="Invalid or expired token")
+    return result
 
 
 class TaskPriorityUpdate(BaseModel):
@@ -2256,7 +2312,10 @@ class LearningSubmitBody(BaseModel):
 
 
 @app.post("/api/learning/submit")
-async def submit_learning_exercise(body: LearningSubmitBody):
+async def submit_learning_exercise(body: LearningSubmitBody, request: Request):
+    user = _optional_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
     text = (body.description or body.title or "").strip()
     if not text:
         raise HTTPException(status_code=400, detail="Text required")
@@ -2268,6 +2327,157 @@ async def submit_learning_exercise(body: LearningSubmitBody):
         "msg_type": "learning",
     })
     return {"ok": True, "dashboard": room._learning_store().get_dashboard()}
+
+
+# ─── Investor Portal ─────────────────────────────────────────
+
+@app.get("/api/investor/dashboard")
+async def investor_dashboard():
+    stats = room.task_history.stats()
+    learning = room._learning_store().get_dashboard()
+    from room.security_monitor import get_monitor
+    sec = get_monitor().dashboard()
+    agents_state = [a.get_state() for a in room.agents.values()]
+    return {
+        "metrics": {
+            "tasks_total": stats.get("total", 0),
+            "tasks_completed": stats.get("completed", 0),
+            "tasks_active": stats.get("active", 0),
+            "agents_count": len(agents_state),
+            "agents_active": sum(1 for a in agents_state if a.get("status") == "working"),
+            "evaluations": learning.get("stats", {}).get("evaluations_count", 0),
+            "average_score": learning.get("stats", {}).get("average_score", 0),
+            "security_events_24h": sec.get("stats", {}).get("total_events", 0),
+        },
+        "agents": [{"id": a.get("agent_id"), "name": a.get("name"), "emoji": a.get("emoji"), "status": a.get("status")} for a in agents_state],
+        "recent_tasks": room.task_history.get_all()[:15],
+        "evaluations": learning.get("evaluations", [])[:10],
+        "skill_matrix": room._learning_store().get_skill_matrix(),
+    }
+
+
+# ─── Security & Audit ────────────────────────────────────────
+
+@app.get("/api/security/dashboard")
+async def security_dashboard(request: Request):
+    _current_user(request)
+    from room.user_auth import can_access_admin
+    user = _optional_user(request)
+    if not can_access_admin(user):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    from room.security_monitor import get_monitor
+    from room import audit_log
+    return {
+        **get_monitor().dashboard(),
+        "audit_stats": audit_log.stats(),
+        "audit_recent": audit_log.get_recent(50),
+    }
+
+
+@app.get("/api/audit/log")
+async def audit_log_api(request: Request, limit: int = 100, severity: str = ""):
+    from room.user_auth import can_access_admin
+    user = _current_user(request)
+    if not can_access_admin(user):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    from room import audit_log
+    return {"entries": audit_log.get_recent(limit, severity), "stats": audit_log.stats()}
+
+
+@app.post("/api/security/unblock/{ip}")
+async def security_unblock_ip(ip: str, request: Request):
+    from room.user_auth import can_access_admin
+    user = _current_user(request)
+    if not can_access_admin(user):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    from room.security_monitor import get_monitor
+    monitor = get_monitor()
+    if ip in monitor._blocks:
+        del monitor._blocks[ip]
+        monitor._save_blocks()
+    from room import audit_log
+    audit_log.log_event("ip_unblocked", user_id=user["id"], ip=ip, severity="info")
+    return {"ok": True}
+
+
+# ─── Task Templates & Workspaces ─────────────────────────────
+
+@app.get("/api/task-templates")
+async def list_task_templates(category: str = ""):
+    from room.task_templates import list_templates
+    return {"templates": list_templates(category)}
+
+
+@app.post("/api/task-templates/{template_id}/apply")
+async def apply_task_template(template_id: str, request: Request):
+    user = _current_user(request)
+    from room.task_templates import get_template
+    tpl = get_template(template_id)
+    if not tpl:
+        raise HTTPException(status_code=404, detail="Template not found")
+    _charge_or_forbid(user, "task")
+    text = tpl["description"]
+    if tpl.get("learning"):
+        await room._handle_learning_command({
+            "cmd": "collab" if "collab" in template_id else "learn",
+            "text": text,
+            "collaborative": "collab" in template_id,
+            "learning_mode": True,
+            "msg_type": "learning",
+        })
+    else:
+        await room.handle_user_message({"type": "task", "text": text, "target": "all"})
+    from room import audit_log
+    audit_log.log_event("template_applied", user_id=user["id"], detail=template_id)
+    return {"ok": True, "template": tpl}
+
+
+@app.get("/api/workspaces")
+async def list_workspaces(request: Request):
+    user = _current_user(request)
+    from room.workspaces import list_for_user
+    return {"workspaces": list_for_user(user["id"])}
+
+
+class WorkspaceCreate(BaseModel):
+    name: str = ""
+    description: str = ""
+
+
+@app.post("/api/workspaces")
+async def create_workspace(body: WorkspaceCreate, request: Request):
+    user = _current_user(request)
+    from room.workspaces import create
+    ws = create(body.name, user["id"], body.description)
+    return {"ok": True, "workspace": ws}
+
+
+# ─── Feature Flags ───────────────────────────────────────────
+
+@app.get("/api/feature-flags")
+async def get_feature_flags():
+    from room.feature_flags import get_flags
+    return {"flags": get_flags()}
+
+
+class FlagUpdate(BaseModel):
+    name: str
+    value: bool
+
+
+@app.post("/api/admin/feature-flags")
+async def update_feature_flag(body: FlagUpdate, request: Request):
+    user = _current_user(request)
+    from room.user_auth import has_privilege
+    if not has_privilege(user, "manage_settings") and user.get("role") != "owner":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    from room.feature_flags import set_flag
+    return {"flags": set_flag(body.name, body.value, user)}
+
+
+@app.get("/api/learning/skill-matrix")
+async def learning_skill_matrix():
+    return room._learning_store().get_skill_matrix()
 
 
 @app.post("/api/deploy")

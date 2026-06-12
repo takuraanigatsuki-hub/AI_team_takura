@@ -10,6 +10,7 @@ from agents.cursor_agent import CursorAgent
 from agents.presenter_agent import PresenterAgent
 from agents.modeler_3d_agent import Modeler3DAgent
 from agents.evaluator_agent import EvaluatorAgent
+from agents.security_agent import SecurityAgent
 
 __all__ = [
     "ArchitectAgent",
@@ -24,4 +25,5 @@ __all__ = [
     "PresenterAgent",
     "Modeler3DAgent",
     "EvaluatorAgent",
+    "SecurityAgent",
 ]
