@@ -1,5 +1,5 @@
 /**
- * 3D Studio — офис, комната отдыха, библиотека
+ * 3D Studio — компактный open-plan офис (~14×10 м)
  * Совместимость: Three.js r128+
  */
 (function (global) {
@@ -127,7 +127,7 @@
         });
         dom.addEventListener('wheel', (e) => {
             e.preventDefault();
-            radius = Math.max(6, Math.min(38, radius + e.deltaY * 0.02));
+            radius = Math.max(4, Math.min(16, radius + e.deltaY * 0.02));
             syncCamera();
         }, { passive: false });
 
@@ -180,8 +180,8 @@
         group.add(head);
 
         const halo = new THREE.Mesh(
-            new THREE.TorusGeometry(0.11, 0.022, 8, 22),
-            new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.4, roughness: 0.3 })
+            new THREE.TorusGeometry(0.1, 0.018, 8, 22),
+            new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.15, roughness: 0.4 })
         );
         halo.rotation.x = Math.PI / 2;
         halo.position.y = 1.02;
@@ -336,130 +336,170 @@
     }
 
     function buildRoom() {
-        const floorMat = new THREE.MeshStandardMaterial({
-            color: 0x2a2e38,
-            roughness: 0.55,
-            metalness: 0.08,
-        });
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(36, 28), floorMat);
-        floor.rotation.x = -Math.PI / 2;
-        floor.receiveShadow = true;
-        scene.add(floor);
+        addCarpetFloor();
+        addZoneFloor(0, -1.5, 8.2, 4.2, 0x343842, null);
+        addZoneFloor(5.2, 3.4, 3.2, 2.4, 0x323840, null);
+        addZoneFloor(-4.5, 3.4, 3.2, 2.8, 0x343840, null);
 
-        addWoodPlanks(-2, -2, 16, 10, 0x3d3548);
-        addWoodPlanks(11, 7.5, 8, 8, 0x2a3832);
-        addWoodPlanks(-10, 9, 6, 10, 0x38342e);
-
-        addZoneFloor(-2, -2, 16, 10, 0x3a3548, 0x9d4edd);
-        addZoneFloor(11, 7.5, 8, 8, 0x2d4038, 0x5ecf8a);
-        addZoneFloor(-10, 9, 6, 10, 0x3a3540, 0xe8b84a);
-
-        addZoneSign('СТУДИЯ', -2, -7.2, 0x9d4edd);
-        addZoneSign('ОТДЫХ', 11, 3.2, 0x5ecf8a);
-        addZoneSign('БИБЛИОТЕКА', -10, 3.5, 0xe8b84a);
+        addZoneSign('РАБОЧАЯ ЗОНА', 0, -4.35, 0x8899aa);
+        addZoneSign('ЛАУНЖ', 5.2, 1.55, 0x7a9888);
+        addZoneSign('БИБЛИОТЕКА', -4.5, 1.55, 0x988878);
 
         buildCeiling();
         buildWindows();
         buildOfficeDecor();
+        buildPartitions();
         buildWalls();
         addAmbientParticles();
     }
 
-    function addWoodPlanks(cx, cz, w, d, baseColor) {
-        const plankMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.65, metalness: 0.05 });
-        const rows = Math.floor(d / 0.8);
-        for (let i = 0; i < rows; i++) {
-            const plank = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.96, 0.35), plankMat.clone());
-            plank.material.color.offsetHSL(0, 0, (i % 2) * 0.03 - 0.015);
-            plank.rotation.x = -Math.PI / 2;
-            plank.position.set(cx, 0.015 + (i % 2) * 0.002, cz - d / 2 + 0.4 + i * 0.8);
-            scene.add(plank);
+    function addCarpetFloor() {
+        const baseMat = new THREE.MeshStandardMaterial({
+            color: 0x3a3e48,
+            roughness: 0.92,
+            metalness: 0.02,
+        });
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM.w, ROOM.d), baseMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        const tileMat = new THREE.MeshStandardMaterial({ color: 0x404550, roughness: 0.9 });
+        for (let ix = -3; ix <= 3; ix++) {
+            for (let iz = -2; iz <= 2; iz++) {
+                if ((ix + iz) % 2 !== 0) continue;
+                const tile = new THREE.Mesh(new THREE.PlaneGeometry(1.85, 1.85), tileMat);
+                tile.rotation.x = -Math.PI / 2;
+                tile.position.set(ix * 1.9, 0.008, iz * 1.9 - 0.3);
+                tile.receiveShadow = true;
+                scene.add(tile);
+            }
         }
     }
 
     function buildCeiling() {
-        const ceilMat = new THREE.MeshStandardMaterial({ color: 0x1e222c, roughness: 0.9 });
-        const ceil = new THREE.Mesh(new THREE.PlaneGeometry(35, 27), ceilMat);
+        const ceilMat = new THREE.MeshStandardMaterial({ color: 0x2a2e36, roughness: 0.95 });
+        const ceil = new THREE.Mesh(new THREE.PlaneGeometry(ROOM.w - 0.2, ROOM.d - 0.2), ceilMat);
         ceil.rotation.x = Math.PI / 2;
-        ceil.position.y = 3.2;
+        ceil.position.y = ROOM.h;
         scene.add(ceil);
 
-        [[-2, -2], [11, 7], [-10, 9], [0, 0]].forEach(([x, z], i) => {
-            const lightPanel = new THREE.Mesh(
-                new THREE.BoxGeometry(1.8, 0.04, 0.9),
+        const lightPositions = [
+            [-2.5, -2], [0.5, -2], [3, -2],
+            [-2.5, 0.5], [0.5, 0.5], [3, 0.5],
+            [-4, 3.2], [5, 3.2],
+        ];
+        lightPositions.forEach(([x, z]) => {
+            const housing = new THREE.Mesh(
+                new THREE.BoxGeometry(0.55, 0.03, 0.55),
+                new THREE.MeshStandardMaterial({ color: 0x1e2228, roughness: 0.5, metalness: 0.2 })
+            );
+            housing.position.set(x, ROOM.h - 0.04, z);
+            scene.add(housing);
+
+            const panel = new THREE.Mesh(
+                new THREE.PlaneGeometry(0.42, 0.42),
                 new THREE.MeshStandardMaterial({
-                    color: 0xffffff,
-                    emissive: i === 0 ? 0xc77dff : 0xfff4e0,
-                    emissiveIntensity: 0.85,
-                    roughness: 0.2,
+                    color: 0xfff8f0,
+                    emissive: 0xfff0d8,
+                    emissiveIntensity: 0.55,
+                    roughness: 0.35,
                 })
             );
-            lightPanel.position.set(x, 3.15, z);
-            scene.add(lightPanel);
+            panel.rotation.x = Math.PI / 2;
+            panel.position.set(x, ROOM.h - 0.05, z);
+            scene.add(panel);
+
+            const spot = new THREE.PointLight(0xfff4e8, 0.22, 5.5);
+            spot.position.set(x, ROOM.h - 0.15, z);
+            scene.add(spot);
         });
     }
 
     function buildWindows() {
         const glassMat = new THREE.MeshStandardMaterial({
-            color: 0x88bbff,
+            color: 0xa8c8e8,
             transparent: true,
-            opacity: 0.35,
-            roughness: 0.05,
-            metalness: 0.1,
-            emissive: 0x224466,
-            emissiveIntensity: 0.25,
+            opacity: 0.42,
+            roughness: 0.04,
+            metalness: 0.15,
+            emissive: 0x446688,
+            emissiveIntensity: 0.18,
             side: THREE.DoubleSide,
         });
-        for (let i = 0; i < 5; i++) {
-            const pane = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 2.2), glassMat);
-            pane.position.set(-7 + i * 3.5, 1.6, -13.92);
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x3a4048, roughness: 0.35, metalness: 0.55 });
+        for (let i = 0; i < 4; i++) {
+            const x = -4.5 + i * 3;
+            const pane = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.85), glassMat);
+            pane.position.set(x, 1.35, -ROOM.hd + 0.02);
             scene.add(pane);
-            const frame = new THREE.Mesh(
-                new THREE.BoxGeometry(2.9, 2.3, 0.08),
-                new THREE.MeshStandardMaterial({ color: 0x1a1e28, roughness: 0.4, metalness: 0.5 })
-            );
-            frame.position.set(-7 + i * 3.5, 1.6, -13.88);
+            const frame = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.95, 0.06), frameMat);
+            frame.position.set(x, 1.35, -ROOM.hd + 0.05);
             scene.add(frame);
         }
-        const cityGlow = new THREE.Mesh(
-            new THREE.PlaneGeometry(34, 8),
-            new THREE.MeshBasicMaterial({
-                color: 0x4488cc,
-                transparent: true,
-                opacity: 0.12,
-                blending: THREE.AdditiveBlending,
-            })
+        const sill = new THREE.Mesh(
+            new THREE.BoxGeometry(ROOM.w - 0.4, 0.08, 0.18),
+            new THREE.MeshStandardMaterial({ color: 0x454a54, roughness: 0.45 })
         );
-        cityGlow.position.set(0, 2, -13.5);
-        scene.add(cityGlow);
+        sill.position.set(0, 0.42, -ROOM.hd + 0.12);
+        scene.add(sill);
     }
 
     function buildOfficeDecor() {
         const board = addProp(new THREE.Mesh(
-            new THREE.BoxGeometry(3.5, 1.4, 0.06),
-            new THREE.MeshStandardMaterial({ color: 0xf5f5f0, roughness: 0.85 })
+            new THREE.BoxGeometry(2.4, 1.1, 0.04),
+            new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: 0.88 })
         ), false, true);
-        board.position.set(-2, 1.5, -6.8);
+        board.position.set(0, 1.45, -ROOM.hd + 0.22);
         const boardFrame = new THREE.Mesh(
-            new THREE.BoxGeometry(3.7, 1.55, 0.04),
-            new THREE.MeshStandardMaterial({ color: 0x2a2e38, metalness: 0.3 })
+            new THREE.BoxGeometry(2.55, 1.22, 0.03),
+            new THREE.MeshStandardMaterial({ color: 0x3a4048, metalness: 0.25, roughness: 0.5 })
         );
-        boardFrame.position.set(-2, 1.5, -6.75);
+        boardFrame.position.set(0, 1.45, -ROOM.hd + 0.18);
         scene.add(boardFrame);
+
+        const credenza = new THREE.Mesh(
+            new THREE.BoxGeometry(1.8, 0.75, 0.45),
+            new THREE.MeshStandardMaterial({ color: 0x4a4038, roughness: 0.55 })
+        );
+        credenza.position.set(-5.8, 0.375, -3.8);
+        credenza.castShadow = true;
+        credenza.receiveShadow = true;
+        scene.add(credenza);
+    }
+
+    function buildPartitions() {
+        const glassMat = new THREE.MeshStandardMaterial({
+            color: 0x8899aa,
+            transparent: true,
+            opacity: 0.12,
+            roughness: 0.08,
+            metalness: 0.2,
+            side: THREE.DoubleSide,
+        });
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x505660, metalness: 0.45, roughness: 0.4 });
+        [[2.35, 0, 0.06, 4.8], [-2.8, 3.2, 3.6, 0.06]].forEach(([x, z, w, d]) => {
+            const part = new THREE.Mesh(new THREE.BoxGeometry(w, 1.35, d), glassMat);
+            part.position.set(x, 0.72, z);
+            scene.add(part);
+            const topRail = new THREE.Mesh(new THREE.BoxGeometry(w + 0.06, 0.04, d + 0.06), frameMat);
+            topRail.position.set(x, 1.42, z);
+            scene.add(topRail);
+        });
     }
 
     function addAmbientParticles() {
-        const count = 120;
+        const count = 35;
         const positions = new Float32Array(count * 3);
         for (let i = 0; i < count; i++) {
-            positions[i * 3] = (Math.random() - 0.5) * 34;
-            positions[i * 3 + 1] = 0.5 + Math.random() * 8;
-            positions[i * 3 + 2] = (Math.random() - 0.5) * 26;
+            positions[i * 3] = (Math.random() - 0.5) * ROOM.w * 0.9;
+            positions[i * 3 + 1] = 0.8 + Math.random() * (ROOM.h - 0.5);
+            positions[i * 3 + 2] = (Math.random() - 0.5) * ROOM.d * 0.9;
         }
         const geo = new THREE.BufferGeometry();
         geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         const mat = new THREE.PointsMaterial({
-            color: 0x7aa2ff, size: 0.08, transparent: true, opacity: 0.45,
+            color: 0x99aabb, size: 0.04, transparent: true, opacity: 0.22,
             blending: THREE.AdditiveBlending, depthWrite: false,
         });
         const points = new THREE.Points(geo, mat);
@@ -472,43 +512,35 @@
             new THREE.PlaneGeometry(w, d),
             new THREE.MeshStandardMaterial({
                 color,
-                roughness: 0.78,
+                roughness: 0.88,
                 emissive: accent || 0x000000,
-                emissiveIntensity: accent ? 0.08 : 0,
+                emissiveIntensity: accent ? 0.04 : 0,
             })
         );
         mesh.rotation.x = -Math.PI / 2;
-        mesh.position.set(x, 0.03, z);
+        mesh.position.set(x, 0.025, z);
         scene.add(mesh);
-
-        const ring = new THREE.Mesh(
-            new THREE.RingGeometry(Math.min(w, d) * 0.32, Math.min(w, d) * 0.36, 32),
-            new THREE.MeshBasicMaterial({ color: accent || 0x888888, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
-        );
-        ring.rotation.x = -Math.PI / 2;
-        ring.position.set(x, 0.04, z);
-        scene.add(ring);
     }
 
     function addZoneSign(text, x, z, color) {
         const canvas = document.createElement('canvas');
         canvas.width = 256;
-        canvas.height = 48;
+        canvas.height = 40;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(0, 0, 256, 48);
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.fillRect(0, 0, 256, 40);
         ctx.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
-        ctx.font = 'bold 22px Segoe UI, sans-serif';
+        ctx.font = '600 18px Segoe UI, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(text, 128, 24);
+        ctx.fillText(text, 128, 20);
 
         const tex = new THREE.CanvasTexture(canvas);
         const plane = new THREE.Mesh(
-            new THREE.PlaneGeometry(3.2, 0.55),
+            new THREE.PlaneGeometry(2.2, 0.38),
             new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide })
         );
-        plane.position.set(x, 1.2, z);
+        plane.position.set(x, 1.05, z);
         scene.add(plane);
     }
 
@@ -597,31 +629,18 @@
     }
 
     function buildWalls() {
-        const wallMat = new THREE.MeshStandardMaterial({ color: 0x232830, roughness: 0.92 });
-        const accentMat = new THREE.MeshStandardMaterial({ color: 0x2e3340, roughness: 0.85 });
-        [[0, 1.6, -14, 36, 3.2, 0.18], [0, 1.6, 14, 36, 3.2, 0.18],
-         [-18, 1.6, 0, 0.18, 3.2, 28], [18, 1.6, 0, 0.18, 3.2, 28]].forEach(([x, y, z, w, h, d]) => {
-            addProp(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat), false, true).position.set(x, y, z);
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0x323840, roughness: 0.88 });
+        const trimMat = new THREE.MeshStandardMaterial({ color: 0x454a54, roughness: 0.7 });
+        const { hw, hd, h, w, d } = ROOM;
+        [[0, h / 2, -hd, w, h, 0.16], [0, h / 2, hd, w, h, 0.16],
+         [-hw, h / 2, 0, 0.16, h, d], [hw, h / 2, 0, 0.16, h, d]].forEach(([x, y, z, ww, hh, dd]) => {
+            addProp(new THREE.Mesh(new THREE.BoxGeometry(ww, hh, dd), wallMat), false, true).position.set(x, y, z);
         });
-        [[-2, 1.6, -13.85, 16, 3.2, 0.06], [11, 1.6, 7.85, 8, 3.2, 0.06]].forEach(([x, y, z, w, h, d], i) => {
-            const glass = new THREE.Mesh(
-                new THREE.BoxGeometry(w, h * 0.7, d),
-                new THREE.MeshStandardMaterial({
-                    color: i === 0 ? 0x9d4edd : 0x5ecf8a,
-                    transparent: true,
-                    opacity: 0.08,
-                    roughness: 0.1,
-                    side: THREE.DoubleSide,
-                })
-            );
-            glass.position.set(x, y, z);
-            scene.add(glass);
+        const baseboardMat = new THREE.MeshStandardMaterial({ color: 0x252830 });
+        [[0, 0.06, -hd + 0.1, w - 0.2, 0.1, 0.08], [0, 0.06, hd - 0.1, w - 0.2, 0.1, 0.08]].forEach(([x, y, z, ww, hh, dd]) => {
+            addProp(new THREE.Mesh(new THREE.BoxGeometry(ww, hh, dd), baseboardMat), false, true).position.set(x, y, z);
         });
-        const baseboardMat = new THREE.MeshStandardMaterial({ color: 0x1a1e26 });
-        [[0, 0.08, -13.9, 35, 0.12, 0.1], [0, 0.08, 13.9, 35, 0.12, 0.1]].forEach(([x, y, z, w, h, d]) => {
-            addProp(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), baseboardMat), false, true).position.set(x, y, z);
-        });
-        addProp(new THREE.Mesh(new THREE.BoxGeometry(36, 0.15, 28), accentMat), false, true).position.set(0, 0.075, 0);
+        addProp(new THREE.Mesh(new THREE.BoxGeometry(w, 0.06, d), trimMat), false, true).position.set(0, 0.03, 0);
     }
 
     function getSlot(agent, location) {
@@ -662,10 +681,10 @@
 
         if (inRest) {
             mesh.userData.baseY = 0.12;
-            mesh.userData.faceAngle = Math.atan2(11 - slot.x, 3.5 - slot.z);
+            mesh.userData.faceAngle = Math.atan2(5.2 - slot.x, 1.8 - slot.z);
         } else if (inLib) {
             mesh.userData.baseY = 0;
-            mesh.userData.faceAngle = Math.atan2(-11.5 - slot.x, 8.5 - slot.z);
+            mesh.userData.faceAngle = Math.atan2(-5.2 - slot.x, 3.2 - slot.z);
         } else {
             mesh.userData.baseY = 0;
             mesh.userData.faceAngle = 0;
@@ -801,41 +820,37 @@
     }
 
     function setupLights() {
-        scene.add(new THREE.AmbientLight(0x8899bb, 0.45));
-        scene.add(new THREE.HemisphereLight(0xa8c8ff, 0x1a2030, 0.55));
+        scene.add(new THREE.AmbientLight(0x9098a8, 0.38));
+        scene.add(new THREE.HemisphereLight(0xd8e4f0, 0x252830, 0.42));
 
-        const sun = new THREE.DirectionalLight(0xfff0d8, 1.15);
-        sun.position.set(8, 24, 10);
+        const sun = new THREE.DirectionalLight(0xfff6ea, 0.95);
+        sun.position.set(2, 12, -8);
         sun.castShadow = true;
         sun.shadow.mapSize.set(2048, 2048);
         sun.shadow.camera.near = 0.5;
-        sun.shadow.camera.far = 60;
-        sun.shadow.camera.left = -20;
-        sun.shadow.camera.right = 20;
-        sun.shadow.camera.top = 20;
-        sun.shadow.camera.bottom = -20;
+        sun.shadow.camera.far = 28;
+        sun.shadow.camera.left = -9;
+        sun.shadow.camera.right = 9;
+        sun.shadow.camera.top = 9;
+        sun.shadow.camera.bottom = -9;
         scene.add(sun);
         sunLight = sun;
 
-        const fill = new THREE.DirectionalLight(0x6688cc, 0.35);
-        fill.position.set(-12, 16, -8);
+        const fill = new THREE.DirectionalLight(0x8899bb, 0.28);
+        fill.position.set(-6, 10, 6);
         scene.add(fill);
 
-        const rim = new THREE.DirectionalLight(0xc77dff, 0.25);
-        rim.position.set(0, 8, -15);
-        scene.add(rim);
+        const windowGlow = new THREE.PointLight(0xa8c8e8, 0.35, 12);
+        windowGlow.position.set(0, 1.5, -ROOM.hd + 1);
+        scene.add(windowGlow);
 
-        const studioLight = new THREE.PointLight(0xc77dff, 1.0, 24);
-        studioLight.position.set(-2, 4.5, -2);
-        scene.add(studioLight);
-
-        const restLight = new THREE.PointLight(0x5ecf8a, 0.85, 22);
-        restLight.position.set(11, 4, 7);
+        const restLight = new THREE.PointLight(0xffe8c8, 0.28, 8);
+        restLight.position.set(5.2, 2.2, 3.2);
         scene.add(restLight);
         restLightPt = restLight;
 
-        const libLight = new THREE.PointLight(0xe8b84a, 0.75, 20);
-        libLight.position.set(-10, 4, 9);
+        const libLight = new THREE.PointLight(0xffe0b0, 0.25, 7);
+        libLight.position.set(-4.5, 2.2, 3.5);
         scene.add(libLight);
     }
 
@@ -954,9 +969,9 @@
             scene = new THREE.Scene();
             setTheme(isDark);
 
-            camera = new THREE.PerspectiveCamera(52, width / height, 0.1, 200);
-            camera.position.set(2, 15, 18);
-            camera.lookAt(0, 0, 1);
+            camera = new THREE.PerspectiveCamera(48, width / height, 0.1, 80);
+            camera.position.set(0, 7.5, 9.5);
+            camera.lookAt(0, 0.5, 0);
 
             renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
             renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -971,9 +986,9 @@
                 controls.enableDamping = true;
                 controls.dampingFactor = 0.08;
                 controls.maxPolarAngle = Math.PI / 2.08;
-                controls.minDistance = 5;
-                controls.maxDistance = 38;
-                controls.target.set(0, 0, 1);
+                controls.minDistance = 3.5;
+                controls.maxDistance = 16;
+                controls.target.set(0, 0.5, 0);
             } else {
                 console.warn('[Studio] OrbitControls недоступен — fallback-управление');
                 controls = createFallbackControls(camera, canvas);
@@ -1122,8 +1137,8 @@
         if (!mesh || !camera || !controls) return;
         flyTarget = {
             tx: mesh.position.x,
-            tz: mesh.position.z + 4,
-            ty: 12,
+            tz: mesh.position.z + 2.8,
+            ty: 5.5,
             cx: mesh.position.x,
             cz: mesh.position.z,
         };
@@ -1155,22 +1170,22 @@
     function setTheme(dark) {
         isDark = dark;
         if (!scene) return;
-        const bg = dark ? 0x0e1018 : 0xd4dae6;
-        const fogColor = dark ? 0x141820 : 0xe0e5ef;
+        const bg = dark ? 0x12141a : 0xd4dae6;
+        const fogColor = dark ? 0x161a22 : 0xe0e5ef;
         scene.background = new THREE.Color(bg);
         if (scene.fog) {
             scene.fog.color.setHex(fogColor);
-            scene.fog.near = 22;
-            scene.fog.far = 72;
+            scene.fog.near = 9;
+            scene.fog.far = 28;
         } else {
-            scene.fog = new THREE.Fog(fogColor, 22, 72);
+            scene.fog = new THREE.Fog(fogColor, 9, 28);
         }
         if (renderer) renderer.setClearColor(bg, 1);
     }
 
     function setDayNight(isDay) {
-        if (sunLight) sunLight.intensity = isDay ? 1.15 : 0.55;
-        if (restLightPt) restLightPt.intensity = isDay ? 0.35 : 0.75;
+        if (sunLight) sunLight.intensity = isDay ? 0.95 : 0.42;
+        if (restLightPt) restLightPt.intensity = isDay ? 0.18 : 0.32;
         setTheme(!isDay);
     }
 
