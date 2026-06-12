@@ -50,9 +50,13 @@ def save_artifact(agent_id: str, artifact: dict) -> dict:
         "tags": artifact.get("tags") or [],
         "status": artifact.get("status", "completed"),
         "revision_of": artifact.get("revision_of"),
+        "version": 1,
         "created_at": artifact.get("created_at") or datetime.now().isoformat(),
         "updated_at": datetime.now().isoformat(),
     }
+    if entry.get("revision_of"):
+        prev = get_artifact(entry["revision_of"])
+        entry["version"] = (prev.get("version") or 1) + 1 if prev else 2
     path = os.path.join(ARTIFACTS_DIR, f"{entry['id']}.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(entry, f, ensure_ascii=False, indent=2)

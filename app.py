@@ -960,6 +960,179 @@ async def telegram_webhook(payload: dict):
     return {"ok": True}
 
 
+# ─── Power Pack API ─────────────────────────────────────────
+
+class ProjectMemoryUpdate(BaseModel):
+    brief: str = ""
+    goals: list = []
+    constraints: list = []
+
+
+@app.get("/api/project-memory")
+async def get_project_memory():
+    from room.project_memory import get_memory
+    return get_memory()
+
+
+@app.post("/api/project-memory")
+async def set_project_memory(body: ProjectMemoryUpdate):
+    from room.project_memory import set_memory
+    return set_memory(brief=body.brief, goals=body.goals, constraints=body.constraints)
+
+
+@app.get("/api/sprint")
+async def get_sprint_api():
+    from room.sprint_store import get_sprint
+    return get_sprint()
+
+
+class SprintStart(BaseModel):
+    name: str
+    goal: str
+    days: int = 7
+
+
+@app.post("/api/sprint/start")
+async def start_sprint_api(body: SprintStart):
+    from room.sprint_store import start_sprint
+    return start_sprint(body.name, body.goal, body.days)
+
+
+class SprintBacklogItem(BaseModel):
+    text: str
+    priority: str = "medium"
+
+
+@app.post("/api/sprint/backlog")
+async def add_sprint_backlog(body: SprintBacklogItem):
+    from room.sprint_store import add_backlog_item
+    return add_backlog_item(body.text, body.priority)
+
+
+@app.post("/api/sprint/backlog/{item_id}/toggle")
+async def toggle_sprint_item(item_id: str):
+    from room.sprint_store import toggle_backlog
+    return toggle_backlog(item_id)
+
+
+@app.post("/api/sprint/end")
+async def end_sprint_api():
+    from room.sprint_store import end_sprint
+    return end_sprint()
+
+
+@app.get("/api/projects/{artifact_id}/diff/{other_id}")
+async def artifact_diff(artifact_id: str, other_id: str):
+    from room.artifact_store import get_artifact
+    from room.artifact_diff import diff_artifacts
+    a = get_artifact(artifact_id)
+    b = get_artifact(other_id)
+    if not a or not b:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+    return diff_artifacts(a, b)
+
+
+@app.post("/api/projects/{artifact_id}/create-pr")
+async def artifact_create_pr(artifact_id: str):
+    from room.artifact_store import get_artifact
+    from integrations.pr_from_artifact import create_pr_from_artifact
+    art = get_artifact(artifact_id)
+    if not art:
+        raise HTTPException(status_code=404, detail="Not found")
+    art["agent_id"] = art.get("agent_id")
+    return await create_pr_from_artifact(art, room_manager=room)
+
+
+@app.get("/api/projects/{artifact_id}/export")
+async def artifact_export(artifact_id: str, format: str = "html"):
+    from room.artifact_store import get_artifact
+    art = get_artifact(artifact_id)
+    if not art:
+        raise HTTPException(status_code=404, detail="Not found")
+    html = art.get("preview_html") or art.get("content") or ""
+    if format == "print":
+        html = f"""<!DOCTYPE html><html><head><meta charset="utf-8"><title>{art.get('title')}</title>
+<style>@media print{{body{{margin:0}}}}</style></head><body>{html}
+<script>window.onload=()=>window.print()</script></body></html>"""
+    return HTMLResponse(html)
+
+
+@app.get("/api/llm/usage")
+async def llm_usage_stats():
+    from integrations.llm_usage import get_stats
+    return get_stats()
+
+
+@app.get("/api/artifact-templates")
+async def artifact_templates_list():
+    from integrations.artifact_templates import list_templates
+    return {"templates": list_templates()}
+
+
+@app.post("/api/artifact-templates/{template_id}/apply")
+async def apply_artifact_template(template_id: str):
+    from integrations.artifact_templates import list_templates
+    tpl = next((t for t in list_templates() if t["id"] == template_id), None)
+    if not tpl:
+        raise HTTPException(status_code=404, detail="Template not found")
+    await room.handle_user_message({"type": "task", "text": tpl["task"], "target": tpl["target"]})
+    return {"ok": True, "template": tpl}
+
+
+@app.post("/api/pipeline/full")
+async def pipeline_full(figma_url: str = ""):
+    from integrations.pipeline_oneclick import run_full_pipeline
+    return await run_full_pipeline(room, figma_url or None)
+
+
+@app.post("/api/webhook/task")
+async def webhook_task(payload: dict):
+    text = payload.get("text") or payload.get("message") or payload.get("task") or ""
+    target = payload.get("target", "all")
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="text required")
+    await room.handle_user_message({"type": "task", "text": text, "target": target})
+    return {"ok": True}
+
+
+@app.get("/api/backup/download")
+async def backup_download():
+    from integrations.backup_restore import create_backup
+    from fastapi.responses import Response
+    data = create_backup()
+    return Response(
+        content=data,
+        media_type="application/zip",
+        headers={"Content-Disposition": "attachment; filename=ai-team-backup.zip"},
+    )
+
+
+@app.post("/api/view-token")
+async def create_view_token(hours: int = 72, label: str = "client"):
+    from room.view_tokens import create_token
+    t = create_token(hours=hours, label=label)
+    return {"ok": True, "url": f"/?view={t['token']}", **t}
+
+
+class TaskPriorityUpdate(BaseModel):
+    priority: str
+
+
+@app.patch("/api/tasks/{task_id}/priority")
+async def update_task_priority(task_id: str, body: TaskPriorityUpdate):
+    ok = room.task_history.set_priority(task_id, body.priority)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Task not found")
+    await room._broadcast_task_history()
+    return {"ok": True}
+
+
+@app.get("/api/mentions/aliases")
+async def mention_aliases():
+    from room.mention_parser import list_aliases
+    return {"aliases": list_aliases()}
+
+
 @app.post("/api/deploy")
 async def deploy_preview():
     from integrations.deploy_export import create_deploy_bundle
