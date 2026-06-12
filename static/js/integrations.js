@@ -300,8 +300,9 @@
             const resp = await fetch('/api/figma/studio/trigger?action=create', { method: 'POST' });
             const data = await resp.json();
             if (!resp.ok) throw new Error(data.detail || 'Ошибка');
-            if (window.UIEnhancements) UIEnhancements.toast('✨ Соня создаёт проект…', 'info');
+            if (window.UIEnhancements) UIEnhancements.toast('✨ Соня создаёт проект в Studio…', 'info');
             setTimeout(loadSonyaStudio, 4000);
+            if (typeof switchView === 'function') setTimeout(() => switchView('sonya-studio'), 1500);
         } catch (e) { alert(e.message); }
     }
 
