@@ -3,7 +3,7 @@ from typing import Optional
 
 from agents.base_agent import BaseAgent
 from agents.react_preview import generate_react_preview, is_site_task, apply_figma_tokens
-from room.task_routing import should_emit_react_preview, should_export_site
+from room.task_routing import should_emit_react_preview, should_export_site, classify_task_kind
 from site_exporter import export_site_html
 from integrations.figma_client import parse_figma_url, get_client_async
 
@@ -271,6 +271,11 @@ class FrontendDevAgent(BaseAgent):
                     f"\n\n🌐 **Сайт готов!**\n"
                     f"• Нажмите **🎨 Preview** в шапке — живой просмотр\n"
                     f"• Или откройте в браузере: /api/sites/latest"
+                )
+            elif self.last_preview and classify_task_kind(task_text) == "table":
+                response += (
+                    f"\n\n📊 **Таблица готова** — откройте **React Preview** «{self.last_preview['title']}» "
+                    "(не landing, интерактивная таблица)."
                 )
             elif self.last_preview:
                 response += f"\n\n🖥️ Откройте **React Preview** — «{self.last_preview['title']}»"

@@ -3,6 +3,8 @@
 from datetime import datetime
 from typing import Optional
 
+from room.task_routing import classify_task_kind
+
 
 class PipelineTracker:
     def __init__(self, room_manager):
@@ -40,7 +42,8 @@ class PipelineTracker:
             })
 
         import config as cfg
-        if cfg.config.get("cursor_github_sync") or cfg.config.get("git_auto_sync"):
+        skip_github = classify_task_kind(task_text) in ("table", "presentation", "model_3d", "document")
+        if (cfg.config.get("cursor_github_sync") or cfg.config.get("git_auto_sync")) and not skip_github:
             steps.append({
                 "id": "github",
                 "agent_id": "github",

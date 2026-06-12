@@ -170,7 +170,11 @@ def _match_preview_template(task: str) -> dict:
     if kind == "site" or is_site_task(task):
         return {"title": "Готовый сайт", "code": _fmt(_WEBSITE, task), "is_site": True}
 
-    if kind == "table" or any(w in t for w in ["таблиц", "table", "excel", "spreadsheet", "csv", "data grid"]):
+    if kind == "table" or any(w in t for w in [
+        "таблиц", "таблицу", "таблицы", "table", "excel", "spreadsheet", "csv", "data grid",
+    ]):
+        if any(w in t for w in ["бухгалтер", "учёт", "учет", "accounting", "дебет", "кредит"]):
+            return {"title": "Бухгалтерская таблица", "code": _fmt(_ACCOUNTING_TABLE, task)}
         return {"title": "Таблица данных", "code": _fmt(_TABLE, task)}
 
     if any(w in t for w in ["логин", "login", "авториз", "вход", "sign in"]):
@@ -384,6 +388,49 @@ function App() {
             </tr>
           ))}</tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+"""
+
+_ACCOUNTING_TABLE = _COMMON_STYLES + """
+function App() {
+  const rows = [
+    { date: '01.06', doc: 'Поступление', debit: '120 000', credit: '—', balance: '120 000' },
+    { date: '05.06', doc: 'Аренда офиса', debit: '—', credit: '45 000', balance: '75 000' },
+    { date: '10.06', doc: 'Зарплата', debit: '—', credit: '380 000', balance: '−305 000' },
+    { date: '12.06', doc: 'Оплата клиента', debit: '520 000', credit: '—', balance: '215 000' },
+  ];
+  const th = { textAlign: 'left', padding: '10px 8px', fontSize: 12, color: '#6b7280', fontWeight: 600 };
+  const td = { padding: '10px 8px', fontSize: 13, borderBottom: '1px solid #f3f4f6' };
+  return (
+    <div style={{...styles.page, alignItems: 'flex-start', paddingTop: 32}}>
+      <div style={{...styles.card, maxWidth: 720, width: '100%'}}>
+        <h1 style={styles.title}>Бухгалтерия</h1>
+        <p style={styles.sub}>{task}</p>
+        <div style={{overflowX: 'auto'}}>
+          <table style={{width:'100%', borderCollapse:'collapse', minWidth: 520}}>
+            <thead>
+              <tr style={{borderBottom:'2px solid #e5e7eb', background:'#f9fafb'}}>
+                <th style={th}>Дата</th>
+                <th style={th}>Операция</th>
+                <th style={{...th, textAlign:'right'}}>Дебет</th>
+                <th style={{...th, textAlign:'right'}}>Кредит</th>
+                <th style={{...th, textAlign:'right'}}>Сальдо</th>
+              </tr>
+            </thead>
+            <tbody>{rows.map((r, i) => (
+              <tr key={i}>
+                <td style={td}>{r.date}</td>
+                <td style={td}>{r.doc}</td>
+                <td style={{...td, textAlign:'right', fontFamily:'monospace'}}>{r.debit}</td>
+                <td style={{...td, textAlign:'right', fontFamily:'monospace'}}>{r.credit}</td>
+                <td style={{...td, textAlign:'right', fontWeight:600, color: r.balance.startsWith('−') ? '#dc2626' : '#059669'}}>{r.balance}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

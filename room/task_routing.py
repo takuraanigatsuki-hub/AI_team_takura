@@ -15,7 +15,10 @@ def classify_task_kind(text: str) -> str:
     if "модел" in t and any(w in t for w in ["3d", "3д", "three", "сцен", "объект", "glb", "визуал", "threejs"]):
         return "model_3d"
 
-    if any(w in t for w in ["таблиц", "table", "excel", "spreadsheet", "csv", "data grid"]):
+    if any(w in t for w in [
+        "таблиц", "таблицу", "таблицы", "table", "excel", "spreadsheet", "csv",
+        "data grid", "бухгалтер", "учёт", "учет", "accounting", "ledger",
+    ]):
         return "table"
 
     if any(w in t for w in [
@@ -58,6 +61,5 @@ def should_export_site(task_text: str) -> bool:
 
 
 def should_run_architecture_debate(task_text: str) -> bool:
-    """Debate уместен только для архитектурных/сложных технических задач."""
-    kind = classify_task_kind(task_text)
-    return kind in ("architecture", "api", "generic")
+    """Debate только для явной архитектуры/API — не для таблиц, UI, презентаций."""
+    return classify_task_kind(task_text) in ("architecture", "api")

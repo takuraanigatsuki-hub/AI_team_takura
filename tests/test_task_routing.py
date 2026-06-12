@@ -8,6 +8,7 @@ from room.task_routing import (
 )
 from agents.pm_orchestrator import PMOrchestratorAgent
 from agents.react_preview import generate_react_preview
+from agents.react_preview import generate_react_preview
 
 
 def test_classify_presentation():
@@ -41,7 +42,19 @@ def test_no_site_export_for_table():
 
 def test_debate_only_for_architecture():
     assert should_run_architecture_debate("Сделай landing page") is False
+    assert should_run_architecture_debate("мне нужно создать таблицу для бухгалтерии") is False
     assert should_run_architecture_debate("Спроектируй API") is True
+
+
+def test_accounting_table_routing():
+    t = "мне нужно создать таблицу для бухгалтерии"
+    assert classify_task_kind(t) == "table"
+    pm = PMOrchestratorAgent()
+    a = pm._analyze_and_assign(t, {})
+    assert set(a.keys()) == {"frontend", "reviewer"}
+    preview = generate_react_preview(t)
+    assert preview["title"] == "Бухгалтерская таблица"
+    assert "Дебет" in preview["code"]
 
 
 def test_pm_routes_presentation_to_presenter_only():
