@@ -33,7 +33,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css?v=40">
     <link rel="stylesheet" href="/static/css/feature-pack.css?v=3">
-    <link rel="stylesheet" href="/static/css/enhancements.css?v=3">
+    <link rel="stylesheet" href="/static/css/enhancements.css?v=4">
 </head>
 <body class="has-sidebar">
 
@@ -52,9 +52,12 @@
     </div>
 </aside>
 
+<div class="sb-overlay hidden" id="sidebarOverlay" aria-hidden="true"></div>
+
 <div class="app-content-wrap">
 <header class="header">
     <div class="header-row header-row-main">
+        <button type="button" class="hdr-btn hdr-icon sb-mobile-toggle" id="mobileNavToggle" aria-label="Меню" aria-expanded="false" title="Навигация">☰</button>
         <a href="/" class="logo logo-link" title="Главный сайт">
             <div class="logo-mark">🤖</div>
             <div class="logo-text">
@@ -459,7 +462,7 @@
                     <button type="button" class="btn-primary btn-sm" onclick="TaskTemplates.showPicker()">📋 Шаблоны</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="exportTasks()">📥 Export</button>
                     <button type="button" class="btn-secondary btn-sm tasks-btn-warn" onclick="cancelAllTasks()">🛑 Отменить активные</button>
-                    <button type="button" class="btn-secondary btn-sm tasks-btn-danger" onclick="clearTasksHistory()">🗑 Очистить всё</button>
+                    <button type="button" class="btn-secondary btn-sm tasks-btn-danger hidden" data-ui="admin-tools" onclick="clearTasksHistory()">🗑 Очистить всё</button>
                 </div>
             </header>
             <div class="tasks-stats tasks-stats-grid" id="tasksStats">
@@ -848,7 +851,7 @@
 <script src="/static/js/ui-enhancements.js?v=4"></script>
 <script src="/static/js/feature-pack.js?v=3"></script>
 <script src="/static/js/search.js?v=1"></script>
-<script src="/static/js/dashboard.js?v=4"></script>
+<script src="/static/js/dashboard.js?v=5"></script>
 <script src="/static/js/workspaces.js?v=1"></script>
 <script src="/static/js/agent-activity.js?v=1"></script>
 <script src="/static/js/ui-access.js?v=1"></script>
@@ -863,11 +866,11 @@
 <script src="/static/js/sonya-studio.js?v=3"></script>
 <script src="/static/js/chat-commands.js?v=1"></script>
 <script src="/static/js/masha-learning-lab.js?v=3"></script>
-<script src="/static/js/sidebar-nav.js?v=1"></script>
+<script src="/static/js/sidebar-nav.js?v=2"></script>
 <script src="/static/js/investor-portal.js?v=1"></script>
 <script src="/static/js/security-dashboard.js?v=1"></script>
 <script src="/static/js/task-templates.js?v=1"></script>
-<script src="/static/js/app.js?v=36"></script>
+<script src="/static/js/app.js?v=37"></script>
 
 <!-- PWA: регистрация Service Worker -->
 <script>

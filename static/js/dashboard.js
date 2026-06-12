@@ -19,6 +19,16 @@
         return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
+    async function fetchJson(url, fallback = {}) {
+        try {
+            const r = await fetch(url, { credentials: 'same-origin' });
+            if (!r.ok) return fallback;
+            return await r.json();
+        } catch (_) {
+            return fallback;
+        }
+    }
+
     async function load() {
         const grid = document.getElementById('dashboardGrid');
         if (!grid) return;
@@ -26,26 +36,35 @@
         try {
             const user = global.Auth?.getUser?.();
             const admin = global.UIAccess?.canAccessConsole?.(user);
-            const fetches = [
-                fetch('/api/dashboard').then((r) => r.json()),
-                fetch('/api/tasks').then((r) => r.json()),
-                fetch('/api/git/status').then((r) => r.json()),
-                fetch('/api/cursor/status').then((r) => r.json()),
-                fetch('/api/activity?limit=15').then((r) => r.json()),
-                fetch('/api/figma/status').then((r) => r.json()),
-                fetch('/api/llm/usage').then((r) => r.json()).catch(() => ({})),
-                fetch('/api/telegram/status').then((r) => r.json()).catch(() => ({})),
-                fetch('/api/dashboard/layout', { credentials: 'same-origin' }).then((r) => r.json()).catch(() => layout),
-            ];
+            const investor = user && (user.is_investor || user.can_view_investor_portal || admin);
+
+            const [dash, tasks, activity, layoutRes] = await Promise.all([
+                fetchJson('/api/dashboard', {}),
+                fetchJson('/api/tasks', { stats: {}, tasks: [] }),
+                fetchJson('/api/activity?limit=15', { items: [] }),
+                fetchJson('/api/dashboard/layout', layout),
+            ]);
+
+            let git = {};
+            let cursor = {};
+            let figma = {};
+            let llmUsage = {};
+            let telegram = {};
+            let sec = {};
+
             if (admin) {
-                fetches.push(fetch('/api/security/dashboard', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : {}).catch(() => ({})));
+                [git, cursor, figma, llmUsage, telegram, sec] = await Promise.all([
+                    fetchJson('/api/git/status', {}),
+                    fetchJson('/api/cursor/status', {}),
+                    fetchJson('/api/figma/status', {}),
+                    fetchJson('/api/llm/usage', {}),
+                    fetchJson('/api/telegram/status', {}),
+                    fetchJson('/api/security/dashboard', {}),
+                ]);
             }
-            const results = await Promise.all(fetches);
-            const [dash, tasks, git, cursor, activity, figma, llmUsage, telegram, layoutRes, sec] = [
-                results[0], results[1], results[2], results[3], results[4], results[5], results[6], results[7], results[8], results[9] || {},
-            ];
+
             layout = layoutRes.widgets ? layoutRes : layout;
-            data = { dash, tasks, git, cursor, activity, figma, llmUsage, telegram, sec };
+            data = { dash, tasks, git, cursor, activity, figma, llmUsage, telegram, sec, admin, investor };
             render(grid);
             if (window.UIEnhancements) {
                 const working = (dash.agents || []).filter((a) => ['working', 'learning', 'thinking'].includes(a.status)).length;
@@ -57,8 +76,12 @@
     }
 
     function render(grid) {
-        const admin = global.UIAccess?.canAccessConsole?.(global.Auth?.getUser());
-        const order = (layout.widgets || Object.keys(WIDGETS)).filter((id) => admin || id !== 'security');
+        const admin = data.admin || global.UIAccess?.canAccessConsole?.(global.Auth?.getUser());
+        const order = (layout.widgets || Object.keys(WIDGETS)).filter((id) => {
+            if (!admin && id === 'security') return false;
+            if (!admin && id === 'integrations') return false;
+            return true;
+        });
         grid.innerHTML = `
             <div class="dash-toolbar">
                 <span class="muted">Перетащите виджеты для изменения порядка</span>
@@ -108,20 +131,26 @@
         const agents = d.agents || [];
         const working = agents.filter((a) => ['working', 'learning', 'thinking'].includes(a.status)).length;
         const llm = data.llmUsage || {};
+        const llmLine = data.admin
+            ? `<p class="llm-cost-inline">💰 LLM: ${llm.total_requests || 0} запросов · ~$${llm.estimated_cost_usd || 0}</p>`
+            : '';
         return `<div class="dash-hero animate-in">
             <h2>Командный центр</h2>
-            <p>${d.team_size || 13} агентов · ${working} активны · ${data.tasks?.stats?.total || 0} задач</p>
-            <p class="llm-cost-inline">💰 LLM: ${llm.total_requests || 0} запросов · ~$${llm.estimated_cost_usd || 0}</p>
+            <p>${d.team_size || agents.length || 0} агентов · ${working} активны · ${data.tasks?.stats?.total || 0} задач</p>
+            ${llmLine}
         </div>`;
     }
 
     function renderKpis() {
         const s = data.tasks?.stats || {};
+        const gitCard = data.admin
+            ? `<div class="dash-card"><div class="dash-card-num">${data.git?.changed_files || 0}</div><div class="dash-card-label">Git diff</div></div>`
+            : `<div class="dash-card"><div class="dash-card-num">${s.awaiting_approval || 0}</div><div class="dash-card-label">На проверке</div></div>`;
         return `<div class="dash-cards">
             <div class="dash-card"><div class="dash-card-num">${s.completed || 0}</div><div class="dash-card-label">Выполнено</div></div>
             <div class="dash-card accent"><div class="dash-card-num">${s.active || 0}</div><div class="dash-card-label">В работе</div></div>
             <div class="dash-card"><div class="dash-card-num">${data.dash?.total_knowledge || 0}</div><div class="dash-card-label">Знаний</div></div>
-            <div class="dash-card"><div class="dash-card-num">${data.git?.changed_files || 0}</div><div class="dash-card-label">Git diff</div></div>
+            ${gitCard}
         </div>`;
     }
 
@@ -166,11 +195,13 @@
     }
 
     function renderActions() {
+        const investor = data.investor;
+        const team = data.admin || global.UIAccess?.canUseTeamTools?.(global.Auth?.getUser());
         return `<div class="dash-actions">
             <button type="button" class="btn-primary" onclick="switchView('chat')">Новая задача</button>
             <button type="button" class="btn-secondary" onclick="TaskTemplates.showPicker()">📋 Шаблон</button>
-            <button type="button" class="btn-secondary" onclick="Integrations.toggleCursorPanel()">⚡ Cursor</button>
-            <button type="button" class="btn-secondary" onclick="switchView('investor')">💼 Investor</button>
+            ${team ? '<button type="button" class="btn-secondary" onclick="Integrations.toggleCursorPanel()">⚡ Cursor</button>' : ''}
+            ${investor ? '<button type="button" class="btn-secondary" onclick="switchView(\'investor\')">💼 Investor</button>' : ''}
         </div>`;
     }
 

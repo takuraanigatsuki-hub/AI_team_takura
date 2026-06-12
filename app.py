@@ -1184,10 +1184,21 @@ async def get_history():
 
 
 @app.get("/api/search")
-async def search_site(q: str = "", limit: int = 30):
+async def search_site(request: Request, q: str = "", limit: int = 30):
     """Глобальный поиск по задачам, проектам, чату и обучению."""
     from integrations.search_service import search_room
-    return search_room(q, room, limit=min(max(limit, 1), 100))
+    from room.message_filter import is_privileged
+    user = _optional_user(request)
+    viewer = {
+        "user_id": user.get("id", "") if user else "",
+        "role": user.get("role", "guest") if user else "guest",
+    }
+    return search_room(
+        q, room, limit=min(max(limit, 1), 100),
+        user_id=viewer.get("user_id", ""),
+        privileged=is_privileged(viewer.get("role", "")),
+        viewer=viewer,
+    )
 
 
 @app.get("/api/sites/latest")
@@ -2004,9 +2015,14 @@ async def get_timeline_replay(hours: float = 1.0):
 
 
 @app.get("/api/kanban")
-async def get_kanban():
+async def get_kanban(request: Request):
+    from room.message_filter import is_privileged
+    user = _optional_user(request)
+    uid = user.get("id", "") if user else ""
+    privileged = is_privileged(user.get("role", "")) if user else False
+    tasks = room.task_history.get_all() if privileged else room.task_history.get_for_user(uid, 200)
     columns = {"submitted": [], "in_progress": [], "completed": [], "failed": []}
-    for task in room.task_history.get_all():
+    for task in tasks:
         status = task.get("status", "submitted")
         key = status if status in columns else "submitted"
         if status == "queued":
