@@ -11,18 +11,24 @@
     async function load() {
         const el = document.getElementById('securityDashboard');
         if (!el) return cache;
-        el.innerHTML = '<div class="dash-loading">Загрузка security…</div>';
+        el.innerHTML = global.UICore ? UICore.loadingState('Загрузка security…') : '<div class="dash-loading">Загрузка security…</div>';
         try {
             const r = await fetch('/api/security/dashboard', { credentials: 'same-origin' });
             if (r.status === 403 || r.status === 401) {
-                el.innerHTML = '<div class="panel-empty">🔒 Доступ только для администратора</div>';
+                el.innerHTML = global.UICore ? UICore.emptyState({
+                    icon: '🔒',
+                    title: 'Доступ ограничен',
+                    text: 'Security dashboard доступен только администратору',
+                }) : '<div class="panel-empty">🔒 Доступ только для администратора</div>';
                 return cache;
             }
             if (!r.ok) throw new Error('HTTP ' + r.status);
             cache = await r.json();
             render(el);
         } catch (e) {
-            el.innerHTML = `<div class="panel-empty">⚠️ ${esc(e.message)}</div>`;
+            el.innerHTML = global.UICore
+                ? UICore.errorState(e.message, { retryOnclick: 'SecurityDashboard.load()' })
+                : `<div class="panel-empty">⚠️ ${esc(e.message)}</div>`;
         }
         return cache;
     }

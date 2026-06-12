@@ -10,7 +10,7 @@
             overlay.onclick = (e) => { if (e.target === overlay) close(); };
             document.body.appendChild(overlay);
         }
-        overlay.innerHTML = '<div class="activity-card"><div class="panel-empty">Загрузка…</div></div>';
+        overlay.innerHTML = `<div class="activity-card">${global.UICore ? UICore.loadingState() : '<div class="panel-empty">Загрузка…</div>'}</div>`;
         overlay.style.display = 'flex';
 
         try {
@@ -19,7 +19,9 @@
             if (!r.ok) throw new Error(d.detail || 'Ошибка');
             render(d);
         } catch (e) {
-            overlay.innerHTML = `<div class="activity-card"><p class="panel-error">${e.message}</p><button class="btn-secondary" onclick="AgentActivity.close()">Закрыть</button></div>`;
+            overlay.innerHTML = `<div class="activity-card">${global.UICore
+                ? UICore.errorState(e.message)
+                : `<p class="panel-error">${e.message}</p>`}<div class="ui-empty-actions"><button class="btn-secondary" onclick="AgentActivity.close()">Закрыть</button></div></div>`;
         }
     }
 
@@ -42,7 +44,9 @@
                         ? `<a href="/api/projects/${art.id}/preview" target="_blank" class="btn-secondary btn-sm">👁 Preview</a>` : ''}
                     <button type="button" class="btn-secondary btn-sm" onclick="AgentActivity.revise('${a.agent_id}','${art.id}')">✏️ Доработать</button>
                 </div>
-            </div>`).join('') || '<div class="panel-empty">Пока нет проектов — дайте задачу агенту</div>';
+            </div>`).join('') || (global.UICore
+                ? UICore.inlineEmpty('Пока нет проектов — дайте задачу агенту')
+                : '<div class="panel-empty">Пока нет проектов — дайте задачу агенту</div>');
 
         const taskRows = tasks.slice(0, 8).map((t) => `
             <div class="activity-task ${t.status}">

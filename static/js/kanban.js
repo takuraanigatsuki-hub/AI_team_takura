@@ -41,7 +41,13 @@
                 render(columnsFromWsTasks(snap.tasks));
                 return;
             }
-            el.innerHTML = `<div class="tasks-empty tasks-guest"><div class="tasks-empty-icon">💬</div>
+            el.innerHTML = global.UICore ? UICore.emptyState({
+                icon: '💬',
+                title: 'Гостевая сессия',
+                text: 'Отправьте задачу в чат — доска заполнится автоматически',
+                primaryLabel: 'В чат',
+                primaryOnclick: "switchView('chat')",
+            }) : `<div class="tasks-empty tasks-guest"><div class="tasks-empty-icon">💬</div>
                 <h3>Гостевая сессия</h3><p class="muted">Отправьте задачу в чат — доска заполнится автоматически</p>
                 <button type="button" class="btn-primary btn-sm" onclick="switchView('chat')">В чат</button></div>`;
             return;
@@ -56,7 +62,11 @@
             render(d.columns || {});
         } catch (e) {
             const el = document.getElementById('kanbanBoard');
-            if (el) el.innerHTML = `<div class="panel-empty">${escape(String(e.message || e))}</div>`;
+            if (el) {
+                el.innerHTML = global.UICore
+                    ? UICore.errorState(String(e.message || e))
+                    : `<div class="panel-empty">${escape(String(e.message || e))}</div>`;
+            }
         }
     }
 

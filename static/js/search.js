@@ -84,7 +84,9 @@
     async function runSearch(query, listEl) {
         if (activeController) activeController.abort();
         activeController = new AbortController();
-        listEl.innerHTML = '<div class="search-hint dash-loading">Поиск…</div>';
+        listEl.innerHTML = global.UICore
+            ? `<div class="search-hint">${UICore.loadingState('Поиск…')}</div>`
+            : '<div class="search-hint dash-loading">Поиск…</div>';
         try {
             const r = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=30`, {
                 credentials: 'same-origin',

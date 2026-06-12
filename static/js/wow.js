@@ -28,7 +28,7 @@
             modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('show'); };
             modal.innerHTML = `<div class="modal modal-wide standup-modal">
                 <h2>📊 Standup · Виктор</h2>
-                <div id="standupBody" class="standup-body"><div class="panel-empty">Загрузка…</div></div>
+                <div id="standupBody" class="standup-body">${global.UICore ? UICore.loadingState() : '<div class="panel-empty">Загрузка…</div>'}</div>
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" onclick="document.getElementById('standupModal').classList.remove('show')">Закрыть</button>
                     <button type="button" class="btn-primary" onclick="WowFeatures.refreshStandup()">Обновить</button>
@@ -42,7 +42,7 @@
     async function refreshStandup() {
         const body = document.getElementById('standupBody');
         if (!body) return;
-        if (body) body.innerHTML = '<div class="dash-loading">Загрузка…</div>';
+        if (body) body.innerHTML = global.UICore ? UICore.loadingState() : '<div class="dash-loading">Загрузка…</div>';
         try {
             const r = await fetch('/api/standup', { credentials: 'same-origin' });
             if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -53,7 +53,9 @@
                     <span>⚡ ${d.active_count || 0} активных</span>
                 </div>`;
         } catch (e) {
-            body.innerHTML = `<div class="panel-error">${e.message}</div>`;
+            body.innerHTML = global.UICore
+                ? UICore.errorState(e.message, { retryOnclick: 'WowFeatures.refreshStandup()' })
+                : `<div class="panel-error">${e.message}</div>`;
         }
     }
 

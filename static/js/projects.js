@@ -9,7 +9,7 @@
     async function load() {
         const el = document.getElementById('projectsGrid');
         if (!el) return;
-        el.innerHTML = '<div class="dash-loading">Загрузка…</div>';
+        el.innerHTML = global.UICore ? UICore.loadingState() : '<div class="dash-loading">Загрузка…</div>';
         try {
             let url = '/api/projects?limit=100';
             if (filterAgent) url += `&agent_id=${encodeURIComponent(filterAgent)}`;
@@ -17,7 +17,9 @@
             const r = await fetch(url, { credentials: 'same-origin' });
             if (!r.ok) {
                 if (r.status === 401) {
-                    el.innerHTML = `<div class="tasks-empty tasks-guest"><div class="tasks-empty-icon">🔐</div>
+                    el.innerHTML = global.UICore ? UICore.authRequiredState({
+                        title: 'Войдите для просмотра проектов',
+                    }) : `<div class="tasks-empty tasks-guest"><div class="tasks-empty-icon">🔐</div>
                         <h3>Войдите для просмотра проектов</h3>
                         <a href="/?auth=login" class="btn-primary btn-sm">Войти</a></div>`;
                     return;
@@ -29,7 +31,9 @@
             lastStats = d.stats || {};
             render(d, el);
         } catch (e) {
-            el.innerHTML = `<div class="panel-error">${e.message}</div>`;
+            el.innerHTML = global.UICore
+                ? UICore.errorState(e.message, { retryOnclick: 'ProjectsUI.load()' })
+                : `<div class="panel-error">${e.message}</div>`;
         }
     }
 
@@ -66,7 +70,13 @@
         }
 
         if (!projects.length) {
-            el.innerHTML = '<div class="projects-empty"><div class="welcome-icon">📦</div><p>Нет проектов — отправьте задачу агенту</p></div>';
+            el.innerHTML = global.UICore ? UICore.emptyState({
+                icon: '📦',
+                title: 'Нет проектов',
+                text: 'Отправьте задачу агенту — артефакты появятся здесь',
+                primaryLabel: 'Новая задача',
+                primaryOnclick: "switchView('chat')",
+            }) : '<div class="projects-empty"><div class="welcome-icon">📦</div><p>Нет проектов — отправьте задачу агенту</p></div>';
             return;
         }
 

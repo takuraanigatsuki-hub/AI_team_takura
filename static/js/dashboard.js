@@ -32,7 +32,7 @@
     async function load() {
         const grid = document.getElementById('dashboardGrid');
         if (!grid) return;
-        grid.innerHTML = '<div class="dash-loading">Загрузка…</div>';
+        grid.innerHTML = global.UICore ? UICore.loadingState() : '<div class="dash-loading">Загрузка…</div>';
         try {
             const user = global.Auth?.getUser?.();
             const admin = global.UIAccess?.canAccessConsole?.(user);
@@ -77,7 +77,9 @@
                 UIEnhancements.updateAgentFooter(working);
             }
         } catch (e) {
-            grid.innerHTML = `<div class="panel-error">Ошибка: ${esc(e.message)}</div>`;
+            grid.innerHTML = global.UICore
+                ? UICore.errorState(e.message, { retryOnclick: 'Dashboard.load()' })
+                : `<div class="panel-error">Ошибка: ${esc(e.message)}</div>`;
         }
     }
 
@@ -176,7 +178,11 @@
 
     function renderActivity() {
         const items = data.activity?.items || [];
-        if (!items.length) return '<p class="muted panel-empty">Пока нет событий — отправьте задачу в чат</p>';
+        if (!items.length) {
+            return global.UICore
+                ? UICore.inlineEmpty('Пока нет событий — отправьте задачу в чат')
+                : '<p class="muted panel-empty">Пока нет событий — отправьте задачу в чат</p>';
+        }
         return `<div class="activity-feed">${items.slice(0, 12).map((ev) => {
             const ts = (ev.timestamp || '').slice(11, 16);
             return `<div class="activity-item"><span class="activity-emoji">${ev.agent_emoji || '💬'}</span>

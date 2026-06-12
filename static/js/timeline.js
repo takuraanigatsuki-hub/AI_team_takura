@@ -5,12 +5,16 @@
     async function load(hours) {
         const h = hours || 1;
         const el = document.getElementById('timelinePanel');
-        if (el) el.innerHTML = '<div class="dash-loading">Загрузка…</div>';
+        if (el) el.innerHTML = global.UICore ? UICore.loadingState() : '<div class="dash-loading">Загрузка…</div>';
         try {
             const r = await fetch(`/api/timeline/replay?hours=${h}`, { credentials: 'same-origin' });
             if (r.status === 401) {
                 if (el) {
-                    el.innerHTML = `<div class="tasks-empty tasks-guest"><div class="tasks-empty-icon">⏱</div>
+                    el.innerHTML = global.UICore ? UICore.authRequiredState({
+                        icon: '⏱',
+                        title: 'Timeline',
+                        text: 'Войдите для полной ленты. Задачи из чата — в Inbox.',
+                    }) : `<div class="tasks-empty tasks-guest"><div class="tasks-empty-icon">⏱</div>
                         <h3>Timeline</h3><p class="muted">Войдите для полной ленты. Задачи из чата — во вкладке «Задачи».</p>
                         <a href="/?auth=login" class="btn-primary btn-sm">Войти</a></div>`;
                 }
@@ -40,7 +44,9 @@
         el.innerHTML = `
             <div class="tl-stats">${data.total || 0} событий за ${data.hours || 1}ч</div>
             <div class="tl-chips">${types || '<span class="muted">Нет данных</span>'}</div>
-            <div class="tl-list">${rows || '<div class="panel-empty">Пока пусто — активность появится после задач в чате</div>'}</div>
+            <div class="tl-list">${rows || (global.UICore
+                ? UICore.inlineEmpty('Пока пусто — активность появится после задач в чате')
+                : '<div class="panel-empty">Пока пусто — активность появится после задач в чате</div>')}</div>
             <div class="tl-actions">
                 <button type="button" class="btn-secondary btn-sm ${data.hours === 1 ? 'active' : ''}" onclick="TimelineUI.load(1)">1ч</button>
                 <button type="button" class="btn-secondary btn-sm" onclick="TimelineUI.load(6)">6ч</button>
