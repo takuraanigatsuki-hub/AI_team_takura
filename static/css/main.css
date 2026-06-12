@@ -2435,10 +2435,6 @@ body.has-pipeline-collapsed .toast-container { bottom: 88px; }
 .ml-stat.highlight span { color: var(--green); }
 .ml-textarea { resize: vertical; min-height: 72px; }
 .ml-check { font-size: 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
-.ml-main {
-    padding: 16px; overflow-y: auto; display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-content: start;
-}
 .ml-panel h3 { margin: 0 0 10px; font-size: 14px; }
 .ml-list { display: flex; flex-direction: column; gap: 8px; }
 .ml-card, .ml-eval-card {
@@ -2449,8 +2445,31 @@ body.has-pipeline-collapsed .toast-container { bottom: 88px; }
 .ml-meta { font-size: 10px; color: var(--text-muted); }
 .ml-eval-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 13px; font-weight: 600; }
 .ml-score { color: var(--green); font-weight: 800; }
-
-/* Setup wizard */
+.ml-tabs {
+    display: flex; gap: 8px; margin-bottom: 12px; grid-column: 1 / -1;
+    border-bottom: 1px solid var(--border); padding-bottom: 8px;
+}
+.ml-tab {
+    border: none; background: transparent; color: var(--text-muted); cursor: pointer;
+    padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+}
+.ml-tab.active { background: var(--accent-soft); color: var(--accent); }
+.ml-tab-panel { grid-column: 1 / -1; }
+.ml-tab-panel.hidden { display: none; }
+.ml-panel-hint { margin: 0 0 10px; font-size: 12px; }
+.ml-subhead { margin: 16px 0 8px; font-size: 13px; font-weight: 600; }
+.ml-eval-chat {
+    max-height: 320px; overflow-y: auto; border: 1px solid var(--border);
+    border-radius: 12px; padding: 8px; background: var(--surface-2); margin-bottom: 8px;
+}
+.ml-score-badge { background: rgba(94, 207, 138, 0.15); color: var(--green); }
+.ml-panel-inline { margin-bottom: 16px; }
+.ml-panel-inline h3 { margin: 0 0 8px; font-size: 14px; }
+.ml-loading { grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 24px; }
+.ml-main {
+    padding: 16px; overflow-y: auto; display: grid;
+    grid-template-columns: 1fr; gap: 12px; align-content: start;
+}
 .setup-overlay {
     position: fixed; inset: 0; z-index: 10001;
     background: rgba(0,0,0,0.7);

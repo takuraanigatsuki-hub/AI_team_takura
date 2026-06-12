@@ -718,6 +718,7 @@
     }
 
     function addWorkMessage(msg) {
+        if (msg.type === 'skill_evaluation') return;
         if (LEARNING_TYPES.has(msg.type) && msg.type !== 'skill_evaluation') return;
         if (msg.channel === 'learning') return;
         if (msg.type === 'user_message') addUserMessage(msg.message, msg.target);
@@ -779,6 +780,12 @@
     }
 
     function addLearningAgentMessage(data) {
+        if (data.type === 'skill_evaluation') {
+            if (canViewAgentLearning(window.Auth?.getUser()) && window.MashaLearningLab) {
+                MashaLearningLab.onEvalMessage(data);
+            }
+            return;
+        }
         removeLearningWelcome();
         const div = document.createElement('div');
         div.className = `message learning-msg ${data.type || ''}`;
