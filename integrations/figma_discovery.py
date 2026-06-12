@@ -379,14 +379,6 @@ async def try_autonomous_study(agent, *, max_attempts: int = 2) -> bool:
         key = target.get("file_key") or (parse_figma_url(url) or {}).get("file_key")
 
         if result and not result.get("error"):
-            if key:
-                mark_studied(
-                    key,
-                    name=(result.get("result") or {}).get("summary", {}).get("file_name")
-                    or target.get("name", ""),
-                    url=url,
-                    source=source,
-                )
             return True
 
         if key:

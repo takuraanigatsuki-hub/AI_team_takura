@@ -66,17 +66,18 @@
     function renderStudied(container, items) {
         if (!container) return;
         if (!items.length) {
-            container.innerHTML = '<div class="panel-empty">Пока пусто — дайте ссылку Figma или нажмите «Изучить»</div>';
+            container.innerHTML = '<div class="panel-empty">Пока пусто — Соня найдёт макеты сама или вставьте ссылку Figma</div>';
             return;
         }
         container.innerHTML = items.slice(0, 12).map((s) => {
+            const srcBadge = s.source === 'figma_auto' ? '<span class="dl-memory-badge">Auto</span> ' : '';
             const colors = (s.colors || []).slice(0, 6).map((c) =>
                 `<span class="color-swatch" style="background:${c}" title="${escape(c)}"></span>`
             ).join('');
             const frames = (s.frames || []).slice(0, 3).join(', ');
             return `<article class="dl-studied-card">
                 <div class="dl-studied-head">
-                    <strong>${escape(s.file_name || 'Макет')}</strong>
+                    <strong>${srcBadge}${escape(s.file_name || 'Макет')}</strong>
                     <time>${formatTime(s.timestamp)}</time>
                 </div>
                 <div class="color-row">${colors}</div>

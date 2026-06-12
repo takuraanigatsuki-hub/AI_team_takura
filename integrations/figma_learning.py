@@ -364,6 +364,17 @@ async def study_reference_file(
             "timestamp": datetime.now().isoformat(),
         })
 
+    parsed_key = (parse_figma_url(url) or {}).get("file_key")
+    if parsed_key:
+        from integrations.figma_discovery import mark_studied as _mark_discovered
+
+        _mark_discovered(
+            parsed_key,
+            name=summary.get("file_name", ""),
+            url=url,
+            source=discovery_source or ("auto" if source == "figma_auto" else "manual"),
+        )
+
     return {"patterns": patterns, "result": result, "knowledge": knowledge}
 
 
