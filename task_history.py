@@ -95,13 +95,21 @@ class TaskHistory:
         if preview_url:
             t["preview_url"] = preview_url
         self._save()
+        if t.get("parent_id"):
+            self._try_complete_parent(t["parent_id"])
 
     def mark_user_approved(self, task_id: str, user_note: str = ""):
         t = self._find(task_id)
         if not t:
             return False
+        now = datetime.now().isoformat()
+        for child in self.tasks:
+            if child.get("parent_id") == task_id and child.get("status") == "awaiting_approval":
+                child["status"] = "completed"
+                child["completed_at"] = now
+                child["user_approved"] = True
         t["status"] = "completed"
-        t["completed_at"] = datetime.now().isoformat()
+        t["completed_at"] = now
         t["user_approved"] = True
         if user_note:
             t["user_note"] = user_note[:500]
@@ -185,12 +193,14 @@ class TaskHistory:
         active = sum(1 for t in self.tasks if t.get("status") in active_statuses)
         awaiting = sum(1 for t in self.tasks if t.get("status") == "awaiting_approval")
         failed = sum(1 for t in self.tasks if t.get("status") == "failed")
+        cancelled = sum(1 for t in self.tasks if t.get("status") == "cancelled")
         return {
             "total": len(self.tasks),
             "completed": completed,
             "active": active,
             "awaiting_approval": awaiting,
             "failed": failed,
+            "cancelled": cancelled,
         }
 
     def cleanup_stale(self, max_minutes: int = 30):
@@ -227,3 +237,29 @@ class TaskHistory:
         t["priority"] = priority
         self._save()
         return True
+
+    def cancel_all_active(self) -> int:
+        """Отменить все незавершённые задачи."""
+        active = (
+            "submitted", "queued", "in_progress", "triaging",
+            "revision_requested", "awaiting_approval",
+        )
+        now = datetime.now().isoformat()
+        count = 0
+        for t in self.tasks:
+            if t.get("status") not in active:
+                continue
+            t["status"] = "cancelled"
+            t["completed_at"] = now
+            t["response"] = "Отменено пользователем"
+            count += 1
+        if count:
+            self._save()
+        return count
+
+    def clear_all(self) -> int:
+        """Полностью очистить журнал задач."""
+        total = len(self.tasks)
+        self.tasks = []
+        self._save()
+        return total
