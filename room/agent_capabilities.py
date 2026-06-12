@@ -89,6 +89,14 @@ AGENT_CAPABILITIES = {
         "can_present": False,
         "can_3d": True,
     },
+    "evaluator": {
+        "label": "Оценка навыков",
+        "outputs": ["review", "evaluation", "feedback"],
+        "skills": ["quality", "coaching", "skill scoring", "acceptance"],
+        "can_code": False,
+        "can_present": True,
+        "can_3d": False,
+    },
 }
 
 
@@ -128,6 +136,8 @@ def detect_artifact_type(agent_id: str, task_text: str) -> str:
         return "document"
     if kind == "infra" or agent_id == "devops":
         return "infra"
+    if kind == "evaluator" or agent_id == "evaluator":
+        return "review"
     if agent_id == "reviewer":
         return "review"
     if agent_id == "pm":

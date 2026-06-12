@@ -58,24 +58,36 @@ async def produce_artifact(agent, task_text: str, response: str, revision_of: st
     if not task_text.strip():
         return None
 
+    from room.knowledge_applier import get_learned_hints
+    hints = get_learned_hints(agent.agent_id, task_text, getattr(agent, "learned_topics", None))
+
     art_type = detect_artifact_type(agent.agent_id, task_text)
     caps = get_capabilities(agent.agent_id)
     title = task_text[:80].strip()
     if len(task_text) > 80:
         title += "…"
 
+    if len(response or "") < 80:
+        from integrations.llm_codegen import generate_artifact_content
+        response = await generate_artifact_content(
+            task_text, art_type, agent.name, hints,
+        )
+
     content = response
     preview_html = ""
     files = {}
     tags = caps.get("skills", [])[:4]
 
-    if art_type == "presentation":
-        slides = [
-            {"title": "Проблема", "bullets": ["Контекст задачи", task_text[:80], "Целевая аудитория"]},
-            {"title": "Решение", "bullets": ["Подход команды", "Ключевые фичи", "Timeline"]},
-            {"title": "Результат", "bullets": ["MVP готов", "Метрики успеха", "Next steps"]},
-        ]
-        preview_html = _presentation_html(title, task_text, slides)
+    if art_type == "presentation" and "<" in (response or ""):
+        preview_html = response if response.strip().startswith("<") else _presentation_html(title, task_text, [
+            {"title": "Слайд 1", "bullets": [task_text[:80]]},
+        ])
+        content = preview_html
+        files = {"slides.html": preview_html}
+    elif art_type == "presentation":
+        preview_html = _presentation_html(title, task_text, [
+            {"title": "Введение", "bullets": [response[:200] if response else task_text[:80]]},
+        ])
         content = preview_html
         files = {"slides.html": preview_html}
 

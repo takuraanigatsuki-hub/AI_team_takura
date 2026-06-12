@@ -74,7 +74,7 @@ def test_pm_routes_presentation_to_presenter_only():
 def test_pm_routes_table_to_frontend_not_full_stack():
     pm = PMOrchestratorAgent()
     a = pm._analyze_and_assign("Сделай таблицу с данными", {})
-    assert list(a.keys()) == ["frontend", "reviewer"]
+    assert set(a.keys()) == {"frontend", "evaluator"}
 
 
 def test_table_preview_not_site():

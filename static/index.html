@@ -31,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/main.css?v=34">
+    <link rel="stylesheet" href="/static/css/main.css?v=35">
     <link rel="stylesheet" href="/static/css/feature-pack.css?v=3">
 </head>
 <body>
@@ -366,24 +366,30 @@
 
     <!-- TASKS VIEW -->
     <div id="tasksView" class="tasks-layout hidden">
-        <div class="tasks-panel">
-            <div class="tasks-stats" id="tasksStats">
-                <div class="stat-card"><span class="stat-num" id="statCompleted">0</span><span class="stat-label">Выполнено</span></div>
-                <div class="stat-card active"><span class="stat-num" id="statActive">0</span><span class="stat-label">В работе</span></div>
+        <div class="tasks-shell">
+            <header class="tasks-head">
+                <div>
+                    <h2 class="tasks-title">📋 Задачи</h2>
+                    <p class="tasks-sub">Подтверждайте результат или отправляйте на правки</p>
+                </div>
+                <button type="button" class="btn-secondary btn-sm" onclick="exportTasks()">📥 Export</button>
+            </header>
+            <div class="tasks-stats tasks-stats-grid" id="tasksStats">
                 <div class="stat-card"><span class="stat-num" id="statTotal">0</span><span class="stat-label">Всего</span></div>
+                <div class="stat-card active"><span class="stat-num" id="statActive">0</span><span class="stat-label">Активные</span></div>
+                <div class="stat-card awaiting"><span class="stat-num" id="statAwaiting">0</span><span class="stat-label">Ждут вас</span></div>
+                <div class="stat-card done"><span class="stat-num" id="statCompleted">0</span><span class="stat-label">Готово</span></div>
             </div>
-            <div class="tasks-hint">
-                <strong>Как отправить задачу:</strong> вкладка «Рабочий чат» → выберите агента → режим <strong>«Задача»</strong> (не «Чат») → Enter.
-                Задача «Вся команда» идёт через PM Виктора.
+            <div class="tasks-toolbar">
+                <div class="tasks-filters">
+                    <button type="button" class="filter-btn active" data-filter="all" onclick="filterTasks('all')">Все</button>
+                    <button type="button" class="filter-btn" data-filter="awaiting" onclick="filterTasks('awaiting')">⏳ На проверке</button>
+                    <button type="button" class="filter-btn" data-filter="active" onclick="filterTasks('active')">В работе</button>
+                    <button type="button" class="filter-btn" data-filter="completed" onclick="filterTasks('completed')">Готово</button>
+                </div>
+                <input type="search" id="tasksSearch" class="chat-search tasks-search" placeholder="Поиск…" oninput="filterTasksSearch(this.value)">
             </div>
-            <div class="tasks-filters">
-                <button type="button" class="filter-btn active" data-filter="all" onclick="filterTasks('all')">Все</button>
-                <button type="button" class="filter-btn" data-filter="completed" onclick="filterTasks('completed')">Выполненные</button>
-                <button type="button" class="filter-btn" data-filter="active" onclick="filterTasks('active')">Активные</button>
-                <input type="search" id="tasksSearch" class="chat-search tasks-search" placeholder="Поиск задач…" oninput="filterTasksSearch(this.value)">
-                <button type="button" class="filter-btn export-btn" onclick="exportTasks()" title="Скачать JSON">📥 Export</button>
-            </div>
-            <div class="tasks-list" id="tasksList">
+            <div class="tasks-list tasks-list-modern" id="tasksList">
                 <div class="tasks-empty">Задач пока нет — отправьте первую в чате</div>
             </div>
         </div>
@@ -745,7 +751,7 @@
 <script src="/static/js/sprint.js?v=1"></script>
 <script src="/static/js/power-pack.js?v=1"></script>
 <script src="/static/js/sonya-studio.js?v=3"></script>
-<script src="/static/js/app.js?v=27"></script>
+<script src="/static/js/app.js?v=28"></script>
 
 <!-- PWA: регистрация Service Worker -->
 <script>

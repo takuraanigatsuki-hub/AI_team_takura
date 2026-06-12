@@ -496,6 +496,26 @@
                     }
                 }).catch(() => {});
                 break;
+            case 'task_awaiting_approval':
+                addSystemMessage(data.message || '⏳ Задача ждёт подтверждения');
+                if (document.getElementById('tasksView') && !document.getElementById('tasksView').classList.contains('hidden')) loadTasks();
+                else if (window.UIEnhancements) UIEnhancements.toast('⏳ Задача на проверке', 'info');
+                break;
+            case 'task_approved':
+            case 'task_revision':
+                addSystemMessage(data.message || '');
+                loadTasks();
+                break;
+            case 'role_triage':
+                addAgentMessage({ ...data, type: 'message', message: data.message || '' });
+                break;
+            case 'peer_learning':
+            case 'peer_discussion':
+                addAgentMessage({ ...data, type: 'peer_learning', message: data.message || '' });
+                break;
+            case 'skill_evaluation':
+                addAgentMessage({ ...data, type: 'skill_evaluation', message: data.message || '' });
+                break;
             case 'result_ready':
                 addResultReadyMessage(data);
                 if (data.open_preview && window.ReactPreview) {
@@ -934,8 +954,11 @@
     const STATUS_LABELS = {
         submitted: 'отправлена',
         queued: 'в очереди',
+        triaging: 'проверка ролей',
         in_progress: 'выполняется',
-        completed: 'выполнена',
+        awaiting_approval: '⏳ на проверке',
+        revision_requested: '✎ правки',
+        completed: '✓ готово',
         failed: 'ошибка',
     };
 
@@ -1003,18 +1026,54 @@
         if (window.UIEnhancements) UIEnhancements.toast('↻ Задача готова к отправке', 'info');
     };
 
+    window.approveTask = async function (taskId) {
+        try {
+            const r = await fetch(`/api/tasks/${taskId}/approve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ note: '' }),
+            });
+            if (r.ok) {
+                if (window.UIEnhancements) UIEnhancements.toast('✅ Задача принята', 'success');
+                loadTasks();
+            }
+        } catch (_) {}
+    };
+
+    window.requestTaskRevision = async function (taskId) {
+        const feedback = prompt('Что исправить?');
+        if (!feedback?.trim()) return;
+        try {
+            const r = await fetch(`/api/tasks/${taskId}/revision`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ feedback: feedback.trim() }),
+            });
+            if (r.ok) {
+                if (window.UIEnhancements) UIEnhancements.toast('✎ Отправлено на доработку', 'info');
+                loadTasks();
+            }
+        } catch (_) {}
+    };
+
     function renderTasks() {
         const list = document.getElementById('tasksList');
         if (!list) return;
 
+        const awaiting = taskStats.awaiting_approval || taskHistory.filter((t) => t.status === 'awaiting_approval').length;
         document.getElementById('statCompleted').textContent = taskStats.completed || 0;
         document.getElementById('statActive').textContent = taskStats.active || 0;
         document.getElementById('statTotal').textContent = taskStats.total || 0;
+        const awEl = document.getElementById('statAwaiting');
+        if (awEl) awEl.textContent = awaiting;
 
         let items = taskHistory;
         if (taskFilter === 'completed') items = items.filter((t) => t.status === 'completed');
+        if (taskFilter === 'awaiting') items = items.filter((t) => t.status === 'awaiting_approval');
         if (taskFilter === 'active') {
-            items = items.filter((t) => ['submitted', 'queued', 'in_progress'].includes(t.status));
+            items = items.filter((t) => [
+                'submitted', 'queued', 'in_progress', 'triaging', 'revision_requested',
+            ].includes(t.status));
         }
         if (taskSearchQuery) {
             items = items.filter((t) => {
@@ -1029,31 +1088,37 @@
         }
 
         list.innerHTML = items.map((t) => {
-            const globalIdx = taskHistory.indexOf(t);
             const agent = t.agent_emoji && t.agent_name
                 ? `${t.agent_emoji} ${t.agent_name}` : (t.target === 'all' ? '👥 Команда' : t.target || '—');
-            const time = t.completed_at || t.started_at || t.created_at;
+            const time = t.completed_at || t.awaiting_since || t.started_at || t.created_at;
             const timeStr = time ? formatTime(time) : '';
-            const isSite = (t.task || '').toLowerCase().match(/сайт|website|лендинг|landing|портал/);
-            const siteLink = (t.status === 'completed' && t.agent_id === 'frontend' && isSite)
-                ? `<a href="/api/sites/latest" target="_blank" class="site-open-link" style="margin-top:8px">🌐 Открыть готовый сайт</a>`
-                : '';
+            const previewLink = t.preview_url
+                ? `<a href="${escapeHtml(t.preview_url)}" target="_blank" class="task-link-btn">👁 Preview</a>` : '';
+            const siteLink = t.agent_id === 'frontend' && t.status === 'awaiting_approval'
+                ? `<a href="/api/sites/latest" target="_blank" class="task-link-btn">🌐 Сайт</a>` : '';
+            const approvalBtns = t.status === 'awaiting_approval' ? `
+                <div class="task-approval">
+                    <button type="button" class="btn-primary btn-sm" onclick="approveTask('${escapeHtml(t.id)}')">✓ Принять</button>
+                    <button type="button" class="btn-secondary btn-sm" onclick="requestTaskRevision('${escapeHtml(t.id)}')">✎ Правки</button>
+                </div>` : '';
             const response = t.response
-                ? `<div class="task-response">${escapeHtml(t.response.slice(0, 400))}${t.response.length > 400 ? '…' : ''}</div>${siteLink}`
-                : siteLink;
+                ? `<div class="task-response">${escapeHtml(t.response.slice(0, 500))}${t.response.length > 500 ? '…' : ''}</div>`
+                : '';
             return `
-                <div class="task-item ${t.status}">
-                    <div class="task-item-header">
-                        <span class="task-status ${t.status}">${STATUS_LABELS[t.status] || t.status}</span>
+                <article class="task-card ${t.status}">
+                    <div class="task-card-top">
+                        <span class="task-status-pill ${t.status}">${STATUS_LABELS[t.status] || t.status}</span>
                         <span class="task-meta">${agent} · ${timeStr}</span>
-                        <span class="task-actions">
-                            <button type="button" class="task-act-btn" onclick="copyTaskByIndex(${globalIdx})" title="Копировать">📋</button>
-                            <button type="button" class="task-act-btn" onclick="rerunTaskByIndex(${globalIdx})" title="Повторить">↻</button>
-                        </span>
                     </div>
-                    <div class="task-text">${escapeHtml(t.task || '')}</div>
+                    <p class="task-card-text">${escapeHtml(t.task || '')}</p>
                     ${response}
-                </div>`;
+                    <div class="task-card-actions">
+                        ${previewLink}${siteLink}
+                        <button type="button" class="task-act-btn" onclick="copyTaskByIndex(${taskHistory.indexOf(t)})" title="Копировать">📋</button>
+                        <button type="button" class="task-act-btn" onclick="rerunTaskByIndex(${taskHistory.indexOf(t)})" title="Повторить">↻</button>
+                    </div>
+                    ${approvalBtns}
+                </article>`;
         }).join('');
     }
 
