@@ -1,10 +1,24 @@
 """Генерация runnable React-кода для live preview Сони."""
 import re
 import random
+from pathlib import Path
+
+_COMPONENTS_DIR = Path(__file__).resolve().parent.parent / "static" / "components"
 
 
 def _esc(s: str) -> str:
     return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ")[:80]
+
+
+def _load_component(filename: str) -> str:
+    path = _COMPONENTS_DIR / filename
+    if path.is_file():
+        return path.read_text(encoding="utf-8")
+    return ""
+
+
+def _inject_task(template: str, task: str) -> str:
+    return template.replace("__TASK__", _esc(task))
 
 
 def is_site_task(task: str) -> bool:
@@ -20,44 +34,44 @@ def generate_react_preview(task: str) -> dict:
     title = task[:60] if task else "Компонент"
 
     if is_site_task(task):
-        return {"title": "Готовый сайт", "code": _WEBSITE.format(task=_esc(task)), "is_site": True}
+        return {"title": "Готовый сайт", "code": _inject_task(_WEBSITE, task), "is_site": True}
 
     if any(w in t for w in ["логин", "login", "авториз", "вход", "sign in"]):
-        return {"title": "Форма входа", "code": _LOGIN_FORM.format(task=_esc(task))}
+        return {"title": "Форма входа", "code": _inject_task(_LOGIN_FORM, task)}
 
     if any(w in t for w in ["регистрац", "register", "signup", "sign up"]):
-        return {"title": "Регистрация", "code": _REGISTER_FORM.format(task=_esc(task))}
+        return {"title": "Регистрация", "code": _build_register_form(task)}
 
     if any(w in t for w in ["кнопк", "button", "btn"]):
-        return {"title": "Интерактивная кнопка", "code": _BUTTON.format(task=_esc(task))}
+        return {"title": "Интерактивная кнопка", "code": _inject_task(_BUTTON, task)}
 
     if any(w in t for w in ["todo", "список дел", "задач", "чеклист", "checklist"]):
-        return {"title": "Todo-лист", "code": _TODO.format(task=_esc(task))}
+        return {"title": "Todo-лист", "code": _inject_task(_TODO, task)}
 
     if any(w in t for w in ["счётчик", "счетчик", "counter", "клик"]):
-        return {"title": "Счётчик", "code": _COUNTER.format(task=_esc(task))}
+        return {"title": "Счётчик", "code": _inject_task(_COUNTER, task)}
 
     if any(w in t for w in ["карточ", "card", "товар", "product"]):
-        return {"title": "Карточка", "code": _CARD.format(task=_esc(task))}
+        return {"title": "Карточка", "code": _inject_task(_CARD, task)}
 
     if any(w in t for w in ["таблиц", "table", "данн", "data grid"]):
-        return {"title": "Таблица данных", "code": _TABLE.format(task=_esc(task))}
+        return {"title": "Таблица данных", "code": _inject_task(_TABLE, task)}
 
     if any(w in t for w in ["модал", "modal", "диалог", "popup", "попап"]):
-        return {"title": "Модальное окно", "code": _MODAL.format(task=_esc(task))}
+        return {"title": "Модальное окно", "code": _inject_task(_MODAL, task)}
 
     if any(w in t for w in ["дашборд", "dashboard", "панел", "аналитик", "статистик"]):
-        return {"title": "Дашборд", "code": _DASHBOARD.format(task=_esc(task))}
+        return {"title": "Дашборд", "code": _inject_task(_DASHBOARD, task)}
 
     if any(w in t for w in ["навигац", "navbar", "меню", "header", "шапк"]):
-        return {"title": "Навигация", "code": _NAVBAR.format(task=_esc(task))}
+        return {"title": "Навигация", "code": _inject_task(_NAVBAR, task)}
 
     if any(w in t for w in ["форм", "form", "input", "поле"]):
-        return {"title": "Форма", "code": _GENERIC_FORM.format(task=_esc(task))}
+        return {"title": "Форма", "code": _inject_task(_GENERIC_FORM, task)}
 
     palettes = [_HERO, _CARD, _COUNTER, _BUTTON, _TODO]
     pick = random.choice(palettes)
-    return {"title": "UI компонент", "code": pick.format(task=_esc(task))}
+    return {"title": "UI компонент", "code": _inject_task(pick, task)}
 
 
 _COMMON_STYLES = """
@@ -66,10 +80,32 @@ const styles = {
   card: { background: '#fff', borderRadius: 16, padding: 28, boxShadow: '0 20px 60px rgba(0,0,0,0.25)', maxWidth: 420, width: '100%' },
   title: { margin: '0 0 8px', fontSize: 22, fontWeight: 700, color: '#1a1c22' },
   sub: { margin: '0 0 20px', fontSize: 13, color: '#6b7280' },
-  btn: { padding: '10px 20px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#6c63ff,#4f7df3)', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 14 },
-  input: { width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e4ea', marginBottom: 12, fontSize: 14, boxSizing: 'border-box' },
+  btn: { padding: '10px 20px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#6c63ff,#4f7df3)', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 14, width: '100%', marginTop: 8 },
+  input: { width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e4ea', marginBottom: 4, fontSize: 14, boxSizing: 'border-box' },
+  badge: { display: 'inline-block', background: 'rgba(108,99,255,0.12)', color: '#6c63ff', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, marginBottom: 12 },
+  label: { display: 'block', fontSize: 12, color: '#6b7280', margin: '12px 0 4px' },
+  fieldError: { margin: '0 0 8px', fontSize: 12, color: '#dc2626' },
+  serverError: { margin: '8px 0', padding: '10px 12px', background: '#fef2f2', borderRadius: 8, fontSize: 13, color: '#dc2626' },
+  inputError: { borderColor: '#fca5a5' },
+  btnDisabled: { opacity: 0.7, cursor: 'not-allowed' },
+  btnLink: { display: 'inline-block', textAlign: 'center', textDecoration: 'none', marginTop: 16 },
+  successIcon: { width: 48, height: 48, borderRadius: '50%', background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, marginBottom: 16 },
+  footer: { marginTop: 20, fontSize: 13, color: '#6b7280', textAlign: 'center' },
+  link: { color: '#6c63ff', textDecoration: 'none', fontWeight: 600 },
 };
+const task = "__TASK__";
 """
+
+_REGISTER_STYLES = _COMMON_STYLES
+
+
+def _build_register_form(task: str) -> str:
+    component = _load_component("RegistrationForm.jsx")
+    if component:
+        body = re.sub(r"^/\*\*.*?\*/\s*", "", component, count=1, flags=re.DOTALL).strip()
+        return _inject_task(_REGISTER_STYLES + "\n" + body, task)
+    return _inject_task(_REGISTER_FORM, task)
+
 
 _BUTTON = _COMMON_STYLES + """
 function App() {
@@ -79,7 +115,7 @@ function App() {
     <div style={styles.page}>
       <div style={styles.card}>
         <h1 style={styles.title}>Кнопка</h1>
-        <p style={styles.sub}>Задача: "{task}"</p>
+        <p style={styles.sub}>Задача: "__TASK__"</p>
         <button
           style={{...styles.btn, transform: hover ? 'scale(1.05)' : 'scale(1)', transition: 'all 0.2s'}}
           onMouseEnter={() => setHover(true)}
@@ -313,7 +349,7 @@ function App() {
 _WEBSITE = """
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const task = "{task}";
+  const task = "__TASK__";
   const features = [
     { icon: '⚡', title: 'Быстро', desc: 'Оптимизированная загрузка и Core Web Vitals' },
     { icon: '🎨', title: 'Красиво', desc: 'Современный UI с адаптивной вёрсткой' },
