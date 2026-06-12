@@ -57,6 +57,40 @@
         </div>`;
     }
 
+    function loadingState(text = 'Загрузка…') {
+        return `<div class="ui-empty ui-loading" aria-busy="true" role="status">
+            <div class="ui-loading-ring" aria-hidden="true"></div>
+            <p class="muted">${esc(text)}</p>
+        </div>`;
+    }
+
+    function errorState(message, opts = {}) {
+        const { title = 'Ошибка', icon = '⚠️', retryOnclick = '' } = opts;
+        return `<div class="ui-empty ui-error">
+            <div class="ui-empty-icon">${icon}</div>
+            <h3>${esc(title)}</h3>
+            <p class="muted">${esc(message)}</p>
+            ${retryOnclick ? `<div class="ui-empty-actions"><button type="button" class="btn-secondary btn-sm" onclick="${retryOnclick}">Повторить</button></div>` : ''}
+        </div>`;
+    }
+
+    function authRequiredState(opts = {}) {
+        return emptyState({
+            icon: '🔐',
+            title: opts.title || 'Нужен вход',
+            text: opts.text || 'Войдите, чтобы сохранить данные между визитами.',
+            secondaryLabel: 'Войти',
+            secondaryHref: '/?auth=login',
+            primaryLabel: opts.primaryLabel || '',
+            primaryOnclick: opts.primaryOnclick || '',
+            ...opts,
+        });
+    }
+
+    function inlineEmpty(text) {
+        return `<p class="ui-inline-empty muted">${esc(text)}</p>`;
+    }
+
     function formatTime(iso) {
         if (!iso || !global.formatTime) return '';
         return global.formatTime(iso);
@@ -359,6 +393,10 @@
     global.UICore = {
         esc,
         emptyState,
+        loadingState,
+        errorState,
+        authRequiredState,
+        inlineEmpty,
         renderTaskCard,
         renderKanbanCard,
         getUiMode,

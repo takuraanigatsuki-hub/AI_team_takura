@@ -73,6 +73,49 @@
 .ui-empty p { margin: 0 0 var(--space-4); color: var(--text-muted); font-size: 13px; line-height: 1.5; }
 .ui-empty-actions { display: flex; gap: var(--space-2); justify-content: center; flex-wrap: wrap; }
 
+/* Loading + error variants */
+.ui-loading { padding: var(--space-5) var(--space-4); }
+.ui-loading-ring {
+    width: 28px;
+    height: 28px;
+    margin: 0 auto var(--space-3);
+    border: 2px solid rgba(108, 99, 255, 0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: uiSpin 0.7s linear infinite;
+}
+@keyframes uiSpin { to { transform: rotate(360deg); } }
+.ui-error .ui-empty-icon { color: var(--semantic-danger); }
+.ui-inline-empty { margin: var(--space-3) 0; text-align: center; font-size: 13px; }
+
+/* Legacy aliases → unified empty states */
+.panel-empty,
+.dash-loading,
+.tasks-empty:not(.ui-empty),
+.panel-error {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: var(--space-5) var(--space-4);
+}
+.panel-error { color: var(--semantic-danger); }
+.dash-loading::after {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 24px;
+    margin: var(--space-2) auto 0;
+    border: 2px solid rgba(108, 99, 255, 0.25);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: uiSpin 0.7s linear infinite;
+}
+
+/* Header: hide duplicate quick actions on desktop (available in ⋯ menu) */
+@media (min-width: 901px) {
+    .fp-hide-desktop { display: none !important; }
+}
+
 /* ─── Mobile bottom tab bar ─── */
 .mobile-tab-bar {
     display: none;
