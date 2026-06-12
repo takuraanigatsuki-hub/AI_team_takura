@@ -53,7 +53,17 @@
 
         const name = user.name || user.email?.split('@')[0] || 'Пользователь';
         const pill = document.getElementById('lpUserPill');
-        if (pill) pill.textContent = `👤 ${name} · ${user.subscription?.tier_emoji || ''} ${user.subscription?.tier_name || ''}`;
+        if (pill) {
+            const tierLabel = user.is_owner
+                ? (user.role_label || 'Владелец')
+                : (user.subscription?.tier_name || '');
+            const tierEmoji = user.subscription?.tier_emoji || '';
+            const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+            const tierClass = user.is_owner ? ' lp-user-pill-tier--owner' : '';
+            pill.innerHTML = `
+                <span class="lp-user-pill-name" title="${esc(name)}">👤 ${esc(name)}</span>
+                ${tierLabel ? `<span class="lp-user-pill-tier${tierClass}" title="${esc(tierLabel)}">${tierEmoji} ${esc(tierLabel)}</span>` : ''}`;
+        }
 
         const ws = user.default_view && user.default_view !== 'profile'
             ? `/app?view=${encodeURIComponent(user.default_view)}`
