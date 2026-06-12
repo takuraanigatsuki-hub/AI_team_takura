@@ -584,16 +584,26 @@ async def admin_update_site(body: AdminSiteUpdate, request: Request):
         learning_interval_max=body.learning_interval_max,
         persist_knowledge=body.persist_knowledge,
         cursor_repo_url=body.cursor_repo_url,
+        cursor_enabled=body.cursor_enabled,
         git_auto_sync=body.git_auto_sync,
-        auto_theme=body.auto_theme,
-        telegram_notify_tasks=body.telegram_notify_tasks,
     )
     result = await update_config(update)
     import config as cfg_module
-    if body.cursor_enabled is not None:
-        cfg_module.config["cursor_enabled"] = body.cursor_enabled
     if body.cursor_model:
         cfg_module.config["cursor_model"] = body.cursor_model.strip()
+        config_file = os.path.join(os.path.dirname(__file__), "config.json")
+        try:
+            with open(config_file, "r", encoding="utf-8") as f:
+                current = json.load(f)
+        except Exception:
+            current = {}
+        current["cursor_model"] = body.cursor_model.strip()
+        with open(config_file, "w", encoding="utf-8") as f:
+            json.dump(current, f, ensure_ascii=False, indent=2)
+    if body.auto_theme is not None:
+        cfg_module.config["auto_theme"] = body.auto_theme
+    if body.telegram_notify_tasks is not None:
+        cfg_module.config["telegram_notify_tasks"] = body.telegram_notify_tasks
     return {"ok": True, "config": result}
 
 
