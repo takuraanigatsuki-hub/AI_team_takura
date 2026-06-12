@@ -51,6 +51,7 @@
         <button type="button" class="view-tab" data-view="tasks" onclick="switchView('tasks')">Задачи</button>
         <button type="button" class="view-tab" data-view="projects" onclick="switchView('projects')">Проекты</button>
         <button type="button" class="view-tab" data-view="kanban" onclick="switchView('kanban')">Kanban</button>
+        <button type="button" class="view-tab" data-view="sprint" onclick="switchView('sprint')">Sprint</button>
         <button type="button" class="view-tab" data-view="timeline" onclick="switchView('timeline')">Timeline</button>
         <button type="button" class="view-tab" data-view="dashboard" onclick="switchView('dashboard')">Dashboard</button>
     </nav>
@@ -63,7 +64,12 @@
         <span class="presence-pill" id="presencePill" title="В комнате">👤 …</span>
         <button type="button" class="text-btn" onclick="WowFeatures.showStandup()" title="Standup">📊 Standup</button>
         <button type="button" class="text-btn" onclick="VoiceRoom.readStandup()" title="Standup TTS">🔊 Voice</button>
+        <button type="button" class="text-btn" onclick="PowerPack.voiceStandupRound()" title="Voice standup round">🎙️ Round</button>
         <button type="button" class="text-btn" onclick="VoiceRoom.startListening()" title="Голосовая задача">🎤</button>
+        <button type="button" class="text-btn" onclick="PowerPack.showMemory()" title="Project memory">🧠</button>
+        <button type="button" class="text-btn" onclick="PowerPack.runPipeline()" title="Figma → React → Deploy">⚡ Pipeline</button>
+        <button type="button" class="text-btn" onclick="PowerPack.downloadBackup()" title="Backup ZIP">📦</button>
+        <button type="button" class="text-btn" onclick="PowerPack.createViewLink()" title="View-only ссылка">🔗</button>
         <button type="button" class="text-btn" onclick="WowFeatures.deployNow()" title="Deploy ZIP">🚀 Deploy</button>
         <button type="button" class="cursor-toggle-btn" onclick="Integrations.toggleCursorPanel()" title="Cursor SDK">
             ⚡ Cursor <span class="integration-badge" id="cursorBadge">…</span>
@@ -142,6 +148,7 @@
         <div class="dashboard-panel" id="dashboardGrid">
             <div class="dash-loading">Загрузка…</div>
         </div>
+        <div class="llm-cost-bar" id="llmCostWidget">LLM: …</div>
     </div>
 
     <!-- TASKS VIEW -->
@@ -176,6 +183,9 @@
                 <p class="muted">Код, UI, презентации, 3D — артефакты каждого агента</p>
             </div>
             <div class="tasks-stats" id="projectsStats"></div>
+            <div class="projects-toolbar">
+                <button type="button" class="btn-secondary btn-sm" onclick="PowerPack.compareProjects()">⇔ Сравнить</button>
+            </div>
             <div class="projects-filters">
                 <button type="button" class="filter-btn proj-filter active" data-agent="" data-type="" onclick="ProjectsUI.setFilter('','')">Все</button>
                 <button type="button" class="filter-btn proj-filter" data-agent="" data-type="presentation" onclick="ProjectsUI.setFilter('','presentation')">📽️</button>
@@ -186,6 +196,13 @@
             <div class="projects-grid" id="projectsGrid">
                 <div class="panel-empty">Загрузка…</div>
             </div>
+        </div>
+    </div>
+
+    <!-- SPRINT VIEW -->
+    <div id="sprintView" class="sprint-layout hidden">
+        <div class="sprint-panel" id="sprintPanel">
+            <div class="panel-empty">Загрузка…</div>
         </div>
     </div>
 
@@ -275,6 +292,9 @@
                 <button type="button" class="tpl-btn" onclick="applyProjectTemplate('saas')">📊 SaaS</button>
                 <button type="button" class="tpl-btn" onclick="applyProjectTemplate('ecommerce')">🛒 Shop</button>
                 <button type="button" class="tpl-btn" onclick="applyProjectTemplate('admin')">🛡️ Admin</button>
+                <button type="button" class="tpl-btn" onclick="PowerPack.applyTemplate('pitch')">📽️ Pitch</button>
+                <button type="button" class="tpl-btn" onclick="PowerPack.applyTemplate('3d-hero')">🧊 3D</button>
+                <button type="button" class="tpl-btn" onclick="PowerPack.applyTemplate('docker-ci')">🔧 CI</button>
             </div>
 
             <div class="messages" id="messages">
@@ -292,7 +312,8 @@
 
             <div class="input-area">
                 <div class="input-wrap">
-                    <textarea id="messageInput" placeholder="Задача или сообщение…" rows="1"></textarea>
+                    <textarea id="messageInput" placeholder="Задача или @соня @pm @все …" rows="1" autocomplete="off"></textarea>
+                    <div id="mentionDropdown" class="mention-dropdown hidden"></div>
                 </div>
                 <button type="button" class="send-btn" onclick="sendMessage()">↑</button>
             </div>
@@ -445,8 +466,10 @@
 <script src="/static/js/ui-enhancements.js?v=2"></script>
 <script src="/static/js/dashboard.js?v=2"></script>
 <script src="/static/js/agent-activity.js?v=1"></script>
-<script src="/static/js/projects.js?v=1"></script>
-<script src="/static/js/app.js?v=12"></script>
+<script src="/static/js/projects.js?v=2"></script>
+<script src="/static/js/sprint.js?v=1"></script>
+<script src="/static/js/power-pack.js?v=1"></script>
+<script src="/static/js/app.js?v=13"></script>
 
 <!-- PWA: регистрация Service Worker -->
 <script>
