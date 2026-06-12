@@ -206,7 +206,7 @@
             </div>
             <div class="pc-messages"></div>
             <div class="pc-input-row">
-                <input type="text" placeholder="Сообщение ${agent.name}…" />
+                <input type="text" placeholder="Задача или вопрос ${agent.name}…" />
                 <button type="button">↑</button>
             </div>`;
         container.appendChild(win);
