@@ -46,7 +46,15 @@
 
     window.switchView = function (view) {
         const user = window.Auth?.getUser();
-        if (user && window.ProfileCabinet && !ProfileCabinet.canAccessView(user, view)) {
+        if (view === 'admin') {
+            if (!window.AdminPanel?.canAccess(user)) {
+                const msg = 'Панель Admin доступна только владельцу и администраторам';
+                if (window.UIEnhancements) UIEnhancements.toast(msg, 'warn');
+                else alert(msg);
+                switchView('profile');
+                return;
+            }
+        } else if (user && window.ProfileCabinet && !ProfileCabinet.canAccessView(user, view)) {
             const sub = user.subscription || {};
             const msg = `Нужен тариф выше. Ваш: ${sub.tier_name || 'Free'} (ур. ${sub.level || 1})`;
             if (window.UIEnhancements) UIEnhancements.toast(msg, 'warn');
@@ -74,6 +82,7 @@
         document.getElementById('timelineView')?.classList.toggle('hidden', view !== 'timeline');
         document.getElementById('projectsView')?.classList.toggle('hidden', view !== 'projects');
         document.getElementById('profileView')?.classList.toggle('hidden', view !== 'profile');
+        document.getElementById('adminView')?.classList.toggle('hidden', view !== 'admin');
 
         if (view === 'tasks') loadTasks();
         if (view === 'projects' && window.ProjectsUI) ProjectsUI.load();
@@ -89,6 +98,7 @@
         if (view === 'dashboard' && window.Dashboard) Dashboard.load();
         if (view === 'dashboard' && window.PowerPack) PowerPack.loadCostWidget();
         if (view === 'profile' && window.ProfileCabinet) ProfileCabinet.load();
+        if (view === 'admin' && window.AdminPanel) AdminPanel.load();
 
         clearInterval(dashboardRefreshTimer);
         if (view === 'dashboard') {
@@ -113,21 +123,43 @@
         }
     };
 
+    function hideStudioLoading() {
+        document.getElementById('studioLoading')?.classList.add('hidden');
+    }
+
+    function showStudioLoading() {
+        document.getElementById('studioLoading')?.classList.remove('hidden');
+    }
+
+    let threeWaitAttempts = 0;
+
     function initStudio() {
         const canvas = document.getElementById('studioCanvas');
         if (!canvas || !window.StudioApp) return;
 
         if (typeof THREE === 'undefined') {
-            setTimeout(initStudio, 200);
+            threeWaitAttempts += 1;
+            if (threeWaitAttempts > 40) {
+                hideStudioLoading();
+                const err = document.getElementById('studioError');
+                if (err) {
+                    err.textContent = 'Three.js не загружен. Обновите страницу (Ctrl+F5) или очистите кэш PWA.';
+                    err.style.display = 'flex';
+                }
+                return;
+            }
+            setTimeout(initStudio, 150);
             return;
         }
 
+        showStudioLoading();
         let attempts = 0;
         const tryInit = () => {
             attempts += 1;
             const ok = StudioApp.init(canvas, openPrivateChat);
             if (ok) {
                 studioInited = true;
+                hideStudioLoading();
                 if (Object.keys(agents).length) {
                     StudioApp.updateAgents(Object.values(agents));
                 }
@@ -135,10 +167,11 @@
                 if (window.StudioMinimap) StudioMinimap.update(Object.values(agents));
                 return;
             }
-            if (attempts < 48) {
+            if (attempts < 60) {
                 requestAnimationFrame(tryInit);
                 return;
             }
+            hideStudioLoading();
             const err = document.getElementById('studioError');
             if (err) {
                 err.textContent = 'Не удалось запустить 3D-сцену. Обновите страницу (Ctrl+F5).';
@@ -1023,7 +1056,7 @@
         connect();
 
         let startView = viewParam || (user?.default_view) || 'studio';
-        if (!['studio', 'chat', 'learning', 'design', 'sonya-studio', 'tasks', 'projects', 'kanban', 'sprint', 'timeline', 'dashboard', 'profile'].includes(startView)) {
+        if (!['studio', 'chat', 'learning', 'design', 'sonya-studio', 'tasks', 'projects', 'kanban', 'sprint', 'timeline', 'dashboard', 'profile', 'admin'].includes(startView)) {
             startView = 'studio';
         }
         switchView(startView);

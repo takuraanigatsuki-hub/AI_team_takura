@@ -58,6 +58,11 @@ async def lifespan(app: FastAPI):
         )
         print(f"👑 Owner account ready: {owner['email']}")
 
+    from room.user_auth import bootstrap_primary_owner
+    primary = bootstrap_primary_owner("takura.anigatsuki@gmail.com")
+    if primary:
+        print(f"👑 Primary owner upgraded: {primary['email']} (tier Owner, full access)")
+
     # Запускаем агентов
     await room.start_all_agents()
 
@@ -231,6 +236,34 @@ class AdminBalanceRequest(BaseModel):
 class AdminTierRequest(BaseModel):
     user_id: str
     tier: str
+
+
+class AdminUserUpdateRequest(BaseModel):
+    role: str | None = None
+    name: str | None = None
+    tier: str | None = None
+    balance_delta: int | None = None
+    set_balance: int | None = None
+
+
+class AdminConsoleRequest(BaseModel):
+    action: str
+    text: str = ""
+    target: str = "all"
+    agent_id: str = ""
+    repo_url: str = ""
+
+
+class AdminSiteUpdate(BaseModel):
+    learning_interval_min: int | None = None
+    learning_interval_max: int | None = None
+    persist_knowledge: bool | None = None
+    cursor_enabled: bool | None = None
+    cursor_model: str | None = None
+    cursor_repo_url: str | None = None
+    git_auto_sync: bool | None = None
+    auto_theme: bool | None = None
+    telegram_notify_tasks: bool | None = None
 
 
 def _current_user(request: Request):
@@ -485,6 +518,146 @@ async def admin_billing_set_tier(body: AdminTierRequest, request: Request):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return {"ok": True, "user": target}
+
+
+@app.get("/api/admin/users")
+async def admin_list_users_route(request: Request):
+    from room.user_auth import admin_list_users, can_manage_users
+
+    admin = _current_user(request)
+    if not can_manage_users(admin):
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    try:
+        users = admin_list_users(admin)
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    return {"users": users, "total": len(users)}
+
+
+@app.patch("/api/admin/users/{user_id}")
+async def admin_update_user_route(user_id: str, body: AdminUserUpdateRequest, request: Request):
+    from room.user_auth import admin_update_user, can_manage_users
+
+    admin = _current_user(request)
+    if not can_manage_users(admin):
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    try:
+        updated = admin_update_user(
+            admin,
+            user_id,
+            role=body.role,
+            name=body.name,
+            tier=body.tier,
+            balance_delta=body.balance_delta,
+            set_balance=body.set_balance,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True, "user": updated}
+
+
+@app.get("/api/admin/site")
+async def admin_get_site(request: Request):
+    from room.user_auth import can_manage_site
+
+    admin = _current_user(request)
+    if not can_manage_site(admin):
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    cfg = await get_config()
+    agents = await get_agents()
+    return {
+        "config": cfg,
+        "agents_count": len(agents.get("agents", [])),
+        "active_agents": sum(1 for a in agents.get("agents", []) if a.get("status") in ("working", "thinking", "learning")),
+    }
+
+
+@app.patch("/api/admin/site")
+async def admin_update_site(body: AdminSiteUpdate, request: Request):
+    from room.user_auth import can_manage_site
+
+    admin = _current_user(request)
+    if not can_manage_site(admin):
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    update = ConfigUpdate(
+        learning_interval_min=body.learning_interval_min,
+        learning_interval_max=body.learning_interval_max,
+        persist_knowledge=body.persist_knowledge,
+        cursor_repo_url=body.cursor_repo_url,
+        git_auto_sync=body.git_auto_sync,
+        auto_theme=body.auto_theme,
+        telegram_notify_tasks=body.telegram_notify_tasks,
+    )
+    result = await update_config(update)
+    import config as cfg_module
+    if body.cursor_enabled is not None:
+        cfg_module.config["cursor_enabled"] = body.cursor_enabled
+    if body.cursor_model:
+        cfg_module.config["cursor_model"] = body.cursor_model.strip()
+    return {"ok": True, "config": result}
+
+
+@app.post("/api/admin/console")
+async def admin_console(body: AdminConsoleRequest, request: Request):
+    from room.user_auth import can_manage_site, can_manage_users
+
+    admin = _current_user(request)
+    if not (can_manage_site(admin) or can_manage_users(admin)):
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+
+    action = (body.action or "").strip().lower()
+    text = (body.text or "").strip()
+    log = [f"[{action}] {text[:120]}" if text else f"[{action}]"]
+
+    if action == "team_task":
+        if not text:
+            raise HTTPException(status_code=400, detail="Укажите текст задачи")
+        await room.handle_user_message({"type": "task", "text": text, "target": body.target or "all"})
+        log.append("Задача отправлена команде через PM")
+        return {"ok": True, "log": log, "message": "Задача поставлена"}
+
+    if action == "agent_task":
+        if not text or not body.agent_id:
+            raise HTTPException(status_code=400, detail="Нужны agent_id и text")
+        agent = room.agents.get(body.agent_id)
+        if not agent:
+            raise HTTPException(status_code=404, detail="Агент не найден")
+        await agent.assign_task(text, sender=admin.get("name") or "Admin")
+        log.append(f"Задача → {body.agent_id}")
+        return {"ok": True, "log": log, "message": f"Задача агенту {body.agent_id}"}
+
+    if action == "cursor_run":
+        if not text:
+            raise HTTPException(status_code=400, detail="Укажите prompt для Cursor")
+        run_req = CursorRunRequest(prompt=text, repo_url=body.repo_url or "")
+        result = await cursor_run(run_req)
+        log.append(f"Cursor run: {result.get('run_id', '—')}")
+        return {"ok": True, "log": log, "result": result}
+
+    if action == "git_sync":
+        result = await git_sync_now()
+        log.append(f"Git: {result.get('action', '—')}")
+        return {"ok": True, "log": log, "result": result}
+
+    if action == "pipeline":
+        from integrations.pipeline_oneclick import run_full_pipeline
+        result = await run_full_pipeline(room)
+        log.append("Pipeline запущен")
+        return {"ok": True, "log": log, "result": result}
+
+    if action == "broadcast":
+        if not text:
+            raise HTTPException(status_code=400, detail="Укажите текст")
+        await room.broadcast_work({
+            "type": "system",
+            "message": text,
+            "from": admin.get("name") or "Admin",
+            "timestamp": __import__("datetime").datetime.now().isoformat(),
+        })
+        log.append("Сообщение в комнату")
+        return {"ok": True, "log": log}
+
+    raise HTTPException(status_code=400, detail=f"Неизвестное действие: {action}")
 
 
 @app.get("/api/agents")

@@ -516,9 +516,6 @@
         }
 
         const { width, height } = getCanvasSize(canvas);
-        if (width < 200 || height < 150) {
-            return false;
-        }
 
         if (initialized && renderer) {
             onAgentClick = clickCallback;

@@ -400,3 +400,137 @@ def ensure_owner(email: str, password: str, name: str = "Owner") -> dict:
 
     _save_users(users)
     return _public_user(updated)
+
+
+def bootstrap_primary_owner(email: str) -> Optional[dict]:
+    """Выдать владельцу максимальные права и тариф Owner (без смены пароля)."""
+    email = email.strip().lower()
+    if not email:
+        return None
+    users = _load(USERS_FILE)
+    from room.subscriptions import initial_billing_for_owner
+
+    owner_billing = initial_billing_for_owner()
+    updated = None
+    for u in users:
+        if u.get("email") == email:
+            u["role"] = "owner"
+            u["privileges"] = list(ALL_PRIVILEGES)
+            u["setup_complete"] = True
+            u.update(owner_billing)
+            u["updated_at"] = datetime.now().isoformat()
+            updated = u
+            break
+    if not updated:
+        return None
+    _save_users(users)
+    return _public_user(updated)
+
+
+def can_manage_users(user: dict | None) -> bool:
+    if not user:
+        return False
+    if user.get("is_owner") or user.get("role") == "owner":
+        return True
+    return has_privilege(user, "manage_users") or has_privilege(user, "admin")
+
+
+def can_manage_site(user: dict | None) -> bool:
+    if not user:
+        return False
+    if user.get("is_owner") or user.get("role") == "owner":
+        return True
+    return has_privilege(user, "manage_settings") or has_privilege(user, "admin")
+
+
+def admin_list_users(admin_user: dict) -> list[dict]:
+    if not can_manage_users(admin_user):
+        raise ValueError("Недостаточно прав")
+    users = _load(USERS_FILE)
+    out = []
+    for u in users:
+        pub = _public_user(u)
+        out.append({
+            "id": pub["id"],
+            "email": pub["email"],
+            "name": pub["name"],
+            "role": pub["role"],
+            "role_label": pub["role_label"],
+            "is_owner": pub["is_owner"],
+            "setup_complete": pub["setup_complete"],
+            "created_at": pub.get("created_at"),
+            "subscription": pub.get("subscription"),
+            "access_level": pub.get("access_level"),
+        })
+    out.sort(key=lambda x: (0 if x["is_owner"] else 1, x["email"]))
+    return out
+
+
+def admin_update_user(
+    admin_user: dict,
+    target_user_id: str,
+    *,
+    role: str = None,
+    name: str = None,
+    tier: str = None,
+    balance_delta: int = None,
+    set_balance: int = None,
+) -> dict:
+    if not can_manage_users(admin_user):
+        raise ValueError("Недостаточно прав")
+    users = _load(USERS_FILE)
+    target = None
+    for u in users:
+        if u.get("id") == target_user_id:
+            target = u
+            break
+    if not target:
+        raise ValueError("Пользователь не найден")
+    if target.get("role") == "owner" and admin_user.get("role") != "owner":
+        raise ValueError("Нельзя изменять владельца")
+    if name is not None and name.strip():
+        target["name"] = name.strip()[:80]
+    if role is not None:
+        role = role.strip().lower()
+        if role not in ROLE_PRIVILEGES:
+            raise ValueError("Недопустимая роль")
+        if role == "owner" and admin_user.get("role") != "owner":
+            raise ValueError("Только владелец может назначать роль owner")
+        if target.get("role") == "owner" and role != "owner":
+            raise ValueError("Нельзя понизить владельца")
+        target["role"] = role
+        target["privileges"] = list(ROLE_PRIVILEGES[role])
+    if tier is not None and admin_user.get("role") == "owner":
+        from room.subscriptions import set_subscription_tier, SUBSCRIPTION_PLANS
+        tier = tier.strip().lower()
+        if tier not in SUBSCRIPTION_PLANS:
+            raise ValueError("Недопустимый тариф")
+        if tier == "owner" and target.get("role") != "owner":
+            raise ValueError("Тариф Owner только для роли owner")
+        set_subscription_tier(
+            target_user_id,
+            tier,
+            users_loader=lambda: _load(USERS_FILE),
+            users_saver=_save_users,
+        )
+        users = _load(USERS_FILE)
+        target = _find_user(target_user_id) or target
+    if balance_delta is not None and balance_delta != 0:
+        from room.subscriptions import add_balance
+        add_balance(
+            target_user_id,
+            balance_delta,
+            users_loader=lambda: _load(USERS_FILE),
+            users_saver=_save_users,
+        )
+        target = _find_user(target_user_id) or target
+    if set_balance is not None and admin_user.get("role") == "owner":
+        from room.subscriptions import normalize_user_billing
+        normalize_user_billing(target)
+        if target.get("role") != "owner":
+            target["balance"] = max(0, int(set_balance))
+            target["balance_updated_at"] = datetime.now().isoformat()
+    target["updated_at"] = datetime.now().isoformat()
+    _save_users(users)
+    refreshed = _find_user(target_user_id)
+    return _public_user(refreshed) if refreshed else {}
