@@ -437,17 +437,8 @@ async def _study_figma_web(agent) -> bool:
 
 
 async def run_figma_create_session(agent) -> bool:
-    ensure_seed_patterns()
-    patterns = load_patterns()
-    if len(patterns.get("studied", [])) < 1 and not patterns.get("colors"):
-        await study_builtin_pattern(agent)
-
-    await agent._broadcast(
-        "🎨 Создаю свой дизайн-проект в стиле изученных макетов…",
-        "learning",
-    )
-    entry = await create_original_project(agent)
-    return entry is not None
+    from integrations.sonya_studio import run_studio_create_session
+    return await run_studio_create_session(agent)
 
 
 async def sonya_figma_studio_loop(room_manager, interval_min: int = 12, interval_max: int = 28) -> None:
@@ -484,7 +475,8 @@ async def sonya_figma_studio_loop(room_manager, interval_min: int = 12, interval
             action = random.choices(["study", "study", "create"], weights=[0.4, 0.35, 0.25])[0]
             ok = False
             if action == "create":
-                ok = await run_figma_create_session(frontend)
+                from integrations.sonya_studio import run_studio_create_session
+                ok = await run_studio_create_session(frontend)
                 if ok:
                     frontend.figma_creations = getattr(frontend, "figma_creations", 0) + 1
             else:

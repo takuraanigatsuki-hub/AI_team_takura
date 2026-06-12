@@ -109,6 +109,7 @@ try {
 
     global.ReactPreview = {
         render: renderPreview,
+        buildIframeHtml,
         open: openPanel,
         close: closePanel,
         toggle: togglePanel,

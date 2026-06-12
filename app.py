@@ -391,6 +391,23 @@ class FigmaImportRequest(BaseModel):
     url: str
 
 
+class SonyaProjectCreate(BaseModel):
+    title: str = ""
+    task: str = ""
+    description: str = ""
+
+
+class SonyaCommentCreate(BaseModel):
+    text: str
+    x: float = 0.5
+    y: float = 0.5
+    frame_id: str = "main"
+
+
+class SonyaPublishRequest(BaseModel):
+    figma_url: str = ""
+
+
 @app.get("/api/config")
 async def get_config():
     """Текущая конфигурация обучения"""
@@ -812,7 +829,8 @@ async def figma_studio_trigger(action: str = "study"):
         raise HTTPException(status_code=404, detail="Соня не найдена")
 
     if action == "create":
-        ok = await run_figma_create_session(frontend)
+        from integrations.sonya_studio import run_studio_create_session
+        ok = await run_studio_create_session(frontend)
     else:
         ok = await run_figma_study_session(frontend)
     if ok:
@@ -822,6 +840,122 @@ async def figma_studio_trigger(action: str = "study"):
             frontend.figma_studies = getattr(frontend, "figma_studies", 0) + 1
     await room.send_agents_state()
     return {"ok": ok, "action": action}
+
+
+# ─── Sonya Design Studio ───────────────────────────────────
+
+@app.get("/api/sonya/projects")
+async def sonya_list_projects():
+    from integrations.sonya_studio import list_projects
+    return {"projects": list_projects()}
+
+
+@app.post("/api/sonya/projects")
+async def sonya_create_project(body: SonyaProjectCreate, request: Request):
+    from integrations.sonya_studio import create_project
+    from room.user_auth import get_user_from_token
+
+    user = get_user_from_token(_get_session_token(request))
+    author = (user or {}).get("name") or (user or {}).get("email") or "Пользователь"
+    project = create_project(
+        title=body.title or "Новый проект",
+        description=body.description,
+        task=body.task or f"UI проект от {author}. Современный интерфейс, React.",
+        created_by=author,
+    )
+    return {"ok": True, "project": project}
+
+
+@app.get("/api/sonya/projects/{project_id}")
+async def sonya_get_project(project_id: str):
+    from integrations.sonya_studio import get_project
+    project = get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Проект не найден")
+    return project
+
+
+@app.post("/api/sonya/projects/{project_id}/comments")
+async def sonya_add_comment(project_id: str, body: SonyaCommentCreate, request: Request):
+    from integrations.sonya_studio import add_comment, get_project
+    from room.user_auth import get_user_from_token
+
+    user = get_user_from_token(_get_session_token(request))
+    author = (user or {}).get("name") or (user or {}).get("email") or "Пользователь"
+    try:
+        comment = add_comment(
+            project_id,
+            text=body.text,
+            author=author,
+            x=body.x,
+            y=body.y,
+            frame_id=body.frame_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if not comment:
+        raise HTTPException(status_code=404, detail="Проект не найден")
+    project = get_project(project_id)
+    return {"ok": True, "comment": comment, "project": project}
+
+
+@app.post("/api/sonya/projects/{project_id}/apply-comments")
+async def sonya_apply_comments(project_id: str):
+    """Соня применяет открытые комментарии — новая версия."""
+    from integrations.sonya_studio import apply_open_comments, get_project
+
+    frontend = room.agents.get("frontend")
+    if not frontend:
+        raise HTTPException(status_code=404, detail="Соня не найдена")
+    try:
+        project = await apply_open_comments(frontend, project_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if not project:
+        raise HTTPException(status_code=404, detail="Проект не найден")
+    await room.send_agents_state()
+    return {"ok": True, "project": project}
+
+
+@app.post("/api/sonya/projects/create-new")
+async def sonya_create_new_by_agent():
+    from integrations.sonya_studio import create_studio_project
+
+    frontend = room.agents.get("frontend")
+    if not frontend:
+        raise HTTPException(status_code=404, detail="Соня не найдена")
+    project = await create_studio_project(frontend)
+    await room.send_agents_state()
+    return {"ok": True, "project": project}
+
+
+@app.post("/api/sonya/projects/{project_id}/publish")
+async def sonya_publish(project_id: str, body: SonyaPublishRequest):
+    from integrations.sonya_studio import publish_project, get_project
+
+    project = publish_project(project_id, figma_url=body.figma_url)
+    if not project:
+        raise HTTPException(status_code=404, detail="Проект не найден")
+
+    frontend = room.agents.get("frontend")
+    if frontend and frontend.room_manager:
+        handoff = project.get("figma_handoff") or {}
+        await frontend.room_manager.broadcast_work({
+            "type": "sonya_studio_published",
+            "agent_id": "frontend",
+            "agent_name": frontend.name,
+            "agent_emoji": frontend.emoji,
+            "project_id": project_id,
+            "project_title": project.get("title"),
+            "message": (
+                f"📦 **Опубликовано** · «{project.get('title')}» v{handoff.get('version_num', 1)}\n"
+                f"Tokens и React-код готовы к handoff в Figma"
+            ),
+            "handoff": handoff,
+            "timestamp": handoff.get("published_at"),
+        })
+
+    return {"ok": True, "project": project}
 
 
 @app.post("/api/figma/import")
