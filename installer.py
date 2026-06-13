@@ -1,7 +1,6 @@
 """
-AI Team Room — установщик для Windows.
-Копирует AI_Team_Room.exe в %LOCALAPPDATA%\\Programs\\AI Team Room\\
-и создаёт ярлык на рабочем столе.
+AI Team Room — legacy PyInstaller установщик (заменён на desktop-installer/).
+Используйте scripts/build-desktop.ps1 → dist/AI_Team_Room_Setup.exe
 """
 from __future__ import annotations
 
