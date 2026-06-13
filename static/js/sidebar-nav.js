@@ -38,6 +38,19 @@
         ]},
     ];
 
+    const NAV_SUPPORT = [
+        { group: 'Поддержка', items: [
+            { view: 'support', icon: '💬', label: 'Тикеты', primary: true, supportPanel: true },
+        ]},
+        { group: 'Работа', items: [
+            { view: 'tasks', icon: '📋', label: 'Inbox' },
+            { view: 'chat', icon: '💬', label: 'Чат' },
+        ]},
+        { group: 'Аккаунт', items: [
+            { view: 'profile', icon: '👤', label: 'Кабинет' },
+        ]},
+    ];
+
     const NAV_ADMIN = [
         { group: 'Работа', items: [
             { view: 'tasks', icon: '📋', label: 'Inbox', primary: true },

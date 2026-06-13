@@ -131,13 +131,13 @@
             const fab = document.createElement('button');
             fab.type = 'button';
             fab.id = 'fpFab';
-            fab.className = 'fp-fab hidden';
-            fab.title = 'Новая задача';
-            fab.textContent = '+';
+            fab.className = 'fp-fab support-fab hidden';
+            fab.title = 'Поддержка';
+            fab.textContent = '💬';
+            fab.setAttribute('aria-label', 'Поддержка');
             fab.onclick = () => {
-                sw('chat');
-                document.getElementById('messageInput')?.focus();
-                if (global.setMsgType) setMsgType('task');
+                if (global.SupportTickets?.open) SupportTickets.open();
+                else if (global.UIEnhancements) UIEnhancements.toast('Поддержка загружается…', 'info');
             };
             document.body.appendChild(fab);
         }
@@ -173,7 +173,7 @@
         currentView = view || currentView;
         const fab = document.getElementById('fpFab');
         if (!fab) return;
-        const show = ['chat', 'tasks', 'kanban', 'dashboard', 'projects'].includes(currentView);
+        const show = ['chat', 'tasks', 'kanban', 'dashboard', 'projects', 'profile'].includes(currentView);
         fab.classList.toggle('hidden', !show);
     }
 
