@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+    <meta name="theme-color" content="#0b0f17">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="/static/manifest-mobile.json">
+    <link rel="icon" href="/static/icons/icon-192.png">
+    <title>AI Team Room · Mobile</title>
+    <link rel="stylesheet" href="/static/css/mobile.css?v=1">
+</head>
+<body>
+    <div id="mobileApp" class="mob-app">
+        <header class="mob-header">
+            <div class="mob-brand">🤖 AI Team</div>
+            <button type="button" class="mob-icon-btn" id="mobRefresh" title="Обновить">↻</button>
+        </header>
+
+        <section class="mob-auth" id="mobAuth">
+            <h1>Companion</h1>
+            <p class="mob-muted">Управление командой с телефона · Android (iOS позже)</p>
+            <form id="mobLoginForm" class="mob-form">
+                <input type="text" id="mobLogin" class="mob-input" placeholder="Email или username" autocomplete="username" required>
+                <input type="password" id="mobPassword" class="mob-input" placeholder="Пароль" autocomplete="current-password" required>
+                <p class="mob-error hidden" id="mobAuthError"></p>
+                <button type="submit" class="mob-btn primary">Войти</button>
+            </form>
+        </section>
+
+        <section class="mob-shell hidden" id="mobShell">
+            <nav class="mob-tabs" role="tablist">
+                <button type="button" class="mob-tab active" data-tab="tasks">📋</button>
+                <button type="button" class="mob-tab" data-tab="agents">👥</button>
+                <button type="button" class="mob-tab" data-tab="learning">📚</button>
+                <button type="button" class="mob-tab" data-tab="chat">💬</button>
+            </nav>
+
+            <div class="mob-panel active" id="mobPanelTasks">
+                <h2>Inbox</h2>
+                <div id="mobTasksList" class="mob-list"></div>
+            </div>
+            <div class="mob-panel hidden" id="mobPanelAgents">
+                <h2>Агенты</h2>
+                <div id="mobAgentsList" class="mob-list"></div>
+            </div>
+            <div class="mob-panel hidden" id="mobPanelLearning">
+                <h2>Обучение</h2>
+                <div id="mobLearningList" class="mob-list"></div>
+            </div>
+            <div class="mob-panel hidden" id="mobPanelChat">
+                <h2>Быстрая задача</h2>
+                <textarea id="mobTaskInput" class="mob-textarea" rows="4" placeholder="Опишите задачу для PM…"></textarea>
+                <button type="button" class="mob-btn primary" id="mobSendTask">Отправить Виктору</button>
+                <div id="mobChatLog" class="mob-log"></div>
+            </div>
+
+            <footer class="mob-footer">
+                <span id="mobUserLabel" class="mob-muted"></span>
+                <button type="button" class="mob-link" id="mobLogout">Выйти</button>
+            </footer>
+        </section>
+    </div>
+    <script src="/static/js/mobile.js?v=1"></script>
+</body>
+</html>

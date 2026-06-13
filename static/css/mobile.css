@@ -1,0 +1,75 @@
+:root {
+    color-scheme: dark;
+    --bg: #0b0f17;
+    --card: #141b28;
+    --border: rgba(255,255,255,.08);
+    --text: #e8edf5;
+    --muted: #8b95a8;
+    --accent: #6c8cff;
+    --accent2: #9b6cff;
+    --danger: #ff6b7a;
+    --radius: 14px;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, sans-serif; }
+.hidden { display: none !important; }
+.mob-app { max-width: 480px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
+.mob-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(20,27,40,.95), rgba(11,15,23,.9));
+    position: sticky; top: 0; z-index: 10;
+}
+.mob-brand { font-weight: 700; letter-spacing: .02em; }
+.mob-icon-btn {
+    width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--border);
+    background: var(--card); color: var(--text); font-size: 18px;
+}
+.mob-auth { padding: 24px 20px 40px; flex: 1; }
+.mob-auth h1 { margin: 0 0 8px; font-size: 1.6rem; }
+.mob-muted { color: var(--muted); font-size: .9rem; }
+.mob-form { margin-top: 24px; display: grid; gap: 12px; }
+.mob-input, .mob-textarea {
+    width: 100%; padding: 14px 16px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--card); color: var(--text);
+    font: inherit;
+}
+.mob-btn {
+    border: none; border-radius: var(--radius); padding: 14px 18px; font-weight: 600;
+    font: inherit; cursor: pointer;
+}
+.mob-btn.primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff;
+}
+.mob-error { color: var(--danger); font-size: .85rem; margin: 0; }
+.mob-shell { flex: 1; display: flex; flex-direction: column; padding-bottom: calc(12px + var(--safe-b)); }
+.mob-tabs {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+    padding: 10px 12px; border-bottom: 1px solid var(--border);
+}
+.mob-tab {
+    border: 1px solid transparent; background: transparent; color: var(--muted);
+    border-radius: 12px; padding: 10px; font-size: 1.2rem;
+}
+.mob-tab.active { background: var(--card); border-color: var(--border); color: var(--text); }
+.mob-panel { flex: 1; padding: 16px; overflow: auto; }
+.mob-panel h2 { margin: 0 0 12px; font-size: 1.1rem; }
+.mob-list { display: grid; gap: 10px; }
+.mob-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px;
+}
+.mob-card h3 { margin: 0 0 6px; font-size: .95rem; }
+.mob-card p { margin: 0; color: var(--muted); font-size: .85rem; }
+.mob-badge {
+    display: inline-block; font-size: .72rem; padding: 3px 8px; border-radius: 999px;
+    background: rgba(108,140,255,.15); color: var(--accent); margin-top: 8px;
+}
+.mob-log { margin-top: 16px; display: grid; gap: 8px; }
+.mob-log-item { background: var(--card); border-radius: 10px; padding: 10px 12px; font-size: .85rem; }
+.mob-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px calc(12px + var(--safe-b)); border-top: 1px solid var(--border);
+}
+.mob-link { background: none; border: none; color: var(--accent); font: inherit; }

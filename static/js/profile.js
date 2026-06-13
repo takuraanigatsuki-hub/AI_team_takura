@@ -12,7 +12,7 @@
         dashboard: '📊 Dashboard',
         chat: '💬 Рабочий чат',
         kanban: '📌 Kanban',
-        studio: '🎮 3D Студия',
+        'agent-learning': '📚 Обучение',
         design: '🎨 Design',
         'sonya-studio': '✨ Studio',
         projects: '📦 Проекты',
@@ -204,7 +204,7 @@
 
             <div class="profile-quick-links pf-quick-bar">
                 <button type="button" class="btn-primary btn-sm" onclick="switchView('chat')">💬 Чат</button>
-                <button type="button" class="btn-secondary btn-sm" onclick="switchView('studio')">🎮 3D</button>
+                <button type="button" class="btn-secondary btn-sm" onclick="switchView('agent-learning')">📚 Обучение</button>
                 <button type="button" class="btn-secondary btn-sm" onclick="switchView('tasks')">📋 Задачи</button>
                 <button type="button" class="btn-secondary btn-sm" onclick="switchView('dashboard')">📊 Dashboard</button>
                 ${canAdmin(user) ? '<button type="button" class="btn-secondary btn-sm" onclick="switchView(\'admin\')">🛡 Admin</button>' : ''}
@@ -217,7 +217,7 @@
             return global.Auth?.canViewInvestorPortal?.(user) || false;
         }
         if (user?.role === 'investor' || user?.is_investor) {
-            return ['investor', 'profile', 'studio', 'dashboard', 'projects'].includes(view);
+            return ['investor', 'profile', 'agent-learning', 'dashboard', 'projects'].includes(view);
         }
         if (['learning', 'design', 'agent-learning'].includes(view)) {
             if (global.Auth?.canViewAgentLearning) return Auth.canViewAgentLearning(user);
@@ -501,7 +501,7 @@
                     <li><span>Агенты</span><strong>${s.agents_busy ?? 0} занято · ${s.agents_total ?? 0} всего</strong></li>
                 </ul>
                 <div class="profile-quick-links" style="margin-top:16px">
-                    <button type="button" class="btn-secondary btn-sm" onclick="switchView('studio')">🎮 3D</button>
+                    <button type="button" class="btn-secondary btn-sm" onclick="switchView('agent-learning')">📚 Обучение</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="switchView('tasks')">📋 Задачи</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="switchView('sonya-studio')">✨ Studio</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="switchView('dashboard')">📊 Dashboard</button>

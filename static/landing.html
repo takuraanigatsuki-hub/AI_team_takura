@@ -58,9 +58,9 @@
     <section class="lp-hero">
         <div class="lp-hero-glow"></div>
         <div class="lp-hero-content">
-            <span class="lp-badge">13 агентов · 3D-студия · Figma → Deploy · Поддержка</span>
+            <span class="lp-badge">13 агентов · Обучение · Figma → Deploy · Android</span>
             <h1>Автономная команда<br><span class="lp-gradient">ИИ-агентов</span> для вашего проекта</h1>
-            <p class="lp-lead">PM планирует, дизайнеры и разработчики пишут код, QA тестирует, DevOps деплоит — вы наблюдаете в 3D-офисе и управляете из одного интерфейса.</p>
+            <p class="lp-lead">PM планирует, дизайнеры и разработчики пишут код, QA тестирует, DevOps деплоит — вы управляете из ПК или телефона и следите за обучением команды.</p>
             <div class="lp-hero-cta" id="lpHeroCtaGuest">
                 <a href="#download" class="lp-btn-xl" id="lpHeroDownload" data-lp-tab="download">Скачать приложение</a>
                 <button type="button" class="lp-btn-xl-outline" id="btnHeroStart">Начать бесплатно</button>
@@ -77,26 +77,25 @@
             </div>
         </div>
         <div class="lp-hero-visual">
-            <div class="lp-studio-wrap">
-                <canvas id="landingCanvas" aria-label="3D студия команды"></canvas>
-                <div id="landingStudioLoading" class="lp-studio-loading">
-                    <div class="lp-studio-ring"></div>
-                    <span>Загрузка 3D-офиса…</span>
+            <div class="lp-mock-app lp-mock-hero-card">
+                <div class="lp-mock-bar"><span></span><span></span><span></span></div>
+                <div class="lp-mock-body">
+                    <div class="lp-mock-sidebar">
+                        <div class="lp-mock-nav active">📋 Inbox</div>
+                        <div class="lp-mock-nav">💬 Чат</div>
+                        <div class="lp-mock-nav">📚 Обучение</div>
+                        <div class="lp-mock-nav">📊 Панель</div>
+                    </div>
+                    <div class="lp-mock-main">
+                        <div class="lp-mock-hero-block"></div>
+                        <div class="lp-mock-rows">
+                            <div class="lp-mock-row"></div>
+                            <div class="lp-mock-row short"></div>
+                            <div class="lp-mock-row"></div>
+                        </div>
+                    </div>
                 </div>
-                <div id="landingStudioError" class="lp-studio-error" style="display:none"></div>
-                <div class="lp-studio-hint">🖱 вращение · клик — demo-чат</div>
             </div>
-            <aside class="lp-mini-chat hidden" id="lpMiniChat">
-                <div class="lp-mini-chat-head">
-                    <span id="lpMiniChatTitle">Агент</span>
-                    <button type="button" class="lp-mini-close" id="lpMiniChatClose" aria-label="Закрыть">×</button>
-                </div>
-                <div class="lp-mini-chat-msgs" id="lpMiniChatMsgs"></div>
-                <div class="lp-mini-chat-input">
-                    <input type="text" id="lpMiniChatInput" placeholder="landing, figma, api…" autocomplete="off">
-                    <button type="button" id="lpMiniChatSend">↑</button>
-                </div>
-            </aside>
         </div>
     </section>
     </section>
@@ -115,8 +114,8 @@
             </article>
             <article class="lp-step">
                 <span class="lp-step-num">2</span>
-                <h3>Наблюдайте в 3D</h3>
-                <p>Следите за прогрессом в студии: кто работает, что готово, какие артефакты появились.</p>
+                <h3>Следите за обучением</h3>
+                <p>Во вкладке «Обучение» агенты сдают проекты на проверку — как Соня в Design Lab.</p>
             </article>
             <article class="lp-step">
                 <span class="lp-step-num">3</span>
@@ -484,14 +483,8 @@ PR #42 · checks ✓</pre>
     </div>
 </div>
 
-<script src="/static/vendor/three.min.js"></script>
-<script src="/static/vendor/OrbitControls.js"></script>
-<script src="/static/js/studio-textures.js?v=1"></script>
-<script src="/static/js/studio-models.js?v=3"></script>
-<script src="/static/js/studio.js?v=21"></script>
-<script src="/static/js/landing-demo.js?v=1"></script>
 <script src="/static/js/support-tickets.js?v=3"></script>
 <script src="/static/js/auth-fields.js?v=1"></script>
-<script src="/static/js/landing.js?v=10"></script>
+<script src="/static/js/landing.js?v=11"></script>
 </body>
 </html>
