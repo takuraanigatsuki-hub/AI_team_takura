@@ -334,12 +334,13 @@ body.sidebar-collapsed .sb-brand {
 /* Unified cards */
 .ucard-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 12px;
     margin-bottom: 20px;
+    width: 100%;
 }
 
-.ucard-grid-agents { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+.ucard-grid-agents { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
 
 .ucard {
     background: var(--surface-2, #16161f);
@@ -371,7 +372,16 @@ body.sidebar-collapsed .sb-brand {
 .ucard-emoji { font-size: 1.5rem; display: block; margin-bottom: 4px; }
 
 /* Investor */
-.investor-layout { padding: 24px; max-width: 1100px; margin: 0 auto; overflow-y: auto; height: calc(100vh - 120px); }
+.investor-layout {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 24px 28px;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+#investorGrid { max-width: none; width: 100%; }
 .investor-hero { margin-bottom: 24px; }
 .investor-hero h2 { font-family: Rajdhani, sans-serif; font-size: 1.75rem; }
 
