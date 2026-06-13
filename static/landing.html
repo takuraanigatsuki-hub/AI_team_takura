@@ -17,7 +17,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/landing.css?v=11">
+    <link rel="stylesheet" href="/static/css/landing.css?v=12">
+    <link rel="stylesheet" href="/static/css/support.css?v=3">
     <link rel="icon" href="/static/icons/icon-192.png">
 </head>
 <body>
@@ -34,7 +35,6 @@
         <button type="button" class="lp-nav-tab" data-lp-tab="how">Как работает</button>
         <button type="button" class="lp-nav-tab" data-lp-tab="team">Команда</button>
         <button type="button" class="lp-nav-tab" data-lp-tab="integrations">Интеграции</button>
-        <button type="button" class="lp-nav-tab" data-lp-tab="demo">Demo</button>
         <button type="button" class="lp-nav-tab" data-lp-tab="download">Скачать</button>
     </nav>
     <div class="lp-header-right">
@@ -62,29 +62,19 @@
             <h1>Автономная команда<br><span class="lp-gradient">ИИ-агентов</span> для вашего проекта</h1>
             <p class="lp-lead">PM планирует, дизайнеры и разработчики пишут код, QA тестирует, DevOps деплоит — вы наблюдаете в 3D-офисе и управляете из одного интерфейса.</p>
             <div class="lp-hero-cta" id="lpHeroCtaGuest">
-                <a href="/api/downloads/desktop/win/setup" class="lp-btn-xl" id="lpHeroDownload">Скачать приложение</a>
+                <a href="#download" class="lp-btn-xl" id="lpHeroDownload" data-lp-tab="download">Скачать приложение</a>
                 <button type="button" class="lp-btn-xl-outline" id="btnHeroStart">Начать бесплатно</button>
-                <button type="button" class="lp-btn-xl-outline lp-btn-ghost-soft" id="btnHeroDemo">▶ Demo за 2 мин</button>
+                <button type="button" class="lp-btn-ghost-soft lp-hero-link" data-lp-tab="how">Как это работает →</button>
             </div>
             <div class="lp-hero-cta hidden" id="lpHeroCtaUser">
-                <a href="/api/downloads/desktop/win/setup" class="lp-btn-xl" id="lpHeroDownloadUser">Скачать приложение</a>
-                <a href="/portal?view=profile" class="lp-btn-xl-outline">Личный кабинет</a>
+                <a href="#download" class="lp-btn-xl" id="lpHeroDownloadUser" data-lp-tab="download">Скачать приложение</a>
+                <button type="button" class="lp-btn-xl-outline" id="btnHeroCabinet">Личный кабинет</button>
             </div>
             <div class="lp-live-stats" id="lpLiveStats">
                 <div><strong id="lpLiveTasks">847</strong><span>задач сегодня</span></div>
                 <div><strong id="lpLiveRooms">124</strong><span>комнат live</span></div>
                 <div><strong id="lpLivePr">23</strong><span>PR за сутки</span></div>
             </div>
-            <nav class="lp-home-menu" id="lpHomeMenu" aria-label="Быстрый переход">
-                <button type="button" class="lp-menu-key" data-lp-tab="features"><span class="lp-menu-key-icon">✨</span><span class="lp-menu-key-label">Возможности</span><span class="lp-menu-key-hint">12 модулей</span></button>
-                <button type="button" class="lp-menu-key" data-lp-tab="platform"><span class="lp-menu-key-icon">🧩</span><span class="lp-menu-key-label">Платформа</span><span class="lp-menu-key-hint">полный список</span></button>
-                <button type="button" class="lp-menu-key" data-lp-tab="how"><span class="lp-menu-key-icon">⚡</span><span class="lp-menu-key-label">Как работает</span><span class="lp-menu-key-hint">3 шага</span></button>
-                <button type="button" class="lp-menu-key" data-lp-tab="team"><span class="lp-menu-key-icon">🤖</span><span class="lp-menu-key-label">Команда</span><span class="lp-menu-key-hint">13 агентов</span></button>
-                <button type="button" class="lp-menu-key" data-lp-tab="integrations"><span class="lp-menu-key-icon">🔗</span><span class="lp-menu-key-label">Интеграции</span><span class="lp-menu-key-hint">Figma · GitHub</span></button>
-                <button type="button" class="lp-menu-key" data-lp-tab="demo"><span class="lp-menu-key-icon">▶</span><span class="lp-menu-key-label">Demo</span><span class="lp-menu-key-hint">2 минуты</span></button>
-                <button type="button" class="lp-menu-key lp-menu-key-accent" data-lp-tab="download"><span class="lp-menu-key-icon">⬇</span><span class="lp-menu-key-label">Скачать</span><span class="lp-menu-key-hint">Windows app</span></button>
-                <a href="/portal?view=profile" class="lp-menu-key lp-menu-key-link"><span class="lp-menu-key-icon">👤</span><span class="lp-menu-key-label">Кабинет</span><span class="lp-menu-key-hint">профиль · admin</span></a>
-            </nav>
         </div>
         <div class="lp-hero-visual">
             <div class="lp-studio-wrap">
