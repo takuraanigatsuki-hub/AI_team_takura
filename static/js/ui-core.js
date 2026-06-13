@@ -327,6 +327,7 @@
 
     function onAuthUpdated() {
         if (global.SidebarNav?.render) SidebarNav.render();
+        if (global.APP_SHELL === 'portal' || global.AppShell?.isPortal?.()) return;
         renderMobileTabs(global.Auth?.getUser?.());
     }
 
