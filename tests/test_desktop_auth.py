@@ -12,7 +12,8 @@ def client():
 
 
 def test_desktop_shell(client):
-    r = client.get("/desktop")
+    headers = {"User-Agent": "AITeamRoomDesktop/1.1 (Windows; Native)"}
+    r = client.get("/client", headers=headers)
     assert r.status_code == 200
     assert "ds-splash" in r.text
     assert "desktop-app.js" in r.text
