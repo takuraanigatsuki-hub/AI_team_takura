@@ -46,8 +46,17 @@ def _enforce_kind_agents(kind: str, routed: dict[str, str], task_text: str) -> d
         if "modeler" in routed:
             out["modeler"] = routed["modeler"]
         else:
-            out["modeler"] = f"3D-сцена: {task_text}"
-        out["evaluator"] = routed.get("evaluator") or f"Оценить 3D: {task_text[:200]}"
+            out["modeler"] = f"Создать 3D-сцену: {task_text}"
+        if "reviewer" in routed:
+            out["reviewer"] = routed["reviewer"]
+        out["evaluator"] = routed.get("evaluator") or f"Оценить 3D-результат: {task_text[:200]}"
+        return out
+    if kind == "site":
+        blocked = {"presenter", "modeler"}
+        out = {k: v for k, v in routed.items() if k not in blocked}
+        if "frontend" not in out:
+            out["frontend"] = routed.get("frontend") or f"Сверстать сайт на React: {task_text}"
+        out.setdefault("evaluator", f"Оценить сайт: {task_text[:200]}")
         return out
     if kind == "table":
         allowed = {"frontend", "evaluator"}

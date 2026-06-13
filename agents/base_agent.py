@@ -1261,7 +1261,11 @@ class BaseAgent:
                 if prev:
                     revision_of = prev.get("id")
 
-            artifact = await produce_artifact(self, task_text, response, revision_of=revision_of)
+            artifact = await produce_artifact(
+                self, task_text, response,
+                revision_of=revision_of,
+                original_task=task.get("original_task") or "",
+            )
             if not artifact:
                 return None
             saved = save_artifact(self.agent_id, artifact)
@@ -1276,7 +1280,9 @@ class BaseAgent:
                     gate_passed = True
             if self.room_manager and gate_passed:
                 from room.agent_capabilities import get_capabilities
-                from room.task_routing import delivery_channel, should_use_m365
+                from room.task_routing import delivery_channel, should_use_m365, resolve_task_intent
+                original = task.get("original_task") or ""
+                intent_kind = resolve_task_intent(task_text, original)
                 caps = get_capabilities(self.agent_id)
                 preview_url = f"/api/projects/{saved['id']}/preview" if saved.get("preview_html") else ""
                 msg = f"📦 **{saved['title']}** ({saved['type']}) — смотрите в «Проекты»"
@@ -1323,10 +1329,28 @@ class BaseAgent:
                         ),
                         "timestamp": datetime.now().isoformat(),
                     })
-                elif should_use_m365(task_text):
+                elif saved.get("type") == "model_3d" and preview_url:
+                    await self.room_manager.broadcast_work({
+                        "type": "result_ready",
+                        "agent_id": self.agent_id,
+                        "agent_name": self.name,
+                        "agent_emoji": self.emoji,
+                        "title": saved["title"],
+                        "artifact_id": saved["id"],
+                        "preview_url": preview_url,
+                        "open_preview": True,
+                        "is_model_3d": True,
+                        "message": (
+                            f"🧊 **3D-сцена готова**\n"
+                            f"• [Открыть Three.js preview]({preview_url})\n"
+                            f"• Файлы scene.html / scene.js во вкладке **Проекты**"
+                        ),
+                        "timestamp": datetime.now().isoformat(),
+                    })
+                elif should_use_m365(task_text, original):
                     from integrations.m365_deliver import try_deliver_m365
                     await try_deliver_m365(task_text, self, artifact=saved, room_manager=self.room_manager)
-                elif delivery_channel(task_text) == "preview" and saved.get("preview_html"):
+                elif delivery_channel(task_text, original) == "preview" and saved.get("preview_html"):
                     await self.room_manager.broadcast_work({
                         "type": "result_ready",
                         "agent_id": self.agent_id,

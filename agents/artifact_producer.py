@@ -85,17 +85,19 @@ async def _presentation_response(task_text: str, hints: dict = None) -> str:
     )
 
 
-async def produce_artifact(agent, task_text: str, response: str, revision_of: str = None):
+async def produce_artifact(agent, task_text: str, response: str, revision_of: str = None, original_task: str = ""):
     if not task_text.strip():
         return None
 
     from room.knowledge_applier import get_learned_hints
+    from room.task_routing import effective_task_text
     hints = get_learned_hints(agent.agent_id, task_text, getattr(agent, "learned_topics", None))
 
-    art_type = detect_artifact_type(agent.agent_id, task_text)
+    art_type = detect_artifact_type(agent.agent_id, task_text, original_task)
     caps = get_capabilities(agent.agent_id)
-    title = task_text[:80].strip()
-    if len(task_text) > 80:
+    user_task = effective_task_text(task_text, original_task)
+    title = user_task[:80].strip()
+    if len(user_task) > 80:
         title += "…"
 
     if len(response or "") < 80:
@@ -105,42 +107,29 @@ async def produce_artifact(agent, task_text: str, response: str, revision_of: st
         )
 
     if art_type == "presentation" and len(response or "") < 200:
-        response = await _presentation_response(task_text, hints)
+        response = await _presentation_response(user_task, hints)
 
     content = response
     preview_html = ""
     files = {}
     tags = caps.get("skills", [])[:4]
 
-    if art_type == "presentation" and "<" in (response or ""):
-        preview_html = response if response.strip().startswith("<") else _presentation_html(title, task_text, [
-            {"title": "Слайд 1", "bullets": [task_text[:80]]},
-        ])
+    if art_type == "presentation":
+        from integrations.pptx_builder import _parse_slides, build_pptx_bytes
+        slides = _parse_slides(user_task, response or "")
+        preview_html = _presentation_html(title, user_task, slides)
         content = preview_html
         files = {"slides.html": preview_html}
         try:
-            from integrations.pptx_builder import build_pptx_bytes
-            files["presentation.pptx"] = build_pptx_bytes(task_text, response, title=title)
-        except Exception as e:
-            import logging
-            logging.getLogger(__name__).warning("pptx build failed: %s", e)
-    elif art_type == "presentation":
-        preview_html = _presentation_html(title, task_text, [
-            {"title": "Введение", "bullets": [response[:200] if response else task_text[:80]]},
-        ])
-        content = preview_html
-        files = {"slides.html": preview_html}
-        try:
-            from integrations.pptx_builder import build_pptx_bytes
-            files["presentation.pptx"] = build_pptx_bytes(task_text, response, title=title)
+            files["presentation.pptx"] = build_pptx_bytes(user_task, response or "", title=title)
         except Exception as e:
             import logging
             logging.getLogger(__name__).warning("pptx build failed: %s", e)
 
     elif art_type == "model_3d":
-        preview_html = _threejs_scene_html(title, task_text)
+        preview_html = _threejs_scene_html(title, user_task)
         content = preview_html
-        files = {"scene.html": preview_html, "scene.js": "// Three.js scene for: " + task_text[:100]}
+        files = {"scene.html": preview_html, "scene.js": "// Three.js scene for: " + user_task[:100]}
 
     elif art_type == "table":
         preview_html = f"""<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
@@ -189,7 +178,7 @@ th{{background:#f3f4f6;font-weight:600}}
         "type": art_type,
         "title": title,
         "description": response[:300] if response else task_text[:300],
-        "task": task_text,
+        "task": user_task,
         "content": content,
         "preview_html": preview_html,
         "files": files,

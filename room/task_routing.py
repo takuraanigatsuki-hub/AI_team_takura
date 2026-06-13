@@ -103,18 +103,24 @@ def should_sync_to_github(task_text: str) -> bool:
     return any(h in t for h in code_hints)
 
 
-def should_use_m365(task_text: str) -> bool:
+def effective_task_text(subtask: str, original_task: str = "") -> str:
+    """Текст задачи пользователя для артеfactов и доставки."""
+    original = (original_task or "").strip()
+    return original or (subtask or "").strip()
+
+
+def should_use_m365(task_text: str, original_task: str = "") -> bool:
     """Microsoft 365 — таблицы, презентации, документы."""
-    kind = classify_task_kind(task_text)
+    kind = resolve_task_intent(task_text, original_task)
     return kind in ("table", "presentation", "document")
 
 
-def delivery_channel(task_text: str) -> str:
+def delivery_channel(task_text: str, original_task: str = "") -> str:
     """Куда отдавать результат: m365, preview, github."""
-    if should_use_m365(task_text):
+    kind = resolve_task_intent(task_text, original_task)
+    if kind in ("table", "presentation", "document"):
         return "m365"
-    kind = classify_task_kind(task_text)
-    if kind in ("site", "ui", "table"):
+    if kind in ("site", "ui", "model_3d"):
         return "preview"
     if should_sync_to_github(task_text):
         return "github"

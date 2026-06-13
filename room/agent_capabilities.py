@@ -119,11 +119,11 @@ def get_capabilities(agent_id: str) -> dict:
     })
 
 
-def detect_artifact_type(agent_id: str, task_text: str) -> str:
-    from room.task_routing import classify_task_kind
+def detect_artifact_type(agent_id: str, task_text: str, original_task: str = "") -> str:
+    from room.task_routing import resolve_task_intent, classify_task_kind
 
+    kind = resolve_task_intent(task_text, original_task)
     t = task_text.lower()
-    kind = classify_task_kind(task_text)
     caps = get_capabilities(agent_id)
 
     if kind == "presentation" or agent_id == "presenter":

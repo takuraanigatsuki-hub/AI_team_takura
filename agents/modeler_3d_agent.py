@@ -25,6 +25,6 @@ class Modeler3DAgent(BaseAgent):
 
     def get_fallback_responses(self) -> list:
         return [
-            "🧊 Создаю 3D-сцену: '{task}'.\n\nThree.js + PBR materials + orbit controls.",
-            "🧊 Моделирую '{task}' — HTML preview с анимацией и освещением.",
+            "🧊 3D-сцена «{task}» готова.\n\nОткройте **Three.js preview** по ссылке в чате или во вкладке **Проекты**.",
+            "🧊 Модель по «{task}» — интерактивная WebGL-сцена с освещением и анимацией.",
         ]

@@ -272,6 +272,17 @@ class FrontendDevAgent(BaseAgent):
             self.current_task = None
             return
 
+        if intent_kind == "model_3d":
+            await self._broadcast_work(
+                "ℹ️ 3D-модели делает **Зоя** (Three.js сцена), не React-сайт.",
+                "message",
+            )
+            if self.room_manager:
+                await self.room_manager._broadcast_task_history()
+            self.status = "idle"
+            self.current_task = None
+            return
+
         if self.room_manager and task_id:
             self.room_manager.record_task_started(task_id)
 
