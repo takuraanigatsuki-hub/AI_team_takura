@@ -606,9 +606,11 @@
                 }).catch(() => {});
                 break;
             case 'task_awaiting_approval':
-                if (window.PipelineUI?.onTaskHistory && taskHistory) {
-                    PipelineUI.onTaskHistory(taskHistory, taskStats);
-                }
+                loadTasks().then(() => {
+                    if (window.PipelineUI?.onTaskHistory && taskHistory) {
+                        PipelineUI.onTaskHistory(taskHistory, taskStats);
+                    }
+                });
                 addAgentMessage({
                     ...data,
                     agent_id: data.agent_id || 'pm',
@@ -1201,6 +1203,9 @@
                 taskHistory = data.tasks || [];
                 updateTaskBadges();
                 renderTasks();
+                if (window.PipelineUI?.onTaskHistory) {
+                    PipelineUI.onTaskHistory(taskHistory, taskStats);
+                }
             }
         } catch (_) {}
     }

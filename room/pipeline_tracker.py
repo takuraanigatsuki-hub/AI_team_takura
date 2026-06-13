@@ -82,6 +82,7 @@ class PipelineTracker:
         agent_id = task.get("agent_id") or task.get("target")
         await self._set_step(agent_id, "failed" if failed else "done")
         await self._sync_evaluator_step()
+        await self._sync_github_step()
         await self._check_finish()
 
     def _evaluator_still_working(self) -> bool:
@@ -115,6 +116,18 @@ class PipelineTracker:
             if eval_step and eval_step.get("status") == "pending":
                 await self._set_step("evaluator", "done")
 
+    async def _sync_github_step(self) -> None:
+        """Git sync может не запуститься — не блокируем завершение pipeline."""
+        if not self.active:
+            return
+        gh = next((s for s in self.active["steps"] if s.get("agent_id") == "github"), None)
+        if not gh or gh.get("status") != "pending":
+            return
+        skip = {"evaluator", "pm", "github"}
+        worker_steps = [s for s in self.active["steps"] if s.get("agent_id") not in skip]
+        if worker_steps and all(s.get("status") in ("done", "failed") for s in worker_steps):
+            await self._set_step("github", "done")
+
     async def on_github(self, phase: str) -> None:
         if not self.active:
             return
@@ -141,6 +154,7 @@ class PipelineTracker:
         if not self.active:
             return
         await self._sync_evaluator_step()
+        await self._sync_github_step()
         steps = self.active["steps"]
         if all(s.get("status") in ("done", "failed") for s in steps):
             self.active["finished_at"] = datetime.now().isoformat()

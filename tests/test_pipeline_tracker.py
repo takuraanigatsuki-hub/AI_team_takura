@@ -59,7 +59,7 @@ def test_get_state_clears_stale_finished():
     tracker = PipelineTracker(room)
 
     async def run():
-        await tracker.start("Задача", {"presenter": "x"}, room.agents)
+        await tracker.start("Сделай презентацию PowerPoint", {"presenter": "x"}, room.agents)
 
     asyncio.run(run())
     tracker.active["finished_at"] = "2000-01-01T00:00:00"
@@ -72,7 +72,7 @@ def test_auto_clear_broadcasts_null():
     tracker = PipelineTracker(room)
 
     async def run():
-        await tracker.start("Задача", {"presenter": "x"}, room.agents)
+        await tracker.start("Сделай презентацию PowerPoint", {"presenter": "x"}, room.agents)
         room.task_history.tasks = [
             {"id": "t1", "agent_id": "presenter", "task": "x", "status": "awaiting_approval"},
         ]
