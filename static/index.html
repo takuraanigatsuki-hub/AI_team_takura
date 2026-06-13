@@ -696,7 +696,7 @@
     <div class="modal modal-wide">
         <h2>⚙️ Настройки</h2>
         <div id="settingsUserHint" class="hidden settings-user-hint">
-            <p>Тема, профиль и подписка — в <button type="button" class="link-btn" onclick="hideSettings();switchView('profile')">👤 Кабинете</button>.</p>
+            <p>Тема, профиль и подписка — в <button type="button" class="link-btn" onclick="hideSettings();switchView('profile')">👤 Кабинете</button>. Технические настройки доступны только администраторам.</p>
         </div>
         <div class="settings-grid" id="settingsGrid">
             <div id="settingsLearningSection" class="hidden" data-ui="learning-settings">
@@ -755,7 +755,7 @@
                 </p>
             </div>
         </div>
-        <p class="modal-note">
+        <p class="modal-note hidden" data-ui="admin-tools">
             Figma: <code>FIGMA_ACCESS_TOKEN</code> в .env ·
             Источники обучения: Wikipedia, Dev.to, GitHub, Хабр и др.
         </p>
@@ -778,8 +778,8 @@
     </div>
 </div>
 
-<!-- Cursor SDK Panel -->
-<aside id="cursorPanel" class="side-panel">
+<!-- Cursor SDK Panel (admin) -->
+<aside id="cursorPanel" class="side-panel hidden" data-ui="admin-tools">
     <div class="side-panel-header">
         <span>⚡</span>
         <h2>Cursor SDK</h2>
@@ -825,7 +825,7 @@
 <script src="/static/js/dashboard.js?v=8"></script>
 <script src="/static/js/workspaces.js?v=1"></script>
 <script src="/static/js/agent-activity.js?v=3"></script>
-<script src="/static/js/ui-access.js?v=2"></script>
+<script src="/static/js/ui-access.js?v=3"></script>
 <script src="/static/js/auth.js?v=12"></script>
 <script src="/static/js/profile.js?v=11"></script>
 <script src="/static/js/admin-panel.js?v=5"></script>

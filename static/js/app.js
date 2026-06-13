@@ -1114,7 +1114,7 @@
             <button class="action-btn" onclick="AgentActivity.open('${a.agent_id}')">📊 Деятельность</button>
             <button class="action-btn" onclick="openPrivateChat('${a.agent_id}')">💬 Обсудить / доработать</button>
             ${a.agent_id === 'frontend' ? `<button class="action-btn secondary" onclick="openSonyaPreview()">⚛️ React Preview</button>` : ''}
-            ${a.agent_id === 'cursor' ? `<button class="action-btn secondary" onclick="Integrations.toggleCursorPanel()">⚡ Cursor Panel</button>` : ''}
+            ${a.agent_id === 'cursor' && isPrivilegedUser(window.Auth?.getUser()) ? `<button class="action-btn secondary" onclick="Integrations.toggleCursorPanel()">⚡ Cursor Panel</button>` : ''}
             <button class="action-btn secondary" onclick="sendToAgent('${a.agent_id}')">Задача в общий чат</button>`;
     }
 
@@ -1537,33 +1537,44 @@
     };
 
     window.showSettings = async function () {
-        document.getElementById('settingsModal').classList.add('show');
         const user = window.Auth?.getUser();
         const admin = window.UIAccess?.canAccessConsole?.(user);
         const learning = window.Auth?.canViewAgentLearning?.(user);
         if (window.UIAccess) UIAccess.applyMenuVisibility(user);
+        if (!admin && !learning) {
+            switchView('profile');
+            if (window.UIEnhancements) UIEnhancements.toast('Профиль и подписка — во вкладке Кабинет', 'info');
+            return;
+        }
+        document.getElementById('settingsModal').classList.add('show');
         document.getElementById('settingsUserHint')?.classList.toggle('hidden', admin || learning);
         document.getElementById('settingsGrid')?.classList.toggle('hidden', !admin && !learning);
         document.getElementById('settingsLearningSection')?.classList.toggle('hidden', !learning);
-        if (!admin && !learning) return;
+        document.getElementById('settingsAdminSection')?.classList.toggle('hidden', !admin);
+        document.getElementById('settingsM365Section')?.classList.toggle('hidden', !admin);
+        document.getElementById('settingsSaveBtn')?.classList.toggle('hidden', !admin && !learning);
         try {
             const resp = await fetch('/api/config', { credentials: 'same-origin' });
             if (resp.ok) {
                 const cfg = await resp.json();
-                document.getElementById('learnMinInput').value = cfg.learning_interval_min || 15;
-                document.getElementById('learnMaxInput').value = cfg.learning_interval_max || 45;
-                document.getElementById('persistInput').checked = cfg.persist_knowledge !== false;
-                document.getElementById('cursorRepoInput').value = cfg.cursor_repo_url || '';
-                document.getElementById('cursorRefInput').value = cfg.cursor_repo_ref || 'main';
-                document.getElementById('cursorEnabledInput').checked = cfg.cursor_enabled !== false;
-                document.getElementById('cursorGithubSyncInput').checked = cfg.cursor_github_sync === true;
-                document.getElementById('githubSyncOnTasksInput').checked = cfg.github_sync_on_tasks === true;
-                document.getElementById('cursorAutoPrInput').checked = cfg.cursor_auto_create_pr !== false;
-                document.getElementById('gitAutoSyncInput').checked = cfg.git_auto_sync !== false;
-                document.getElementById('m365EnabledInput').checked = cfg.m365_enabled !== false;
+                if (learning) {
+                    document.getElementById('learnMinInput').value = cfg.learning_interval_min || 15;
+                    document.getElementById('learnMaxInput').value = cfg.learning_interval_max || 45;
+                    document.getElementById('persistInput').checked = cfg.persist_knowledge !== false;
+                }
+                if (admin) {
+                    document.getElementById('cursorRepoInput').value = cfg.cursor_repo_url || '';
+                    document.getElementById('cursorRefInput').value = cfg.cursor_repo_ref || 'main';
+                    document.getElementById('cursorEnabledInput').checked = cfg.cursor_enabled !== false;
+                    document.getElementById('cursorGithubSyncInput').checked = cfg.cursor_github_sync === true;
+                    document.getElementById('githubSyncOnTasksInput').checked = cfg.github_sync_on_tasks === true;
+                    document.getElementById('cursorAutoPrInput').checked = cfg.cursor_auto_create_pr !== false;
+                    document.getElementById('gitAutoSyncInput').checked = cfg.git_auto_sync !== false;
+                    document.getElementById('m365EnabledInput').checked = cfg.m365_enabled !== false;
+                }
             }
         } catch (_) {}
-        if (window.Integrations) Integrations.loadCursorStatus();
+        if (admin && window.Integrations) Integrations.loadCursorStatus();
     };
 
     window.hideSettings = function () {
@@ -1571,24 +1582,33 @@
     };
 
     window.saveSettings = async function () {
+        const user = window.Auth?.getUser();
+        const admin = window.UIAccess?.canAccessConsole?.(user);
+        const learning = window.Auth?.canViewAgentLearning?.(user);
+        const body = {};
+        if (learning) {
+            body.learning_interval_min = parseInt(document.getElementById('learnMinInput').value, 10);
+            body.learning_interval_max = parseInt(document.getElementById('learnMaxInput').value, 10);
+            body.persist_knowledge = document.getElementById('persistInput').checked;
+        }
+        if (admin) {
+            Object.assign(body, {
+                cursor_repo_url: document.getElementById('cursorRepoInput').value,
+                cursor_repo_ref: document.getElementById('cursorRefInput').value,
+                cursor_enabled: document.getElementById('cursorEnabledInput').checked,
+                cursor_github_sync: document.getElementById('cursorGithubSyncInput').checked,
+                github_sync_on_tasks: document.getElementById('githubSyncOnTasksInput').checked,
+                cursor_auto_create_pr: document.getElementById('cursorAutoPrInput').checked,
+                git_auto_sync: document.getElementById('gitAutoSyncInput').checked,
+                m365_enabled: document.getElementById('m365EnabledInput').checked,
+            });
+        }
         try {
             const resp = await fetch('/api/config', {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    learning_interval_min: parseInt(document.getElementById('learnMinInput').value, 10),
-                    learning_interval_max: parseInt(document.getElementById('learnMaxInput').value, 10),
-                    persist_knowledge: document.getElementById('persistInput').checked,
-                    cursor_repo_url: document.getElementById('cursorRepoInput').value,
-                    cursor_repo_ref: document.getElementById('cursorRefInput').value,
-                    cursor_enabled: document.getElementById('cursorEnabledInput').checked,
-                    cursor_github_sync: document.getElementById('cursorGithubSyncInput').checked,
-                    github_sync_on_tasks: document.getElementById('githubSyncOnTasksInput').checked,
-                    cursor_auto_create_pr: document.getElementById('cursorAutoPrInput').checked,
-                    git_auto_sync: document.getElementById('gitAutoSyncInput').checked,
-                    m365_enabled: document.getElementById('m365EnabledInput').checked,
-                }),
+                body: JSON.stringify(body),
             });
             if (resp.ok) {
                 hideSettings();
