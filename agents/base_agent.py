@@ -1256,6 +1256,20 @@ class BaseAgent:
             pass
         return self.build_task_response(task_text, knowledge)
 
+    @staticmethod
+    def _artifact_download_url(saved: Optional[dict]) -> Optional[str]:
+        if not saved:
+            return None
+        files = saved.get("files") or {}
+        for ext in (".pptx", ".xlsx", ".docx", ".pdf", ".glb"):
+            for fname, finfo in files.items():
+                if fname.endswith(ext) and isinstance(finfo, dict) and finfo.get("download"):
+                    return finfo["download"]
+        for fname, finfo in files.items():
+            if isinstance(finfo, dict) and finfo.get("download"):
+                return finfo["download"]
+        return None
+
     async def _save_task_artifact(self, task_text: str, response: str, task: dict) -> Optional[dict]:
         try:
             from agents.artifact_producer import produce_artifact

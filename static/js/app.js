@@ -766,13 +766,18 @@
         const who = data.agent_emoji && data.agent_name ? `${data.agent_emoji} ${data.agent_name}` : 'Команда';
         let html = `<div class="msg-header">${escapeHtml(who)}</div><div class="msg-body">${formatText(data.message || 'Готово')}</div>`;
         html += '<div class="result-ready-actions">';
-        if (data.site_url) {
+        if (data.download_url) {
+            const dlLabel = data.is_presentation ? '📥 PowerPoint (.pptx)' : '📥 Скачать файл';
+            html += `<a class="btn-primary btn-sm" href="${escapeHtml(data.download_url)}" target="_blank" rel="noopener">${dlLabel}</a>`;
+        }
+        if (data.site_url && !data.is_presentation) {
             html += `<a class="btn-secondary btn-sm" href="${escapeHtml(data.site_url)}" target="_blank" rel="noopener">🌐 Открыть сайт</a>`;
         }
         if (data.preview_url) {
-            html += `<a class="btn-secondary btn-sm" href="${escapeHtml(data.preview_url)}" target="_blank" rel="noopener">👁 Preview</a>`;
+            const pl = data.is_presentation ? '📽️ Слайды' : '👁 Preview';
+            html += `<a class="btn-secondary btn-sm" href="${escapeHtml(data.preview_url)}" target="_blank" rel="noopener">${pl}</a>`;
         }
-        if (data.open_preview && window.ReactPreview) {
+        if (data.open_preview && window.ReactPreview && !data.is_presentation) {
             html += `<button type="button" class="btn-primary btn-sm" onclick="ReactPreview.toggle()">🎨 React Preview</button>`;
         }
         html += '</div>';

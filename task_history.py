@@ -234,7 +234,6 @@ class TaskHistory:
 
     def enrich_for_ui(self, tasks: List[Dict]) -> List[Dict]:
         """Родительским задачам подставляем ссылки на файл (pptx и т.д.) из подзадач."""
-        by_id = {t.get("id"): dict(t) for t in tasks if t.get("id")}
         children_map: Dict[str, List[Dict]] = {}
         for t in tasks:
             pid = t.get("parent_id")

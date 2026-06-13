@@ -15,6 +15,41 @@
     };
     const PRIO_LABELS = { urgent: '🔴', high: '🟠', medium: '🟡', low: '⚪' };
 
+    function inferTaskKind(taskText) {
+        const t = (taskText || '').toLowerCase();
+        if (/презентац|powerpoint|pptx|pitch|слайд|keynote/.test(t)) return 'presentation';
+        if (/3d|3д|three\.?js|glb|gltf|webgl/.test(t)) return 'model_3d';
+        if (/таблиц|excel|spreadsheet|csv/.test(t)) return 'table';
+        if (/сайт|landing|website|лендинг|web page/.test(t)) return 'site';
+        return '';
+    }
+
+    function taskDeliveryLinks(t) {
+        const kind = t.task_kind || t.artifact_type || inferTaskKind(t.task);
+        const links = [];
+        const preview = t.preview_url && !String(t.preview_url).includes('/api/sites/latest')
+            ? t.preview_url : '';
+        if (preview) {
+            const label = kind === 'presentation' ? '📽️ Слайды' : kind === 'model_3d' ? '🧊 3D Preview' : '👁 Preview';
+            links.push({ href: preview, label });
+        }
+        let download = t.download_url || '';
+        if (!download && kind === 'presentation' && t.artifact_id) {
+            download = `/api/projects/${t.artifact_id}/file/presentation.pptx`;
+        }
+        if (download) {
+            const dlLabel = kind === 'presentation' ? '📥 PowerPoint (.pptx)'
+                : kind === 'table' ? '📥 Excel (.xlsx)' : '📥 Скачать файл';
+            links.push({ href: download, label: dlLabel });
+        }
+        if (t.status === 'awaiting_approval' && (kind === 'site' || kind === 'ui')) {
+            links.push({ href: t.site_url || '/api/sites/latest', label: '🌐 Сайт' });
+        }
+        return links.map((l) =>
+            `<a href="${esc(l.href)}" target="_blank" rel="noopener" class="task-link-btn">${l.label}</a>`
+        ).join('');
+    }
+
     let contextState = {
         online: false,
         reconnecting: false,
@@ -126,10 +161,7 @@
         const prio = t.priority || 'medium';
         const prioBadge = PRIO_LABELS[prio] || '';
         const tid = esc(t.id);
-        const previewLink = t.preview_url
-            ? `<a href="${esc(t.preview_url)}" target="_blank" rel="noopener" class="task-link-btn">👁 Preview</a>` : '';
-        const siteLink = t.status === 'awaiting_approval'
-            ? `<a href="/api/sites/latest" target="_blank" rel="noopener" class="task-link-btn">🌐 Сайт</a>` : '';
+        const deliveryLinks = taskDeliveryLinks(t);
         const approvalBtns = t.status === 'awaiting_approval' ? `
             <div class="task-approval">
                 <button type="button" class="btn-primary btn-sm" onclick="approveTask('${tid}')">✓ Принять</button>
@@ -140,7 +172,7 @@
             : '';
         const actions = compact ? '' : `
             <div class="task-card-actions">
-                ${previewLink}${siteLink}
+                ${deliveryLinks}
                 <button type="button" class="task-act-btn" onclick="copyTaskById('${tid}')" title="Копировать">📋</button>
                 <button type="button" class="task-act-btn" onclick="rerunTaskById('${tid}')" title="Повторить">↻</button>
             </div>`;

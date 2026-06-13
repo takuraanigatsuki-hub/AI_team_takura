@@ -37,6 +37,7 @@ def _run(coro):
     ("Three.js сцена продукта", "model_3d"),
     ("Сделай таблицу продаж", "table"),
     ("Сделай landing page", "site"),
+    ("Мне нужно сделать презентацию на тему школа", "presentation"),
 ])
 def test_classify_task_kinds(task, expected):
     assert classify_task_kind(task) == expected
