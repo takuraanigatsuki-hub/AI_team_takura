@@ -42,6 +42,14 @@ class RagStore:
                         pack_id UNINDEXED,
                         tokenize='unicode61'
                     );
+                    CREATE TABLE IF NOT EXISTS rag_vec (
+                        chunk_id INTEGER PRIMARY KEY,
+                        agent_id TEXT NOT NULL,
+                        title TEXT,
+                        content TEXT,
+                        embedding BLOB NOT NULL
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_rag_vec_agent ON rag_vec(agent_id);
                 """)
                 conn.commit()
             finally:
@@ -64,6 +72,16 @@ class RagStore:
             conn = self._connect()
             try:
                 conn.execute("DELETE FROM rag_fts")
+                conn.execute("DELETE FROM rag_vec")
+                conn.commit()
+            finally:
+                conn.close()
+
+    def clear_vectors(self) -> None:
+        with _lock:
+            conn = self._connect()
+            try:
+                conn.execute("DELETE FROM rag_vec")
                 conn.commit()
             finally:
                 conn.close()
@@ -76,21 +94,89 @@ class RagStore:
         keywords: str = "",
         source: str = "pack",
         pack_id: str = "v1",
-    ) -> None:
+    ) -> int:
         title = (title or "").strip()
         content = (content or "").strip()
         if not title and not content:
-            return
-        blob = f"{title} {content} {keywords}".lower()
+            return 0
         with _lock:
             conn = self._connect()
             try:
-                conn.execute(
+                cur = conn.execute(
                     """INSERT INTO rag_fts(agent_id, title, content, keywords, source, pack_id)
                        VALUES (?, ?, ?, ?, ?, ?)""",
                     (agent_id, title, content, keywords, source, pack_id),
                 )
+                chunk_id = cur.lastrowid
                 conn.commit()
+                return chunk_id
+            finally:
+                conn.close()
+
+    def set_embedding(self, chunk_id: int, agent_id: str, title: str, content: str, embedding: bytes) -> None:
+        with _lock:
+            conn = self._connect()
+            try:
+                conn.execute(
+                    """INSERT OR REPLACE INTO rag_vec(chunk_id, agent_id, title, content, embedding)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (chunk_id, agent_id, title, content, embedding),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+
+    def vector_search(self, agent_id: str, query_embedding: list[float], limit: int = 8) -> list[dict]:
+        from integrations.rag.embeddings import blob_to_embedding, cosine_similarity, embedding_to_blob
+        qblob = embedding_to_blob(query_embedding)
+        with _lock:
+            conn = self._connect()
+            try:
+                rows = conn.execute(
+                    "SELECT chunk_id, agent_id, title, content, embedding FROM rag_vec WHERE agent_id = ?",
+                    (agent_id,),
+                ).fetchall()
+            finally:
+                conn.close()
+        scored = []
+        for r in rows:
+            vec = blob_to_embedding(r["embedding"])
+            sim = cosine_similarity(query_embedding, vec)
+            scored.append({
+                "title": r["title"],
+                "content": r["content"],
+                "score": sim,
+                "vector_score": sim,
+                "chunk_id": r["chunk_id"],
+            })
+        scored.sort(key=lambda x: -x["score"])
+        return scored[:limit]
+
+    def list_fts_chunks(self, agent_id: str = None, limit: int = 5000) -> list[dict]:
+        with _lock:
+            conn = self._connect()
+            try:
+                if agent_id:
+                    rows = conn.execute(
+                        """SELECT rowid AS chunk_id, agent_id, title, content, keywords, source, pack_id
+                           FROM rag_fts WHERE agent_id = ? LIMIT ?""",
+                        (agent_id, limit),
+                    ).fetchall()
+                else:
+                    rows = conn.execute(
+                        """SELECT rowid AS chunk_id, agent_id, title, content, keywords, source, pack_id
+                           FROM rag_fts LIMIT ?""",
+                        (limit,),
+                    ).fetchall()
+                return [dict(r) for r in rows]
+            finally:
+                conn.close()
+
+    def count_vectors(self) -> int:
+        with _lock:
+            conn = self._connect()
+            try:
+                return conn.execute("SELECT COUNT(*) FROM rag_vec").fetchone()[0]
             finally:
                 conn.close()
 
@@ -153,8 +239,10 @@ class RagStore:
                 meta = {}
                 for row in conn.execute("SELECT key, value FROM rag_meta"):
                     meta[row[0]] = row[1]
+                vec_count = conn.execute("SELECT COUNT(*) FROM rag_vec").fetchone()[0]
                 return {
                     "total_chunks": total,
+                    "vector_chunks": vec_count,
                     "by_agent": {r["agent_id"]: r["n"] for r in by_agent},
                     "db_path": self.db_path,
                     "meta": meta,

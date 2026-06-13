@@ -1171,6 +1171,16 @@ class BaseAgent:
             )
             if hints.get("prompt_extra"):
                 base += f"\n\n{hints['prompt_extra']}"
+            # Hybrid RAG (embeddings) when LLM path active
+            try:
+                from integrations.rag.retrieve import retrieve_context_text_async
+                rag_extra = await retrieve_context_text_async(
+                    self.agent_id, task_text or self.current_task or "", limit=4,
+                )
+                if rag_extra and rag_extra not in base:
+                    base += f"\n\nБаза знаний (semantic RAG):\n{rag_extra}"
+            except Exception:
+                pass
         except Exception:
             pass
         try:

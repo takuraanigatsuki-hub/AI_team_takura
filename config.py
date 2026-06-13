@@ -42,6 +42,10 @@ _defaults = {
     "openai_api_key": "",
     "openai_base_url": "https://api.openai.com/v1",
     "llm_model": "gpt-4o-mini",
+    "llm_router_model": "gpt-4o-mini",
+    "embedding_model": "text-embedding-3-small",
+    "evaluator_min_score": 6,
+    "rag_hybrid": True,
     "room_api_key": "",
     "auto_theme": False,
     "telegram_notify_tasks": False,
@@ -114,6 +118,14 @@ def _load_config() -> dict:
     cfg["openai_api_key"] = os.environ.get("OPENAI_API_KEY") or cfg.get("openai_api_key") or ""
     cfg["openai_base_url"] = os.environ.get("OPENAI_BASE_URL") or cfg.get("openai_base_url") or "https://api.openai.com/v1"
     cfg["llm_model"] = os.environ.get("LLM_MODEL") or cfg.get("llm_model") or "gpt-4o-mini"
+    cfg["llm_router_model"] = os.environ.get("LLM_ROUTER_MODEL") or cfg.get("llm_router_model") or cfg["llm_model"]
+    cfg["embedding_model"] = os.environ.get("EMBEDDING_MODEL") or cfg.get("embedding_model") or "text-embedding-3-small"
+    cfg["evaluator_min_score"] = int(os.environ.get("EVALUATOR_MIN_SCORE") or cfg.get("evaluator_min_score") or 6)
+    rag_hybrid = os.environ.get("RAG_HYBRID", "")
+    if rag_hybrid.lower() in ("0", "false", "no"):
+        cfg["rag_hybrid"] = False
+    elif rag_hybrid:
+        cfg["rag_hybrid"] = True
     cfg["room_api_key"] = os.environ.get("ROOM_API_KEY") or cfg.get("room_api_key") or ""
     for key, env in (
         ("telegram_bot_token", "TELEGRAM_BOT_TOKEN"),
