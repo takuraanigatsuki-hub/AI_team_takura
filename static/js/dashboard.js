@@ -154,10 +154,13 @@
         const gitCard = data.admin
             ? `<div class="dash-card"><div class="dash-card-num">${s.awaiting_approval || 0}</div><div class="dash-card-label">На проверке</div></div>`
             : `<div class="dash-card"><div class="dash-card-num">${s.awaiting_approval || 0}</div><div class="dash-card-label">На проверке</div></div>`;
+        const knowledgeCard = data.dash?.total_knowledge != null
+            ? `<div class="dash-card"><div class="dash-card-num">${data.dash.total_knowledge}</div><div class="dash-card-label">Знаний</div></div>`
+            : '';
         return `<div class="dash-cards">
             <div class="dash-card"><div class="dash-card-num">${s.completed || 0}</div><div class="dash-card-label">Выполнено</div></div>
             <div class="dash-card accent"><div class="dash-card-num">${s.active || 0}</div><div class="dash-card-label">В работе</div></div>
-            <div class="dash-card"><div class="dash-card-num">${data.dash?.total_knowledge || 0}</div><div class="dash-card-label">Знаний</div></div>
+            ${knowledgeCard}
             ${gitCard}
         </div>`;
     }

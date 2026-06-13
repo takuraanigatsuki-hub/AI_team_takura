@@ -821,6 +821,7 @@ class RoomManager:
             "agent_id": "pm",
             "agent_name": pm_name,
             "agent_emoji": pm_emoji,
+            "user_id": t.get("user_id") or "",
             "site_url": site_url if task_kind in ("site", "ui") else None,
             "preview_url": preview_url,
             "download_url": download_url,

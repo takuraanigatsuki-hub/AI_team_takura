@@ -424,6 +424,14 @@
 
     function wsMessageToActivity(data) {
         if (!data || !data.type) return;
+        const user = global.Auth?.getUser?.();
+        const me = user?.id;
+        const admin = global.UIAccess?.canAccessConsole?.(user);
+        if (me && !admin) {
+            const uid = data.user_id || '';
+            if (uid && uid !== me) return;
+            if (!uid && !['task_awaiting_approval', 'balance_update'].includes(data.type)) return;
+        }
         const msg = String(data.message || data.task || '').replace(/[*#_`]/g, '').slice(0, 160);
         const map = {
             task_awaiting_approval: { icon: '⏳', kind: 'task', text: msg || 'Задача ждёт подтверждения' },
