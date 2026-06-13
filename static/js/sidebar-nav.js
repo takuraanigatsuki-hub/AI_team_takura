@@ -1,6 +1,6 @@
 /**
  * Sidebar navigation — role-based (guest / member / admin / investor)
- * Структура вдохновлена Snow Dashboard UI Kit
+ * Workspace (/workspace) и Portal (/portal) — разные меню
  */
 (function (global) {
     const NAV_GUEST = [
@@ -32,22 +32,15 @@
             { view: 'studio', icon: '🎮', label: '3D' },
             { view: 'sonya-studio', icon: '✨', label: 'Sonya Studio' },
         ]},
-        { group: 'Аккаунт', items: [
-            { view: 'profile', icon: '👤', label: 'Кабинет' },
+        { group: 'Обзор', items: [
             { view: 'investor', icon: '💼', label: 'Investor', investor: true },
         ]},
     ];
 
-    const NAV_SUPPORT = [
-        { group: 'Поддержка', items: [
-            { view: 'support', icon: '💬', label: 'Тикеты', primary: true, supportPanel: true },
-        ]},
+    const NAV_SUPPORT_WS = [
         { group: 'Работа', items: [
-            { view: 'tasks', icon: '📋', label: 'Inbox' },
+            { view: 'tasks', icon: '📋', label: 'Inbox', primary: true },
             { view: 'chat', icon: '💬', label: 'Чат' },
-        ]},
-        { group: 'Аккаунт', items: [
-            { view: 'profile', icon: '👤', label: 'Кабинет' },
         ]},
     ];
 
@@ -72,13 +65,8 @@
             { view: 'design', icon: '🎨', label: 'Design Lab', adminLearning: true },
         ]},
         { group: 'Система', advanced: true, items: [
-            { view: 'support', icon: '💬', label: 'Поддержка', supportPanel: true },
             { view: 'agent-learning', icon: '🔬', label: 'Обучение', adminLearning: true },
-            { view: 'admin', icon: '🛡', label: 'Admin', admin: true },
             { view: 'investor', icon: '💼', label: 'Investor', investor: true },
-        ]},
-        { group: 'Аккаунт', items: [
-            { view: 'profile', icon: '👤', label: 'Кабинет' },
         ]},
     ];
 
@@ -91,16 +79,59 @@
             { view: 'studio', icon: '🎮', label: '3D' },
             { view: 'projects', icon: '📦', label: 'Проекты' },
         ]},
+    ];
+
+    const NAV_PORTAL_MEMBER = [
+        { group: 'Аккаунт', items: [
+            { view: 'profile', icon: '👤', label: 'Кабинет', primary: true },
+        ]},
+    ];
+
+    const NAV_PORTAL_SUPPORT = [
+        { group: 'Поддержка', items: [
+            { view: 'support', icon: '💬', label: 'Тикеты', primary: true, supportPanel: true },
+        ]},
         { group: 'Аккаунт', items: [
             { view: 'profile', icon: '👤', label: 'Кабинет' },
         ]},
     ];
 
+    const NAV_PORTAL_ADMIN = [
+        { group: 'Аккаунт', items: [
+            { view: 'profile', icon: '👤', label: 'Кабинет', primary: true },
+        ]},
+        { group: 'Управление', items: [
+            { view: 'admin', icon: '🛡', label: 'Admin', admin: true },
+        ]},
+    ];
+
+    const NAV_PORTAL_FULL = [
+        { group: 'Аккаунт', items: [
+            { view: 'profile', icon: '👤', label: 'Кабинет', primary: true },
+        ]},
+        { group: 'Управление', items: [
+            { view: 'admin', icon: '🛡', label: 'Admin', admin: true },
+            { view: 'support', icon: '💬', label: 'Поддержка', supportPanel: true },
+        ]},
+    ];
+
+    function isPortalShell() {
+        return global.AppShell?.isPortal?.() || global.APP_SHELL === 'portal';
+    }
+
     function getNav(user) {
+        if (isPortalShell()) {
+            const showAdmin = global.Auth?.canAccessAdmin?.(user);
+            const showSupport = global.Auth?.canManageTickets?.(user) || user?.is_support;
+            if (showAdmin && showSupport) return NAV_PORTAL_FULL;
+            if (showAdmin) return NAV_PORTAL_ADMIN;
+            if (showSupport) return NAV_PORTAL_SUPPORT;
+            return NAV_PORTAL_MEMBER;
+        }
         const mode = global.UICore?.getUiMode?.(user) || 'guest';
         if (mode === 'guest') return NAV_GUEST;
         if (mode === 'investor') return NAV_INVESTOR;
-        if (mode === 'support') return NAV_SUPPORT;
+        if (mode === 'support') return NAV_SUPPORT_WS;
         if (mode === 'admin') return NAV_ADMIN;
         return NAV_MEMBER;
     }
@@ -131,10 +162,10 @@
             return user.is_investor || user.can_view_investor_portal || global.Auth?.canAccessAdmin?.(user);
         }
         if (user?.role === 'investor' || user?.is_investor) {
-            if (!['investor', 'profile', 'studio', 'dashboard', 'projects'].includes(item.view)) return false;
+            if (!['investor', 'studio', 'dashboard', 'projects'].includes(item.view)) return false;
         }
         if (user && global.ProfileCabinet?.canAccessView && !ProfileCabinet.canAccessView(user, item.view)) {
-            if (!['profile', 'tasks', 'chat', 'kanban', 'studio'].includes(item.view)) return false;
+            if (!['tasks', 'chat', 'kanban', 'studio'].includes(item.view)) return false;
         }
         return true;
     }
@@ -158,7 +189,7 @@
         if (!el) return;
         const user = global.Auth?.getUser?.();
         const NAV = getNav(user);
-        const quickBar = `<div class="sb-quick">
+        const quickBar = isPortalShell() ? '' : `<div class="sb-quick">
             <button type="button" class="sb-quick-btn sb-quick-unified" onclick="FeaturePack?.openCommandPalette?.()" title="Разделы, команды и поиск — Ctrl+K">
                 <span class="sb-quick-icon" aria-hidden="true">⌘</span>
                 <span class="sb-quick-label">Быстрый доступ</span>
@@ -171,6 +202,13 @@
             const adv = g.advanced ? ' sb-group-advanced' : '';
             return `<div class="sb-group${adv}"><div class="sb-group-label">${g.group}</div>${items.map(renderItem).join('')}</div>`;
         }).join('');
+
+        if (isPortalShell()) {
+            const showAdmin = global.Auth?.canAccessAdmin?.(user);
+            const showSupport = global.Auth?.canManageTickets?.(user) || user?.is_support;
+            document.getElementById('portalMobileAdmin')?.classList.toggle('hidden', !showAdmin);
+            document.getElementById('portalMobileSupport')?.classList.toggle('hidden', !showSupport);
+        }
     }
 
     function onNavClick(view) {
@@ -186,6 +224,7 @@
     }
 
     function updateBadges(counts = {}) {
+        if (isPortalShell()) return;
         document.querySelectorAll('.sb-item[data-view="tasks"] .sb-badge').forEach((b) => b.remove());
         const n = counts.awaiting || 0;
         if (n > 0) {

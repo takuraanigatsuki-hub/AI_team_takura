@@ -299,9 +299,9 @@ async def startup_landing():
     raise HTTPException(status_code=404, detail="Startup landing not found")
 
 
-@app.get("/app", response_class=HTMLResponse)
-async def app_spa():
-    """Рабочее приложение — 3D студия и Dashboard"""
+@app.get("/workspace", response_class=HTMLResponse)
+async def workspace_spa():
+    """Рабочая область — чат, Kanban, студия, агенты."""
     html_file = os.path.join(static_dir, "index.html")
     if os.path.exists(html_file):
         with open(html_file, "r", encoding="utf-8") as f:
@@ -309,10 +309,26 @@ async def app_spa():
     return HTMLResponse("<h1>Static files not found</h1>")
 
 
+@app.get("/portal", response_class=HTMLResponse)
+async def portal_spa():
+    """Портал — личный кабинет, admin, поддержка."""
+    html_file = os.path.join(static_dir, "portal.html")
+    if os.path.exists(html_file):
+        with open(html_file, "r", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    return RedirectResponse("/workspace")
+
+
+@app.get("/app", response_class=HTMLResponse)
+async def app_spa():
+    """Обратная совместимость — редирект в рабочую область."""
+    return RedirectResponse("/workspace", status_code=302)
+
+
 @app.get("/cabinet")
 async def cabinet_page():
-    """Личный кабинет — редирект в приложение."""
-    return RedirectResponse("/app?view=profile")
+    """Личный кабинет — портал."""
+    return RedirectResponse("/portal?view=profile")
 
 
 @app.get("/investor", response_class=HTMLResponse)
@@ -794,8 +810,8 @@ async def stripe_checkout(body: StripeCheckoutBody, request: Request):
         raise HTTPException(status_code=503, detail="Stripe billing не настроен")
     user = _current_user(request)
     base = str(request.base_url).rstrip("/")
-    success = body.success_url or f"{base}/app?view=profile"
-    cancel = body.cancel_url or f"{base}/app?view=profile"
+    success = body.success_url or f"{base}/portal?view=profile"
+    cancel = body.cancel_url or f"{base}/portal?view=profile"
     try:
         session = await create_checkout_session(
             user_id=user["id"],

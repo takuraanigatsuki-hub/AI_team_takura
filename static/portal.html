@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>AI Team Room — Портал</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#8b5cf6">
+    <meta name="description" content="Личный кабинет, админ-панель и поддержка AI Team Room">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/main.css?v=52">
+    <link rel="stylesheet" href="/static/css/enhancements.css?v=19">
+    <link rel="stylesheet" href="/static/css/snow-theme.css?v=3">
+    <link rel="stylesheet" href="/static/css/ui-core.css?v=9">
+    <link rel="stylesheet" href="/static/css/premium-theme.css?v=2">
+    <link rel="stylesheet" href="/static/css/support.css?v=3">
+</head>
+<body class="has-sidebar portal-shell">
+<a href="#mainContent" class="skip-link">К содержимому</a>
+<div id="ariaLiveStatus" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+<aside class="app-sidebar" id="appSidebar" aria-label="Навигация портала">
+    <div class="sb-brand">
+        <span class="sb-brand-mark" aria-hidden="true">👤</span>
+        <div class="sb-brand-text">
+            <span class="sb-label">AI Team Room</span>
+            <span class="sb-sublabel">портал · кабинет</span>
+        </div>
+        <button type="button" class="sb-collapse" id="sidebarToggle" title="Свернуть панель" aria-label="Свернуть панель">◀</button>
+    </div>
+    <nav class="sb-nav" id="appSidebarNav"></nav>
+    <div class="sb-footer" id="sbFooter">
+        <a href="/workspace" class="sb-footer-link" title="Чат, Kanban, студия">🚀 Рабочая область</a>
+    </div>
+</aside>
+
+<div class="sb-overlay hidden" id="sidebarOverlay" aria-hidden="true"></div>
+
+<div class="app-content-wrap">
+<header class="header header-unified">
+    <div class="header-row header-row-main">
+        <button type="button" class="hdr-btn hdr-icon sb-mobile-toggle" id="mobileNavToggle" aria-label="Меню" aria-expanded="false" title="Навигация">☰</button>
+        <a href="/" class="logo logo-link logo-mobile-only" title="Главный сайт">
+            <div class="logo-mark">🤖</div>
+            <div class="logo-text"><h1>AI Team Room</h1></div>
+        </a>
+        <div class="header-view-title" id="headerViewTitle">
+            <span class="header-view-icon" id="headerViewIcon" aria-hidden="true">👤</span>
+            <div class="header-view-text">
+                <span class="header-view-name" id="headerViewName">Кабинет</span>
+                <span class="header-view-sub muted" id="headerViewSub">аккаунт и настройки</span>
+            </div>
+        </div>
+        <div class="header-actions header-actions-compact">
+            <span class="hdr-balance hidden" id="headerBalanceChip" title="Баланс"></span>
+            <button type="button" class="hdr-btn hdr-icon fp-hide-mobile" id="themeToggle" onclick="toggleTheme()" title="Тема">☀️</button>
+            <details class="header-dropdown header-dropdown-account">
+                <summary class="hdr-btn hdr-icon hdr-account" id="userMenuSummary" title="Аккаунт">👤</summary>
+                <div class="dropdown-menu" id="userMenu">
+                    <a href="/" class="dropdown-item">На сайт</a>
+                    <a href="/?auth=login" class="dropdown-item">Вход</a>
+                </div>
+            </details>
+        </div>
+    </div>
+</header>
+
+<div class="main" id="mainContent">
+    <div id="adminView" class="admin-layout hidden">
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-head">
+                <h2>🛡 Панель управления</h2>
+                <p class="muted">Пользователи · баланс · Cursor · AI</p>
+            </div>
+            <nav class="admin-nav" id="adminNav"></nav>
+        </aside>
+        <main class="admin-main">
+            <div id="adminPanelContent" class="admin-content">
+                <div class="ui-loading-inline ui-ph" aria-busy="true" role="status"><span class="ui-loading-ring sm" aria-hidden="true"></span><span class="muted">Загрузка…</span></div>
+            </div>
+        </main>
+    </div>
+
+    <div id="supportView" class="support-layout hidden">
+        <div id="supportPanelRoot" style="display:flex;flex:1;min-height:0;width:100%"></div>
+    </div>
+
+    <div id="profileView" class="profile-layout hidden">
+        <main class="profile-main profile-main-unified">
+            <header class="profile-topbar">
+                <div class="profile-topbar-head">
+                    <h2>👤 Личный кабинет</h2>
+                    <p class="muted">Обзор · профиль · подписка · настройки</p>
+                </div>
+                <nav class="profile-tab-nav profile-tab-nav-horizontal" id="profileTabNav" aria-label="Разделы кабинета"></nav>
+            </header>
+            <div id="profileTabContent" class="profile-tab-content">
+                <div class="ui-loading-inline ui-ph" aria-busy="true" role="status"><span class="ui-loading-ring sm" aria-hidden="true"></span><span class="muted">Загрузка…</span></div>
+            </div>
+        </main>
+    </div>
+</div>
+</div>
+
+<nav class="mobile-tab-bar" id="mobileTabBar" aria-label="Быстрая навигация">
+    <button type="button" class="mtab active" data-view="profile"><span class="mtab-icon">👤</span>Кабинет</button>
+    <button type="button" class="mtab hidden" data-view="admin" id="portalMobileAdmin"><span class="mtab-icon">🛡</span>Admin</button>
+    <button type="button" class="mtab hidden" data-view="support" id="portalMobileSupport"><span class="mtab-icon">💬</span>Тикеты</button>
+    <a href="/workspace" class="mtab mtab-link"><span class="mtab-icon">🚀</span>Workspace</a>
+</nav>
+
+<script>window.APP_SHELL = 'portal';</script>
+<script src="/static/js/app-shell.js?v=1"></script>
+<script src="/static/js/themes-auto.js?v=2"></script>
+<script src="/static/js/ui-enhancements.js?v=8"></script>
+<script src="/static/js/support-tickets.js?v=2"></script>
+<script src="/static/js/support-panel.js?v=2"></script>
+<script src="/static/js/ui-access.js?v=4"></script>
+<script src="/static/js/auth.js?v=16"></script>
+<script src="/static/js/profile.js?v=13"></script>
+<script src="/static/js/admin-panel.js?v=6"></script>
+<script src="/static/js/security-dashboard.js?v=3"></script>
+<script src="/static/js/ui-core.js?v=13"></script>
+<script src="/static/js/sidebar-nav.js?v=11"></script>
+<script src="/static/js/app.js?v=66"></script>
+</body>
+</html>

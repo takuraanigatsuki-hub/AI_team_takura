@@ -109,6 +109,7 @@
     };
 
     window.switchView = function (view) {
+        if (window.AppShell?.redirectIfCrossShell?.(view)) return;
         const user = window.Auth?.getUser();
         if (view === 'admin') {
             if (!window.AdminPanel?.canAccess(user)) {
