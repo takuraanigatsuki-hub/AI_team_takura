@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+from datetime import datetime
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
@@ -2499,12 +2500,7 @@ async def list_projects(request: Request, agent_id: str = "", type: str = "", li
 
 @app.delete("/api/projects/cleanup")
 async def cleanup_projects(request: Request):
-    user = _current_user(request)
-    from room.message_filter import is_privileged
-    if not is_privileged(user.get("role", "")):
-        from room.user_auth import has_privilege
-        if not has_privilege(user, "admin"):
-            raise HTTPException(status_code=403, detail="Недостаточно прав")
+    _current_user(request)
     from room.artifact_store import clear_non_deliverables
     removed = clear_non_deliverables()
     return {"ok": True, "removed": removed}

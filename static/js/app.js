@@ -3,7 +3,18 @@
  */
 (function () {
     const THEME_KEY = 'ai-team-room-theme';
-    const AGENT_ORDER = ['pm', 'architect', 'backend', 'frontend', 'qa', 'reviewer', 'doc_writer', 'devops', 'cursor', 'security', 'evaluator'];
+    const MAX_WORK_CHAT_MESSAGES = 180;
+    const MAX_SITE_MESSAGES_IN_CHAT = 8;
+    let sitePreviewCount = 0;
+
+    function trimWorkChat() {
+        const box = document.getElementById('messages');
+        if (!box) return;
+        const nodes = box.querySelectorAll('.message, .msg-user, .msg-system, .plan-message');
+        while (nodes.length > MAX_WORK_CHAT_MESSAGES) {
+            nodes[0].remove();
+        }
+    }
     const LEARNING_AGENT_ORDER = ['evaluator', 'pm', 'architect', 'backend', 'frontend', 'qa', 'reviewer', 'doc_writer', 'devops', 'cursor'];
     const LEARNING_TYPES = new Set([
         'learning', 'learning_result', 'reflection', 'rest', 'figma_study',
@@ -540,12 +551,18 @@
             case 'history':
                 if (data.channel === 'learning') {
                     if (canViewAgentLearning(window.Auth?.getUser())) {
+                        document.getElementById('learningMessages')?.replaceChildren();
                         data.messages.forEach((m) => {
                             if (shouldShowWsMessage(m)) addLearningMessage(m);
                         });
                     }
                 } else {
-                    data.messages.forEach((m) => {
+                    const box = document.getElementById('messages');
+                    if (box) {
+                        box.replaceChildren();
+                        sitePreviewCount = 0;
+                    }
+                    data.messages.slice(-MAX_WORK_CHAT_MESSAGES).forEach((m) => {
                         if (shouldShowWsMessage(m)) addWorkMessage(m);
                     });
                 }
@@ -737,7 +754,10 @@
                 }
                 notifyPush('GitHub Sync', data.message || 'Синхронизация завершена');
                 break;
-            case 'direct_user_echo':
+            case 'balance_update':
+                if (data.user_id && window.Auth?.getUser()?.id === data.user_id) {
+                    Auth.fetchMe?.().then(() => Auth.updateHeader?.());
+                }
                 break;
             default:
                 if (data.channel === 'learning' || (LEARNING_TYPES.has(data.type) && data.type !== 'skill_evaluation')) {
@@ -856,7 +876,19 @@
         if (msg.type === 'user_message') addUserMessage(msg.message, msg.target);
         else if (msg.type === 'system') addSystemMessage(msg.message);
         else if (msg.type === 'pm_plan') addPlanMessage(msg);
-        else if (msg.agent_id) addAgentMessage(msg);
+        else if (msg.type === 'error') addSystemMessage(msg.message || 'Ошибка');
+        else if (msg.type === 'site_ready' || msg.type === 'result_ready') {
+            if (sitePreviewCount >= MAX_SITE_MESSAGES_IN_CHAT) return;
+            sitePreviewCount += 1;
+            addLinkMessage(msg.message || (msg.type === 'site_ready' ? '🌐 Сайт готов' : '✅ Результат'), msg.site_url || msg.preview_url || msg.commit_url);
+        }
+        else if (msg.type === 'task_awaiting_approval') addSystemMessage(msg.message || '⏳ Задача ждёт вашего решения — откройте Inbox');
+        else if (msg.agent_id) {
+            const text = (msg.message || msg.text || '').trim();
+            if (!text && !msg.preview_url) return;
+            addAgentMessage(msg);
+        }
+        trimWorkChat();
     }
 
     function addLearningMessage(msg) {
@@ -871,6 +903,8 @@
 
     function addAgentMessage(data) {
         removeWelcome('messages');
+        const text = (data.message || data.text || '').trim();
+        if (!text && !data.preview_url) return;
         const div = document.createElement('div');
         const extraClass = data.type === 'pm_plan' ? ' pm-plan' : (data.type === 'assignment' ? ' assignment' : '');
         div.className = `message ${data.type || ''}${extraClass}`;
@@ -888,7 +922,7 @@
             </div>`;
         document.getElementById('messages').appendChild(div);
         scrollToBottom('messages');
-        if (data.type === 'task_done' && window.UIEnhancements) {
+        trimWorkChat();
             UIEnhancements.toast(`✅ ${data.agent_name || 'Агент'}: задача выполнена`, 'success');
         }
         applyChatSearchFilter();
