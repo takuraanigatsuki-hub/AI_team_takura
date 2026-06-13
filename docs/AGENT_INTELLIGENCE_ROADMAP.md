@@ -130,4 +130,4 @@ data/rag/knowledge.db                  ← SQLite FTS (gitignore)
 
 ---
 
-*Последнее обновление: 2026-06-13 — Фаза A started*
+*Последнее обновление: 2026-06-13 — Smart AIPI + Фаза C started*
