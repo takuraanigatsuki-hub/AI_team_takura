@@ -96,7 +96,7 @@
     function canManageTickets(user) {
         if (!user) return false;
         if (user.can_manage_tickets) return true;
-        return user.role === 'support' || user.role === 'admin' || user.is_owner || user.role === 'owner';
+        return ['support', 'admin', 'tech_admin'].includes(user.role) || user.is_owner || user.role === 'owner';
     }
 
     function updateNavVisibility(user) {

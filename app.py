@@ -838,7 +838,7 @@ async def admin_billing_set_tier(body: AdminTierRequest, request: Request):
 
 @app.get("/api/admin/users")
 async def admin_list_users_route(request: Request):
-    from room.user_auth import admin_list_users, can_manage_users
+    from room.user_auth import admin_list_users, can_manage_users, ALL_PRIVILEGES, PRIVILEGE_LABELS
 
     admin = _current_user(request)
     if not can_manage_users(admin):
@@ -847,7 +847,32 @@ async def admin_list_users_route(request: Request):
         users = admin_list_users(admin)
     except ValueError as e:
         raise HTTPException(status_code=403, detail=str(e))
-    return {"users": users, "total": len(users)}
+    for u in users:
+        u["task_stats"] = room.task_history.stats_for_user(u["id"])
+    role_counts = {}
+    for u in users:
+        role_counts[u["role"]] = role_counts.get(u["role"], 0) + 1
+    return {
+        "users": users,
+        "total": len(users),
+        "role_counts": role_counts,
+        "privileges_catalog": [{"id": p, "label": PRIVILEGE_LABELS.get(p, p)} for p in ALL_PRIVILEGES],
+    }
+
+
+@app.get("/api/admin/users/{user_id}")
+async def admin_get_user_route(user_id: str, request: Request):
+    from room.user_auth import admin_get_user, can_manage_users
+
+    admin = _current_user(request)
+    if not can_manage_users(admin):
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    try:
+        user = admin_get_user(admin, user_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    user["task_stats"] = room.task_history.stats_for_user(user_id)
+    return user
 
 
 @app.patch("/api/admin/users/{user_id}")
@@ -866,10 +891,45 @@ async def admin_update_user_route(user_id: str, body: AdminUserUpdateRequest, re
             tier=body.tier,
             balance_delta=body.balance_delta,
             set_balance=body.set_balance,
+            privileges=body.privileges,
+            disabled=body.disabled,
+            admin_notes=body.admin_notes,
+            default_view=body.default_view,
+            theme=body.theme,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return {"ok": True, "user": updated}
+
+
+@app.post("/api/admin/users/{user_id}/revoke-sessions")
+async def admin_revoke_sessions(user_id: str, request: Request):
+    from room.user_auth import can_manage_users, can_modify_user, revoke_user_sessions, _find_user
+
+    admin = _current_user(request)
+    if not can_manage_users(admin):
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    target = _find_user(user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    if not can_modify_user(admin, target):
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    n = revoke_user_sessions(user_id)
+    return {"ok": True, "revoked": n}
+
+
+@app.post("/api/admin/users/{user_id}/reset-password")
+async def admin_reset_password_route(user_id: str, body: AdminResetPasswordRequest, request: Request):
+    from room.user_auth import admin_reset_password, can_reset_password
+
+    admin = _current_user(request)
+    if not can_reset_password(admin):
+        raise HTTPException(status_code=403, detail="Только владелец")
+    try:
+        user = admin_reset_password(admin, user_id, body.password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True, "user": user}
 
 
 @app.get("/api/admin/site")

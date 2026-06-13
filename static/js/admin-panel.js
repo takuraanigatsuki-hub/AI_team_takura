@@ -8,6 +8,11 @@
     let agents = [];
     let siteInfo = null;
     let consoleLog = [];
+    let roleCounts = {};
+    let privilegesCatalog = [];
+    let userFilter = '';
+    let roleFilter = '';
+    let expandedUserId = null;
 
     function esc(s) {
         return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -26,25 +31,82 @@
         return `<span class="role-badge role-user">👤 ${esc(user?.role_label || 'Пользователь')}</span>`;
     }
 
-    function roleOptionsHtml(selected, isOwner) {
-        const opts = [
+    function canManageUsers(user) {
+        if (!user) return false;
+        if (user.is_owner || user.role === 'owner') return true;
+        if (user.role === 'tech_admin') return true;
+        const p = user.privileges || [];
+        return p.includes('manage_users') || p.includes('admin');
+    }
+
+    function isOwner(user) {
+        return !!(user?.is_owner || user?.role === 'owner');
+    }
+
+    function canSetTier(user) {
+        return isOwner(user) || user?.role === 'admin';
+    }
+
+    function canSetPrivileges(user) {
+        return isOwner(user);
+    }
+
+    function canResetPassword(user) {
+        return isOwner(user);
+    }
+
+    function assignableRoles(adminUser) {
+        const map = {
+            owner: ['owner', 'admin', 'tech_admin', 'support', 'investor', 'member'],
+            admin: ['admin', 'tech_admin', 'support', 'investor', 'member'],
+            tech_admin: ['support', 'investor', 'member'],
+        };
+        return map[adminUser?.role] || ['member'];
+    }
+
+    function roleOptionsHtml(selected, adminUser, targetUser) {
+        const allowed = assignableRoles(adminUser);
+        const all = [
             ['member', '👤 Пользователь'],
             ['investor', '💼 Инвестор'],
             ['support', '💬 Поддержка'],
             ['admin', '🛡 Админ'],
             ['tech_admin', '⚙ Тех. админ'],
+            ['owner', '👑 Владелец'],
         ];
-        if (isOwner) opts.push(['owner', '👑 Владелец']);
+        const opts = all.filter(([val]) => allowed.includes(val) || val === selected);
+        if (targetUser?.is_owner && !isOwner(adminUser)) {
+            return `<option value="owner" selected>👑 Владелец</option>`;
+        }
         return opts.map(([val, label]) =>
             `<option value="${val}" ${selected === val ? 'selected' : ''}>${label}</option>`
         ).join('');
     }
 
-    function canManageUsers(user) {
-        if (!user) return false;
-        if (user.is_owner) return true;
-        const p = user.privileges || [];
-        return p.includes('manage_users') || p.includes('admin');
+    function canEditUser(adminUser, targetUser) {
+        if (targetUser.is_owner && !isOwner(adminUser)) return false;
+        if (adminUser.role === 'tech_admin' && ['owner', 'admin', 'tech_admin'].includes(targetUser.role)) {
+            return false;
+        }
+        return true;
+    }
+
+    function fmtDate(iso) {
+        if (!iso) return '—';
+        try {
+            return new Date(iso).toLocaleString('ru', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+        } catch (_) {
+            return iso.slice(0, 10);
+        }
+    }
+
+    function filteredUsers() {
+        return users.filter((u) => {
+            if (roleFilter && u.role !== roleFilter) return false;
+            if (!userFilter) return true;
+            const q = userFilter.toLowerCase();
+            return (u.email || '').toLowerCase().includes(q) || (u.name || '').toLowerCase().includes(q);
+        });
     }
 
     function canManageSite(user) {
@@ -132,25 +194,36 @@
     }
 
     function renderUsersTable(user) {
-        const isOwner = user.is_owner;
-        const rows = users.map((u) => {
+        const list = filteredUsers();
+        const statsHtml = Object.entries(roleCounts).map(([r, n]) =>
+            `<span class="admin-role-stat">${esc(r)}: ${n}</span>`
+        ).join('');
+
+        const rows = list.map((u) => {
             const sub = u.subscription || {};
-            const readonly = u.is_owner && !isOwner;
+            const ts = u.task_stats || {};
+            const editable = canEditUser(user, u);
+            const expanded = expandedUserId === u.id;
+            const disabledBadge = u.disabled ? '<span class="ss-badge warn">🚫 Заблокирован</span>' : '';
+
             return `
-            <tr class="${u.is_owner ? 'owner-row' : ''}">
+            <tr class="${u.is_owner ? 'owner-row' : ''} ${u.disabled ? 'disabled-row' : ''} ${expanded ? 'expanded-row' : ''}">
                 <td>
-                    <strong>${esc(u.name)}</strong><br>
+                    <button type="button" class="admin-expand-btn" onclick="AdminPanel.toggleUser('${esc(u.id)}')" aria-expanded="${expanded}">${expanded ? '▼' : '▶'}</button>
+                    <strong>${esc(u.name)}</strong> ${disabledBadge}<br>
                     <span class="muted">${esc(u.email)}</span>
                 </td>
                 <td>${roleBadgeFor(u)}</td>
                 <td>${esc(sub.tier_emoji || '')} ${esc(sub.tier_name || '')}<br><span class="muted">ур. ${sub.level || 1}</span></td>
                 <td><strong>${esc(sub.balance_display ?? sub.balance ?? '0')}</strong></td>
+                <td><span class="muted">${ts.total || 0} / ${ts.active || 0} / ${ts.completed || 0}</span><br><small class="muted">всего / акт / ✓</small></td>
+                <td><span class="muted">${u.active_sessions || 0}</span></td>
                 <td class="admin-user-actions">
-                    ${readonly ? '<span class="ss-badge warn">👑 Owner</span>' : `
+                    ${!editable ? '<span class="ss-badge warn">🔒 Защищён</span>' : `
                     <select class="design-input input-sm" id="role-${esc(u.id)}" onchange="AdminPanel.saveUser('${esc(u.id)}','role')">
-                        ${roleOptionsHtml(u.role, isOwner)}
+                        ${roleOptionsHtml(u.role, user, u)}
                     </select>
-                    ${isOwner ? `<select class="design-input input-sm" id="tier-${esc(u.id)}" onchange="AdminPanel.saveUser('${esc(u.id)}','tier')">
+                    ${canSetTier(user) ? `<select class="design-input input-sm" id="tier-${esc(u.id)}" onchange="AdminPanel.saveUser('${esc(u.id)}','tier')">
                         ${(plans || []).map((p) =>
                             `<option value="${esc(p.id)}" ${sub.tier === p.id ? 'selected' : ''}>${esc(p.emoji)} ${esc(p.name_ru)}</option>`
                         ).join('')}
@@ -158,19 +231,96 @@
                     <div class="admin-balance-row">
                         <input type="number" class="design-input input-sm" id="bal-${esc(u.id)}" placeholder="+кредиты" min="-99999" max="99999">
                         <button type="button" class="btn-secondary btn-sm" onclick="AdminPanel.saveUser('${esc(u.id)}','balance')">💎</button>
-                    </div>`}
+                    </div>
+                    ${isOwner(user) ? `<div class="admin-balance-row">
+                        <input type="number" class="design-input input-sm" id="setbal-${esc(u.id)}" placeholder="=баланс" min="0">
+                        <button type="button" class="btn-secondary btn-sm" onclick="AdminPanel.saveUser('${esc(u.id)}','set_balance')">=</button>
+                    </div>` : ''}`}
                 </td>
-            </tr>`;
+            </tr>
+            ${expanded ? `<tr class="admin-user-detail-row"><td colspan="7">
+                <div class="admin-user-detail">
+                    <div class="admin-user-detail-grid">
+                        <div>
+                            <label class="sw-label">Имя</label>
+                            <input type="text" class="design-input input-sm" id="name-${esc(u.id)}" value="${esc(u.name)}" ${editable ? '' : 'disabled'}>
+                        </div>
+                        <div>
+                            <label class="sw-label">Стартовый экран</label>
+                            <select class="design-input input-sm" id="view-${esc(u.id)}" ${editable ? '' : 'disabled'}>
+                                ${['dashboard', 'chat', 'tasks', 'studio', 'profile'].map((v) =>
+                                    `<option value="${v}" ${u.default_view === v ? 'selected' : ''}>${v}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="sw-label">Тема</label>
+                            <select class="design-input input-sm" id="theme-${esc(u.id)}" ${editable ? '' : 'disabled'}>
+                                ${['dark', 'light', 'auto'].map((v) =>
+                                    `<option value="${v}" ${u.theme === v ? 'selected' : ''}>${v}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="sw-label">Регистрация</label>
+                            <div class="muted admin-kv-val">${fmtDate(u.created_at)}</div>
+                        </div>
+                        <div>
+                            <label class="sw-label">Setup</label>
+                            <div class="muted admin-kv-val">${u.setup_complete ? '✓ ' + fmtDate(u.setup_at) : '⏳ не завершён'}</div>
+                        </div>
+                        <div>
+                            <label class="sw-label">Обновлён</label>
+                            <div class="muted admin-kv-val">${fmtDate(u.updated_at)}</div>
+                        </div>
+                    </div>
+                    ${editable ? `<label class="sw-label">Заметка администратора</label>
+                    <textarea class="design-input sw-textarea" id="notes-${esc(u.id)}" rows="2" placeholder="Внутренняя заметка…">${esc(u.admin_notes || '')}</textarea>
+                    <div class="admin-user-detail-actions">
+                        <label class="admin-check-inline"><input type="checkbox" id="disabled-${esc(u.id)}" ${u.disabled ? 'checked' : ''}> Заблокировать аккаунт</label>
+                        <button type="button" class="btn-secondary btn-sm" onclick="AdminPanel.saveUser('${esc(u.id)}','profile')">💾 Сохранить профиль</button>
+                        <button type="button" class="btn-secondary btn-sm" onclick="AdminPanel.revokeSessions('${esc(u.id)}')">🚪 Завершить сессии (${u.active_sessions || 0})</button>
+                        ${canResetPassword(user) ? `<input type="password" class="design-input input-sm" id="pw-${esc(u.id)}" placeholder="Новый пароль" minlength="6">
+                        <button type="button" class="btn-secondary btn-sm" onclick="AdminPanel.resetPassword('${esc(u.id)}')">🔑 Сброс пароля</button>` : ''}
+                    </div>` : ''}
+                    ${canSetPrivileges(user) && editable ? `
+                    <div class="admin-privileges-block">
+                        <label class="sw-label">Привилегии (ручная настройка — только владелец)</label>
+                        <div class="admin-privileges-grid">
+                            ${(privilegesCatalog || []).map((p) => {
+                                const on = (u.privileges || []).includes(p.id);
+                                return `<label class="admin-priv-check"><input type="checkbox" data-uid="${esc(u.id)}" data-priv="${esc(p.id)}" ${on ? 'checked' : ''}> ${esc(p.label)}</label>`;
+                            }).join('')}
+                        </div>
+                        <button type="button" class="btn-secondary btn-sm" onclick="AdminPanel.saveUser('${esc(u.id)}','privileges')">💾 Сохранить привилегии</button>
+                    </div>` : ''}
+                    ${(u.privileges || []).length ? `<p class="muted admin-priv-summary">Активные: ${(u.privileges || []).slice(0, 6).join(', ')}${(u.privileges || []).length > 6 ? '…' : ''}</p>` : ''}
+                </div>
+            </td></tr>` : ''}`;
         }).join('');
+
         return `
             <div class="admin-section-head">
                 <h2>👥 Пользователи</h2>
-                <p class="muted">Роли, тарифы и баланс · всего ${users.length}</p>
+                <p class="muted">Роли · тарифы · баланс · блокировка · сессии · ${users.length} всего</p>
+                <div class="admin-user-stats">${statsHtml}</div>
+            </div>
+            <div class="admin-user-toolbar">
+                <input type="search" class="design-input" id="adminUserSearch" placeholder="Поиск email или имени…" value="${esc(userFilter)}" oninput="AdminPanel.setUserFilter(this.value)">
+                <select class="design-input input-sm" id="adminRoleFilter" onchange="AdminPanel.setRoleFilter(this.value)">
+                    <option value="">Все роли</option>
+                    ${['owner', 'admin', 'tech_admin', 'support', 'investor', 'member'].map((r) =>
+                        `<option value="${r}" ${roleFilter === r ? 'selected' : ''}>${r}</option>`
+                    ).join('')}
+                </select>
             </div>
             <div class="admin-table-wrap">
-                <table class="admin-table">
-                    <thead><tr><th>Пользователь</th><th>Роль</th><th>Тариф</th><th>Баланс</th><th>Управление</th></tr></thead>
-                    <tbody>${rows || '<tr><td colspan="5" class="muted">Нет пользователей</td></tr>'}</tbody>
+                <table class="admin-table admin-table-users">
+                    <thead><tr>
+                        <th>Пользователь</th><th>Роль</th><th>Тариф</th><th>Баланс</th>
+                        <th>Задачи</th><th>Сессии</th><th>Управление</th>
+                    </tr></thead>
+                    <tbody>${rows || '<tr><td colspan="7" class="muted">Нет пользователей</td></tr>'}</tbody>
                 </table>
             </div>`;
     }
@@ -261,7 +411,11 @@
     async function loadData(user) {
         const tasks = [];
         if (canManageUsers(user)) {
-            tasks.push(fetch('/api/admin/users', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : { users: [] }).then((d) => { users = d.users || []; }));
+            tasks.push(fetch('/api/admin/users', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : { users: [] }).then((d) => {
+                users = d.users || [];
+                roleCounts = d.role_counts || {};
+                privilegesCatalog = d.privileges_catalog || [];
+            }));
             tasks.push(fetch('/api/subscription/plans', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : { plans: [] }).then((d) => { plans = d.plans || []; }));
         }
         if (canManageSite(user)) {
@@ -327,6 +481,21 @@
         }
     }
 
+    function toggleUser(userId) {
+        expandedUserId = expandedUserId === userId ? null : userId;
+        renderContent();
+    }
+
+    function setUserFilter(q) {
+        userFilter = q || '';
+        renderContent();
+    }
+
+    function setRoleFilter(r) {
+        roleFilter = r || '';
+        renderContent();
+    }
+
     async function saveUser(userId, mode) {
         const user = global.Auth?.getUser();
         const body = {};
@@ -335,8 +504,20 @@
         } else if (mode === 'balance') {
             body.balance_delta = parseInt(document.getElementById(`bal-${userId}`)?.value || '0', 10);
             if (!body.balance_delta) return;
+        } else if (mode === 'set_balance') {
+            body.set_balance = parseInt(document.getElementById(`setbal-${userId}`)?.value || '0', 10);
+            if (Number.isNaN(body.set_balance)) return;
         } else if (mode === 'tier') {
             body.tier = document.getElementById(`tier-${userId}`)?.value;
+        } else if (mode === 'profile') {
+            body.name = document.getElementById(`name-${userId}`)?.value?.trim();
+            body.default_view = document.getElementById(`view-${userId}`)?.value;
+            body.theme = document.getElementById(`theme-${userId}`)?.value;
+            body.admin_notes = document.getElementById(`notes-${userId}`)?.value || '';
+            body.disabled = document.getElementById(`disabled-${userId}`)?.checked === true;
+        } else if (mode === 'privileges') {
+            body.privileges = [...document.querySelectorAll(`input[data-uid="${userId}"][data-priv]:checked`)]
+                .map((el) => el.dataset.priv);
         }
         try {
             const r = await fetch(`/api/admin/users/${userId}`, {
@@ -350,6 +531,45 @@
             await loadData(user);
             renderContent();
             if (window.UIEnhancements) UIEnhancements.toast('Пользователь обновлён', 'success');
+        } catch (err) {
+            if (window.UIEnhancements) UIEnhancements.toast(err.message, 'error');
+        }
+    }
+
+    async function revokeSessions(userId) {
+        if (!confirm('Завершить все сессии пользователя?')) return;
+        try {
+            const r = await fetch(`/api/admin/users/${userId}/revoke-sessions`, {
+                method: 'POST', credentials: 'same-origin',
+            });
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.detail || 'Ошибка');
+            await loadData(global.Auth?.getUser());
+            renderContent();
+            if (window.UIEnhancements) UIEnhancements.toast(`Завершено сессий: ${d.revoked || 0}`, 'success');
+        } catch (err) {
+            if (window.UIEnhancements) UIEnhancements.toast(err.message, 'error');
+        }
+    }
+
+    async function resetPassword(userId) {
+        const pw = document.getElementById(`pw-${userId}`)?.value || '';
+        if (pw.length < 6) {
+            if (window.UIEnhancements) UIEnhancements.toast('Пароль минимум 6 символов', 'warn');
+            return;
+        }
+        if (!confirm('Сбросить пароль? Все сессии будут завершены.')) return;
+        try {
+            const r = await fetch(`/api/admin/users/${userId}/reset-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ password: pw }),
+            });
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.detail || 'Ошибка');
+            document.getElementById(`pw-${userId}`).value = '';
+            if (window.UIEnhancements) UIEnhancements.toast('Пароль обновлён', 'success');
         } catch (err) {
             if (window.UIEnhancements) UIEnhancements.toast(err.message, 'error');
         }
@@ -396,5 +616,10 @@
         focusConsole,
         updateNavVisibility,
         toggleFlag,
+        toggleUser,
+        setUserFilter,
+        setRoleFilter,
+        revokeSessions,
+        resetPassword,
     };
 })(window);
