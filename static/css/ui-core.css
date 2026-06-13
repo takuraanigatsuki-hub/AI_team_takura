@@ -331,3 +331,34 @@ body.activity-open .app-content-wrap { margin-right: min(320px, 92vw); }
 @media (max-width: 600px) {
     .onboard-banner { flex-direction: column; align-items: stretch; }
 }
+
+/* ─── Awaiting-approval coachmark ─── */
+.ui-coach-target {
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.55), var(--elev-2);
+    animation: coachGlow 2s ease-in-out infinite;
+}
+@keyframes coachGlow {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.45), var(--elev-1); }
+    50% { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.65), var(--elev-2); }
+}
+.ui-coachmark {
+    margin-top: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-radius: 10px;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    font-size: 13px;
+    text-align: left;
+}
+.ui-coachmark strong { display: block; margin-bottom: 4px; font-size: 14px; }
+.ui-coachmark p { margin: 0 0 var(--space-2); color: var(--text-muted); line-height: 1.45; }
+.status-chip.coach-pulse,
+#awaitingChip.coach-pulse {
+    animation: coachChipPulse 1.5s ease-in-out infinite;
+}
+@keyframes coachChipPulse {
+    0%, 100% { transform: scale(1); box-shadow: none; }
+    50% { transform: scale(1.05); box-shadow: 0 0 12px rgba(245, 158, 11, 0.45); }
+}

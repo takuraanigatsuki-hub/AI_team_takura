@@ -618,6 +618,7 @@
                 break;
             case 'task_approved':
             case 'task_revision':
+                if (window.UICore) UICore.dismissAwaitingCoachmark();
                 if (data.agent_id) {
                     addAgentMessage({ ...data, type: 'message', message: data.message || '' });
                 } else {

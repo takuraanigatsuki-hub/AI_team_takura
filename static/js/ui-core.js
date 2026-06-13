@@ -455,6 +455,8 @@
         pushActivity,
         announceLive,
         dismissOnboarding,
+        dismissAwaitingCoachmark,
+        checkAwaitingCoachmark,
         updateMobileBadges,
         STATUS_LABELS,
         PRIO_LABELS,
