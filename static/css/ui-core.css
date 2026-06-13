@@ -71,7 +71,7 @@
     width: 28px;
     height: 28px;
     margin: 0 auto var(--space-3);
-    border: 2px solid rgba(108, 99, 255, 0.2);
+    border: 2px solid rgba(167, 139, 250, 0.2);
     border-top-color: var(--accent);
     border-radius: 50%;
     animation: uiSpin 0.7s linear infinite;
@@ -127,7 +127,7 @@
     width: 24px;
     height: 24px;
     margin: var(--space-2) auto 0;
-    border: 2px solid rgba(108, 99, 255, 0.25);
+    border: 2px solid rgba(167, 139, 250, 0.25);
     border-top-color: var(--accent);
     border-radius: 50%;
     animation: uiSpin 0.7s linear infinite;
@@ -201,7 +201,7 @@
 /* ─── Sidebar primary item ─── */
 .sb-item.sb-primary {
     background: var(--accent-soft);
-    border: 1px solid rgba(108, 99, 255, 0.25);
+    border: 1px solid rgba(167, 139, 250, 0.25);
 }
 .sb-group-advanced { opacity: 0.85; }
 .sb-group-advanced .sb-group-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
@@ -331,7 +331,7 @@ body.activity-open .app-content-wrap { margin-right: min(320px, 92vw); }
     padding: var(--space-3) var(--space-4);
     border-radius: 10px;
     background: var(--accent-soft);
-    border: 1px solid rgba(108, 99, 255, 0.3);
+    border: 1px solid rgba(167, 139, 250, 0.3);
 }
 .onboard-banner-text { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
 .onboard-banner-text strong { font-size: 14px; }

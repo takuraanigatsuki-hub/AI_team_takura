@@ -77,7 +77,7 @@ body.sidebar-collapsed .status-footer {
 .link-btn {
     background: none;
     border: none;
-    color: var(--accent, #6c63ff);
+    color: var(--accent, #a78bfa);
     cursor: pointer;
     font: inherit;
     text-decoration: underline;
@@ -125,10 +125,10 @@ body.sidebar-collapsed .app-content-wrap { margin-left: var(--sidebar-collapsed-
     transition: background .15s;
 }
 
-.sb-item:hover { background: rgba(108, 99, 255, .12); }
+.sb-item:hover { background: rgba(167, 139, 250, .12); }
 .sb-item.active {
     background: linear-gradient(90deg, rgba(108,99,255,.25), transparent);
-    color: var(--accent, #6c63ff);
+    color: var(--accent, #a78bfa);
     font-weight: 600;
 }
 
@@ -171,7 +171,7 @@ body.sidebar-collapsed .app-content-wrap { margin-left: var(--sidebar-collapsed-
 .ucard-click:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.25); }
 
 .ucard-kpi { text-align: center; }
-.ucard-kpi-val { display: block; font-size: 1.75rem; font-weight: 700; color: var(--accent, #6c63ff); }
+.ucard-kpi-val { display: block; font-size: 1.75rem; font-weight: 700; color: var(--accent, #a78bfa); }
 .ucard-kpi-label { font-size: 12px; color: var(--text-muted); }
 
 .ucard-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between; }
@@ -238,7 +238,7 @@ body.sidebar-collapsed .app-content-wrap { margin-left: var(--sidebar-collapsed-
 }
 .dash-widget.dragging {
     opacity: .65;
-    box-shadow: 0 12px 40px rgba(108, 99, 255, 0.25);
+    box-shadow: 0 12px 40px rgba(167, 139, 250, 0.25);
     transform: scale(1.01);
 }
 .dash-widget-handle {
@@ -371,7 +371,7 @@ body.sidebar-collapsed .sb-badge {
 }
 .stat-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(108, 99, 255, 0.12);
+    box-shadow: 0 8px 24px rgba(167, 139, 250, 0.12);
 }
 .stat-card.awaiting .stat-num { color: #f59e0b; }
 .tasks-guest {
@@ -387,7 +387,7 @@ body.sidebar-collapsed .sb-badge {
 .task-guest-hint a { color: var(--accent); }
 .task-card.priority-urgent { border-left: 3px solid #ef4444; }
 .task-card.priority-high { border-left: 3px solid #f97316; }
-.task-card.priority-medium { border-left: 3px solid rgba(108, 99, 255, 0.5); }
+.task-card.priority-medium { border-left: 3px solid rgba(167, 139, 250, 0.5); }
 .task-card.priority-low { border-left: 3px solid rgba(255, 255, 255, 0.15); }
 .task-prio { font-size: 14px; margin-right: auto; }
 .task-card-top { gap: 6px; }
@@ -429,7 +429,7 @@ body.sidebar-collapsed .sb-badge {
 .project-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
-    border-color: rgba(108, 99, 255, 0.35);
+    border-color: rgba(167, 139, 250, 0.35);
 }
 .projects-empty, .projects-empty .welcome-icon {
     display: flex;

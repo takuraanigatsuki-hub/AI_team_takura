@@ -4,8 +4,8 @@
   "description": "Автономная команда ИИ-агентов — 3D студия и командный чат",
   "start_url": "/app",
   "display": "standalone",
-  "background_color": "#0d0d0d",
-  "theme_color": "#6c63ff",
+  "background_color": "#0a0b10",
+  "theme_color": "#8b5cf6",
   "orientation": "any",
   "lang": "ru",
   "icons": [
