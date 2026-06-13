@@ -49,7 +49,7 @@
         }
     }
 
-    function scheduleHide(ms = 15000) {
+    function scheduleHide(ms = 2500) {
         clearHideTimer();
         hideTimer = setTimeout(() => {
             hide();
@@ -57,9 +57,11 @@
     }
 
     function hide() {
+        clearHideTimer();
         const bar = document.getElementById('pipelineBar');
         bar?.classList.add('hidden');
-        document.body.classList.remove('has-pipeline');
+        bar?.classList.remove('pipeline-complete');
+        document.body.classList.remove('has-pipeline', 'has-pipeline-collapsed');
         current = null;
         activeAgentId = null;
         if (window.StudioApp) StudioApp.setPipelineHighlight(null);
@@ -68,14 +70,13 @@
     function isStaleFinished(pipeline) {
         if (!pipeline?.finished_at) return false;
         const finished = new Date(pipeline.finished_at).getTime();
-        return Number.isFinite(finished) && (Date.now() - finished > 20000);
+        return Number.isFinite(finished) && (Date.now() - finished > 8000);
     }
 
     function render(pipeline) {
         ensureBar();
         const bar = document.getElementById('pipelineBar');
         if (!pipeline || !pipeline.steps?.length || isStaleFinished(pipeline)) {
-            clearHideTimer();
             hide();
             return;
         }
@@ -83,11 +84,17 @@
         current = pipeline;
         bar.classList.remove('hidden');
         document.body.classList.add('has-pipeline');
-        if (pipeline.finished_at) {
+
+        const labelEl = bar.querySelector('.pipeline-label');
+        const finished = Boolean(pipeline.finished_at);
+
+        if (finished) {
             bar.classList.add('pipeline-complete');
-            scheduleHide();
+            if (labelEl) labelEl.textContent = '✅ Задача выполнена';
+            scheduleHide(2200);
         } else {
             bar.classList.remove('pipeline-complete');
+            if (labelEl) labelEl.textContent = '⚡ Задача в работе';
             clearHideTimer();
         }
 
@@ -122,11 +129,33 @@
 
     function onUpdate(data) {
         if (data.pipeline === null || data.pipeline === undefined) {
-            clearHideTimer();
             hide();
             return;
         }
         if (data.pipeline) render(data.pipeline);
+    }
+
+    function onTaskHistory(tasks, stats) {
+        if (!current) return;
+        const active = stats?.active || 0;
+        const inProgress = (tasks || []).some((t) =>
+            ['in_progress', 'queued', 'submitted', 'triaging'].includes(t.status)
+            && (t.task || '').slice(0, 60) === (current.task || '').slice(0, 60)
+        );
+        if (!inProgress && active === 0) {
+            const parent = (tasks || []).find((t) =>
+                !t.parent_id
+                && (t.task || '').slice(0, 60) === (current.task || '').slice(0, 60)
+                && ['awaiting_approval', 'completed', 'failed', 'cancelled'].includes(t.status)
+            );
+            if (parent) {
+                if (current && !current.finished_at) {
+                    render({ ...current, finished_at: new Date().toISOString(), progress: 100 });
+                } else {
+                    scheduleHide(1500);
+                }
+            }
+        }
     }
 
     async function load() {
@@ -151,5 +180,5 @@
         document.body.classList.toggle('has-pipeline-collapsed', collapsed);
     }
 
-    global.PipelineUI = { render, onUpdate, load, toggleCollapse, hide };
+    global.PipelineUI = { render, onUpdate, onTaskHistory, load, toggleCollapse, hide };
 })(window);

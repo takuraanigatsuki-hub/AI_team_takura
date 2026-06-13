@@ -81,7 +81,39 @@ class PipelineTracker:
             return
         agent_id = task.get("agent_id") or task.get("target")
         await self._set_step(agent_id, "failed" if failed else "done")
+        await self._sync_evaluator_step()
         await self._check_finish()
+
+    def _evaluator_still_working(self) -> bool:
+        if not self.active:
+            return False
+        parent_snippet = (self.active.get("task") or "")[:80]
+        for t in self.room.task_history.tasks:
+            if t.get("agent_id") != "evaluator":
+                continue
+            if t.get("status") not in ("queued", "in_progress", "submitted", "triaging"):
+                continue
+            blob = f"{t.get('task') or ''} {t.get('parent_id') or ''}"
+            if parent_snippet and parent_snippet[:40] in blob:
+                return True
+            if t.get("parent_id"):
+                parent = self.room.task_history._find(t["parent_id"])
+                if parent and (parent.get("task") or "")[:80] == parent_snippet:
+                    return True
+        return False
+
+    async def _sync_evaluator_step(self) -> None:
+        """Evaluator часто работает inline — закрываем шаг, когда остальные готовы."""
+        if not self.active or self._evaluator_still_working():
+            return
+        skip = {"evaluator", "pm", "github"}
+        worker_steps = [s for s in self.active["steps"] if s.get("agent_id") not in skip]
+        if not worker_steps:
+            return
+        if all(s.get("status") in ("done", "failed") for s in worker_steps):
+            eval_step = next((s for s in self.active["steps"] if s.get("agent_id") == "evaluator"), None)
+            if eval_step and eval_step.get("status") == "pending":
+                await self._set_step("evaluator", "done")
 
     async def on_github(self, phase: str) -> None:
         if not self.active:
@@ -108,11 +140,27 @@ class PipelineTracker:
     async def _check_finish(self) -> None:
         if not self.active:
             return
+        await self._sync_evaluator_step()
         steps = self.active["steps"]
         if all(s.get("status") in ("done", "failed") for s in steps):
             self.active["finished_at"] = datetime.now().isoformat()
             self.active["progress"] = 100
             await self._broadcast()
+            self._schedule_auto_clear()
+
+    def _schedule_auto_clear(self, delay: float = 3.5) -> None:
+        if self._clear_task and not self._clear_task.done():
+            self._clear_task.cancel()
+
+        async def _later():
+            try:
+                await asyncio.sleep(delay)
+                if self.active and self.active.get("finished_at"):
+                    await self.clear()
+            except asyncio.CancelledError:
+                pass
+
+        self._clear_task = asyncio.create_task(_later())
 
     async def _broadcast(self) -> None:
         if not self.active:
@@ -125,9 +173,23 @@ class PipelineTracker:
         await self.room.broadcast_work(payload)
 
     def get_state(self) -> Optional[dict]:
+        if not self.active:
+            return None
+        finished = self.active.get("finished_at")
+        if finished:
+            try:
+                age = (datetime.now() - datetime.fromisoformat(finished)).total_seconds()
+                if age > 25:
+                    self.active = None
+                    return None
+            except Exception:
+                pass
         return self.active
 
     async def clear(self) -> None:
+        if self._clear_task and not self._clear_task.done():
+            self._clear_task.cancel()
+            self._clear_task = None
         self.active = None
         await self.room.broadcast_work({
             "type": "pipeline_update",

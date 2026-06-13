@@ -606,6 +606,9 @@
                 }).catch(() => {});
                 break;
             case 'task_awaiting_approval':
+                if (window.PipelineUI?.onTaskHistory && taskHistory) {
+                    PipelineUI.onTaskHistory(taskHistory, taskStats);
+                }
                 addAgentMessage({
                     ...data,
                     agent_id: data.agent_id || 'pm',
@@ -1169,6 +1172,9 @@
         if (window.FeaturePack && data.stats) FeaturePack.onTaskStats(data.stats);
         updateTaskBadges();
         renderTasks();
+        if (window.PipelineUI?.onTaskHistory) {
+            PipelineUI.onTaskHistory(taskHistory, taskStats);
+        }
         if (window.KanbanUI && document.getElementById('kanbanView') && !document.getElementById('kanbanView').classList.contains('hidden')) {
             KanbanUI.refresh();
         }

@@ -713,6 +713,7 @@ class RoomManager:
         self.task_history.mark_awaiting_approval(
             task_id, response, agent_name, agent_emoji, artifact_id, preview_url,
         )
+        asyncio.create_task(self.pipeline.on_task_completed(task_id, failed=False))
         asyncio.create_task(self._broadcast_task_history())
         t = self.task_history._find(task_id)
         notify_id = task_id
