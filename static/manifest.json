@@ -1,7 +1,7 @@
 {
   "name": "AI Team Room",
   "short_name": "AI Team",
-  "description": "Автономная команда ИИ-агентов — 3D студия и командный чат",
+  "description": "13 ИИ-агентов: PM, код, QA, Figma, Cursor, 3D. Студия, Kanban, deploy и поддержка.",
   "start_url": "/app",
   "display": "standalone",
   "background_color": "#0a0b10",

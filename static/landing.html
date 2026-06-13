@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Team Room — Автономная команда ИИ-агентов</title>
-    <meta name="description" content="11 ИИ-агентов: PM, архитектор, backend, frontend, QA, DevOps, Cursor SDK, 3D и презентации. 3D студия, Kanban, Figma pipeline.">
+    <meta name="description" content="13 ИИ-агентов: PM, архитектор, backend, frontend, QA, Cursor SDK, Figma → React, 3D-студия, Kanban, deploy, поддержка и admin.">
     <meta property="og:title" content="AI Team Room — Автономная команда ИИ-агентов">
-    <meta property="og:description" content="PM, Figma → React, Cursor SDK, Kanban и 3D-студия в одной платформе для разработки продукта.">
+    <meta property="og:description" content="13 агентов, 3D-студия, Kanban, Figma → React, Cursor + GitHub, тикеты поддержки, подписки и deploy.">
     <meta property="og:type" content="website">
     <meta property="og:image" content="/static/icons/icon-512.png">
     <link rel="manifest" href="/static/manifest.json">
@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/landing.css?v=6">
+    <link rel="stylesheet" href="/static/css/landing.css?v=7">
     <link rel="icon" href="/static/icons/icon-192.png">
 </head>
 <body>
@@ -29,6 +29,7 @@
     <button type="button" class="lp-nav-toggle" id="lpNavToggle" aria-label="Меню" aria-expanded="false">☰</button>
     <nav class="lp-nav" id="lpNav" aria-label="Разделы">
         <a href="#features">Возможности</a>
+        <a href="#capabilities">Всё платформа</a>
         <a href="#how">Как работает</a>
         <a href="#team">Команда</a>
         <a href="#integrations">Интеграции</a>
@@ -53,9 +54,9 @@
     <section class="lp-hero">
         <div class="lp-hero-glow"></div>
         <div class="lp-hero-content">
-            <span class="lp-badge">11 агентов · живая 3D-студия · Figma → Deploy</span>
+            <span class="lp-badge">13 агентов · 3D-студия · Figma → Deploy · Поддержка</span>
             <h1>Автономная команда<br><span class="lp-gradient">ИИ-агентов</span> для вашего проекта</h1>
-            <p class="lp-lead">Кликните на агента в 3D-офисе — demo-чат без регистрации. PM, UI, код и deploy — один поток.</p>
+            <p class="lp-lead">PM планирует, дизайнеры и разработчики пишут код, QA тестирует, DevOps деплоит — вы наблюдаете в 3D-офисе и управляете из одного интерфейса.</p>
             <div class="lp-hero-cta" id="lpHeroCtaGuest">
                 <button type="button" class="lp-btn-xl" id="btnHeroStart">Начать бесплатно</button>
                 <button type="button" class="lp-btn-xl-outline" id="btnHeroDemo">▶ Demo за 2 мин</button>
@@ -187,14 +188,102 @@ PR #42 · checks ✓</pre>
     <section class="lp-features" id="features">
         <p class="lp-section-label">Возможности</p>
         <h2>Всё для продуктовой команды</h2>
-        <p class="lp-section-desc">От идеи до деплоя — агенты берут на себя планирование, дизайн, код, тесты и документацию.</p>
+        <p class="lp-section-desc">От идеи до деплоя — агенты берут на себя планирование, дизайн, код, тесты, документацию и выкладку.</p>
         <div class="lp-grid">
-            <article class="lp-card"><span>🎮</span><h3>3D Студия</h3><p>Живая команда на сцене — клик по агенту открывает личный чат.</p></article>
-            <article class="lp-card"><span>📌</span><h3>Kanban & Sprint</h3><p>Задачи, приоритеты, спринты с backlog и burndown.</p></article>
-            <article class="lp-card"><span>🎨</span><h3>Figma → React</h3><p>Импорт макета, Compare, Pipeline и Deploy одной кнопкой.</p></article>
-            <article class="lp-card"><span>⚡</span><h3>Cursor SDK</h3><p>Лео пишет код локально или через Cloud Agent + GitHub PR.</p></article>
-            <article class="lp-card"><span>📽️</span><h3>Презентации & 3D</h3><p>Ника — pitch deck, Зоя — интерактивные 3D-сцены.</p></article>
-            <article class="lp-card"><span>📊</span><h3>Dashboard</h3><p>Командный центр: задачи, git, интеграции, LLM cost.</p></article>
+            <article class="lp-card"><span>🎮</span><h3>3D Студия</h3><p>Живая команда на сцене — клик по агенту открывает чат, speech bubbles и confetti при завершении задач.</p></article>
+            <article class="lp-card"><span>💬</span><h3>Командный чат</h3><p>Streaming LLM, @mentions, история задач и артефактов — общайтесь с командой как в Slack.</p></article>
+            <article class="lp-card"><span>📌</span><h3>Kanban & Sprint</h3><p>Backlog, приоритеты, спринты с burndown и статусами — PM Виктор ведёт доску автоматически.</p></article>
+            <article class="lp-card"><span>🎨</span><h3>Figma → React</h3><p>Sonya Studio: импорт макета, Compare (score совпадения), React Preview и Deploy ZIP.</p></article>
+            <article class="lp-card"><span>⚡</span><h3>Cursor SDK</h3><p>Лео пишет код локально или через Cloud Agent — PR на GitHub и auto-sync для admin.</p></article>
+            <article class="lp-card"><span>📽️</span><h3>Презентации & 3D</h3><p>Ника — pitch deck и слайды, Зоя — интерактивные Three.js сцены и glTF-модели.</p></article>
+            <article class="lp-card"><span>🧪</span><h3>QA & Sandbox</h3><p>Playwright-автотесты UI, pytest, Docker sandbox для безопасного запуска кода.</p></article>
+            <article class="lp-card"><span>📊</span><h3>Dashboard</h3><p>Командный центр: задачи, pipeline, интеграции, timeline и статистика комнаты.</p></article>
+            <article class="lp-card"><span>🛡️</span><h3>Admin & роли</h3><p>Owner, admin, tech_admin, support, investor — гибкие привилегии и управление пользователями.</p></article>
+            <article class="lp-card"><span>💬</span><h3>Поддержка</h3><p>Тикеты, чат с оператором, готовые решения по темам — для пользователей и staff-панель.</p></article>
+            <article class="lp-card"><span>👤</span><h3>Кабинет & подписки</h3><p>Регистрация, профиль, тарифы, баланс кредитов и мастер первой настройки.</p></article>
+            <article class="lp-card"><span>📱</span><h3>PWA & Telegram</h3><p>Установка на телефон, push-уведомления и Telegram-бот для контроля комнаты.</p></article>
+        </div>
+    </section>
+
+    <section class="lp-capabilities" id="capabilities">
+        <p class="lp-section-label">Полный список</p>
+        <h2>Что умеет AI Team Room</h2>
+        <p class="lp-section-desc">Все возможности платформы — от агентов до интеграций и безопасности.</p>
+        <div class="lp-cap-grid">
+            <div class="lp-cap-group">
+                <h3>🤖 13 ИИ-агентов</h3>
+                <ul>
+                    <li><strong>PM</strong> — план, roadmap, спринты, оркестрация</li>
+                    <li><strong>Architect</strong> — C4, API design, ADR, диаграммы</li>
+                    <li><strong>Backend</strong> — FastAPI, PostgreSQL, REST/gRPC</li>
+                    <li><strong>Frontend</strong> — React, TypeScript, UI/UX, a11y</li>
+                    <li><strong>QA</strong> — pytest, Playwright, чек-листы</li>
+                    <li><strong>Reviewer</strong> — code review, SOLID, рефакторинг</li>
+                    <li><strong>Doc Writer</strong> — README, OpenAPI, гайды</li>
+                    <li><strong>DevOps</strong> — Docker, CI/CD, GitHub Actions</li>
+                    <li><strong>Cursor</strong> — AI-кодинг, Cloud Agent, PR</li>
+                    <li><strong>Presenter</strong> — pitch deck, HTML-слайды</li>
+                    <li><strong>3D Modeler</strong> — Three.js, glTF, WebGL-сцены</li>
+                    <li><strong>Evaluator</strong> — оценка качества агентов</li>
+                    <li><strong>Security</strong> — OWASP, аудит (admin)</li>
+                </ul>
+            </div>
+            <div class="lp-cap-group">
+                <h3>🛠 Разработка</h3>
+                <ul>
+                    <li>Автодекомпозиция задач PM-оркестратором</li>
+                    <li>React Preview — живой UI в браузере</li>
+                    <li>Deploy ZIP и preview URL</li>
+                    <li>GitHub auto-sync (commit + push)</li>
+                    <li>RAG база знаний по ролям</li>
+                    <li>ReAct loop: plan → tool → observe</li>
+                    <li>Артефакты: код, презентации, 3D, docs</li>
+                    <li>Timeline / Replay событий комнаты</li>
+                </ul>
+            </div>
+            <div class="lp-cap-group">
+                <h3>🎨 Дизайн & креатив</h3>
+                <ul>
+                    <li>Figma OAuth и импорт макетов</li>
+                    <li>Compare: Figma vs React (match %)</li>
+                    <li>Sonya Figma Studio pipeline</li>
+                    <li>Design Lab — обучение UI (admin)</li>
+                    <li>Agent Learning — улучшение агентов</li>
+                    <li>Standup + Voice (TTS/STT)</li>
+                </ul>
+            </div>
+            <div class="lp-cap-group">
+                <h3>👥 Пользователи</h3>
+                <ul>
+                    <li>Регистрация, вход, личный кабинет</li>
+                    <li>Тарифы, баланс, подписки</li>
+                    <li>Роли: owner · admin · tech_admin · support · investor · member</li>
+                    <li>Admin: поиск, блокировка, сессии, сброс пароля</li>
+                    <li>Support: тикеты, ответы, статусы обращений</li>
+                    <li>Investor Portal — отдельный режим просмотра</li>
+                    <li>Скрытие GitHub/API от обычных пользователей</li>
+                </ul>
+            </div>
+            <div class="lp-cap-group">
+                <h3>🔗 Интеграции</h3>
+                <ul>
+                    <li>Figma · Cursor SDK · GitHub</li>
+                    <li>Telegram bot & уведомления</li>
+                    <li>Linear · Jira · Notion</li>
+                    <li>Vercel deploy · Microsoft 365</li>
+                    <li>Smart AIPI / OpenAI-compatible LLM</li>
+                </ul>
+            </div>
+            <div class="lp-cap-group">
+                <h3>🛡 Безопасность</h3>
+                <ul>
+                    <li>Security middleware & rate limiting</li>
+                    <li>Блокировка IP, audit log</li>
+                    <li>Фильтрация tech-сообщений в чате</li>
+                    <li>QA sandbox в Docker</li>
+                    <li>PWA: offline-ready shell</li>
+                </ul>
+            </div>
         </div>
     </section>
 
@@ -222,11 +311,11 @@ PR #42 · checks ✓</pre>
 
     <section class="lp-team" id="team">
         <p class="lp-section-label">Команда</p>
-        <h2>11 специализированных агентов</h2>
+        <h2>13 специализированных агентов</h2>
         <div class="lp-agents">
             <span>👔 PM</span><span>🏛️ Architect</span><span>⚙️ Backend</span><span>🎨 Frontend</span>
             <span>🧪 QA</span><span>🔍 Review</span><span>📝 Docs</span><span>🔧 DevOps</span>
-            <span>⚡ Cursor</span><span>📽️ Presenter</span><span>🧊 3D</span>
+            <span>⚡ Cursor</span><span>📽️ Presenter</span><span>🧊 3D</span><span>📊 Evaluator</span><span>🛡️ Security</span>
         </div>
     </section>
 

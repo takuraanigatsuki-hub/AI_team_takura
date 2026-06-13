@@ -232,7 +232,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="AI Team Room",
-    description="Комната с командой ИИ-агентов",
+    description=(
+        "Автономная платформа с 13 ИИ-агентами: PM, архитектор, backend, frontend, QA, "
+        "review, docs, DevOps, Cursor SDK, презентации и 3D. 3D-студия, Kanban, Figma → React, "
+        "GitHub sync, RAG, поддержка пользователей, admin-панель и интеграции."
+    ),
     version="1.0.0",
     lifespan=lifespan
 )

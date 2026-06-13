@@ -193,7 +193,7 @@ a { color: inherit; text-decoration: none; }
 .lp-mock-msg { font-size: 13px; padding: 10px 12px; background: rgba(255,255,255,0.04); border-radius: 8px; max-width: 90%; }
 .lp-mock-msg.bot { background: rgba(108,99,255,0.12); align-self: flex-start; }
 
-.lp-features, .lp-how, .lp-team, .lp-integrations, .lp-cta {
+.lp-features, .lp-how, .lp-team, .lp-integrations, .lp-cta, .lp-capabilities {
     max-width: 1200px;
     margin: 0 auto;
     padding: 64px 32px;
@@ -215,7 +215,7 @@ a { color: inherit; text-decoration: none; }
     margin: 0 auto 40px;
     font-size: 16px;
 }
-.lp-features h2, .lp-how h2, .lp-team h2, .lp-integrations h2, .lp-cta h2 { font-size: 32px; margin-bottom: 32px; text-align: center; }
+.lp-features h2, .lp-how h2, .lp-team h2, .lp-integrations h2, .lp-cta h2, .lp-capabilities h2 { font-size: 32px; margin-bottom: 32px; text-align: center; }
 .lp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
 .lp-card {
     background: var(--lp-surface);
@@ -227,7 +227,46 @@ a { color: inherit; text-decoration: none; }
 .lp-card:hover { border-color: var(--lp-accent); transform: translateY(-2px); }
 .lp-card span { font-size: 32px; display: block; margin-bottom: 12px; }
 .lp-card h3 { font-size: 18px; margin-bottom: 8px; }
-.lp-card p { color: var(--lp-muted); font-size: 14px; }
+.lp-card p { color: var(--lp-muted); font-size: 14px; line-height: 1.55; }
+
+.lp-cap-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+}
+.lp-cap-group {
+    background: var(--lp-surface);
+    border: 1px solid var(--lp-border);
+    border-radius: 12px;
+    padding: 24px;
+}
+.lp-cap-group h3 {
+    font-size: 16px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--lp-border);
+}
+.lp-cap-group ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.lp-cap-group li {
+    font-size: 13px;
+    color: var(--lp-muted);
+    line-height: 1.45;
+    padding-left: 14px;
+    position: relative;
+}
+.lp-cap-group li::before {
+    content: '·';
+    position: absolute;
+    left: 0;
+    color: var(--lp-accent-2);
+    font-weight: 700;
+}
+.lp-cap-group li strong { color: var(--lp-text); font-weight: 600; }
 
 .lp-steps {
     display: grid;
