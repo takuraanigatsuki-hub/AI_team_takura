@@ -1,4 +1,5 @@
 import os
+import shutil
 from datetime import datetime
 
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "output", "sites")
@@ -34,7 +35,13 @@ def _sanitize_site_code(code: str) -> str:
     return code
 
 
-def export_site_html(code: str, task: str, title: str = "Сайт") -> str:
+def export_site_html(
+    code: str,
+    task: str,
+    title: str = "Сайт",
+    user_id: str = "",
+    task_id: str = "",
+) -> str:
     """Сохранить React-компонент как standalone HTML-файл."""
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     safe_title = "".join(c if c.isalnum() or c in " -_" else "" for c in title)[:40].strip() or "site"
@@ -67,6 +74,19 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(html)
+
+    try:
+        from room.sites_registry import register
+        register(filename, user_id=user_id, title=title, task_id=task_id)
+    except Exception:
+        pass
+
+    if user_id:
+        user_dir = os.path.join(OUTPUT_DIR, "users", user_id.replace("/", "_")[:64])
+        os.makedirs(user_dir, exist_ok=True)
+        latest_user = os.path.join(user_dir, "latest.html")
+        with open(latest_user, "w", encoding="utf-8") as f:
+            f.write(html)
 
     latest = os.path.join(OUTPUT_DIR, "latest.html")
     with open(latest, "w", encoding="utf-8") as f:

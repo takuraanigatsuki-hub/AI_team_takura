@@ -1058,6 +1058,7 @@ class BaseAgent:
         task_text = task.get("text", "")
         sender = task.get("sender", "Пользователь")
         task_id = task.get("task_id")
+        self._active_user_id, self._active_task_id = self._resolve_task_user(task)
 
         if self.room_manager and task_id:
             self.room_manager.record_task_started(task_id)
@@ -1128,6 +1129,8 @@ class BaseAgent:
             })
             self.status = "idle"
             self.current_task = None
+            self._active_user_id = ""
+            self._active_task_id = ""
 
     def _find_relevant_knowledge(self, task_text: str, limit: int = 3) -> list:
         task_words = set(self._extract_keywords(task_text))
@@ -1270,6 +1273,18 @@ class BaseAgent:
                 return finfo["download"]
         return None
 
+    def _resolve_task_user(self, task: dict) -> tuple[str, str]:
+        uid = task.get("user_id") or ""
+        tid = task.get("task_id") or ""
+        if self.room_manager and tid:
+            t = self.room_manager.task_history._find(tid)
+            if t:
+                uid = uid or t.get("user_id") or ""
+                if not uid and t.get("parent_id"):
+                    parent = self.room_manager.task_history._find(t["parent_id"])
+                    uid = parent.get("user_id", "") if parent else ""
+        return uid, tid
+
     async def _save_task_artifact(self, task_text: str, response: str, task: dict) -> Optional[dict]:
         try:
             from agents.artifact_producer import produce_artifact
@@ -1288,6 +1303,10 @@ class BaseAgent:
             )
             if not artifact:
                 return None
+            user_id, task_id = self._resolve_task_user(task)
+            artifact["user_id"] = user_id
+            artifact["task_id"] = task_id
+            artifact["task"] = artifact.get("task") or task_text
             saved = save_artifact(self.agent_id, artifact)
             gate_passed = True
             if self.room_manager:
@@ -1409,11 +1428,20 @@ class BaseAgent:
     async def assign_task(self, task_text: str, sender: str = "Пользователь",
                           parent_id: str = None, task_id: str = None,
                           original_task: str = None):
+        user_id = ""
+        if self.room_manager and task_id:
+            t = self.room_manager.task_history._find(task_id)
+            if t:
+                user_id = t.get("user_id") or ""
+                if not user_id and t.get("parent_id"):
+                    parent = self.room_manager.task_history._find(t["parent_id"])
+                    user_id = parent.get("user_id", "") if parent else ""
         await self.task_queue.put({
             "text": task_text,
             "sender": sender,
             "parent_id": parent_id,
             "task_id": task_id,
+            "user_id": user_id,
             "original_task": (original_task or "").strip() or None,
             "timestamp": datetime.now().isoformat()
         })
@@ -1437,7 +1465,7 @@ class BaseAgent:
             await self._broadcast_learning(message, msg_type)
             return
         if self.room_manager:
-            await self.room_manager.broadcast_work({
+            payload = {
                 "type": msg_type,
                 "agent_id": self.agent_id,
                 "agent_name": self.name,
@@ -1445,8 +1473,16 @@ class BaseAgent:
                 "message": message,
                 "status": self.status,
                 "location": self.location,
-                "timestamp": datetime.now().isoformat()
-            })
+                "timestamp": datetime.now().isoformat(),
+            }
+            ct = self.current_task or {}
+            uid = ct.get("user_id") or getattr(self, "_active_user_id", "") or ""
+            tid = ct.get("task_id") or getattr(self, "_active_task_id", "") or ""
+            if uid:
+                payload["user_id"] = uid
+            if tid:
+                payload["task_id"] = tid
+            await self.room_manager.broadcast_work(payload)
         self._log_message(msg_type, message)
 
     async def _broadcast_learning(self, message: str, msg_type: str = "learning"):
