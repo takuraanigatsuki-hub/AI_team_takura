@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("Установщик AI Team Room")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.1.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.1.0+bcba2915cb474aa4386928752d512156e548a37c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.1.0+d042e87312e7773ff05449af3b00679592468ae8")]
 [assembly: System.Reflection.AssemblyProductAttribute("AI Team Room Setup")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AI_Team_Room_Setup")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.1.0.0")]

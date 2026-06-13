@@ -99,7 +99,7 @@ internal sealed class InstallerForm : Form
         {
             for (var i = 0; i < 8; i++)
             {
-                _content.Top = -i * 3;
+                _body.Padding = new Padding(28, 12 + i * 2, 28, 8);
                 await Task.Delay(18);
             }
         }
@@ -109,16 +109,15 @@ internal sealed class InstallerForm : Form
         RebuildStep();
         UpdateChrome();
 
-        _content.Top = instant ? 0 : 24;
         if (!instant)
         {
             for (var i = 8; i >= 0; i--)
             {
-                _content.Top = i * 3;
+                _body.Padding = new Padding(28, 12 + i * 2, 28, 8);
                 await Task.Delay(16);
             }
         }
-        _content.Top = 0;
+        _body.Padding = new Padding(28, 12, 28, 8);
 
         _transitioning = false;
         UpdateChrome();
@@ -134,12 +133,10 @@ internal sealed class InstallerForm : Form
         {
             0 => "Начать →",
             1 => "Установить",
-            3 when _installOk => "Запустить",
-            3 => "Закрыть",
+            3 when !_installOk => "Закрыть",
+            3 => "Готово",
             _ => "Далее",
         };
-        if (_step == 3 && !_installOk)
-            _next.Text = "Закрыть";
     }
 
     void RebuildStep()
