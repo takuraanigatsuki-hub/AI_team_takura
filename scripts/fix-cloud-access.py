@@ -61,35 +61,6 @@ PY""")
         f"--email '{YANDEX_EMAIL}' --password '{OWNER_PASSWORD}' --name 'Takura'"
     ))
 
-    # Patch security: don't auto-block on probe for /api/ paths (in container)
-    patch = r"""
-import re
-path = '/app/middleware/security.py'
-try:
-    with open(path) as f:
-        s = f.read()
-    old = 'if monitor.is_blocked(ip):'
-    new = '''# Skip block check for health/auth endpoints
-        if path in ("/api/health", "/api/auth/login", "/api/auth/register", "/api/auth/me") and monitor.is_blocked(ip):
-            try:
-                from room.security_monitor import get_monitor
-                get_monitor()._blocks.pop(ip, None)
-                get_monitor()._save_blocks()
-            except Exception:
-                pass
-        if monitor.is_blocked(ip):'''
-    if old in s and new not in s:
-        s = s.replace(old, new)
-        with open(path, 'w') as f:
-            f.write(s)
-        print('security patch applied')
-    else:
-        print('security patch skip')
-except Exception as e:
-    print('patch err', e)
-"""
-    # Simpler: patch security_monitor to not block on probe severity - clear is enough + fix THREAT pattern in uploaded code
-
     run(c, f"cd {INSTALL} && docker compose restart ai-team-room")
     import time
     time.sleep(25)

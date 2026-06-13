@@ -101,7 +101,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 return JSONResponse({"detail": "Rate limit exceeded"}, status_code=429)
 
             query = str(request.url.query or "")
-            monitor.scan_payload(f"{path}?{query}", ip=ip, path=path)
+            safe_paths = (
+                "/api/health", "/api/auth/login", "/api/auth/register",
+                "/api/auth/me", "/api/config", "/api/agents", "/api/chat/commands",
+            )
+            if not any(path.startswith(p) for p in safe_paths):
+                monitor.scan_payload(f"{path}?{query}", ip=ip, path=path)
 
             if method in ("POST", "PATCH", "PUT", "DELETE") and is_enabled("require_auth_mutations"):
                 if path not in PUBLIC_WRITE and not _api_key_ok(request):

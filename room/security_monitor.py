@@ -19,7 +19,8 @@ THREAT_PATTERNS = [
     (re.compile(r"(?i)(union\s+select|drop\s+table|;\s*--|';\s*drop)"), "sqli"),
     (re.compile(r"(?i)(<script|javascript:|onerror=|onload=)"), "xss"),
     (re.compile(r"(?i)(\.\./|\.\.\\|/etc/passwd|/proc/self)"), "path_traversal"),
-    (re.compile(r"(?i)(\.env|config\.json|/api/config|/wp-admin|/admin\.php)"), "probe"),
+    # Не матчить легитимный GET /api/config — иначе блокируется IP пользователя
+    (re.compile(r"(?i)(/wp-admin|/admin\.php|/\.env\b|/api/\.env|/phpmyadmin)"), "probe"),
 ]
 
 HONEYPOT_PATHS = frozenset({
