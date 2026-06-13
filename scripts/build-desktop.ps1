@@ -19,9 +19,9 @@ New-Item -ItemType Directory -Force -Path "$Root\dist" | Out-Null
 
 Write-Host "==> dotnet publish client..." -ForegroundColor Yellow
 dotnet publish "$Root\desktop-client\AITeamRoom.csproj" -c Release -r win-x64 --self-contained true `
-    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o "$Root\dist\publish"
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o "$Root\dist\publish-client"
 
-$Portable = Join-Path $Root "dist\publish\AI_Team_Room.exe"
+$Portable = Join-Path $Root "dist\publish-client\AI_Team_Room.exe"
 if (-not (Test-Path $Portable)) {
     Write-Host "Client build failed" -ForegroundColor Red
     exit 1
@@ -31,9 +31,9 @@ Write-Host "OK Portable: $Root\dist\AI_Team_Room.exe" -ForegroundColor Green
 
 Write-Host "==> dotnet publish installer..." -ForegroundColor Yellow
 dotnet publish "$Root\desktop-installer\AITeamRoom.Installer.csproj" -c Release -r win-x64 --self-contained true `
-    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o "$Root\dist\publish"
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o "$Root\dist\publish-setup"
 
-$Setup = Join-Path $Root "dist\publish\AI_Team_Room_Setup.exe"
+$Setup = Join-Path $Root "dist\publish-setup\AI_Team_Room_Setup.exe"
 if (-not (Test-Path $Setup)) {
     Write-Host "Installer build failed" -ForegroundColor Red
     exit 1
