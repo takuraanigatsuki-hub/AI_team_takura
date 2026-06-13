@@ -422,12 +422,18 @@ PR #42 · checks ✓</pre>
         <h2 id="authTitle">Вход</h2>
         <p class="lp-modal-sub" id="authSub">Войдите, чтобы сохранить настройки и проекты</p>
         <form id="authForm">
-            <label class="lp-label">Email</label>
-            <input type="email" id="authEmail" class="lp-input" required placeholder="you@company.com">
+            <label class="lp-label" id="loginLabel">Email или логин</label>
+            <input type="text" id="authLogin" class="lp-input" required autocomplete="username" placeholder="you@company.com или alex_user">
+            <label class="lp-label" id="emailLabel" style="display:none">Email</label>
+            <input type="email" id="authEmail" class="lp-input" style="display:none" autocomplete="email" placeholder="you@company.com">
+            <label class="lp-label" id="usernameLabel" style="display:none">Логин</label>
+            <input type="text" id="authUsername" class="lp-input" style="display:none" autocomplete="username" maxlength="32" placeholder="alex_user" pattern="[a-zA-Z][a-zA-Z0-9_]{2,31}">
+            <p class="auth-field-hint" id="authUsernameHint"></p>
             <label class="lp-label" id="nameLabel" style="display:none">Имя</label>
-            <input type="text" id="authName" class="lp-input" style="display:none" placeholder="Алексей">
+            <input type="text" id="authName" class="lp-input" style="display:none" autocomplete="name" maxlength="80" placeholder="Алексей">
+            <p class="auth-field-hint" id="authNameHint"></p>
             <label class="lp-label">Пароль</label>
-            <input type="password" id="authPassword" class="lp-input" required minlength="6" placeholder="минимум 6 символов">
+            <input type="password" id="authPassword" class="lp-input" required minlength="6" autocomplete="current-password" placeholder="минимум 6 символов">
             <p class="lp-error hidden" id="authError"></p>
             <button type="submit" class="lp-btn-xl lp-btn-full" id="authSubmit">Войти</button>
         </form>
@@ -444,6 +450,7 @@ PR #42 · checks ✓</pre>
 <script src="/static/js/studio-models.js?v=3"></script>
 <script src="/static/js/studio.js?v=21"></script>
 <script src="/static/js/landing-demo.js?v=1"></script>
-<script src="/static/js/landing.js?v=8"></script>
+<script src="/static/js/auth-fields.js?v=1"></script>
+<script src="/static/js/landing.js?v=9"></script>
 </body>
 </html>

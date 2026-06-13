@@ -54,10 +54,16 @@
         </div>
 
         <form id="dsAuthForm" class="ds-form">
-            <label class="ds-label" for="dsEmail">Email</label>
-            <input type="email" id="dsEmail" class="ds-input" required autocomplete="username" placeholder="you@company.com">
+            <label class="ds-label" for="dsLogin" id="dsLoginLabel">Email или логин</label>
+            <input type="text" id="dsLogin" class="ds-input" required autocomplete="username" placeholder="you@company.com или alex_user">
+            <label class="ds-label hidden" for="dsEmail" id="dsEmailLabel">Email</label>
+            <input type="email" id="dsEmail" class="ds-input hidden" autocomplete="email" placeholder="you@company.com">
+            <label class="ds-label hidden" for="dsUsername" id="dsUsernameLabel">Логин</label>
+            <input type="text" id="dsUsername" class="ds-input hidden" autocomplete="username" maxlength="32" placeholder="alex_user" pattern="[a-zA-Z][a-zA-Z0-9_]{2,31}">
+            <p class="auth-field-hint" id="dsUsernameHint"></p>
             <label class="ds-label hidden" id="dsNameLabel" for="dsName">Имя</label>
-            <input type="text" id="dsName" class="ds-input hidden" autocomplete="name" placeholder="Алексей">
+            <input type="text" id="dsName" class="ds-input hidden" autocomplete="name" maxlength="80" placeholder="Алексей">
+            <p class="auth-field-hint" id="dsNameHint"></p>
             <label class="ds-label" for="dsPassword">Пароль</label>
             <input type="password" id="dsPassword" class="ds-input" required minlength="6" autocomplete="current-password" placeholder="минимум 6 символов">
             <p class="ds-error hidden" id="dsError" role="alert"></p>
@@ -83,6 +89,7 @@
     </footer>
 </section>
 
-<script src="/static/js/desktop-app.js?v=3"></script>
+<script src="/static/js/auth-fields.js?v=1"></script>
+<script src="/static/js/desktop-app.js?v=4"></script>
 </body>
 </html>

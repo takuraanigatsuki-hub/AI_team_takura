@@ -94,13 +94,15 @@
         mode = m || 'login';
         updateModalUI();
         modal.classList.remove('hidden');
-        document.getElementById('authEmail').focus();
+        (mode === 'register' ? document.getElementById('authEmail') : document.getElementById('authLogin'))?.focus();
     }
 
     function closeModal() {
         modal.classList.add('hidden');
         errorEl.classList.add('hidden');
         form.reset();
+        window.AuthFields?.clearFieldState(document.getElementById('authUsername'), document.getElementById('authUsernameHint'));
+        window.AuthFields?.clearFieldState(document.getElementById('authName'), document.getElementById('authNameHint'));
     }
 
     function updateModalUI() {
@@ -108,10 +110,22 @@
         document.getElementById('authTitle').textContent = isReg ? 'Регистрация' : 'Вход';
         document.getElementById('authSub').textContent = isReg
             ? 'Создайте аккаунт — откроется мастер первой настройки'
-            : 'Войдите, чтобы сохранить настройки и проекты';
+            : 'Войдите по email или логину';
         document.getElementById('authSubmit').textContent = isReg ? 'Создать аккаунт' : 'Войти';
+        document.getElementById('loginLabel').style.display = isReg ? 'none' : 'block';
+        document.getElementById('authLogin').style.display = isReg ? 'none' : 'block';
+        document.getElementById('authLogin').required = !isReg;
+        document.getElementById('emailLabel').style.display = isReg ? 'block' : 'none';
+        document.getElementById('authEmail').style.display = isReg ? 'block' : 'none';
+        document.getElementById('authEmail').required = isReg;
+        document.getElementById('usernameLabel').style.display = isReg ? 'block' : 'none';
+        document.getElementById('authUsername').style.display = isReg ? 'block' : 'none';
+        document.getElementById('authUsername').required = isReg;
         document.getElementById('nameLabel').style.display = isReg ? 'block' : 'none';
         document.getElementById('authName').style.display = isReg ? 'block' : 'none';
+        document.getElementById('authName').required = isReg;
+        document.getElementById('authUsernameHint').style.display = isReg ? 'block' : 'none';
+        document.getElementById('authNameHint').style.display = isReg ? 'block' : 'none';
         document.getElementById('authSwitchText').textContent = isReg ? 'Уже есть аккаунт?' : 'Нет аккаунта?';
         document.getElementById('authSwitch').textContent = isReg ? 'Войти' : 'Зарегистрироваться';
     }
