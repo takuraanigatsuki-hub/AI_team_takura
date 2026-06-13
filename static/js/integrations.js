@@ -32,7 +32,8 @@
             connectBtn?.classList.add('hidden');
             disconnectBtn?.classList.remove('hidden');
         } else if (s.auth_method === 'pat') {
-            label.textContent = '✓ Personal Token (.env)';
+            const admin = global.UIAccess?.canAccessConsole?.(global.Auth?.getUser());
+            label.textContent = admin ? '✓ Personal Token (.env)' : '✓ Figma подключена';
             if (dot) dot.className = 'figma-account-dot connected';
             connectBtn?.classList.remove('hidden');
             connectBtn.textContent = s.oauth_app_configured ? 'Подключить OAuth' : 'OAuth не настроен';

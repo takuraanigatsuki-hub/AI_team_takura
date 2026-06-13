@@ -1383,12 +1383,12 @@ async def get_dashboard(request: Request):
         "user_id": user.get("id", "") if user else "",
         "role": user.get("role", "guest") if user else "guest",
     }
-    privileged = is_privileged(viewer.get("role", ""))
+    platform_admin = _can_platform_settings(user)
 
     agents_data = []
     total_knowledge = 0
     for agent in room.agents.values():
-        if not privileged and agent.agent_id == "security":
+        if not platform_admin and agent.agent_id == "security":
             continue
         state = agent.get_state()
         agents_data.append({
