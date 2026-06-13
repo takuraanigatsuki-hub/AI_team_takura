@@ -33,6 +33,7 @@
 [data-theme="dark"] {
     --bg: var(--premium-bg);
     --surface: var(--premium-surface);
+    --surface-1: #1a1d28;
     --surface-2: var(--premium-surface-2);
     --border: var(--premium-border);
     --text: var(--premium-text);
@@ -45,8 +46,8 @@
     --purple-soft: var(--premium-purple-soft);
     --red: #f87171;
     --yellow: var(--premium-gold);
-    --user-bg: rgba(139, 92, 246, 0.08);
-    --user-border: rgba(167, 139, 250, 0.2);
+    --user-bg: #1e1a2e;
+    --user-border: rgba(167, 139, 250, 0.28);
     --code-bg: #0d0e14;
     --overlay: rgba(6, 7, 12, 0.78);
     --scrollbar: rgba(255, 255, 255, 0.12);
@@ -68,6 +69,7 @@
 [data-theme="light"] {
     --bg: #f7f8fb;
     --surface: #ffffff;
+    --surface-1: #ffffff;
     --surface-2: #f0f2f7;
     --border: rgba(15, 18, 28, 0.08);
     --text: #14151c;
@@ -183,9 +185,21 @@ body {
     box-shadow: var(--premium-shadow-md), var(--premium-glow);
 }
 
-.chat-input:focus, #chatInput:focus {
+.chat-input:focus, #chatInput:focus, #messageInput:focus {
+    outline: none;
+}
+
+.input-wrap:focus-within {
     border-color: rgba(167, 139, 250, 0.45);
     box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.slash-dropdown, .mention-dropdown {
+    background: var(--surface-1, #1a1d28);
+}
+
+.msg-text {
+    background: var(--surface-1, var(--surface));
 }
 
 .view-enter {
