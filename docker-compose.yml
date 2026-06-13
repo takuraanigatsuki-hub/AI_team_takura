@@ -10,8 +10,11 @@ services:
       - ./output:/app/output
       - ./knowledge:/app/knowledge
     restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://aiteam:aiteam@postgres:5432/aiteam
     depends_on:
       - redis
+      - postgres
 
   redis:
     image: redis:7-alpine
