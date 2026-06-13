@@ -366,6 +366,15 @@ class AdminUserUpdateRequest(BaseModel):
     tier: str | None = None
     balance_delta: int | None = None
     set_balance: int | None = None
+    privileges: list[str] | None = None
+    disabled: bool | None = None
+    admin_notes: str | None = None
+    default_view: str | None = None
+    theme: str | None = None
+
+
+class AdminResetPasswordRequest(BaseModel):
+    password: str
 
 
 class AdminConsoleRequest(BaseModel):

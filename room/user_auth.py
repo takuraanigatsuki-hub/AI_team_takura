@@ -33,11 +33,36 @@ ALL_PRIVILEGES = [
     "manage_tickets",
 ]
 
+PRIVILEGE_LABELS = {
+    "admin": "Полный admin-доступ",
+    "manage_users": "Управление пользователями",
+    "manage_settings": "Настройки платформы",
+    "manage_integrations": "Интеграции",
+    "manage_telegram": "Telegram-бот",
+    "deploy": "Deploy",
+    "backup": "Backup",
+    "pipeline": "Pipeline",
+    "view_link": "View-link",
+    "view_agent_learning": "Обучение агентов",
+    "all_views": "Все разделы",
+    "skip_setup": "Пропуск setup",
+    "manage_tickets": "Тикеты поддержки",
+}
+
+ROLE_ASSIGNABLE = {
+    "owner": ("owner", "admin", "tech_admin", "support", "investor", "member"),
+    "admin": ("admin", "tech_admin", "support", "investor", "member"),
+    "tech_admin": ("support", "investor", "member"),
+}
+
+PROTECTED_ROLES = frozenset({"owner", "admin", "tech_admin"})
+
 ROLE_PRIVILEGES = {
     "owner": ALL_PRIVILEGES,
     "admin": [p for p in ALL_PRIVILEGES if p != "manage_users"],
     "tech_admin": [
         "admin",
+        "manage_users",
         "manage_settings",
         "manage_integrations",
         "manage_telegram",
@@ -45,8 +70,10 @@ ROLE_PRIVILEGES = {
         "backup",
         "pipeline",
         "view_agent_learning",
+        "view_link",
         "all_views",
         "skip_setup",
+        "manage_tickets",
     ],
     "support": [
         "view_link",
@@ -275,11 +302,11 @@ def can_view_investor_portal(user: dict | None) -> bool:
 
 
 def can_manage_tickets(user: dict | None) -> bool:
-    """Панель поддержки — support, owner, admin."""
+    """Панель поддержки — support, owner, admin, tech_admin."""
     if not user:
         return False
     role = user.get("role", "member")
-    if role in ("owner", "admin", "support"):
+    if role in ("owner", "admin", "tech_admin", "support"):
         return True
     return has_privilege(user, "manage_tickets") or has_privilege(user, "admin")
 
@@ -339,6 +366,8 @@ def login(email: str, password: str) -> tuple[dict, str]:
     user = _find_user_by_email(email)
     if not user or not _verify_password(password, user.get("password", "")):
         raise ValueError("Неверный email или пароль")
+    if user.get("disabled"):
+        raise ValueError("Аккаунт заблокирован. Обратитесь в поддержку.")
     token = _create_session(user["id"])
     return _public_user(user), token
 
@@ -396,6 +425,8 @@ def get_user_from_token(token: str) -> Optional[dict]:
     except Exception:
         return None
     user = _find_user(meta.get("user_id", ""))
+    if not user or user.get("disabled"):
+        return None
     return _public_user(user) if user else None
 
 
@@ -574,7 +605,100 @@ def can_manage_users(user: dict | None) -> bool:
         return False
     if user.get("is_owner") or user.get("role") == "owner":
         return True
+    if user.get("role") == "tech_admin":
+        return True
     return has_privilege(user, "manage_users") or has_privilege(user, "admin")
+
+
+def is_owner_user(user: dict | None) -> bool:
+    return bool(user and (user.get("is_owner") or user.get("role") == "owner"))
+
+
+def can_assign_role(admin_user: dict, role: str) -> bool:
+    role = (role or "").strip().lower()
+    if role not in ROLE_PRIVILEGES:
+        return False
+    admin_role = admin_user.get("role", "member")
+    allowed = ROLE_ASSIGNABLE.get(admin_role, ())
+    return role in allowed
+
+
+def can_modify_user(admin_user: dict, target: dict) -> bool:
+    if not can_manage_users(admin_user):
+        return False
+    if target.get("role") == "owner" and not is_owner_user(admin_user):
+        return False
+    if is_owner_user(admin_user):
+        return True
+    admin_role = admin_user.get("role", "member")
+    target_role = target.get("role", "member")
+    if admin_role == "tech_admin" and target_role in PROTECTED_ROLES:
+        return False
+    return True
+
+
+def can_set_tier(admin_user: dict) -> bool:
+    return is_owner_user(admin_user) or admin_user.get("role") == "admin"
+
+
+def can_set_custom_privileges(admin_user: dict) -> bool:
+    return is_owner_user(admin_user)
+
+
+def can_reset_password(admin_user: dict) -> bool:
+    return is_owner_user(admin_user)
+
+
+def count_user_sessions(user_id: str) -> int:
+    sessions = _load(SESSIONS_FILE)
+    if not isinstance(sessions, dict):
+        return 0
+    now = datetime.now()
+    n = 0
+    for meta in sessions.values():
+        if meta.get("user_id") != user_id:
+            continue
+        try:
+            if datetime.fromisoformat(meta["expires_at"]) >= now:
+                n += 1
+        except Exception:
+            pass
+    return n
+
+
+def revoke_user_sessions(user_id: str) -> int:
+    sessions = _load(SESSIONS_FILE)
+    if not isinstance(sessions, dict):
+        return 0
+    removed = [t for t, m in sessions.items() if m.get("user_id") == user_id]
+    for t in removed:
+        del sessions[t]
+    if removed:
+        _save_sessions(sessions)
+    return len(removed)
+
+
+def admin_reset_password(admin_user: dict, target_user_id: str, new_password: str) -> dict:
+    if not can_reset_password(admin_user):
+        raise ValueError("Только владелец может сбрасывать пароли")
+    if len(new_password or "") < 6:
+        raise ValueError("Пароль минимум 6 символов")
+    users = _load(USERS_FILE)
+    target = None
+    for u in users:
+        if u.get("id") == target_user_id:
+            target = u
+            break
+    if not target:
+        raise ValueError("Пользователь не найден")
+    if target.get("role") == "owner" and not is_owner_user(admin_user):
+        raise ValueError("Нельзя сбросить пароль владельца")
+    salt, digest = _hash_password(new_password)
+    target["password"] = f"{salt}:{digest}"
+    target["updated_at"] = datetime.now().isoformat()
+    _save_users(users)
+    revoke_user_sessions(target_user_id)
+    return _public_user(target)
 
 
 def can_manage_site(user: dict | None) -> bool:
@@ -598,14 +722,44 @@ def admin_list_users(admin_user: dict) -> list[dict]:
             "name": pub["name"],
             "role": pub["role"],
             "role_label": pub["role_label"],
+            "privileges": pub.get("privileges") or _privileges_for_role(pub["role"]),
             "is_owner": pub["is_owner"],
             "setup_complete": pub["setup_complete"],
             "created_at": pub.get("created_at"),
+            "updated_at": u.get("updated_at"),
+            "setup_at": u.get("setup_at"),
+            "default_view": pub.get("default_view"),
+            "theme": pub.get("theme"),
+            "project_goal": u.get("project_goal", "")[:120],
+            "disabled": bool(u.get("disabled")),
+            "admin_notes": (u.get("admin_notes") or "")[:500],
+            "active_sessions": count_user_sessions(pub["id"]),
             "subscription": pub.get("subscription"),
             "access_level": pub.get("access_level"),
         })
     out.sort(key=lambda x: (0 if x["is_owner"] else 1, x["email"]))
     return out
+
+
+def admin_get_user(admin_user: dict, target_user_id: str) -> dict:
+    if not can_manage_users(admin_user):
+        raise ValueError("Недостаточно прав")
+    target = _find_user(target_user_id)
+    if not target:
+        raise ValueError("Пользователь не найден")
+    if not can_modify_user(admin_user, target):
+        raise ValueError("Недостаточно прав для этого пользователя")
+    pub = _public_user(target)
+    return {
+        **{k: pub[k] for k in ("id", "email", "name", "role", "role_label", "is_owner", "setup_complete", "default_view", "theme", "created_at", "subscription", "access_level")},
+        "privileges": pub.get("privileges") or _privileges_for_role(pub["role"]),
+        "updated_at": target.get("updated_at"),
+        "setup_at": target.get("setup_at"),
+        "project_goal": target.get("project_goal", ""),
+        "disabled": bool(target.get("disabled")),
+        "admin_notes": target.get("admin_notes") or "",
+        "active_sessions": count_user_sessions(pub["id"]),
+    }
 
 
 def admin_update_user(
@@ -617,6 +771,11 @@ def admin_update_user(
     tier: str = None,
     balance_delta: int = None,
     set_balance: int = None,
+    privileges: list[str] | None = None,
+    disabled: bool | None = None,
+    admin_notes: str | None = None,
+    default_view: str | None = None,
+    theme: str | None = None,
 ) -> dict:
     if not can_manage_users(admin_user):
         raise ValueError("Недостаточно прав")
@@ -628,7 +787,9 @@ def admin_update_user(
             break
     if not target:
         raise ValueError("Пользователь не найден")
-    if target.get("role") == "owner" and admin_user.get("role") != "owner":
+    if not can_modify_user(admin_user, target):
+        raise ValueError("Недостаточно прав для этого пользователя")
+    if target.get("role") == "owner" and not is_owner_user(admin_user):
         raise ValueError("Нельзя изменять владельца")
     if name is not None and name.strip():
         target["name"] = name.strip()[:80]
@@ -636,13 +797,41 @@ def admin_update_user(
         role = role.strip().lower()
         if role not in ROLE_PRIVILEGES:
             raise ValueError("Недопустимая роль")
-        if role == "owner" and admin_user.get("role") != "owner":
+        if not can_assign_role(admin_user, role):
+            raise ValueError("Ваша роль не может назначать эту роль")
+        if role == "owner" and not is_owner_user(admin_user):
             raise ValueError("Только владелец может назначать роль owner")
         if target.get("role") == "owner" and role != "owner":
             raise ValueError("Нельзя понизить владельца")
         target["role"] = role
         target["privileges"] = list(ROLE_PRIVILEGES[role])
-    if tier is not None and admin_user.get("role") == "owner":
+    if privileges is not None:
+        if not can_set_custom_privileges(admin_user):
+            raise ValueError("Только владелец может задавать привилегии вручную")
+        clean = []
+        for p in privileges:
+            if p not in ALL_PRIVILEGES:
+                raise ValueError(f"Неизвестная привилегия: {p}")
+            if p not in clean:
+                clean.append(p)
+        target["privileges"] = clean
+    if disabled is not None:
+        if target.get("role") == "owner":
+            raise ValueError("Нельзя заблокировать владельца")
+        target["disabled"] = bool(disabled)
+        if disabled:
+            revoke_user_sessions(target_user_id)
+    if admin_notes is not None:
+        target["admin_notes"] = (admin_notes or "")[:500]
+    if default_view is not None:
+        dv = default_view.strip().lower()
+        if dv and dv in ALLOWED_DEFAULT_VIEWS:
+            target["default_view"] = dv
+    if theme is not None:
+        th = theme.strip().lower()
+        if th in ("dark", "light", "auto", ""):
+            target["theme"] = th or target.get("theme", "dark")
+    if tier is not None and can_set_tier(admin_user):
         from room.subscriptions import set_subscription_tier, SUBSCRIPTION_PLANS
         tier = tier.strip().lower()
         if tier not in SUBSCRIPTION_PLANS:
@@ -666,7 +855,7 @@ def admin_update_user(
             users_saver=_save_users,
         )
         target = _find_user(target_user_id) or target
-    if set_balance is not None and admin_user.get("role") == "owner":
+    if set_balance is not None and is_owner_user(admin_user):
         from room.subscriptions import normalize_user_billing
         normalize_user_billing(target)
         if target.get("role") != "owner":
