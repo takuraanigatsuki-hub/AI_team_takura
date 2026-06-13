@@ -1,12 +1,94 @@
-/** Landing page — вход, регистрация, скачивание приложения */
+/** Landing page — вход, регистрация, скачивание, таб-навигация */
 (function () {
     let mode = 'login';
     let currentUser = null;
     let downloadUrl = '/api/downloads/desktop/win/setup';
+    let activeTab = 'home';
+
+    const TAB_ALIASES = {
+        capabilities: 'platform',
+        pricing: 'download',
+        figma: 'demo',
+        start: 'download',
+    };
 
     const modal = document.getElementById('authModal');
     const form = document.getElementById('authForm');
     const errorEl = document.getElementById('authError');
+
+    function resolveTab(id) {
+        const key = (id || 'home').toLowerCase();
+        return TAB_ALIASES[key] || key;
+    }
+
+    function tabExists(id) {
+        return !!document.querySelector(`[data-lp-panel="${id}"]`);
+    }
+
+    function switchTab(tabId, opts) {
+        const tab = resolveTab(tabId);
+        if (!tabExists(tab)) return;
+        activeTab = tab;
+
+        document.querySelectorAll('[data-lp-panel]').forEach((panel) => {
+            const on = panel.dataset.lpPanel === tab;
+            panel.classList.toggle('active', on);
+            panel.hidden = !on;
+        });
+
+        document.querySelectorAll('[data-lp-tab]').forEach((btn) => {
+            const on = btn.dataset.lpTab === tab;
+            btn.classList.toggle('active', on);
+            if (btn.tagName === 'BUTTON') btn.setAttribute('aria-current', on ? 'page' : 'false');
+        });
+
+        const path = tab === 'home' ? '/' : `/#${tab}`;
+        if (!opts?.silent && location.pathname + location.hash !== path && (tab !== 'home' || location.hash)) {
+            history.replaceState({ lpTab: tab }, '', path);
+        }
+
+        document.getElementById('lpNav')?.classList.remove('open');
+        document.getElementById('lpNavToggle')?.setAttribute('aria-expanded', 'false');
+        window.scrollTo({ top: 0, behavior: opts?.instant ? 'auto' : 'smooth' });
+
+        if (tab === 'demo' && opts?.playDemo) {
+            setTimeout(() => window.LandingDemo?.playGuidedDemo?.(), 400);
+        }
+    }
+
+    function initTabsFromUrl() {
+        const hash = (location.hash || '').replace(/^#/, '');
+        if (hash && tabExists(resolveTab(hash))) {
+            switchTab(hash, { silent: true, instant: true });
+        } else {
+            switchTab('home', { silent: true, instant: true });
+        }
+    }
+
+    document.addEventListener('click', (e) => {
+        const trigger = e.target.closest('[data-lp-tab]');
+        if (!trigger || trigger.tagName === 'A' && trigger.classList.contains('lp-menu-key-link')) return;
+        if (trigger.dataset.lpTab) {
+            e.preventDefault();
+            const playDemo = trigger.dataset.lpTab === 'demo' && trigger.classList.contains('lp-menu-key');
+            switchTab(trigger.dataset.lpTab, { playDemo });
+        }
+    });
+
+    window.addEventListener('hashchange', () => {
+        const hash = (location.hash || '').replace(/^#/, '');
+        if (hash) switchTab(hash, { silent: true });
+        else switchTab('home', { silent: true });
+    });
+
+    window.addEventListener('keydown', (e) => {
+        if (e.target.closest('input, textarea, select') || modal?.classList.contains('hidden') === false) return;
+        const map = { '1': 'home', '2': 'features', '3': 'platform', '4': 'how', '5': 'team', '6': 'integrations', '7': 'demo', '8': 'download' };
+        if (map[e.key]) {
+            e.preventDefault();
+            switchTab(map[e.key], { playDemo: e.key === '7' });
+        }
+    });
 
     function openModal(m) {
         mode = m || 'login';
@@ -119,8 +201,7 @@
     document.getElementById('btnRegister')?.addEventListener('click', () => openModal('register'));
     document.getElementById('btnHeroStart')?.addEventListener('click', () => openModal('register'));
     document.getElementById('btnHeroDemo')?.addEventListener('click', () => {
-        document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' });
-        setTimeout(() => window.LandingDemo?.playGuidedDemo?.(), 600);
+        switchTab('demo', { playDemo: true });
     });
     document.getElementById('btnCtaRegister')?.addEventListener('click', () => openModal('register'));
     document.getElementById('btnCtaLogin')?.addEventListener('click', () => openModal('login'));
@@ -163,6 +244,7 @@
     });
 
     const params = new URLSearchParams(location.search);
+    initTabsFromUrl();
     initDownloadLinks();
     initAuth().then((user) => {
         if (user && !params.get('auth')) {
@@ -175,23 +257,12 @@
         if (window.LandingDemo) LandingDemo.init();
     });
 
-    document.querySelectorAll('a[href^="#"]').forEach((link) => {
-        link.addEventListener('click', (e) => {
-            const id = link.getAttribute('href').slice(1);
-            const target = document.getElementById(id);
-            if (target) {
-                e.preventDefault();
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                document.getElementById('lpNav')?.classList.remove('open');
-                document.getElementById('lpNavToggle')?.setAttribute('aria-expanded', 'false');
-            }
-        });
-    });
-
     const navToggle = document.getElementById('lpNavToggle');
     const nav = document.getElementById('lpNav');
     navToggle?.addEventListener('click', () => {
         const open = nav?.classList.toggle('open');
         navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
     });
+
+    window.LandingTabs = { switchTab, active: () => activeTab };
 })();
