@@ -13,6 +13,15 @@ from agents.react_preview import generate_react_preview
 
 def test_classify_presentation():
     assert classify_task_kind("Сделай презентацию для инвесторов") == "presentation"
+    assert classify_task_kind("Нужен powerpoint про продукт") == "presentation"
+    assert classify_task_kind("Экспорт в pptx") == "presentation"
+
+
+def test_presentation_blocks_react_even_with_pm_subtask():
+    assert should_emit_react_preview(
+        "Сверстать сайт на React: landing page",
+        "Сделай презентацию для инвесторов",
+    ) is False
 
 
 def test_classify_table():
@@ -87,3 +96,14 @@ def test_table_preview_not_site():
 def test_pm_task_not_todo_list():
     preview = generate_react_preview("Виктор, распредели задачи по команде")
     assert preview["title"] != "Todo-лист"
+
+
+def test_router_enforces_presenter_only():
+    from room.llm_router import _enforce_kind_agents
+    routed = _enforce_kind_agents(
+        "presentation",
+        {"frontend": "site", "presenter": "deck", "architect": "plan"},
+        "Сделай презентацию",
+    )
+    assert set(routed.keys()) == {"presenter", "evaluator"}
+    assert "frontend" not in routed
