@@ -435,7 +435,8 @@ class RoomManager:
             uid, uname = "", ""
         return uid, uname
 
-    async def handle_user_message(self, data: dict, user=None, connection_meta=None):
+    async def handle_user_message(self, data: dict, user=None, connection_meta=None, *,
+                                  skip_charge: bool = False, skip_limit: bool = False):
         msg_type = data.get("type", "task")
 
         if msg_type == "task_approve":
