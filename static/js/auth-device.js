@@ -40,6 +40,14 @@
         location.href = `/?auth=register&next=${encodeURIComponent(location.pathname + location.search)}`;
     });
 
+    function errText(d, status) {
+        const msg = typeof d.detail === 'string' ? d.detail : (d.detail || '');
+        if (status === 401 || msg === 'Authentication required' || msg === 'Not authenticated') {
+            return 'Сначала войдите на сайте (кнопка «Войти»), затем подтвердите вход';
+        }
+        return msg || 'Ошибка';
+    }
+
     approveBtn?.addEventListener('click', async () => {
         approveBtn.disabled = true;
         statusEl.textContent = 'Подтверждение…';
@@ -50,8 +58,8 @@
                 credentials: 'same-origin',
                 body: JSON.stringify({ device_id: deviceId }),
             });
-            const d = await r.json();
-            if (!r.ok) throw new Error(d.detail || 'Ошибка');
+            const d = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(errText(d, r.status));
             approveBtn.classList.add('hidden');
             successEl.classList.remove('hidden');
             statusEl.textContent = 'Приложение авторизовано';

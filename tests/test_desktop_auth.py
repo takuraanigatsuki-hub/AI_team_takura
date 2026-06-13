@@ -37,6 +37,13 @@ def test_device_flow(client):
     assert r2.json()["status"] == "pending"
 
 
+def test_device_start_no_auth_required(client):
+    """device/start must work without session (desktop initiates flow)."""
+    r = client.post("/api/auth/device/start")
+    assert r.status_code == 200
+    assert r.json().get("device_id")
+
+
 def test_device_approve_requires_auth(client):
     r = client.post("/api/auth/device/start")
     device_id = r.json()["device_id"]

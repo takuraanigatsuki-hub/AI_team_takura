@@ -18,6 +18,7 @@ SESSION_COOKIE = "ai_team_session"
 PUBLIC_WRITE = frozenset({
     "/api/auth/register",
     "/api/auth/login",
+    "/api/auth/device/start",
     "/api/telegram/webhook",
     "/api/billing/stripe/webhook",
 })
@@ -103,7 +104,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             query = str(request.url.query or "")
             safe_paths = (
                 "/api/health", "/api/auth/login", "/api/auth/register",
-                "/api/auth/me", "/api/config", "/api/agents", "/api/chat/commands",
+                "/api/auth/me", "/api/auth/device/", "/api/config", "/api/agents", "/api/chat/commands",
             )
             if not any(path.startswith(p) for p in safe_paths):
                 monitor.scan_payload(f"{path}?{query}", ip=ip, path=path)

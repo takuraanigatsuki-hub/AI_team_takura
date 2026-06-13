@@ -102,7 +102,13 @@
         try {
             const r = await fetch('/api/auth/device/start', { method: 'POST', credentials: 'same-origin' });
             const d = await r.json();
-            if (!r.ok) throw new Error(d.detail || 'Не удалось начать вход');
+            if (!r.ok) {
+                const msg = d.detail || '';
+                if (r.status === 401 || msg === 'Authentication required') {
+                    throw new Error('Не удалось начать вход. Обновите страницу и попробуйте снова.');
+                }
+                throw new Error(msg || 'Не удалось начать вход');
+            }
             const url = d.verify_url;
             browserHint.innerHTML = `Код: <strong>${d.user_code}</strong> · откройте браузер и подтвердите вход`;
             if (window.pywebview && window.pywebview.api && window.pywebview.api.open_external) {
