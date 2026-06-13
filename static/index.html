@@ -665,36 +665,67 @@
 <!-- React Preview — Соня -->
 <aside id="reactPreviewPanel" role="complementary" aria-label="React Preview" aria-hidden="true">
     <div class="preview-header">
-        <span aria-hidden="true">🎨</span>
-        <h2 id="reactPreviewTitle">React Preview</h2>
-        <span class="preview-badge" id="reactPreviewBadge">ожидание</span>
-        <button type="button" class="icon-btn preview-close-btn" onclick="ReactPreview.close()" title="Закрыть (Esc)" aria-label="Закрыть панель">×</button>
+        <div class="preview-header-brand">
+            <span class="preview-header-icon" aria-hidden="true">⚛️</span>
+            <div class="preview-header-titles">
+                <h2 id="reactPreviewTitle">React Preview</h2>
+                <span class="preview-status" id="reactPreviewBadge">
+                    <span class="preview-status-dot" aria-hidden="true"></span>
+                    <span class="preview-status-label">Ожидание</span>
+                </span>
+            </div>
+        </div>
+        <button type="button" class="preview-close-btn" onclick="ReactPreview.close()" title="Закрыть (Esc)" aria-label="Закрыть панель">
+            <span aria-hidden="true">×</span>
+        </button>
     </div>
     <div class="preview-body" id="reactPreviewBody">
         <div class="preview-empty" id="reactPreviewEmpty">
             <div class="preview-empty-icon" aria-hidden="true">⚛️</div>
-            <div>Дайте Соне задачу с UI</div>
-            <div class="preview-empty-hint">Например: «сделай форму логина» или «кнопку с анимацией»</div>
+            <div class="preview-empty-title">Live Preview</div>
+            <div class="preview-empty-hint">Дайте Соне задачу с UI — форма, landing или кнопка с анимацией</div>
         </div>
         <div id="reactPreviewContent" style="display:none; flex:1; flex-direction:column; min-height:0;">
             <div class="preview-toolbar">
-                <div class="preview-viewport-group" role="group" aria-label="Размер экрана">
-                    <button type="button" class="preview-viewport-btn" data-preview-viewport="mobile" aria-pressed="false" title="Mobile 375px" onclick="ReactPreview.setViewport('mobile')">📱</button>
-                    <button type="button" class="preview-viewport-btn" data-preview-viewport="tablet" aria-pressed="false" title="Tablet 768px" onclick="ReactPreview.setViewport('tablet')">📲</button>
-                    <button type="button" class="preview-viewport-btn active" data-preview-viewport="desktop" aria-pressed="true" title="Desktop" onclick="ReactPreview.setViewport('desktop')">🖥</button>
-                    <span class="preview-viewport-label" id="reactPreviewViewportLabel">100%</span>
+                <div class="preview-segments" role="group" aria-label="Размер экрана">
+                    <button type="button" class="preview-segment" data-preview-viewport="mobile" aria-pressed="false" title="Mobile 375px" onclick="ReactPreview.setViewport('mobile')">
+                        <span class="preview-segment-icon" aria-hidden="true">📱</span>
+                        <span class="preview-segment-label">Mobile</span>
+                    </button>
+                    <button type="button" class="preview-segment" data-preview-viewport="tablet" aria-pressed="false" title="Tablet 768px" onclick="ReactPreview.setViewport('tablet')">
+                        <span class="preview-segment-icon" aria-hidden="true">📲</span>
+                        <span class="preview-segment-label">Tablet</span>
+                    </button>
+                    <button type="button" class="preview-segment active" data-preview-viewport="desktop" aria-pressed="true" title="Desktop — на всю ширину" onclick="ReactPreview.setViewport('desktop')">
+                        <span class="preview-segment-icon" aria-hidden="true">🖥</span>
+                        <span class="preview-segment-label">Desktop</span>
+                    </button>
                 </div>
-                <div class="preview-toolbar-actions">
-                    <button type="button" class="btn-secondary btn-sm" onclick="ReactPreview.refresh()" title="Обновить preview">↻</button>
-                    <button type="button" class="btn-secondary btn-sm" id="reactPreviewFullscreenBtn" onclick="ReactPreview.toggleFullscreen()" title="Полный экран" aria-pressed="false">⛶</button>
-                    <button type="button" class="btn-secondary btn-sm" onclick="WowFeatures.toggleCompare()">⇔ Compare</button>
-                    <button type="button" class="btn-secondary btn-sm" onclick="WowFeatures.improveFromFigma()">🎨 Figma</button>
-                    <button type="button" class="btn-secondary btn-sm" onclick="WowFeatures.deployNow()">🚀 Deploy</button>
+                <span class="preview-viewport-label" id="reactPreviewViewportLabel">100%</span>
+                <div class="preview-tools" role="toolbar" aria-label="Действия preview">
+                    <button type="button" class="preview-tool-btn" onclick="ReactPreview.refresh()" title="Обновить preview" aria-label="Обновить">
+                        <span aria-hidden="true">↻</span>
+                    </button>
+                    <button type="button" class="preview-tool-btn" id="reactPreviewFullscreenBtn" onclick="ReactPreview.toggleFullscreen()" title="Полный экран" aria-pressed="false" aria-label="Полный экран">
+                        <span aria-hidden="true">⛶</span>
+                    </button>
+                    <span class="preview-tools-divider" aria-hidden="true"></span>
+                    <button type="button" class="preview-tool-btn preview-tool-labeled" id="reactPreviewCompareBtn" onclick="WowFeatures.toggleCompare()" title="Сравнить Figma и React">
+                        <span aria-hidden="true">⇔</span><span>Compare</span>
+                    </button>
+                    <button type="button" class="preview-tool-btn preview-tool-labeled" onclick="WowFeatures.improveFromFigma()" title="Доработать по макету Figma">
+                        <span aria-hidden="true">🎨</span><span>Figma</span>
+                    </button>
+                    <button type="button" class="preview-tool-btn preview-tool-labeled preview-tool-deploy hidden" data-ui="admin-tools" onclick="WowFeatures.deployNow()" title="Собрать Deploy ZIP">
+                        <span aria-hidden="true">🚀</span><span>Deploy</span>
+                    </button>
                 </div>
             </div>
-            <div class="preview-task">
-                <span id="reactPreviewTaskText"></span>
-                <a id="siteOpenLink" href="/api/sites/latest" target="_blank" rel="noopener" class="site-open-link" style="display:none">🌐 Открыть сайт</a>
+            <div class="preview-meta">
+                <p class="preview-task-text" id="reactPreviewTaskText"></p>
+                <a id="siteOpenLink" href="/api/sites/latest" target="_blank" rel="noopener" class="preview-site-btn" style="display:none">
+                    <span aria-hidden="true">🌐</span> Открыть сайт
+                </a>
             </div>
             <div id="reactPreviewError" class="preview-error-banner" hidden role="alert"></div>
             <div id="figmaSplitView" class="figma-split">
@@ -852,7 +883,7 @@
 <script src="/static/js/studio-textures.js?v=1"></script>
 <script src="/static/js/studio-models.js?v=3"></script>
 <script src="/static/js/studio.js?v=22"></script>
-<script src="/static/js/react-preview.js?v=6"></script>
+<script src="/static/js/react-preview.js?v=7"></script>
 <script src="/static/js/integrations.js?v=11"></script>
 <script src="/static/js/sonya-design-lab.js?v=6"></script>
 <script src="/static/js/ui-enhancements.js?v=8"></script>
