@@ -174,7 +174,13 @@
         document.getElementById('investorView')?.classList.toggle('hidden', view !== 'investor');
 
         if (window.SidebarNav) SidebarNav.setActive(view);
-        if (window.UICore) UICore.setMobileTabActive(view);
+        if (window.UICore) {
+            UICore.setMobileTabActive(view);
+            UICore.setViewTitle(view);
+            if (view === 'profile' && window.ProfileCabinet?.getActiveTabLabel) {
+                UICore.setViewTitle(view, ProfileCabinet.getActiveTabLabel());
+            }
+        }
         if (view === 'tasks') {
             loadTasks();
             if (window.UICore) {

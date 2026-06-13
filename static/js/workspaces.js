@@ -22,20 +22,24 @@
     }
 
     function renderSwitcher() {
-        const el = document.getElementById('workspaceSwitcher');
-        if (!el) return;
+        const sidebarEl = document.getElementById('sbWorkspace');
+        const legacyEl = document.getElementById('workspaceSwitcher');
+        const target = sidebarEl || legacyEl;
+        if (!target) return;
         if (!workspaces.length) {
-            el.innerHTML = `<button type="button" class="hdr-btn btn-sm" onclick="Workspaces.showCreate()" title="Создать workspace">+ WS</button>`;
+            target.innerHTML = `<button type="button" class="sb-ws-btn" onclick="Workspaces.showCreate()" title="Создать workspace">+ Workspace</button>`;
             return;
         }
-        el.innerHTML = `
-            <select id="wsSelect" class="ws-select" title="Workspace" onchange="Workspaces.switchTo(this.value)">
-                <option value="">— Workspace —</option>
-                ${workspaces.map((w) =>
-                    `<option value="${esc(w.id)}" ${w.id === activeId ? 'selected' : ''}>${esc(w.name)}</option>`
-                ).join('')}
-            </select>
-            <button type="button" class="hdr-btn btn-sm" onclick="Workspaces.showCreate()" title="Новый">+</button>`;
+        target.innerHTML = `
+            <label class="sb-ws-label">Workspace</label>
+            <div class="sb-ws-row">
+                <select id="wsSelect" class="ws-select sb-ws-select" title="Workspace" onchange="Workspaces.switchTo(this.value)">
+                    ${workspaces.map((w) =>
+                        `<option value="${esc(w.id)}" ${w.id === activeId ? 'selected' : ''}>${esc(w.name)}</option>`
+                    ).join('')}
+                </select>
+                <button type="button" class="sb-ws-add" onclick="Workspaces.showCreate()" title="Новый workspace">+</button>
+            </div>`;
     }
 
     async function switchTo(id) {

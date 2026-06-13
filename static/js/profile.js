@@ -503,13 +503,30 @@
 
     async function load() {
         renderTabs();
+        if (global.SidebarNav?.renderSubnav) SidebarNav.renderSubnav('profile', activeTab);
         await Promise.all([loadStats(), loadPlans()]);
         renderContent();
+    }
+
+    const TAB_LABELS = {
+        overview: 'Обзор',
+        profile: 'Профиль',
+        subscription: 'Подписка',
+        settings: 'Настройки',
+        workspaces: 'Workspaces',
+        security: 'Безопасность',
+        activity: 'Активность',
+    };
+
+    function getActiveTabLabel() {
+        return TAB_LABELS[activeTab] || '';
     }
 
     function switchTab(tab) {
         activeTab = tab;
         renderTabs();
+        if (global.SidebarNav?.renderSubnav) SidebarNav.renderSubnav('profile', activeTab);
+        if (global.UICore?.setViewTitle) UICore.setViewTitle('profile', getActiveTabLabel());
         if (tab === 'subscription' && !plans) loadPlans().then(renderContent);
         else if (tab === 'workspaces') renderContent();
         else if (tab === 'overview' || tab === 'activity' || tab === 'profile') loadStats().then(renderContent);
@@ -668,6 +685,7 @@
     global.ProfileCabinet = {
         load,
         switchTab,
+        getActiveTabLabel,
         saveProfile,
         saveSettings,
         changePassword,

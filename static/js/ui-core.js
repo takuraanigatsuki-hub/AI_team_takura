@@ -502,6 +502,34 @@
         announceLive('Задача ждёт вашего решения в Inbox');
     }
 
+    const VIEW_META = {
+        tasks: { icon: '📋', name: 'Inbox', sub: 'Задачи и результаты' },
+        chat: { icon: '💬', name: 'Чат', sub: 'Команда агентов' },
+        kanban: { icon: '📌', name: 'Kanban', sub: 'Доска задач' },
+        dashboard: { icon: '📊', name: 'Dashboard', sub: 'Обзор комнаты' },
+        projects: { icon: '📦', name: 'Проекты', sub: 'Артефакты команды' },
+        timeline: { icon: '⏱', name: 'Timeline', sub: 'История событий' },
+        sprint: { icon: '🏃', name: 'Sprint', sub: 'Планирование' },
+        studio: { icon: '🎮', name: '3D Студия', sub: 'Живая команда' },
+        'sonya-studio': { icon: '✨', name: 'Sonya Studio', sub: 'Figma → React' },
+        profile: { icon: '👤', name: 'Кабинет', sub: 'Профиль и подписка' },
+        admin: { icon: '🛡', name: 'Admin', sub: 'Управление' },
+        support: { icon: '💬', name: 'Поддержка', sub: 'Тикеты пользователей' },
+        investor: { icon: '💼', name: 'Investor', sub: 'Портал инвестора' },
+        'agent-learning': { icon: '🔬', name: 'Обучение', sub: 'Design Lab' },
+    };
+
+    function setViewTitle(view, extraSub) {
+        const meta = VIEW_META[view] || { icon: '🤖', name: view || 'AI Team', sub: '' };
+        const iconEl = document.getElementById('headerViewIcon');
+        const nameEl = document.getElementById('headerViewName');
+        const subEl = document.getElementById('headerViewSub');
+        if (iconEl) iconEl.textContent = meta.icon;
+        if (nameEl) nameEl.textContent = meta.name;
+        if (subEl) subEl.textContent = extraSub || meta.sub || '';
+        document.title = `${meta.name} — AI Team Room`;
+    }
+
     global.UICore = {
         esc,
         emptyState,
@@ -526,6 +554,7 @@
         dismissAwaitingCoachmark,
         checkAwaitingCoachmark,
         updateMobileBadges,
+        setViewTitle,
         STATUS_LABELS,
         PRIO_LABELS,
         ActivityStream: { push: pushActivity, onWsMessage: wsMessageToActivity },
