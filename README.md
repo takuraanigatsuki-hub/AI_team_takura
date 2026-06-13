@@ -116,7 +116,7 @@ bash scripts/deploy-vps.sh
 
 **Куда что подключить (DNS, GitHub Secrets, .env):** [docs/WHERE_TO_CONNECT.md](docs/WHERE_TO_CONNECT.md)
 
-**Где купить VPS и домен за рубли:** [docs/HOSTING_RU.md](docs/HOSTING_RU.md)
+**REG.RU + Ubuntu:** пошагово [docs/REG_RU_SETUP.md](docs/REG_RU_SETUP.md)
 
 Шаблон production `.env`: скопируйте `.env.production.example` → `.env` на VPS.
 

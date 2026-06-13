@@ -31,10 +31,14 @@ fi
 mkdir -p data output knowledge backups
 
 if [ ! -f .env ]; then
-  cp .env.example .env
+  if [ -f .env.production.example ]; then
+    cp .env.production.example .env
+  else
+    cp .env.example .env
+  fi
   echo ""
   echo "!!! Отредактируйте .env: nano $INSTALL_DIR/.env"
-  echo "    Обязательно: OPENAI_API_KEY, APP_DOMAIN, POSTGRES_PASSWORD"
+  echo "    Обязательно: OPENAI_API_KEY, POSTGRES_PASSWORD, APP_DOMAIN (или localhost)"
 fi
 
 echo "==> Готово. Дальше:"
