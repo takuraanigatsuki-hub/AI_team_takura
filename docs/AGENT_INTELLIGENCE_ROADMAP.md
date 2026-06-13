@@ -33,7 +33,7 @@
 
 ---
 
-## Фаза A — Фундамент (текущий спринт)
+## Фаза A — Фундамент ✅
 
 - [x] Дорожная карта (этот документ)
 - [x] SQLite FTS5 RAG + ingest скрипт
@@ -68,15 +68,15 @@ Router автоматически начнёт использовать LLM вм
 
 ---
 
-## Фаза B — Умная команда (2–4 недели)
+## Фаза B — Умная команда (в работе)
 
-- [ ] Agent tool registry (`integrations/agent_tools/`)
-- [ ] MCP gateway (`integrations/mcp_gateway.py`)
-- [ ] Embeddings + hybrid search (FTS + vectors)
+- [x] Agent tool registry (`integrations/agent_tools/`)
+- [x] MCP gateway (`integrations/mcp_gateway.py`)
+- [x] Embeddings + hybrid search (FTS + vectors)
 - [ ] Playwright MCP для QA
 - [ ] Расширение packs: скачивание docs (FastAPI, React, OWASP) через ingest URL
-- [ ] Project memory (Mem0 / общий контекст команды)
-- [ ] Evaluator gate — артеfact не уходит пользователю без оценки ≥ порога
+- [x] Project memory (`room/project_memory.py`)
+- [x] Evaluator gate — артеfact не уходит пользователю без оценки ≥ порога
 
 ### MCP по агентам
 

@@ -64,6 +64,19 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"⚠️ RAG init: {e}")
 
+    async def _embed_background():
+        try:
+            from integrations.rag.embed_index import ensure_embeddings
+            emb = await ensure_embeddings()
+            if emb.get("embedded"):
+                print(f"🧠 RAG embeddings: {emb.get('vectors', 0)} vectors")
+            elif emb.get("skipped"):
+                print(f"🧠 RAG embeddings: {emb.get('vectors', 0)} (cached)")
+        except Exception as e:
+            print(f"⚠️ RAG embeddings: {e}")
+
+    asyncio.create_task(_embed_background())
+
     room.task_history.cleanup_stale(max_minutes=30)
     cancelled = room.task_history.stats().get("cancelled", 0)
     if cancelled:
@@ -1622,6 +1635,50 @@ async def rag_reindex(replace: bool = False):
     from integrations.rag.ingest import ingest_all_packs, get_index_stats
     result = ingest_all_packs(replace=replace)
     return {"ok": True, "ingest": result, "index": get_index_stats()}
+
+
+@app.post("/api/rag/embed")
+async def rag_embed(force: bool = False):
+    from integrations.rag.embed_index import embed_all_chunks
+    result = await embed_all_chunks(force=force)
+    from integrations.rag.ingest import get_index_stats
+    return {"ok": True, "embed": result, "index": get_index_stats()}
+
+
+@app.get("/api/llm/status")
+async def llm_status():
+    from integrations.llm_client import is_configured, router_model, _settings
+    from integrations.rag.embeddings import is_configured as emb_ok
+    s = _settings()
+    return {
+        "ok": True,
+        "llm_configured": is_configured(),
+        "embeddings_configured": emb_ok(),
+        "model": s.get("model"),
+        "router_model": router_model(),
+    }
+
+
+class ToolInvokeRequest(BaseModel):
+    agent_id: str = "pm"
+    tool: str = "rag_search"
+    arguments: dict = {}
+
+
+@app.post("/api/tools/invoke")
+async def tools_invoke(body: ToolInvokeRequest):
+    from integrations.mcp_gateway import invoke_tool
+    from integrations.agent_tools import tools_for
+    if body.agent_id not in room.agents and body.agent_id not in tools_for(body.agent_id):
+        raise HTTPException(status_code=404, detail="Unknown agent")
+    result = await invoke_tool(body.agent_id, body.tool, body.arguments or {})
+    return result
+
+
+@app.get("/api/tools/{agent_id}")
+async def tools_list(agent_id: str):
+    from integrations.mcp_gateway import list_tools
+    return {"agent_id": agent_id, "tools": await list_tools(agent_id)}
 
 
 @app.get("/api/figma/auth")
