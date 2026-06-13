@@ -26,6 +26,7 @@ class PresenterAgent(BaseAgent):
 
     def get_fallback_responses(self) -> list:
         return [
-            "📽️ Готовлю презентацию: '{task}'.\n\nСтруктура:\n1. Hook\n2. Problem\n3. Solution\n4. Demo\n5. CTA",
-            "📽️ Слайды по '{task}' — делаю HTML deck с 5–8 слайдами.",
+            "📽️ Презентация по «{task}» готова.\n\nФайл **presentation.pptx** — скачайте по ссылке в чате или во вкладке **Проекты**.",
+            "📽️ Слайды для «{task}» собраны.\n\nPowerPoint (.pptx) приложен к результату — не React-сайт.",
+            "📽️ «{task}» — deck из 6–8 слайдов.\n\nСкачайте **presentation.pptx** и откройте в PowerPoint / Google Slides.",
         ]

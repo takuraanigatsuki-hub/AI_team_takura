@@ -54,6 +54,37 @@ addEventListener('resize',()=>{{camera.aspect=innerWidth/innerHeight;camera.upda
 </script></body></html>"""
 
 
+async def _presentation_response(task_text: str, hints: dict = None) -> str:
+    """Текст слайдов для .pptx — через LLM или структурированный fallback."""
+    hints = hints or {}
+    try:
+        from integrations.llm_client import is_configured, agent_reply
+        if is_configured():
+            prompt = (
+                f"Задача: {task_text}\n{hints.get('prompt_extra', '')}\n\n"
+                "Создай структуру презентации 6–8 слайдов для PowerPoint.\n"
+                "Формат — markdown: ## Заголовок слайда, затем буллеты - пункт.\n"
+                "Без кода, без HTML, без React. Только содержание слайдов на русском."
+            )
+            text = await agent_reply(
+                "Ника", "Presentation Designer",
+                "Эксперт по pitch decks и PowerPoint", prompt, [],
+            )
+            if text and len(text.strip()) > 80:
+                return text.strip()
+    except Exception:
+        pass
+    return (
+        f"## {task_text[:60]}\n"
+        f"- Контекст и цель\n- Аудитория\n- Ключевое сообщение\n\n"
+        "## Проблема\n- Боль клиента\n- Текущие ограничения\n- Почему сейчас\n\n"
+        "## Решение\n- Наш подход\n- Основные функции\n- Отличия от альтернатив\n\n"
+        "## Демо / продукт\n- Главный сценарий\n- UI/UX highlights\n- Метрики\n\n"
+        "## Бизнес\n- Модель монетизации\n- TAM/SAM\n- Тraction\n\n"
+        "## Следующие шаги\n- Roadmap\n- Call to action\n- Контакты"
+    )
+
+
 async def produce_artifact(agent, task_text: str, response: str, revision_of: str = None):
     if not task_text.strip():
         return None
@@ -73,6 +104,9 @@ async def produce_artifact(agent, task_text: str, response: str, revision_of: st
             task_text, art_type, agent.name, hints,
         )
 
+    if art_type == "presentation" and len(response or "") < 200:
+        response = await _presentation_response(task_text, hints)
+
     content = response
     preview_html = ""
     files = {}
@@ -87,8 +121,9 @@ async def produce_artifact(agent, task_text: str, response: str, revision_of: st
         try:
             from integrations.pptx_builder import build_pptx_bytes
             files["presentation.pptx"] = build_pptx_bytes(task_text, response, title=title)
-        except Exception:
-            pass
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning("pptx build failed: %s", e)
     elif art_type == "presentation":
         preview_html = _presentation_html(title, task_text, [
             {"title": "Введение", "bullets": [response[:200] if response else task_text[:80]]},
@@ -98,8 +133,9 @@ async def produce_artifact(agent, task_text: str, response: str, revision_of: st
         try:
             from integrations.pptx_builder import build_pptx_bytes
             files["presentation.pptx"] = build_pptx_bytes(task_text, response, title=title)
-        except Exception:
-            pass
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning("pptx build failed: %s", e)
 
     elif art_type == "model_3d":
         preview_html = _threejs_scene_html(title, task_text)

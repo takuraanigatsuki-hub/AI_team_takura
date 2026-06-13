@@ -7,7 +7,10 @@ def classify_task_kind(text: str) -> str:
     if not t:
         return "generic"
 
-    if any(w in t for w in ["презентац", "slides", "pitch", "слайд", "deck", "доклад", "keynote"]):
+    if any(w in t for w in [
+        "презентац", "slides", "pitch", "слайд", "deck", "доклад", "keynote",
+        "powerpoint", "power point", "pptx", " ppt ", "пауэрпоинт", "поверпоинт",
+    ]):
         return "presentation"
 
     if any(w in t for w in ["3d", "3д", "three.js", "threejs", "glb", "gltf", "blender", "webgl"]):
@@ -51,9 +54,24 @@ def classify_task_kind(text: str) -> str:
     return "generic"
 
 
-def should_emit_react_preview(task_text: str) -> bool:
+def resolve_task_intent(subtask: str, original_task: str = "") -> str:
+    """Классификация по исходной задаче пользователя, не по формулировке PM."""
+    original = (original_task or "").strip()
+    if original:
+        kind = classify_task_kind(original)
+        if kind != "generic":
+            return kind
+    return classify_task_kind(subtask)
+
+
+def should_emit_react_preview(task_text: str, original_task: str = "") -> bool:
     """Соня не должна открывать React Preview для презентаций и 3D."""
-    return classify_task_kind(task_text) in ("site", "ui", "table")
+    kind = resolve_task_intent(task_text, original_task)
+    return kind in ("site", "ui", "table")
+
+
+def wants_powerpoint_file(task_text: str, original_task: str = "") -> bool:
+    return resolve_task_intent(task_text, original_task) == "presentation"
 
 
 def should_export_site(task_text: str) -> bool:

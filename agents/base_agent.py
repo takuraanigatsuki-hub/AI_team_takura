@@ -1298,7 +1298,32 @@ class BaseAgent:
                     "message": msg,
                     "timestamp": datetime.now().isoformat(),
                 })
-                if should_use_m365(task_text):
+                pptx_url = None
+                for fname, finfo in (saved.get("files") or {}).items():
+                    if fname.endswith(".pptx") and isinstance(finfo, dict) and finfo.get("download"):
+                        pptx_url = finfo["download"]
+                        break
+                if saved.get("type") == "presentation" and pptx_url:
+                    await self.room_manager.broadcast_work({
+                        "type": "result_ready",
+                        "agent_id": self.agent_id,
+                        "agent_name": self.name,
+                        "agent_emoji": self.emoji,
+                        "title": saved["title"],
+                        "artifact_id": saved["id"],
+                        "preview_url": preview_url,
+                        "download_url": pptx_url,
+                        "open_preview": False,
+                        "is_presentation": True,
+                        "message": (
+                            f"📽️ **Презентация готова — PowerPoint файл**\n"
+                            f"• [**Скачать presentation.pptx**]({pptx_url})\n"
+                            + (f"• [Просмотр слайдов в браузере]({preview_url})\n" if preview_url else "")
+                            + "• Также во вкладке **Проекты**"
+                        ),
+                        "timestamp": datetime.now().isoformat(),
+                    })
+                elif should_use_m365(task_text):
                     from integrations.m365_deliver import try_deliver_m365
                     await try_deliver_m365(task_text, self, artifact=saved, room_manager=self.room_manager)
                 elif delivery_channel(task_text) == "preview" and saved.get("preview_html"):
@@ -1338,12 +1363,14 @@ class BaseAgent:
         ]
 
     async def assign_task(self, task_text: str, sender: str = "Пользователь",
-                          parent_id: str = None, task_id: str = None):
+                          parent_id: str = None, task_id: str = None,
+                          original_task: str = None):
         await self.task_queue.put({
             "text": task_text,
             "sender": sender,
             "parent_id": parent_id,
             "task_id": task_id,
+            "original_task": (original_task or "").strip() or None,
             "timestamp": datetime.now().isoformat()
         })
         if self.room_manager:

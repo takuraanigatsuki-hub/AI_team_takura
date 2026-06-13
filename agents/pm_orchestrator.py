@@ -110,7 +110,8 @@ class PMOrchestratorAgent(BaseAgent):
                     )
                 await agents[agent_id].assign_task(
                     subtask, sender="PM Виктор",
-                    parent_id=parent_id, task_id=child_id
+                    parent_id=parent_id, task_id=child_id,
+                    original_task=task_text,
                 )
                 await self._broadcast_work(
                     f"📌 {agents[agent_id].emoji} {agents[agent_id].name} — взял пункт плана:\n*{subtask}*",

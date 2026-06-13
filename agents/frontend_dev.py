@@ -121,8 +121,8 @@ class FrontendDevAgent(BaseAgent):
         self.last_preview = preview
         return preview
 
-    async def _emit_preview(self, task_text: str):
-        if not should_emit_react_preview(task_text):
+    async def _emit_preview(self, task_text: str, original_task: str = ""):
+        if not should_emit_react_preview(task_text, original_task):
             return
         preview = await self._build_preview(task_text)
         if preview.get("is_site") or should_export_site(task_text):
@@ -254,8 +254,23 @@ class FrontendDevAgent(BaseAgent):
         self.location = "studio"
         self.current_task = task
         task_text = task.get("text", "")
+        original_task = task.get("original_task") or ""
         sender = task.get("sender", "Пользователь")
         task_id = task.get("task_id")
+
+        from room.task_routing import resolve_task_intent, wants_powerpoint_file
+        intent_kind = resolve_task_intent(task_text, original_task)
+        if intent_kind == "presentation" or wants_powerpoint_file(task_text, original_task):
+            await self._broadcast_work(
+                "ℹ️ Презентации делает **Ника** (PowerPoint .pptx), не React-сайт. "
+                "Если видите сайт — проверьте формулировку задачи (нужно слово «презентация» или «PowerPoint»).",
+                "message",
+            )
+            if self.room_manager:
+                await self.room_manager._broadcast_task_history()
+            self.status = "idle"
+            self.current_task = None
+            return
 
         if self.room_manager and task_id:
             self.room_manager.record_task_started(task_id)
@@ -300,7 +315,7 @@ class FrontendDevAgent(BaseAgent):
                         "message",
                     )
 
-            await self._emit_preview(task_text)
+            await self._emit_preview(task_text, original_task)
 
             response = self.build_task_response(task_text, self._find_relevant_knowledge(task_text))
             if self.last_preview and (self.last_preview.get("is_site") or is_site_task(task_text)):

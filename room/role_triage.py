@@ -13,7 +13,7 @@ ROLE_FIT = {
     "doc_writer": ["документ", "readme", "описан", "инструкци", "текст", "презентац"],
     "devops": ["docker", "deploy", "kubernetes", "ci/cd", "devops", "инфраструктур"],
     "cursor": ["код", "code", "cursor", "github", "implement", "refactor", "sdk"],
-    "presenter": ["презентац", "slides", "pitch", "слайд", "deck", "доклад"],
+    "presenter": ["презентац", "slides", "pitch", "слайд", "deck", "доклад", "powerpoint", "pptx", "ppt"],
     "modeler": ["3d", "3д", "three", "glb", "gltf", "blender", "webgl", "модел", "сцен"],
     "security": ["безопас", "security", "owasp", "уязвим", "cve", "audit", "pen test"],
 }
