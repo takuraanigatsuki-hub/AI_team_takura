@@ -2030,7 +2030,6 @@ body.has-pipeline .status-footer { box-shadow: 0 -2px 12px rgba(0,0,0,0.12); }
 .dash-agent strong { display: block; font-size: 12px; }
 .dash-agent small { color: var(--text-muted); font-size: 10px; }
 .dash-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.dash-loading { text-align: center; color: var(--text-muted); padding: 40px; }
 
 /* ─── Status footer ─── */
 .status-footer {

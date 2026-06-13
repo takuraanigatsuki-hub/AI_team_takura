@@ -171,7 +171,7 @@
                 </div>
             </div>
             <div class="ss-project-list" id="ssProjectList">
-                <div class="panel-empty">Загрузка…</div>
+                <div class="ui-loading-inline ui-ph ui-ph-compact" aria-busy="true" role="status"><span class="ui-loading-ring sm" aria-hidden="true"></span><span class="muted">Загрузка…</span></div>
             </div>
         </aside>
         <main class="ss-main">
@@ -349,14 +349,14 @@
                     </div>
                 </div>
                 <div class="dl-discovery-status" id="dlDiscoveryStatus">
-                    <div class="panel-empty">Загрузка статуса…</div>
+                    <div class="ui-loading-inline ui-ph ui-ph-compact" aria-busy="true" role="status"><span class="ui-loading-ring sm" aria-hidden="true"></span><span class="muted">Загрузка статуса…</span></div>
                 </div>
                 <div class="dl-discovery-log" id="dlDiscoveryLog"></div>
             </section>
             <div id="dlStudyPreview" class="dl-preview-area">
-                <div class="panel-empty">
-                    <div class="preview-empty-icon">🖼️</div>
-                    <p>Вставьте ссылку на фрейм Figma — Соня сохранит цвета, фреймы и заметки</p>
+                <div class="ui-empty ui-empty-compact tasks-empty">
+                    <div class="ui-empty-icon">🖼️</div>
+                    <p class="muted">Вставьте ссылку на фрейм Figma — Соня сохранит цвета, фреймы и заметки</p>
                 </div>
             </div>
             <div class="dl-panels">
@@ -375,14 +375,14 @@
     <!-- DASHBOARD VIEW -->
     <div id="dashboardView" class="dashboard-layout hidden">
         <div class="dashboard-panel" id="dashboardGrid">
-            <div class="dash-loading">Загрузка…</div>
+            <div class="ui-loading-inline ui-ph" aria-busy="true" role="status"><span class="ui-loading-ring sm" aria-hidden="true"></span><span class="muted">Загрузка…</span></div>
         </div>
         <div class="llm-cost-bar" id="llmCostWidget">LLM: …</div>
     </div>
 
     <!-- INVESTOR PORTAL -->
     <div id="investorView" class="investor-layout hidden">
-        <div id="investorGrid"><div class="dash-loading">Загрузка…</div></div>
+        <div id="investorGrid"><div class="ui-loading-inline ui-ph" aria-busy="true" role="status"><span class="ui-loading-ring sm" aria-hidden="true"></span><span class="muted">Загрузка…</span></div></div>
     </div>
 
     <!-- ADMIN PANEL -->
@@ -396,7 +396,7 @@
         </aside>
         <main class="admin-main">
             <div id="adminPanelContent" class="admin-content">
-                <div class="panel-empty">Загрузка…</div>
+                <div class="ui-loading-inline ui-ph" aria-busy="true" role="status"><span class="ui-loading-ring sm" aria-hidden="true"></span><span class="muted">Загрузка…</span></div>
             </div>
         </main>
     </div>
@@ -412,7 +412,7 @@
         </aside>
         <main class="profile-main">
             <div id="profileTabContent" class="profile-tab-content">
-                <div class="panel-empty">Загрузка…</div>
+                <div class="ui-loading-inline ui-ph" aria-busy="true" role="status"><span class="ui-loading-ring sm" aria-hidden="true"></span><span class="muted">Загрузка…</span></div>
             </div>
         </main>
     </div>
@@ -448,7 +448,11 @@
                 <input type="search" id="tasksSearch" class="chat-search tasks-search" placeholder="Поиск…" oninput="filterTasksSearch(this.value)">
             </div>
             <div class="tasks-list tasks-list-modern" id="tasksList">
-                <div class="tasks-empty">Задач пока нет — отправьте первую в чате</div>
+                <div class="ui-empty tasks-empty">
+                    <div class="ui-empty-icon">📋</div>
+                    <h3>Задач пока нет</h3>
+                    <p class="muted">Отправьте первую в чате — она появится здесь</p>
+                </div>
             </div>
         </div>
     </div>
@@ -473,7 +477,7 @@
                 <button type="button" class="filter-btn proj-filter" data-agent="" data-type="code" onclick="ProjectsUI.setFilter('','code')">💻</button>
             </div>
             <div class="projects-grid" id="projectsGrid">
-                <div class="panel-empty">Загрузка…</div>
+                <div class="ui-loading-inline ui-ph" aria-busy="true" role="status"><span class="ui-loading-ring sm" aria-hidden="true"></span><span class="muted">Загрузка…</span></div>
             </div>
         </div>
     </div>
@@ -481,7 +485,7 @@
     <!-- SPRINT VIEW -->
     <div id="sprintView" class="sprint-layout hidden">
         <div class="sprint-panel" id="sprintPanel">
-            <div class="panel-empty">Загрузка…</div>
+            <div class="ui-loading-inline ui-ph" aria-busy="true" role="status"><span class="ui-loading-ring sm" aria-hidden="true"></span><span class="muted">Загрузка…</span></div>
         </div>
     </div>
 
@@ -492,7 +496,7 @@
             <button type="button" class="btn-secondary btn-sm" onclick="KanbanUI.refresh()">Обновить</button>
         </div>
         <div class="kanban-board" id="kanbanBoard">
-            <div class="panel-empty">Загрузка…</div>
+            <div class="ui-loading-inline ui-ph" aria-busy="true" role="status"><span class="ui-loading-ring sm" aria-hidden="true"></span><span class="muted">Загрузка…</span></div>
         </div>
     </div>
 
@@ -502,7 +506,7 @@
             <h2>⏱️ Timeline / Replay</h2>
         </div>
         <div class="timeline-panel" id="timelinePanel">
-            <div class="panel-empty">Загрузка…</div>
+            <div class="ui-loading-inline ui-ph" aria-busy="true" role="status"><span class="ui-loading-ring sm" aria-hidden="true"></span><span class="muted">Загрузка…</span></div>
         </div>
     </div>
 
@@ -790,7 +794,7 @@
         <button type="button" class="icon-btn" onclick="Integrations.toggleCursorPanel()">×</button>
     </div>
     <div id="cursorPanelBody" class="side-panel-body">
-        <div class="panel-empty">Загрузка…</div>
+        <div class="ui-loading-inline ui-ph ui-ph-compact" aria-busy="true" role="status"><span class="ui-loading-ring sm" aria-hidden="true"></span><span class="muted">Загрузка…</span></div>
     </div>
 </aside>
 

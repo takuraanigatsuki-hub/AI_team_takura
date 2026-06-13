@@ -97,6 +97,15 @@
         return `<p class="ui-inline-empty muted">${esc(text)}</p>`;
     }
 
+    /** Matches static placeholders in index.html */
+    function staticLoading(text = 'Загрузка…', compact = true) {
+        const ph = compact ? 'ui-ph ui-ph-compact' : 'ui-ph';
+        return `<div class="ui-loading-inline ${ph}" aria-busy="true" role="status">
+            <span class="ui-loading-ring sm" aria-hidden="true"></span>
+            <span class="muted">${esc(text)}</span>
+        </div>`;
+    }
+
     function formatTime(iso) {
         if (!iso || !global.formatTime) return '';
         return global.formatTime(iso);
@@ -403,6 +412,7 @@
         errorState,
         authRequiredState,
         inlineEmpty,
+        staticLoading,
         renderTaskCard,
         renderKanbanCard,
         getUiMode,
