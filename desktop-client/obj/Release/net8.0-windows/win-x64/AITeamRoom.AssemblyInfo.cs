@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("AI Team Room — рабочая область (подключение к серверу)")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.1.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.1.0+6d48884f7eed7a4aa6db4761a14eeac4f748cff8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.1.0+4b802b9eab315387be2b77cceaf22e815de243b0")]
 [assembly: System.Reflection.AssemblyProductAttribute("AI Team Room")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AI_Team_Room")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.1.0.0")]

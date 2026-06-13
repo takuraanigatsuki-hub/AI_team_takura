@@ -1,0 +1,2 @@
+C:\Users\USER\Desktop\AI_team_takura-main\dist\publish-setup\AI_Team_Room_Setup.pdb
+C:\Users\USER\Desktop\AI_team_takura-main\dist\publish-setup\AI_Team_Room_Setup.exe
