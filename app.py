@@ -286,7 +286,7 @@ async def landing():
     if os.path.exists(html_file):
         with open(html_file, "r", encoding="utf-8") as f:
             return HTMLResponse(f.read())
-    return RedirectResponse("/app")
+    return RedirectResponse("/workspace")
 
 
 @app.get("/startup", response_class=HTMLResponse)
