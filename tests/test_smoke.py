@@ -152,7 +152,7 @@ def test_power_pack_endpoints(client):
     r = client.get("/api/sprint")
     assert r.status_code == 200
     r = client.get("/api/llm/usage")
-    assert r.status_code == 200
+    assert r.status_code == 401
     r = client.get("/api/artifact-templates")
     assert r.status_code == 200
     assert len(r.json().get("templates", [])) >= 5
@@ -163,6 +163,4 @@ def test_power_pack_endpoints(client):
 
 def test_telegram_status(client):
     r = client.get("/api/telegram/status")
-    assert r.status_code == 200
-    data = r.json()
-    assert "configured" in data
+    assert r.status_code == 401

@@ -1402,10 +1402,10 @@ async def get_dashboard(request: Request):
         total_knowledge += len(agent.learned_topics)
 
     agents_data = filter_agents_for_viewer(agents_data, viewer)
-    git = git_status() if privileged else {}
+    git = git_status() if platform_admin else {}
     task_stats = (
         room.task_history.stats()
-        if privileged
+        if platform_admin
         else room.task_history.stats_for_user(viewer.get("user_id", ""))
     )
     return {
@@ -1413,10 +1413,10 @@ async def get_dashboard(request: Request):
         "agents": agents_data,
         "total_knowledge": total_knowledge,
         "task_stats": task_stats,
-        "figma_configured": _figma_is_configured() if privileged else False,
-        "git_auto_sync": cfg_module.config.get("git_auto_sync", True) if privileged else False,
-        "cursor_enabled": cfg_module.config.get("cursor_enabled", False) if privileged else False,
-        "cursor_repo_url": cfg_module.config.get("cursor_repo_url", "") if privileged else "",
+        "figma_configured": _figma_is_configured() if platform_admin else False,
+        "git_auto_sync": cfg_module.config.get("git_auto_sync", True) if platform_admin else False,
+        "cursor_enabled": cfg_module.config.get("cursor_enabled", False) if platform_admin else False,
+        "cursor_repo_url": cfg_module.config.get("cursor_repo_url", "") if platform_admin else "",
         "git": git,
     }
 
@@ -2547,7 +2547,8 @@ async def telegram_webhook(payload: dict):
 
 
 @app.get("/api/telegram/status")
-async def telegram_status():
+async def telegram_status(request: Request):
+    _require_platform_settings(request)
     from integrations.telegram_bot import bot_status
     return bot_status()
 
@@ -2665,7 +2666,8 @@ async def artifact_export(artifact_id: str, format: str = "html"):
 
 
 @app.get("/api/llm/usage")
-async def llm_usage_stats():
+async def llm_usage_stats(request: Request):
+    _require_platform_settings(request)
     from integrations.llm_usage import get_stats
     return get_stats()
 

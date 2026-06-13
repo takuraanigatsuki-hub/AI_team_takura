@@ -47,7 +47,8 @@
             connectBtn.disabled = false;
             disconnectBtn?.classList.add('hidden');
         } else {
-            label.textContent = 'Добавьте OAuth или PAT в .env';
+            const admin = global.UIAccess?.canAccessConsole?.(global.Auth?.getUser());
+            label.textContent = admin ? 'Добавьте OAuth или PAT в .env' : 'Figma не подключена — обратитесь к администратору';
             if (dot) dot.className = 'figma-account-dot error';
             connectBtn?.classList.add('hidden');
             disconnectBtn?.classList.add('hidden');
@@ -247,6 +248,7 @@
     }
 
     function toggleCursorPanel() {
+        if (!global.UIAccess?.canAccessConsole?.(global.Auth?.getUser())) return;
         document.getElementById('cursorPanel')?.classList.toggle('open');
         loadCursorStatus();
     }
