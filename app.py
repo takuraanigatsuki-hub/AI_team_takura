@@ -3914,6 +3914,7 @@ async def websocket_endpoint(websocket: WebSocket):
         query_params = websocket.query_params
 
     if not is_desktop_client(_WsReq):
+        await websocket.accept()
         await websocket.close(code=4403, reason="Desktop client required")
         return
 

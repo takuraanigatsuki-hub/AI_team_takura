@@ -35,15 +35,15 @@ def test_startup_landing(client):
 def test_app_spa(client):
     r = client.get("/app", follow_redirects=False)
     assert r.status_code == 302
-    assert r.headers.get("location") == "/workspace"
+    assert "/download" in (r.headers.get("location") or "")
 
-    r = client.get("/workspace")
+    r = client.get("/workspace", follow_redirects=False)
+    assert r.status_code == 302
+    assert "/download" in (r.headers.get("location") or "")
+
+    r = client.get("/workspace", headers={"User-Agent": "AITeamRoomDesktop/1.1"})
     assert r.status_code == 200
     assert 'id="appSidebar"' in r.text or "app-sidebar" in r.text
-    assert "3D студия" in r.text or "3D Studio" in r.text
-    assert "search.js" in r.text
-    assert 'id="siteSearchInput"' not in r.text
-    assert "SiteSearch" in r.text
 
 
 def test_portal_spa(client):

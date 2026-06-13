@@ -1,60 +1,46 @@
-# AI Team Room — сборка десктоп-приложения для Windows
-# Требуется: Python 3.10+, pip install pywebview pyinstaller
-# Опционально: Inno Setup 6 для установщика
+# AI Team Room — нативный desktop-клиент (WebView2 / .NET), без Python
+# Требуется: .NET 8 SDK — winget install Microsoft.DotNet.SDK.8
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
-if (Test-Path "$Root\..\desktop.py") { $Root = Resolve-Path "$Root\.." }
+if (Test-Path "$Root\..\desktop-client\AITeamRoom.csproj") { $Root = Resolve-Path "$Root\.." }
 
 Set-Location $Root
-Write-Host "==> AI Team Room Desktop build" -ForegroundColor Cyan
+Write-Host "==> AI Team Room Native Desktop Build" -ForegroundColor Cyan
 
-if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
-    Write-Host "Python not found in PATH" -ForegroundColor Red
-    exit 1
+$dotnet = Get-Command dotnet -ErrorAction SilentlyContinue
+if (-not $dotnet) {
+    Write-Host "Installing .NET 8 SDK..." -ForegroundColor Yellow
+    winget install Microsoft.DotNet.SDK.8 --accept-package-agreements --accept-source-agreements
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
 }
-
-python -m pip install -q pywebview pyinstaller 2>$null
 
 New-Item -ItemType Directory -Force -Path "$Root\dist" | Out-Null
 
-Write-Host "==> PyInstaller (portable exe)..." -ForegroundColor Yellow
-python -m PyInstaller build-client.spec --noconfirm
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+Write-Host "==> dotnet publish (native exe)..." -ForegroundColor Yellow
+dotnet publish "$Root\desktop-client\AITeamRoom.csproj" -c Release -r win-x64 --self-contained true `
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o "$Root\dist\publish"
 
-$Portable = Join-Path $Root "dist\AI_Team_Room.exe"
+$Portable = Join-Path $Root "dist\publish\AI_Team_Room.exe"
 if (-not (Test-Path $Portable)) {
-    Write-Host "Build failed: AI_Team_Room.exe not found" -ForegroundColor Red
+    Write-Host "Build failed" -ForegroundColor Red
     exit 1
 }
-Write-Host "OK Portable: $Portable" -ForegroundColor Green
+Copy-Item $Portable "$Root\dist\AI_Team_Room.exe" -Force
+Write-Host "OK Portable: $Root\dist\AI_Team_Room.exe" -ForegroundColor Green
 
-Write-Host "==> PyInstaller (installer exe)..." -ForegroundColor Yellow
-python -m PyInstaller build-installer.spec --noconfirm
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-$Installer = Join-Path $Root "dist\AI_Team_Room_Setup.exe"
-if (Test-Path $Installer) {
-    Write-Host "OK Installer: $Installer" -ForegroundColor Green
-} else {
-    Write-Host "Installer build failed" -ForegroundColor Red
-    exit 1
-}
-
-$Iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-if (-not (Test-Path $Iscc)) {
-    $Iscc = "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
-}
-
-if (Test-Path $Iscc) {
-    Write-Host "==> Inno Setup installer..." -ForegroundColor Yellow
-    & $Iscc "$Root\installer\AI_Team_Room.iss"
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "OK Installer: $Root\dist\AI_Team_Room_Setup.exe" -ForegroundColor Green
+Write-Host "==> Installer wrapper..." -ForegroundColor Yellow
+$py = "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe"
+if (Test-Path $py) {
+    & $py -m pip install -q pyinstaller 2>$null
+    & $py -m PyInstaller build-installer.spec --noconfirm
+    if (Test-Path "$Root\dist\AI_Team_Room_Setup.exe") {
+        Write-Host "OK Setup: $Root\dist\AI_Team_Room_Setup.exe" -ForegroundColor Green
     }
 } else {
-    Write-Host "Inno Setup not found — skip installer (portable exe ready)" -ForegroundColor DarkYellow
+    Copy-Item "$Root\dist\AI_Team_Room.exe" "$Root\dist\AI_Team_Room_Setup.exe" -Force
+    Write-Host "OK Setup (copy): dist\AI_Team_Room_Setup.exe" -ForegroundColor Yellow
 }
 
 Write-Host ""
-Write-Host "Upload dist\AI_Team_Room_Setup.exe to server for /download page" -ForegroundColor Cyan
+Write-Host "Upload dist\ to VPS for /api/downloads/desktop/*" -ForegroundColor Cyan

@@ -41,7 +41,7 @@
         try {
             const r = await fetch('/api/auth/me', { credentials: 'same-origin' });
             if (r.ok) {
-                location.href = '/workspace?desktop=1';
+                location.href = '/workspace?client=desktop';
                 return;
             }
         } catch (_) { /* show auth */ }
@@ -86,7 +86,7 @@
             });
             const d = await r.json();
             if (!r.ok) throw new Error(d.detail || 'Ошибка входа');
-            location.href = mode === 'register' ? '/workspace?setup=1&desktop=1' : '/workspace?desktop=1';
+            location.href = mode === 'register' ? '/workspace?setup=1&client=desktop' : '/workspace?client=desktop';
         } catch (err) {
             errorEl.textContent = err.message || String(err);
             errorEl.classList.remove('hidden');

@@ -5,9 +5,11 @@ import os
 
 ROOT = os.path.abspath(os.path.dirname(SPEC))  # noqa: F821
 PORTABLE = os.path.join(ROOT, "dist", "AI_Team_Room.exe")
+if not os.path.isfile(PORTABLE):
+    PORTABLE = os.path.join(ROOT, "dist", "publish", "AI_Team_Room.exe")
 
 if not os.path.isfile(PORTABLE):
-    raise SystemExit("Сначала соберите dist/AI_Team_Room.exe (build-client.spec)")
+    raise SystemExit("Сначала соберите dist/AI_Team_Room.exe (scripts/build-desktop.ps1)")
 
 a = Analysis(  # noqa: F821
     [os.path.join(ROOT, "installer.py")],

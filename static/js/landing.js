@@ -147,7 +147,7 @@
                 location.href = next;
                 return;
             }
-            location.href = mode === 'register' ? '/workspace?setup=1' : '/workspace?view=dashboard';
+            location.href = mode === 'register' ? '/portal?setup=1' : '/portal?view=profile';
         } catch (err) {
             errorEl.textContent = err.message;
             errorEl.classList.remove('hidden');
