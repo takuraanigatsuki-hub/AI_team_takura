@@ -1,5 +1,7 @@
 """Sonya Design Studio API tests."""
 
+import uuid
+
 import pytest
 
 
@@ -11,10 +13,22 @@ def client():
         yield c
 
 
-def test_sonya_project_lifecycle(client):
+@pytest.fixture
+def authed_client(client):
+    email = f"studio-{uuid.uuid4().hex[:8]}@example.com"
+    r = client.post("/api/auth/register", json={
+        "email": email,
+        "password": "secret12",
+        "name": "Studio Tester",
+    })
+    assert r.status_code == 200
+    return client
+
+
+def test_sonya_project_lifecycle(authed_client):
     from integrations.sonya_studio import get_project, list_projects
 
-    r = client.post("/api/sonya/projects", json={
+    r = authed_client.post("/api/sonya/projects", json={
         "title": "Test Landing",
         "task": "Landing page для SaaS с hero блоком",
     })
@@ -51,9 +65,9 @@ def test_sonya_project_lifecycle(client):
     assert any(p["id"] == pid for p in list_projects())
 
 
-def test_sonya_create_by_agent(client):
+def test_sonya_create_by_agent(authed_client):
     for path in ("/api/sonya/studio/create", "/api/sonya/projects/create-new"):
-        r = client.post(path)
+        r = authed_client.post(path)
         assert r.status_code == 200, path
         data = r.json()
         assert data["ok"] is True

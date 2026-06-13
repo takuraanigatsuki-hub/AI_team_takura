@@ -27,7 +27,7 @@ class _FakeAgent:
 
 
 def _run(coro):
-    return asyncio.get_event_loop().run_until_complete(coro)
+    return asyncio.run(coro)
 
 
 @pytest.mark.parametrize("task,expected", [
@@ -178,8 +178,7 @@ def test_produce_ui_site_artifact():
     assert "component.jsx" in art["files"]
 
 
-@pytest.mark.asyncio
-async def test_role_triage_filters_wrong_agents():
+def test_role_triage_filters_wrong_agents():
     pm = PMOrchestratorAgent()
     assignments = pm._analyze_and_assign("Сделай презентацию", {})
     assignments["frontend"] = "Сверстать сайт на React (ошибка)"
@@ -188,9 +187,13 @@ async def test_role_triage_filters_wrong_agents():
         "evaluator": SimpleNamespace(name="Ева", emoji="🎓"),
         "frontend": SimpleNamespace(name="Соня", emoji="🎨"),
     }
-    rm = SimpleNamespace(broadcast_work=lambda *a, **k: asyncio.sleep(0))
-    accepted = await run_role_triage(
+
+    async def _noop(*args, **kwargs):
+        return None
+
+    rm = SimpleNamespace(broadcast_work=_noop)
+    accepted = _run(run_role_triage(
         "Сделай презентацию", assignments, agents, rm, silent=True,
-    )
+    ))
     assert "presenter" in accepted
     assert "frontend" not in accepted

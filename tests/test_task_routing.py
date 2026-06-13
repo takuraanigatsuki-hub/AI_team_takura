@@ -107,3 +107,15 @@ def test_router_enforces_presenter_only():
     )
     assert set(routed.keys()) == {"presenter", "evaluator"}
     assert "frontend" not in routed
+
+
+def test_router_enforces_modeler_only():
+    from room.llm_router import _enforce_kind_agents
+    routed = _enforce_kind_agents(
+        "model_3d",
+        {"frontend": "site", "modeler": "scene", "presenter": "deck"},
+        "Создай 3D модель",
+    )
+    assert set(routed.keys()) >= {"modeler", "evaluator"}
+    assert "frontend" not in routed
+    assert "presenter" not in routed
