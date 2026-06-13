@@ -7,7 +7,7 @@ import math
 import os
 from typing import Optional
 
-import httpx
+from integrations.http_client import async_client
 
 
 def is_configured() -> bool:
@@ -32,7 +32,7 @@ async def embed_texts(texts: list[str]) -> list[list[float]]:
     cfg = _settings()
     # OpenAI accepts batch input
     clean = [(t or "")[:8000] for t in texts]
-    async with httpx.AsyncClient(timeout=120.0, trust_env=False) as client:
+    async with async_client(timeout=120.0) as client:
         resp = await client.post(
             f"{cfg['base_url']}/embeddings",
             headers={"Authorization": f"Bearer {cfg['api_key']}", "Content-Type": "application/json"},

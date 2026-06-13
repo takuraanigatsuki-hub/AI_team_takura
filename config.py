@@ -50,6 +50,8 @@ _defaults = {
     "react_max_steps": 5,
     "sandbox_enabled": True,
     "sandbox_docker_image": "python:3.12-slim",
+    "outbound_proxy_mode": "auto",
+    "outbound_proxy": "",
     "room_api_key": "",
     "auto_theme": False,
     "telegram_notify_tasks": False,
@@ -142,6 +144,14 @@ def _load_config() -> dict:
     elif sandbox:
         cfg["sandbox_enabled"] = True
     cfg["sandbox_docker_image"] = os.environ.get("SANDBOX_DOCKER_IMAGE") or cfg.get("sandbox_docker_image") or "python:3.12-slim"
+    cfg["outbound_proxy_mode"] = os.environ.get("OUTBOUND_PROXY_MODE") or cfg.get("outbound_proxy_mode") or "auto"
+    cfg["outbound_proxy"] = (
+        os.environ.get("OUTBOUND_PROXY")
+        or os.environ.get("HTTPS_PROXY")
+        or os.environ.get("HTTP_PROXY")
+        or cfg.get("outbound_proxy")
+        or ""
+    )
     cfg["room_api_key"] = os.environ.get("ROOM_API_KEY") or cfg.get("room_api_key") or ""
     for key, env in (
         ("telegram_bot_token", "TELEGRAM_BOT_TOKEN"),
