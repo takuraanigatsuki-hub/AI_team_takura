@@ -523,22 +523,32 @@ a { color: inherit; text-decoration: none; }
     }
     .lp-nav { display: none; }
     .lp-header-right { grid-column: 2; }
-    .lp-hero { grid-template-columns: 1fr; }
+    .lp-hero { grid-template-columns: 1fr; padding-top: 32px; }
     .lp-hero-visual { order: -1; }
     .lp-nav-toggle { display: block; }
     .lp-nav {
         display: none;
         width: 100%;
         flex-direction: column;
-        gap: 12px;
+        gap: 6px;
         padding-top: 8px;
+        grid-column: 1 / -1;
     }
     .lp-nav.open { display: flex; }
+    .lp-nav-tab {
+        width: 100%;
+        text-align: left;
+        padding: 10px 14px;
+        border-radius: 10px;
+    }
+    .lp-home-menu { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 520px) {
     .lp-logo-text { display: none; }
     .lp-header-actions .lp-btn-primary { display: none; }
+    .lp-home-menu { grid-template-columns: 1fr 1fr; }
+    .lp-menu-key { min-height: 70px; padding: 12px; }
 }
 
 /* ─── 3D Hero ─── */
