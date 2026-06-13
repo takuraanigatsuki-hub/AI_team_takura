@@ -230,11 +230,25 @@
     form?.addEventListener('submit', async (e) => {
         e.preventDefault();
         errorEl.classList.add('hidden');
-        const email = document.getElementById('authEmail').value.trim();
         const password = document.getElementById('authPassword').value;
-        const name = document.getElementById('authName').value.trim();
         const url = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
-        const body = mode === 'register' ? { email, password, name } : { email, password };
+        let body;
+        if (mode === 'register') {
+            const email = document.getElementById('authEmail').value.trim();
+            const username = document.getElementById('authUsername').value.trim();
+            const name = document.getElementById('authName').value.trim();
+            if (!window.AuthFields?.fieldsAvailable(
+                document.getElementById('authUsername'),
+                document.getElementById('authName')
+            )) {
+                errorEl.textContent = 'Исправьте логин или имя — они уже заняты';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            body = { email, password, name, username };
+        } else {
+            body = { login: document.getElementById('authLogin').value.trim(), password };
+        }
 
         try {
             const r = await fetch(url, {
@@ -279,4 +293,9 @@
     });
 
     window.LandingTabs = { switchTab, active: () => activeTab };
+
+    if (window.AuthFields) {
+        AuthFields.bindUsernameCheck(document.getElementById('authUsername'), document.getElementById('authUsernameHint'));
+        AuthFields.bindNameCheck(document.getElementById('authName'), document.getElementById('authNameHint'));
+    }
 })();

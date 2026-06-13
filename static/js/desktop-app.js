@@ -9,8 +9,16 @@
     const submitBtn = document.getElementById('dsSubmit');
     const browserBtn = document.getElementById('dsBrowserLogin');
     const browserHint = document.getElementById('dsBrowserHint');
+    const loginLabel = document.getElementById('dsLoginLabel');
+    const loginInput = document.getElementById('dsLogin');
+    const emailLabel = document.getElementById('dsEmailLabel');
+    const emailInput = document.getElementById('dsEmail');
+    const usernameLabel = document.getElementById('dsUsernameLabel');
+    const usernameInput = document.getElementById('dsUsername');
+    const usernameHint = document.getElementById('dsUsernameHint');
     const nameLabel = document.getElementById('dsNameLabel');
     const nameInput = document.getElementById('dsName');
+    const nameHint = document.getElementById('dsNameHint');
     const tabs = document.querySelectorAll('.ds-tab');
 
     let mode = 'login';
@@ -68,9 +76,20 @@
             t.setAttribute('aria-selected', on ? 'true' : 'false');
         });
         const isReg = m === 'register';
+        loginLabel.classList.toggle('hidden', isReg);
+        loginInput.classList.toggle('hidden', isReg);
+        loginInput.required = !isReg;
+        emailLabel.classList.toggle('hidden', !isReg);
+        emailInput.classList.toggle('hidden', !isReg);
+        emailInput.required = isReg;
+        usernameLabel.classList.toggle('hidden', !isReg);
+        usernameInput.classList.toggle('hidden', !isReg);
+        usernameInput.required = isReg;
+        usernameHint.classList.toggle('hidden', !isReg);
         nameLabel.classList.toggle('hidden', !isReg);
         nameInput.classList.toggle('hidden', !isReg);
         nameInput.required = isReg;
+        nameHint.classList.toggle('hidden', !isReg);
         submitBtn.textContent = isReg ? 'Создать аккаунт' : 'Войти';
     }
 
@@ -79,11 +98,22 @@
     form?.addEventListener('submit', async (e) => {
         e.preventDefault();
         errorEl.classList.add('hidden');
-        const email = document.getElementById('dsEmail').value.trim();
         const password = document.getElementById('dsPassword').value;
-        const name = nameInput.value.trim();
         const url = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
-        const body = mode === 'register' ? { email, password, name } : { email, password };
+        let body;
+        if (mode === 'register') {
+            const email = emailInput.value.trim();
+            const username = usernameInput.value.trim();
+            const name = nameInput.value.trim();
+            if (!window.AuthFields?.fieldsAvailable(usernameInput, nameInput)) {
+                errorEl.textContent = 'Исправьте логин или имя — они уже заняты';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            body = { email, password, name, username };
+        } else {
+            body = { login: loginInput.value.trim(), password };
+        }
         submitBtn.disabled = true;
         try {
             const r = await fetch(url, {
@@ -165,5 +195,10 @@
         errorEl.classList.remove('hidden');
     } else {
         runSplash();
+    }
+
+    if (window.AuthFields) {
+        AuthFields.bindUsernameCheck(usernameInput, usernameHint);
+        AuthFields.bindNameCheck(nameInput, nameHint);
     }
 })();

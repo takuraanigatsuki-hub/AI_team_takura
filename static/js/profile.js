@@ -131,7 +131,7 @@
                     <div>
                         <p class="pf-hero-greet">Добро пожаловать,</p>
                         <h2 class="pf-hero-name">${esc(user.name || 'Пользователь')}</h2>
-                        <p class="muted pf-hero-email">${esc(user.email)}</p>
+                        <p class="muted pf-hero-email">@${esc(user.username || '—')} · ${esc(user.email)}</p>
                         <div class="pf-hero-badges">${roleBadge}
                             <span class="ss-badge">${esc(tier)}</span>
                             <span class="ss-badge">ур. ${user.access_level || sub.level || 1}</span>
