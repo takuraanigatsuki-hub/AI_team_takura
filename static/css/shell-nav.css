@@ -1,0 +1,252 @@
+/**
+ * Portal — горизонтальная навигация (без workspace-sidebar)
+ * Workspace sidebar — только в desktop-клиенте (/workspace)
+ */
+
+body.portal-shell {
+    min-height: 100vh;
+    display: block;
+}
+
+body.portal-shell .app-sidebar,
+body.portal-shell .sb-overlay,
+body.portal-shell #sidebarToggle {
+    display: none !important;
+}
+
+body.portal-shell .app-content-wrap {
+    margin-left: 0 !important;
+    min-height: 100vh;
+}
+
+body.portal-shell .status-footer {
+    margin-left: 0 !important;
+}
+
+body.portal-shell .sb-mobile-toggle {
+    display: none !important;
+}
+
+.portal-topnav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+    padding: 0 12px;
+}
+
+.portal-topnav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--premium-muted, #9496a8);
+    font-family: Inter, system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.2s, background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.portal-topnav-btn:hover {
+    color: var(--premium-text, #f2f3f7);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.portal-topnav-btn.active {
+    color: var(--premium-text, #f2f3f7);
+    background: rgba(139, 92, 246, 0.16);
+    border-color: rgba(139, 92, 246, 0.35);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.12);
+}
+
+.portal-topnav-dl {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #8b5cf6 0%, #7aa2ff 52%, #c4a574 100%);
+    color: #fff !important;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    box-shadow: 0 0 18px rgba(139, 92, 246, 0.25);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.portal-topnav-dl:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(139, 92, 246, 0.35);
+}
+
+.portal-shell .header-view-title {
+    display: none;
+}
+
+.portal-shell .header-row-main {
+    gap: 12px;
+}
+
+.portal-shell .logo-tag {
+    font-size: 10px;
+    color: var(--premium-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0;
+}
+
+.portal-shell .profile-topbar h2 {
+    background: linear-gradient(135deg, #8b5cf6, #7aa2ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.portal-mobile-drawer.hidden {
+    display: none !important;
+}
+
+.portal-mobile-drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+}
+
+.portal-drawer-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.portal-drawer-panel {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: min(280px, 88vw);
+    background: var(--premium-surface, #12141c);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 8px 0 40px rgba(0, 0, 0, 0.4);
+}
+
+.portal-drawer-panel .portal-topnav-btn {
+    width: 100%;
+    justify-content: flex-start;
+}
+
+@media (max-width: 900px) {
+    .portal-topnav {
+        display: none;
+    }
+    body.portal-shell .sb-mobile-toggle {
+        display: inline-flex !important;
+    }
+}
+
+@media (max-width: 520px) {
+    .portal-topnav-dl .ptn-dl-text {
+        display: none;
+    }
+}
+
+body.workspace-shell .app-sidebar {
+    background: linear-gradient(180deg, #12141c 0%, #0c0d14 100%);
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 4px 0 32px rgba(0, 0, 0, 0.25);
+}
+
+body.workspace-shell .sb-brand {
+    padding: 16px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: radial-gradient(ellipse at 0% 0%, rgba(139, 92, 246, 0.12), transparent 70%);
+}
+
+body.workspace-shell .sb-brand-mark {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    font-size: 18px;
+    background: linear-gradient(135deg, #8b5cf6, #7aa2ff);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.35);
+}
+
+body.workspace-shell .sb-sublabel {
+    color: rgba(122, 162, 255, 0.85);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+body.workspace-shell .sb-group-label {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: rgba(148, 150, 168, 0.9);
+    padding: 8px 12px 4px;
+}
+
+body.workspace-shell .sb-item {
+    margin: 2px 8px;
+    width: calc(100% - 16px);
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+body.workspace-shell .sb-item:hover {
+    background: rgba(139, 92, 246, 0.1);
+    border-color: rgba(139, 92, 246, 0.15);
+}
+
+body.workspace-shell .sb-item.active {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(122, 162, 255, 0.08));
+    border-color: rgba(139, 92, 246, 0.35);
+    box-shadow: inset 3px 0 0 #8b5cf6, 0 0 24px rgba(139, 92, 246, 0.1);
+    color: #f2f3f7;
+    font-weight: 600;
+}
+
+body.workspace-shell .sb-item.active .sb-icon {
+    filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.5));
+}
+
+body.workspace-shell .sb-quick-unified {
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    background: rgba(139, 92, 246, 0.08);
+    border-radius: 12px;
+}
+
+body.workspace-shell .sb-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.15);
+}
+
+body.workspace-shell .sb-footer-link {
+    border-radius: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+body.workspace-shell .sb-footer-link:hover {
+    border-color: rgba(122, 162, 255, 0.3);
+    background: rgba(122, 162, 255, 0.08);
+}
+
+body.workspace-shell .header {
+    background: rgba(18, 20, 28, 0.88);
+    backdrop-filter: blur(20px) saturate(1.3);
+}

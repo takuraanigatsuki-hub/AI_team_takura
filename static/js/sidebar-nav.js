@@ -141,12 +141,22 @@
     }
 
     function openMobileSidebar() {
+        if (isPortalShell()) {
+            document.getElementById('portalMobileDrawer')?.classList.remove('hidden');
+            document.getElementById('mobileNavToggle')?.setAttribute('aria-expanded', 'true');
+            return;
+        }
         document.body.classList.add('sidebar-open');
         document.getElementById('sidebarOverlay')?.classList.remove('hidden');
         document.getElementById('mobileNavToggle')?.setAttribute('aria-expanded', 'true');
     }
 
     function closeMobileSidebar() {
+        if (isPortalShell()) {
+            document.getElementById('portalMobileDrawer')?.classList.add('hidden');
+            document.getElementById('mobileNavToggle')?.setAttribute('aria-expanded', 'false');
+            return;
+        }
         document.body.classList.remove('sidebar-open');
         document.getElementById('sidebarOverlay')?.classList.add('hidden');
         document.getElementById('mobileNavToggle')?.setAttribute('aria-expanded', 'false');
@@ -184,10 +194,33 @@
         </button>`;
     }
 
+    function renderPortalTopNav(user) {
+        const top = document.getElementById('portalTopNav');
+        if (!top) return;
+        const NAV = getNav(user);
+        const buttons = NAV.flatMap((g) => g.items.filter((i) => canShow(i, user))).map((i) =>
+            `<button type="button" class="portal-topnav-btn" data-view="${i.view}" onclick="SidebarNav.onNavClick('${i.view}')">${i.icon} ${i.label}</button>`
+        ).join('');
+        top.innerHTML = buttons + `<a href="/download?reason=desktop-only" class="portal-topnav-dl"><span>⬇</span><span class="ptn-dl-text">Приложение</span></a>`;
+
+        const drawer = document.getElementById('portalDrawerPanel');
+        if (drawer) {
+            drawer.innerHTML = buttons + `<a href="/download?reason=desktop-only" class="portal-topnav-dl" style="margin-top:12px"><span>⬇</span> Скачать приложение</a>`;
+        }
+    }
+
     function render() {
+        const user = global.Auth?.getUser?.();
+        if (isPortalShell()) {
+            renderPortalTopNav(user);
+            const showAdmin = global.Auth?.canAccessAdmin?.(user);
+            const showSupport = global.Auth?.canManageTickets?.(user) || user?.is_support;
+            document.getElementById('portalMobileAdmin')?.classList.toggle('hidden', !showAdmin);
+            document.getElementById('portalMobileSupport')?.classList.toggle('hidden', !showSupport);
+            return;
+        }
         const el = document.getElementById('appSidebarNav');
         if (!el) return;
-        const user = global.Auth?.getUser?.();
         const NAV = getNav(user);
         const quickBar = isPortalShell() ? '' : `<div class="sb-quick">
             <button type="button" class="sb-quick-btn sb-quick-unified" onclick="FeaturePack?.openCommandPalette?.()" title="Разделы, команды и поиск — Ctrl+K">
@@ -203,12 +236,7 @@
             return `<div class="sb-group${adv}"><div class="sb-group-label">${g.group}</div>${items.map(renderItem).join('')}</div>`;
         }).join('');
 
-        if (isPortalShell()) {
-            const showAdmin = global.Auth?.canAccessAdmin?.(user);
-            const showSupport = global.Auth?.canManageTickets?.(user) || user?.is_support;
-            document.getElementById('portalMobileAdmin')?.classList.toggle('hidden', !showAdmin);
-            document.getElementById('portalMobileSupport')?.classList.toggle('hidden', !showSupport);
-        }
+        if (isPortalShell()) return;
     }
 
     function onNavClick(view) {
@@ -219,6 +247,9 @@
     function setActive(view) {
         document.querySelectorAll('.sb-item[data-view]').forEach((b) => {
             b.classList.toggle('active', b.dataset.view === view || (view === 'agent-learning' && b.dataset.view === 'agent-learning') || (view === 'agent-learning' && b.dataset.view === 'design'));
+        });
+        document.querySelectorAll('.portal-topnav-btn[data-view]').forEach((b) => {
+            b.classList.toggle('active', b.dataset.view === view);
         });
         if (global.UICore) UICore.setMobileTabActive(view);
     }
@@ -270,15 +301,19 @@
     }
 
     function init() {
-        if (localStorage.getItem('ai-team-sidebar-collapsed') === '1') {
-            document.body.classList.add('sidebar-collapsed');
+        if (!isPortalShell()) {
+            if (localStorage.getItem('ai-team-sidebar-collapsed') === '1') {
+                document.body.classList.add('sidebar-collapsed');
+            }
+            updateCollapseBtn();
+            document.getElementById('sidebarToggle')?.addEventListener('click', toggleSidebar);
+            document.getElementById('sidebarOverlay')?.addEventListener('click', closeMobileSidebar);
+        } else {
+            document.getElementById('portalDrawerBackdrop')?.addEventListener('click', closeMobileSidebar);
         }
         initDensity();
-        updateCollapseBtn();
         render();
-        document.getElementById('sidebarToggle')?.addEventListener('click', toggleSidebar);
         document.getElementById('mobileNavToggle')?.addEventListener('click', toggleSidebar);
-        document.getElementById('sidebarOverlay')?.addEventListener('click', closeMobileSidebar);
         window.addEventListener('resize', () => {
             if (!isMobileNav()) closeMobileSidebar();
         });
