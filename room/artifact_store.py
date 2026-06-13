@@ -2,6 +2,7 @@
 
 import json
 import os
+import shutil
 import uuid
 from datetime import datetime
 from typing import Optional
@@ -225,7 +226,6 @@ def _delete_artifact_files(artifact_id: str) -> None:
         os.remove(fp)
     bin_dir = os.path.join(ARTIFACTS_DIR, artifact_id)
     if os.path.isdir(bin_dir):
-        import shutil
         shutil.rmtree(bin_dir, ignore_errors=True)
 
 
