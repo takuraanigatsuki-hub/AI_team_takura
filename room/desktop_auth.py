@@ -44,11 +44,13 @@ def start_device_flow(base_url: str) -> dict:
     store = _cleanup(_load(DEVICES_FILE), DEVICE_TTL_SEC)
     device_id = secrets.token_urlsafe(24)
     user_code = "".join(secrets.choice("0123456789") for _ in range(6))
+    poll_secret = secrets.token_urlsafe(32)
     now = time.time()
     store[device_id] = {
         "created": now,
         "expires": now + DEVICE_TTL_SEC,
         "user_code": user_code,
+        "poll_secret": poll_secret,
         "status": "pending",
     }
     _save(DEVICES_FILE, store)
@@ -56,13 +58,14 @@ def start_device_flow(base_url: str) -> dict:
     return {
         "device_id": device_id,
         "user_code": user_code,
+        "poll_secret": poll_secret,
         "verify_url": verify_url,
         "expires_in": DEVICE_TTL_SEC,
         "poll_interval": POLL_INTERVAL_HINT,
     }
 
 
-def approve_device(device_id: str, session_token: str, user_id: str) -> bool:
+def approve_device(device_id: str, session_token: str, user_id: str, user_code: str = "") -> bool:
     store = _cleanup(_load(DEVICES_FILE), DEVICE_TTL_SEC)
     entry = store.get(device_id)
     if not entry or entry.get("status") != "pending":
@@ -70,6 +73,8 @@ def approve_device(device_id: str, session_token: str, user_id: str) -> bool:
     if time.time() > float(entry.get("expires", 0)):
         entry["status"] = "expired"
         _save(DEVICES_FILE, store)
+        return False
+    if user_code and entry.get("user_code") != user_code:
         return False
     entry["status"] = "approved"
     entry["session_token"] = session_token
@@ -79,10 +84,13 @@ def approve_device(device_id: str, session_token: str, user_id: str) -> bool:
     return True
 
 
-def poll_device(device_id: str) -> dict:
+def poll_device(device_id: str, poll_secret: str) -> dict:
     store = _cleanup(_load(DEVICES_FILE), DEVICE_TTL_SEC)
     entry = store.get(device_id)
     if not entry:
+        return {"status": "expired"}
+    stored_secret = entry.get("poll_secret") or ""
+    if not poll_secret or not secrets.compare_digest(stored_secret, poll_secret):
         return {"status": "expired"}
     if time.time() > float(entry.get("expires", 0)):
         return {"status": "expired"}

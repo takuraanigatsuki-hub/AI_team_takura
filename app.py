@@ -608,12 +608,14 @@ def _charge_or_forbid(user: dict, action: str):
 
 def _set_session_cookie(response, token: str):
     from room.user_auth import SESSION_COOKIE, SESSION_DAYS
+    secure = os.environ.get("APP_PUBLIC_URL", "").strip().lower().startswith("https://")
     response.set_cookie(
         key=SESSION_COOKIE,
         value=token,
         httponly=True,
         max_age=SESSION_DAYS * 86400,
         samesite="lax",
+        secure=secure,
         path="/",
     )
 
@@ -3263,7 +3265,8 @@ async def webhook_task(payload: dict):
 
 
 @app.get("/api/backup/download")
-async def backup_download():
+async def backup_download(request: Request):
+    _require_platform_settings(request)
     from integrations.backup_restore import create_backup
     from fastapi.responses import Response
     data = create_backup()
@@ -3276,11 +3279,10 @@ async def backup_download():
 
 @app.post("/api/view-token")
 async def create_view_token(request: Request, hours: int = 72, label: str = "client", nda: bool = False):
-    user = _optional_user(request)
-    if user:
-        from room.user_auth import has_privilege
-        if not has_privilege(user, "view_link") and user.get("role") not in ("owner", "admin", "tech_admin"):
-            raise HTTPException(status_code=403, detail="View-link недоступен на вашем тарифе")
+    user = _current_user(request)
+    from room.user_auth import has_privilege
+    if not has_privilege(user, "view_link") and user.get("role") not in ("owner", "admin", "tech_admin"):
+        raise HTTPException(status_code=403, detail="View-link недоступен на вашем тарифе")
     from room.view_tokens import create_token
     scope = "investor" if nda else "view"
     t = create_token(hours=hours, label=label, scope=scope, nda_required=nda)

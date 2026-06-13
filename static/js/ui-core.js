@@ -287,6 +287,10 @@
     function renderMobileTabs(user) {
         const bar = document.getElementById('mobileTabBar');
         if (!bar) return;
+        if (global.APP_SHELL === 'portal' || global.AppShell?.isPortal?.()) {
+            bindMobileTabClicks(bar);
+            return;
+        }
         const mode = getUiMode(user);
         let tabs;
         if (mode === 'investor') {

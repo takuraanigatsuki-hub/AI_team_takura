@@ -12,9 +12,6 @@ def is_desktop_client(request) -> bool:
         return True
     if "pywebview" in ua:
         return True
-    q = getattr(request, "query_params", None)
-    if q and q.get("client") == "desktop":
-        return True
     return request.headers.get("x-ai-team-client") == "desktop"
 
 
