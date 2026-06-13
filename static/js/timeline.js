@@ -1,6 +1,44 @@
-/** Timeline / Replay — последняя активность (фильтр для пользователей) */
+/** Timeline / Replay — последняя активность */
 (function (global) {
     let events = [];
+
+    const SKIP_TYPES = new Set([
+        'agents_state', 'history', 'task_history', 'agent_stream', 'agent_stream_start',
+        'presence_update', 'balance_update', 'pipeline_update', 'cursor_progress',
+    ]);
+
+    const TYPE_LABELS = {
+        task_received: 'Задача получена',
+        task_done: 'Задача выполнена',
+        task_failed: 'Ошибка задачи',
+        task_awaiting_approval: 'Ожидает одобрения',
+        pm_plan: 'План PM',
+        system: 'Система',
+        site_ready: 'Сайт готов',
+        react_preview: 'React Preview',
+        figma_import: 'Figma импорт',
+        figma_study: 'Изучение Figma',
+        sonya_studio_project: 'Sonya Studio',
+        sonya_studio_published: 'Публикация Studio',
+        learning: 'Обучение',
+        learning_result: 'Результат обучения',
+    };
+
+    function eventMessage(ev) {
+        const text = (ev.message || ev.text || '').trim();
+        if (text) return text;
+        const label = TYPE_LABELS[ev.type] || '';
+        if (label) return label;
+        if (SKIP_TYPES.has(ev.type)) return '';
+        return ev.type || '';
+    }
+
+    function filterEvents(list) {
+        return (list || []).filter((ev) => {
+            if (SKIP_TYPES.has(ev.type)) return false;
+            return !!eventMessage(ev);
+        });
+    }
 
     async function load(hours) {
         const h = hours || 1;
@@ -28,8 +66,8 @@
             }
             if (!r.ok) throw new Error('HTTP ' + r.status);
             const d = await r.json();
-            events = d.events || [];
-            render(d);
+            events = filterEvents(d.events || []);
+            render({ ...d, events, total: events.length });
         } catch (e) {
             render({ total: 0, by_type: {}, events: [], error: String(e) });
         }
@@ -38,17 +76,21 @@
     function render(data) {
         const el = document.getElementById('timelinePanel');
         if (!el) return;
+        const visible = filterEvents(data.events || []);
         const types = Object.entries(data.by_type || {})
-            .map(([k, v]) => `<span class="tl-chip">${escape(k)}: ${v}</span>`).join('');
-        const rows = (data.events || []).slice().reverse().map((ev) => {
+            .filter(([k]) => !SKIP_TYPES.has(k))
+            .map(([k, v]) => `<span class="tl-chip">${escape(TYPE_LABELS[k] || k)}: ${v}</span>`).join('');
+        const rows = visible.slice().reverse().map((ev) => {
             const t = (ev.timestamp || ev.recorded_at || '').slice(11, 19);
-            const who = ev.agent_emoji ? `${ev.agent_emoji} ${ev.agent_name || ''}` : (ev.agent_name || ev.agent_id || '—');
-            const msg = escape((ev.message || ev.type || '').slice(0, 100));
+            const who = ev.agent_emoji
+                ? `${ev.agent_emoji} ${ev.agent_name || ev.agent_id || ''}`
+                : (ev.agent_name || ev.agent_id || 'Команда');
+            const msg = escape(eventMessage(ev).slice(0, 120));
             const type = ev.type || '';
             return `<div class="tl-row tl-type-${escape(type)}"><span class="tl-time">${t}</span><span class="tl-who">${escape(who.trim())}</span><span class="tl-msg">${msg}</span></div>`;
         }).join('');
         el.innerHTML = `
-            <div class="tl-stats">${data.total || 0} событий за ${data.hours || 1}ч</div>
+            <div class="tl-stats">${visible.length || data.total || 0} событий за ${data.hours || 1}ч</div>
             <div class="tl-chips">${types || '<span class="muted">Нет данных</span>'}</div>
             <div class="tl-list">${rows || (global.UICore
                 ? UICore.inlineEmpty('Пока пусто — активность появится после задач в чате')
@@ -62,19 +104,22 @@
     }
 
     function replay() {
-        if (!events.length) {
+        const visible = filterEvents(events);
+        if (!visible.length) {
             if (window.UIEnhancements) UIEnhancements.toast('Нет событий для replay', 'info');
             return;
         }
         let i = 0;
         const step = () => {
-            if (i >= events.length) {
+            if (i >= visible.length) {
                 if (window.UIEnhancements) UIEnhancements.toast('Replay завершён', 'success');
                 return;
             }
-            const ev = events[i++];
+            const ev = visible[i++];
+            const who = ev.agent_name || ev.agent_id || '';
+            const msg = eventMessage(ev).slice(0, 48);
             if (window.UIEnhancements) {
-                UIEnhancements.toast(`${ev.agent_name || ''} ${(ev.message || ev.type || '').slice(0, 40)}`, 'info', 1200);
+                UIEnhancements.toast(`${who} ${msg}`.trim(), 'info', 1200);
             }
             setTimeout(step, 500);
         };

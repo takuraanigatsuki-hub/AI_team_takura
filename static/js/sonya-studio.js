@@ -63,7 +63,7 @@
         const listEl = document.getElementById('ssProjectList');
         if (listEl) listEl.innerHTML = global.UICore ? UICore.loadingState('Загрузка…', { compact: true }) : '<div class="dash-loading">Загрузка…</div>';
         try {
-            const r = await fetch('/api/sonya/projects', { credentials: 'same-origin' });
+            const r = await fetch('/api/sonya/projects?scope=studio', { credentials: 'same-origin' });
             if (r.status === 401) {
                 if (listEl) {
                     listEl.innerHTML = global.UICore ? UICore.authRequiredState({
@@ -457,6 +457,24 @@
         });
     }
 
+    async function cleanupProjects() {
+        if (!confirm('Удалить черновики ваших проектов в Studio? Опубликованные останутся.')) return;
+        try {
+            const r = await fetch('/api/sonya/projects/cleanup?scope=studio', {
+                method: 'DELETE',
+                credentials: 'same-origin',
+            });
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.detail || 'Ошибка очистки');
+            if (window.UIEnhancements) {
+                UIEnhancements.toast(`Удалено черновиков: ${d.removed || 0}`, 'success');
+            }
+            await loadProjects();
+        } catch (e) {
+            alert(e.message);
+        }
+    }
+
     global.SonyaStudio = {
         init,
         load: loadProjects,
@@ -469,6 +487,7 @@
         compareVersions,
         downloadHandoff,
         toggleCommentMode,
+        cleanupProjects,
         onMessage: onStudioMessage,
     };
 })(window);

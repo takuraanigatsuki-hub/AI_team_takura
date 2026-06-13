@@ -23,8 +23,7 @@
     }
 
     function render(sites, el) {
-        const list = sites.filter((s) => s.id !== 'latest.html');
-        if (!list.length) {
+        if (!sites.length) {
             el.innerHTML = global.UICore ? UICore.emptyState({
                 icon: '🌐',
                 title: 'Сайтов пока нет',
@@ -34,11 +33,11 @@
             }) : '<p class="muted">Нет готовых сайтов</p>';
             return;
         }
-        el.innerHTML = list.map((s) => `
+        el.innerHTML = sites.map((s) => `
             <article class="project-card site-card">
                 <div class="pc-head">
                     <span class="pc-type">🌐 Сайт</span>
-                    ${s.is_latest ? '<span class="pc-agent">★ latest</span>' : ''}
+                    ${s.is_latest ? '<span class="pc-agent">★ последний</span>' : ''}
                 </div>
                 <h3 class="pc-title">${esc(s.title)}</h3>
                 <p class="pc-desc muted">${esc(s.size_kb)} KB · ${esc((s.modified_at || '').slice(0, 16).replace('T', ' '))}</p>

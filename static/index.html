@@ -175,6 +175,7 @@
             <div class="ss-sidebar-head">
                 <h3>✨ Sonya Studio</h3>
                 <div class="ss-sidebar-actions">
+                    <button type="button" class="btn-secondary btn-sm" onclick="SonyaStudio.cleanupProjects()">🧹 Очистить</button>
                     <button type="button" class="btn-secondary btn-sm" onclick="SonyaStudio.createProject()">+ Новый</button>
                     <button type="button" class="btn-primary btn-sm" onclick="SonyaStudio.askSonyaNew()">🎨 Соня</button>
                 </div>
@@ -238,6 +239,7 @@
                 <button type="button" class="al-tab active" id="alTabLearning" role="tab" onclick="switchAgentLearningPanel('learning')">📚 Лента</button>
                 <button type="button" class="al-tab" id="alTabMasha" role="tab" onclick="switchAgentLearningPanel('masha')">🎓 Маша</button>
                 <button type="button" class="al-tab" id="alTabDesign" role="tab" onclick="switchAgentLearningPanel('design')">🎨 Design Lab</button>
+                <button type="button" class="al-tab" id="alTabSonyaProjects" role="tab" onclick="switchAgentLearningPanel('sonya-projects')">✨ Проекты Сони</button>
             </div>
         </div>
     </div>
@@ -320,8 +322,8 @@
             </div>
             <div class="panel-label" style="margin-top:16px">Палитра из памяти</div>
             <div class="dl-palette" id="dlPalette"></div>
-            <div class="panel-label" style="margin-top:12px">Свои проекты</div>
-            <div class="dl-portfolio" id="dlPortfolio"></div>
+            <div class="panel-label" style="margin-top:12px">Обучение</div>
+            <p class="muted" style="font-size:12px;padding:0 4px">Авто-проекты Сони — во вкладке «Проекты Сони» в Обучении</p>
         </aside>
         <main class="dl-main">
             <header class="dl-header">
@@ -354,6 +356,7 @@
                     </div>
                     <div class="dl-discovery-actions">
                         <button type="button" class="btn-secondary btn-sm" id="dlDiscoverScan">🔄 Сканировать</button>
+                        <button type="button" class="btn-secondary btn-sm" id="dlCommunityScan">🌐 Figma Community</button>
                         <button type="button" class="btn-primary btn-sm" id="dlDiscoverStudy">🔍 Найти и изучить</button>
                     </div>
                 </div>
@@ -378,6 +381,33 @@
                     <div class="dl-memory-list" id="dlKnowledgeList"></div>
                 </section>
             </div>
+        </main>
+    </div>
+
+    <!-- SONYA AUTO PROJECTS (learning tab) -->
+    <div id="sonyaLearningView" class="design-lab-layout hidden">
+        <aside class="dl-sidebar">
+            <div class="dl-sonya-card">
+                <div class="dl-sonya-avatar">✨</div>
+                <div>
+                    <h3>Проекты Сони</h3>
+                    <p class="muted">Автономные UI-проекты после обучения</p>
+                </div>
+            </div>
+            <div class="dl-sidebar-actions">
+                <button type="button" class="btn-secondary btn-sm full-width" onclick="SonyaDesignLab.cleanupLearning()">🧹 Очистить черновики</button>
+                <button type="button" class="btn-primary btn-sm full-width" onclick="switchAgentLearningPanel('design')">🎨 Design Lab</button>
+            </div>
+            <p class="muted" style="font-size:12px;margin-top:12px">👍/👎 — Соня учитывает при выборе паттернов и макетов</p>
+        </aside>
+        <main class="dl-main">
+            <header class="dl-header">
+                <div>
+                    <h2>✨ Авто-проекты Сони</h2>
+                    <p class="muted">Создаются в фоне после изучения Figma Community — не смешиваются с вашими проектами в Studio</p>
+                </div>
+            </header>
+            <div id="slProjectsGrid" class="dl-studied-list"></div>
         </main>
     </div>
 
