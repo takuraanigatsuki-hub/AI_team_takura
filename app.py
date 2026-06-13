@@ -5,8 +5,11 @@ from datetime import datetime
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, Response, JSONResponse
 from pydantic import BaseModel
+import logging
+
+_log = logging.getLogger(__name__)
 
 from room.room_manager import RoomManager
 from agents import (
@@ -244,6 +247,20 @@ app = FastAPI(
 
 from middleware.security import SecurityMiddleware
 app.add_middleware(SecurityMiddleware)
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    _log.exception("Unhandled API error on %s: %s", request.url.path, exc)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "path": request.url.path},
+    )
 
 # Подключаем статику
 static_dir = os.path.join(os.path.dirname(__file__), "static")
@@ -1750,8 +1767,6 @@ async def _build_design_lab_payload() -> dict:
     """Полный ответ Дизайн-лаба — один источник для /api/figma/studio и /api/figma/design-lab."""
     from integrations.figma_discovery import enrich_discovery_status
     from integrations.figma_learning import get_studio_stats, load_patterns, load_portfolio
-    from integrations.sonya_feedback import feedback_summary
-    from integrations.sonya_studio import list_projects as list_sonya_projects
 
     stats = get_studio_stats()
     if stats.get("discovery"):
@@ -1786,9 +1801,25 @@ async def _build_design_lab_payload() -> dict:
         "frame_names": patterns.get("frames", [])[:20],
         "portfolio": load_portfolio()[:20],
         "recent_portfolio": stats.get("recent_portfolio") or load_portfolio()[:5],
-        "feedback": feedback_summary(30),
-        "sonya_learning_projects": list_sonya_projects("learning")[:12],
+        "feedback": _safe_feedback_summary(),
+        "sonya_learning_projects": _safe_sonya_learning_projects(),
     }
+
+
+def _safe_feedback_summary():
+    try:
+        from integrations.sonya_feedback import feedback_summary
+        return feedback_summary(30)
+    except Exception:
+        return []
+
+
+def _safe_sonya_learning_projects():
+    try:
+        from integrations.sonya_studio import list_projects as list_sonya_projects
+        return list_sonya_projects("learning")[:12]
+    except Exception:
+        return []
 
 
 @app.get("/api/figma/status")
