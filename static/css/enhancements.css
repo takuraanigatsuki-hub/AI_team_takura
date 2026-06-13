@@ -98,6 +98,45 @@ body.sidebar-collapsed .app-content-wrap { margin-left: var(--sidebar-collapsed-
     gap: 8px;
 }
 
+.sb-collapse {
+    margin-left: auto;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-muted, rgba(255,255,255,.35));
+    cursor: pointer;
+    font-size: 10px;
+    line-height: 1;
+    opacity: 0.55;
+    transition: opacity .15s, background .15s, color .15s;
+}
+
+.sb-collapse:hover {
+    opacity: 1;
+    background: rgba(167, 139, 250, .1);
+    color: var(--accent, #a78bfa);
+}
+
+body.sidebar-collapsed .sb-collapse {
+    margin-left: 0;
+}
+
+body.sidebar-collapsed .sb-brand-mark {
+    display: none;
+}
+
+body.sidebar-collapsed .sb-brand {
+    justify-content: center;
+    padding: 14px 8px;
+}
+
+@media (max-width: 900px) {
+    .sb-mobile-toggle { display: inline-flex !important; }
+
 .sb-nav { flex: 1; overflow-y: auto; padding: 8px 6px; }
 
 .sb-group { margin-bottom: 12px; }
@@ -133,21 +172,6 @@ body.sidebar-collapsed .app-content-wrap { margin-left: var(--sidebar-collapsed-
 }
 
 .sb-icon { font-size: 1.15rem; min-width: 24px; text-align: center; }
-
-.sb-footer {
-    padding: 10px;
-    border-top: 1px solid var(--border, rgba(255,255,255,.08));
-}
-
-.sb-density select {
-    width: 100%;
-    padding: 6px 8px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: var(--surface, #0d0d14);
-    color: inherit;
-    font-size: 12px;
-}
 
 /* Unified cards */
 .ucard-grid {

@@ -189,10 +189,17 @@
         localStorage.setItem('ai-team-density', mode);
     }
 
+    function updateCollapseBtn() {
+        const btn = document.getElementById('sidebarToggle');
+        if (!btn || isMobileNav()) return;
+        const collapsed = document.body.classList.contains('sidebar-collapsed');
+        btn.textContent = collapsed ? '▶' : '◀';
+        btn.title = collapsed ? 'Развернуть панель' : 'Свернуть панель';
+        btn.setAttribute('aria-label', btn.title);
+    }
+
     function initDensity() {
-        const saved = localStorage.getItem('ai-team-density') || 'comfortable';
-        setDensity(saved);
-        document.getElementById('densitySelect')?.addEventListener('change', (e) => setDensity(e.target.value));
+        setDensity(localStorage.getItem('ai-team-density') || 'comfortable');
     }
 
     function toggleSidebar() {
@@ -203,6 +210,7 @@
         }
         document.body.classList.toggle('sidebar-collapsed');
         localStorage.setItem('ai-team-sidebar-collapsed', document.body.classList.contains('sidebar-collapsed') ? '1' : '');
+        updateCollapseBtn();
     }
 
     function init() {
@@ -210,6 +218,7 @@
             document.body.classList.add('sidebar-collapsed');
         }
         initDensity();
+        updateCollapseBtn();
         render();
         document.getElementById('sidebarToggle')?.addEventListener('click', toggleSidebar);
         document.getElementById('mobileNavToggle')?.addEventListener('click', toggleSidebar);
