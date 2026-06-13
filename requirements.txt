@@ -20,6 +20,8 @@ pywebview>=4.4.1
 
 # Tests
 pytest>=7.0.0
+# Optional: playwright for QA browser tools
+# playwright>=1.40.0
 httpx>=0.24.0
 
 # Artifacts — презентации и таблицы

@@ -1198,7 +1198,10 @@ class BaseAgent:
                 system = self._system_with_memory(task_text)
                 try:
                     from integrations.rag.retrieve import retrieve_context_text_async
-                    rag_extra = await retrieve_context_text_async(self.agent_id, task_text, limit=4)
+                    ws = getattr(self.room_manager, "active_workspace_id", "") or ""
+                    rag_extra = await retrieve_context_text_async(
+                        self.agent_id, task_text, limit=4, workspace_id=ws,
+                    )
                     if rag_extra:
                         system += f"\n\nБаза знаний (semantic RAG):\n{rag_extra}"
                 except Exception:

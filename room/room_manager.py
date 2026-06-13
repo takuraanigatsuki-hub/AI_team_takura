@@ -44,6 +44,7 @@ class RoomManager:
         self._last_submitted_id: Optional[str] = None
         self.current_plan: Optional[dict] = None
         self.learning_projects = None
+        self.active_workspace_id: str = ""
 
     def _learning_store(self):
         if self.learning_projects is None:
@@ -576,6 +577,12 @@ class RoomManager:
                     return
 
             uid, uname = self._actor_identity(user, connection_meta)
+
+            try:
+                from room.workspaces import get_active
+                self.active_workspace_id = get_active(uid) if uid else ""
+            except Exception:
+                self.active_workspace_id = ""
 
             dup = self.task_history.find_active_duplicate(text, uid)
             if dup:

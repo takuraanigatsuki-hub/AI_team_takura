@@ -72,6 +72,19 @@ async def invoke_tool(agent_id: str, tool_name: str, arguments: dict = None) -> 
         timeout = int(arguments.get("timeout") or 30)
         return {"ok": True, "tool": tool_name, **await run_python(code, timeout=timeout)}
 
+    if tool_name in ("playwright_snapshot", "browser_snapshot", "browser_test"):
+        from integrations.playwright_runner import browser_snapshot, run_smoke_test, playwright_installed
+        url = arguments.get("url") or arguments.get("target") or "http://localhost:8000"
+        if tool_name == "browser_test":
+            checks = arguments.get("checks") or arguments.get("contains") or []
+            if isinstance(checks, str):
+                checks = [checks]
+            result = await run_smoke_test(url, checks=checks)
+        else:
+            result = await browser_snapshot(url)
+        result["playwright_installed"] = playwright_installed()
+        return {"ok": True, "tool": tool_name, **result}
+
     return {"ok": False, "error": f"Unknown tool: {tool_name}", "agent_id": agent_id}
 
 

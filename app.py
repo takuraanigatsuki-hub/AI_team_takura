@@ -77,6 +77,26 @@ async def lifespan(app: FastAPI):
 
     asyncio.create_task(_embed_background())
 
+    try:
+        from integrations.llm_client import is_configured, _settings
+        if is_configured():
+            s = _settings()
+            prov = "Smart AIPI" if "smartaipi" in (s.get("base_url") or "") else "OpenAI-compatible"
+            print(f"🤖 LLM: {prov} | chat={s.get('model')} | router={__import__('integrations.llm_client', fromlist=['router_model']).router_model()}")
+        else:
+            print("🤖 LLM: не настроен (keyword-fallback)")
+    except Exception as e:
+        print(f"⚠️ LLM status: {e}")
+
+    try:
+        from integrations.playwright_runner import playwright_installed
+        from integrations.sandbox.docker_runner import docker_available
+        pw = "✅" if playwright_installed() else "⚠️ pip install playwright && playwright install chromium"
+        dk = "✅" if docker_available() else "⚠️ Docker не найден (local sandbox)"
+        print(f"🧪 QA Playwright: {pw} | Sandbox Docker: {dk}")
+    except Exception:
+        pass
+
     room.task_history.cleanup_stale(max_minutes=30)
     cancelled = room.task_history.stats().get("cancelled", 0)
     if cancelled:
@@ -1709,6 +1729,18 @@ async def workspace_rag_seed(workspace_id: str):
     from integrations.rag.workspace_store import ensure_workspace_store
     store = ensure_workspace_store(workspace_id, seed_from_global=True)
     return {"ok": True, "workspace_id": workspace_id, "stats": store.stats()}
+
+
+@app.get("/api/qa/playwright/status")
+async def qa_playwright_status():
+    from integrations.playwright_runner import playwright_installed
+    from integrations.sandbox.docker_runner import docker_available
+    return {
+        "ok": True,
+        "playwright_installed": playwright_installed(),
+        "docker_available": docker_available(),
+        "hint": "pip install playwright && playwright install chromium",
+    }
 
 
 @app.get("/api/llm/status")

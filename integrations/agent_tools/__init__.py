@@ -26,6 +26,8 @@ AGENT_TOOLS: dict[str, list[dict]] = {
         {"name": "rag_search", "description": "Testing/QA знания"},
         {"name": "write_tests", "description": "Генерация pytest/Playwright"},
         {"name": "sandbox_run", "description": "Запуск тестового кода в sandbox"},
+        {"name": "browser_test", "description": "Playwright smoke-тест URL"},
+        {"name": "playwright_snapshot", "description": "Снимок страницы в браузере"},
     ],
     "reviewer": [
         {"name": "rag_search", "description": "Code review checklist"},
