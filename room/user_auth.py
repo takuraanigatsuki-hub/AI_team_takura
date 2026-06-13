@@ -30,6 +30,7 @@ ALL_PRIVILEGES = [
     "view_agent_learning",
     "all_views",
     "skip_setup",
+    "manage_tickets",
 ]
 
 ROLE_PRIVILEGES = {
@@ -50,6 +51,7 @@ ROLE_PRIVILEGES = {
     "support": [
         "view_link",
         "all_views",
+        "manage_tickets",
     ],
     "investor": [
         "view_investor_portal",
@@ -191,6 +193,7 @@ def _public_user(user: dict) -> dict:
         "is_support": role == "support",
         "can_view_agent_learning": can_view_agent_learning(user),
         "can_view_investor_portal": can_view_investor_portal(user),
+        "can_manage_tickets": can_manage_tickets(user),
         "is_investor": role == "investor",
         "setup_complete": bool(user.get("setup_complete")),
         "default_view": user.get("default_view", "dashboard"),
@@ -269,6 +272,36 @@ def can_view_investor_portal(user: dict | None) -> bool:
     if role in ("owner", "admin", "tech_admin", "investor"):
         return True
     return has_privilege(user, "view_investor_portal")
+
+
+def can_manage_tickets(user: dict | None) -> bool:
+    """Панель поддержки — support, owner, admin."""
+    if not user:
+        return False
+    role = user.get("role", "member")
+    if role in ("owner", "admin", "support"):
+        return True
+    return has_privilege(user, "manage_tickets") or has_privilege(user, "admin")
+
+
+def support_account_summary(user_id: str) -> Optional[dict]:
+    """Базовая информация об аккаунте — без паролей, API и биллинга."""
+    user = _find_user(user_id)
+    if not user:
+        return None
+    pub = _public_user(user)
+    sub = pub.get("subscription") or {}
+    return {
+        "id": pub["id"],
+        "name": pub["name"],
+        "email": pub["email"],
+        "role_label": pub["role_label"],
+        "setup_complete": pub.get("setup_complete"),
+        "created_at": pub.get("created_at"),
+        "default_view": pub.get("default_view", "dashboard"),
+        "subscription_tier": sub.get("tier_name") or sub.get("name") or "—",
+        "access_level": pub.get("access_level"),
+    }
 
 
 def register(email: str, password: str, name: str = "") -> tuple[dict, str]:

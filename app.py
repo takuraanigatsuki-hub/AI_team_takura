@@ -3012,6 +3012,181 @@ async def learning_skill_matrix():
     return room._learning_store().get_skill_matrix()
 
 
+# ─── Support tickets ───────────────────────────────────────────
+
+class TicketCreateBody(BaseModel):
+    subject: str = ""
+    message: str = ""
+    category: str = "other"
+    template_id: str = ""
+
+
+class TicketMessageBody(BaseModel):
+    text: str = ""
+    is_solution: bool = False
+
+
+class TicketUpdateBody(BaseModel):
+    status: str | None = None
+    priority: str | None = None
+
+
+@app.get("/api/support/templates")
+async def support_templates():
+    from room.ticket_store import list_templates
+    return {"templates": list_templates()}
+
+
+@app.get("/api/support/tickets")
+async def support_list_tickets(request: Request, status: str = ""):
+    from room.ticket_store import list_for_user, list_for_support, counts_by_status
+    from room.user_auth import can_manage_tickets
+
+    user = _current_user(request)
+    if can_manage_tickets(user):
+        tickets = list_for_support(status=status.strip())
+        return {"tickets": tickets, "counts": counts_by_status(), "role": "support"}
+    tickets = list_for_user(user["id"])
+    return {"tickets": tickets, "counts": {}, "role": "user"}
+
+
+@app.post("/api/support/tickets")
+async def support_create_ticket(body: TicketCreateBody, request: Request):
+    from room.ticket_store import create_ticket, get_template
+    from room import notifications
+
+    user = _current_user(request)
+    subject = body.subject.strip()
+    message = body.message.strip()
+    category = body.category or "other"
+    template_id = body.template_id.strip()
+
+    if template_id:
+        tpl = get_template(template_id)
+        if tpl:
+            if not subject:
+                subject = tpl.get("subject", tpl.get("title", ""))
+            category = tpl.get("category", category)
+
+    if not message and not subject:
+        raise HTTPException(status_code=400, detail="Опишите проблему")
+
+    ticket = create_ticket(
+        user_id=user["id"],
+        user_email=user.get("email", ""),
+        user_name=user.get("name", ""),
+        subject=subject or "Обращение в поддержку",
+        message=message or subject,
+        category=category,
+        template_id=template_id,
+    )
+
+    notifications.push(
+        "💬 Новый тикет",
+        f"{ticket['subject']} — {user.get('name') or user.get('email')}",
+        user_id="",
+        ntype="support",
+        link=f"support:{ticket['id']}",
+    )
+
+    return {"ok": True, "ticket": ticket}
+
+
+@app.get("/api/support/tickets/{ticket_id}")
+async def support_get_ticket(ticket_id: str, request: Request):
+    from room.ticket_store import get_ticket
+    from room.user_auth import can_manage_tickets
+
+    user = _current_user(request)
+    ticket = get_ticket(ticket_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Тикет не найден")
+    if not can_manage_tickets(user) and ticket.get("user_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="Нет доступа")
+    return ticket
+
+
+@app.post("/api/support/tickets/{ticket_id}/messages")
+async def support_ticket_message(ticket_id: str, body: TicketMessageBody, request: Request):
+    from room.ticket_store import get_ticket, add_message
+    from room.user_auth import can_manage_tickets
+    from room import notifications
+
+    user = _current_user(request)
+    ticket = get_ticket(ticket_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Тикет не найден")
+
+    is_staff = can_manage_tickets(user)
+    if not is_staff and ticket.get("user_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="Нет доступа")
+
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Пустое сообщение")
+
+    updated = add_message(
+        ticket_id,
+        author_id=user["id"],
+        author_role="support" if is_staff else "user",
+        author_name=user.get("name") or user.get("email", ""),
+        text=text,
+        is_solution=bool(body.is_solution) if is_staff else False,
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Тикет не найден")
+
+    if is_staff:
+        notifications.push(
+            "💬 Ответ поддержки",
+            updated["subject"],
+            user_id=ticket.get("user_id", ""),
+            ntype="support",
+            link=f"ticket:{ticket_id}",
+        )
+
+    return {"ok": True, "ticket": updated}
+
+
+@app.patch("/api/support/tickets/{ticket_id}")
+async def support_update_ticket(ticket_id: str, body: TicketUpdateBody, request: Request):
+    from room.ticket_store import update_ticket
+    from room.user_auth import can_manage_tickets
+
+    user = _current_user(request)
+    if not can_manage_tickets(user):
+        raise HTTPException(status_code=403, detail="Только для поддержки")
+
+    allowed_status = {"open", "in_progress", "resolved", "closed"}
+    if body.status is not None and body.status not in allowed_status:
+        raise HTTPException(status_code=400, detail="Недопустимый статус")
+
+    updated = update_ticket(
+        ticket_id,
+        status=body.status,
+        priority=body.priority,
+        assigned_to=user["id"] if body.status == "in_progress" else None,
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Тикет не найден")
+    return {"ok": True, "ticket": updated}
+
+
+@app.get("/api/support/users/{user_id}/summary")
+async def support_user_summary(user_id: str, request: Request):
+    from room.user_auth import can_manage_tickets, support_account_summary
+
+    user = _current_user(request)
+    if not can_manage_tickets(user):
+        raise HTTPException(status_code=403, detail="Только для поддержки")
+
+    summary = support_account_summary(user_id)
+    if not summary:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    summary["task_stats"] = room.task_history.stats_for_user(user_id)
+    return summary
+
+
 # ─── Notifications ─────────────────────────────────────────────
 
 @app.get("/api/notifications")
