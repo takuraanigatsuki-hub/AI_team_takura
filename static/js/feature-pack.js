@@ -103,6 +103,7 @@
             { label: '🎨 Landing page', run: () => quickTask('frontend', 'Сделай современный landing page') },
             { label: '⚙️ REST API', run: () => quickTask('backend', 'Создай REST API для основных сущностей') },
             { label: '🧪 Тесты', run: () => quickTask('qa', 'Напиши тест-план и автотесты') },
+            { label: '💬 Поддержка', run: () => global.SupportTickets?.open?.() },
             { label: '⚡ Cursor SDK', run: () => global.Integrations?.toggleCursorPanel?.() },
             { label: '🎨 React Preview', run: () => global.ReactPreview?.toggle?.() },
             { label: '⚡ Pipeline', run: () => global.PowerPack?.runPipeline?.() },

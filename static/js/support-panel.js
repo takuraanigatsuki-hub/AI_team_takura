@@ -180,32 +180,26 @@
     }
 
     async function load() {
-        const root = document.getElementById('supportPanelContent');
+        const root = document.getElementById('supportPanelRoot');
         if (!root) return;
-        root.innerHTML = '<div class="ui-loading-inline ui-ph"><span class="ui-loading-ring sm"></span><span class="muted">Загрузка…</span></div>';
+        root.innerHTML = '<div class="support-empty" style="flex:1">Загрузка…</div>';
         try {
             await loadTickets();
-            renderFilters();
-            renderInbox();
-            renderThread();
-            const content = document.getElementById('supportPanelContent');
-            if (content) {
-                content.innerHTML = `
-                    <div class="support-inbox">
-                        <div class="support-inbox-head">
-                            <h2>💬 Тикеты</h2>
-                            <p class="muted" id="supportCounts" style="font-size:11px;margin:0"></p>
-                            <div class="support-filter-row" id="supportFilterRow"></div>
-                        </div>
-                        <div class="support-ticket-list" id="supportTicketList"></div>
+            root.innerHTML = `
+                <div class="support-inbox">
+                    <div class="support-inbox-head">
+                        <h2>💬 Тикеты</h2>
+                        <p class="muted" id="supportCounts" style="font-size:11px;margin:0"></p>
+                        <div class="support-filter-row" id="supportFilterRow"></div>
                     </div>
-                    <div class="support-detail" id="supportDetail"></div>`;
-            }
+                    <div class="support-ticket-list" id="supportTicketList"></div>
+                </div>
+                <div class="support-detail" id="supportDetail"></div>`;
             renderFilters();
             renderInbox();
             renderThread();
         } catch (e) {
-            if (root) root.innerHTML = `<div class="panel-error">${esc(e.message)}</div>`;
+            root.innerHTML = `<div class="support-empty">${esc(e.message)}</div>`;
         }
     }
 

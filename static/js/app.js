@@ -102,6 +102,12 @@
                 switchView('profile');
                 return;
             }
+        } else if (view === 'support') {
+            if (!window.SupportPanel?.canAccess(user) && !window.Auth?.canManageTickets?.(user)) {
+                if (window.SupportTickets?.open) SupportTickets.open();
+                else if (window.UIEnhancements) UIEnhancements.toast('Войдите, чтобы написать в поддержку', 'warn');
+                return;
+            }
         } else if (view === 'investor') {
             if (!window.Auth?.canViewInvestorPortal?.(user)) {
                 const msg = 'Investor Portal — войдите с ролью investor или admin';
@@ -164,6 +170,7 @@
         document.getElementById('projectsView')?.classList.toggle('hidden', view !== 'projects');
         document.getElementById('profileView')?.classList.toggle('hidden', view !== 'profile');
         document.getElementById('adminView')?.classList.toggle('hidden', view !== 'admin');
+        document.getElementById('supportView')?.classList.toggle('hidden', view !== 'support');
         document.getElementById('investorView')?.classList.toggle('hidden', view !== 'investor');
 
         if (window.SidebarNav) SidebarNav.setActive(view);
@@ -195,6 +202,7 @@
         if (view === 'investor' && window.InvestorPortal) InvestorPortal.load();
         if (view === 'profile' && window.ProfileCabinet) ProfileCabinet.load();
         if (view === 'admin' && window.AdminPanel) AdminPanel.load();
+        if (view === 'support' && window.SupportPanel) SupportPanel.load();
 
         clearInterval(dashboardRefreshTimer);
         if (view === 'dashboard') {

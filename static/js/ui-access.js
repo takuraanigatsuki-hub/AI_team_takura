@@ -80,6 +80,7 @@
                 'Настройки платформы',
             );
         }
+        if (!global.Auth?.canManageTickets?.(u)) blocked.push('Тикеты');
         if (!investor) blocked.push('Investor Portal', '💼 Investor');
         if (!canOpenTechnicalSettings(u)) blocked.push('⚙️ Настройки');
         return commands.filter((c) => !blocked.some((b) => c.label.includes(b)));
