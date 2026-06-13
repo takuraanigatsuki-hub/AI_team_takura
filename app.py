@@ -2166,9 +2166,72 @@ async def _sonya_agent_create_project(request: Request = None):
 
 
 @app.get("/api/sonya/projects")
-async def sonya_list_projects():
+async def sonya_list_projects(scope: str = "studio"):
     from integrations.sonya_studio import list_projects
-    return {"projects": list_projects()}
+    return {"projects": list_projects(scope=scope or "all")}
+
+
+@app.delete("/api/sonya/projects/cleanup")
+async def sonya_cleanup_projects(request: Request, scope: str = "studio", keep_published: bool = True):
+    from integrations.sonya_studio import cleanup_projects
+    from room.user_auth import can_view_agent_learning, get_user_from_token
+
+    user = get_user_from_token(_get_session_token(request))
+    if scope in ("learning", "all-auto") and (not user or not can_view_agent_learning(user)):
+        raise HTTPException(status_code=403, detail="Очистка обучения — только для администраторов")
+    result = cleanup_projects(scope=scope or "studio", keep_published=keep_published)
+    return {"ok": True, **result}
+
+
+class SonyaFeedbackRequest(BaseModel):
+    target_type: str
+    target_id: str
+    vote: int
+    note: str = ""
+
+
+@app.post("/api/sonya/feedback")
+@app.post("/api/figma/feedback")
+async def sonya_feedback(body: SonyaFeedbackRequest, request: Request):
+    from integrations.sonya_feedback import record_vote, score, user_vote
+
+    user = _optional_user(request)
+    uid = user.get("id", "") if user else ""
+    try:
+        entry = record_vote(
+            target_type=body.target_type,
+            target_id=body.target_id,
+            vote=body.vote,
+            user_id=uid,
+            note=body.note,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {
+        "ok": True,
+        "vote": entry,
+        "score": score(body.target_type, body.target_id),
+        "your_vote": user_vote(body.target_type, body.target_id, uid),
+    }
+
+
+@app.post("/api/figma/studio/community-scan")
+async def figma_community_scan(request: Request):
+    """Сканировать Figma Community team resources и поставить в очередь."""
+    from integrations.figma_discovery import run_discovery_scan, scan_community_team_resources, load_discovery, save_discovery, _enqueue
+    from room.user_auth import can_view_agent_learning
+
+    user = _optional_user(request)
+    if not user or not can_view_agent_learning(user):
+        raise HTTPException(status_code=403, detail="Только для администраторов")
+
+    frontend = room.agents.get("frontend")
+    targets = await scan_community_team_resources(frontend)
+    state = load_discovery()
+    added = _enqueue(state, targets)
+    state["last_scan_at"] = datetime.now().isoformat()
+    save_discovery(state)
+    return {"ok": True, "added": added, "found": len(targets), "queue_size": len(state.get("queue") or [])}
 
 
 @app.post("/api/sonya/projects")

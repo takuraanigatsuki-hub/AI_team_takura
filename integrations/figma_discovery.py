@@ -36,6 +36,11 @@ WEB_DISCOVERY_TOPICS = [
     "figma community portfolio website",
 ]
 
+COMMUNITY_TEAM_DEFAULT_URL = (
+    "https://www.figma.com/files/team/1647288270564202688/resources/community"
+    "?fuid=1647288269003898376"
+)
+
 
 def _ensure_dirs() -> None:
     os.makedirs(DATA_DIR, exist_ok=True)
@@ -275,6 +280,43 @@ async def scan_team_files(client) -> list[dict]:
     return targets
 
 
+async def scan_community_team_resources(agent=None) -> list[dict]:
+    """Community-ресурсы команды Figma — парсинг страницы team/resources/community."""
+    import config as cfg_module
+
+    url = cfg_module.config.get("figma_community_team_url") or COMMUNITY_TEAM_DEFAULT_URL
+    urls: list[str] = []
+
+    if agent is not None:
+        try:
+            material = await agent._fetch_learning_material(url)
+            if material:
+                blob = " ".join(
+                    str(material.get(k) or "")
+                    for k in ("title", "summary", "url", "content", "snippet")
+                )
+                urls.extend(extract_figma_urls(blob))
+                if material.get("url"):
+                    urls = extract_figma_urls(str(material["url"])) + urls
+        except Exception:
+            pass
+
+    if not urls:
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=25.0, follow_redirects=True) as client:
+                resp = await client.get(
+                    url,
+                    headers={"User-Agent": "Mozilla/5.0 (compatible; SonyaDiscovery/1.0)"},
+                )
+                if resp.status_code < 400:
+                    urls.extend(extract_figma_urls(resp.text))
+        except Exception:
+            pass
+
+    return _urls_to_targets(urls, source="community_team", name="Figma Community")
+
+
 async def discover_urls_from_web(agent) -> list[str]:
     """Поиск community-ссылок через веб-обучение агента."""
     topic = random.choice(WEB_DISCOVERY_TOPICS)
@@ -328,6 +370,12 @@ async def run_discovery_scan(agent=None, *, include_web: bool = True) -> dict:
             sources["team"] = n
             added += n
 
+    community_targets = await scan_community_team_resources(agent)
+    n = _enqueue(state, community_targets)
+    if n:
+        sources["community_team"] = n
+        added += n
+
     catalog_targets = []
     for item in get_catalog():
         key = item["file_key"]
@@ -369,15 +417,21 @@ async def run_discovery_scan(agent=None, *, include_web: bool = True) -> dict:
 
 
 def pick_next_target(state: Optional[dict] = None) -> Optional[dict]:
-    """Следующий макет из очереди (team > catalog > web по порядку добавления)."""
+    """Следующий макет из очереди (team > community > catalog > web)."""
+    from integrations.sonya_feedback import is_disliked
+
     state = state or load_discovery()
     queue = state.get("queue") or []
     if not queue:
         return None
-    # Приоритет: team, catalog, web
-    priority = {"team": 0, "catalog": 1, "web": 2, "auto": 3}
+    priority = {"team": 0, "community_team": 1, "catalog": 2, "web": 3, "auto": 4}
     queue = sorted(queue, key=lambda q: priority.get(q.get("source", "auto"), 9))
-    return queue[0]
+    for item in queue:
+        key = item.get("file_key") or ""
+        if key and is_disliked("figma_file", key):
+            continue
+        return item
+    return queue[0] if queue else None
 
 
 async def try_autonomous_study(agent, *, max_attempts: int = 2) -> bool:

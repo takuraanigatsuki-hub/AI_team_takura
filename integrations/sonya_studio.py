@@ -158,6 +158,17 @@ def _version_public(v: dict, *, include_code: bool = False) -> dict:
     return out
 
 
+def _project_origin(p: dict) -> str:
+    origin = p.get("origin") or ""
+    if origin in ("sonya_auto", "user"):
+        return origin
+    versions = p.get("versions") or []
+    first_by = (versions[0].get("created_by") if versions else "") or ""
+    if first_by == "sonya" or (p.get("description") or "").startswith("Проект Sonya Studio"):
+        return "sonya_auto"
+    return "user"
+
+
 def _public_project(p: dict, *, include_versions: bool = True, include_react_code: bool = False) -> dict:
     versions = p.get("versions", [])
     current = next((v for v in versions if v.get("id") == p.get("current_version_id")), None)
@@ -177,6 +188,7 @@ def _public_project(p: dict, *, include_versions: bool = True, include_react_cod
         "figma_handoff": p.get("figma_handoff"),
         "version_count": len(versions),
         "open_comments": sum(1 for c in p.get("comments", []) if c.get("status") == "open"),
+        "origin": _project_origin(p),
         "current_version": _version_public(current, include_code=include_react_code) if current else None,
     }
     if include_versions:
@@ -185,10 +197,39 @@ def _public_project(p: dict, *, include_versions: bool = True, include_react_cod
     return out
 
 
-def list_projects() -> list:
+def list_projects(scope: str = "all") -> list:
     store = _load_store()
     items = sorted(store.get("projects", []), key=lambda x: x.get("updated_at", ""), reverse=True)
+    if scope == "studio":
+        items = [p for p in items if _project_origin(p) == "user"]
+    elif scope in ("learning", "sonya_auto"):
+        items = [p for p in items if _project_origin(p) == "sonya_auto"]
     return [_public_project(p, include_versions=False) for p in items]
+
+
+def cleanup_projects(scope: str = "studio", *, keep_published: bool = True) -> dict:
+    """scope=studio — черновики пользователя; scope=learning — авто-проекты Сони."""
+    store = _load_store()
+    removed: list[str] = []
+    kept: list[dict] = []
+    for p in store.get("projects", []):
+        origin = _project_origin(p)
+        status = p.get("status", "draft")
+        drop = False
+        if scope == "studio" and origin == "user" and status == "draft":
+            drop = True
+        elif scope == "learning" and origin == "sonya_auto":
+            if not keep_published or status != "published":
+                drop = True
+        elif scope == "all-auto" and origin == "sonya_auto":
+            drop = True
+        if drop:
+            removed.append(p.get("id", ""))
+        else:
+            kept.append(p)
+    store["projects"] = kept
+    _save_store(store)
+    return {"removed": len(removed), "removed_ids": removed, "remaining": len(kept)}
 
 
 def get_project(project_id: str) -> Optional[dict]:
@@ -207,6 +248,7 @@ def create_project(
     preview_title: str = "",
     colors: Optional[list] = None,
     created_by: str = "sonya",
+    origin: str = "",
 ) -> dict:
     store = _load_store()
     if not task and not react_code:
@@ -256,6 +298,7 @@ def create_project(
         "current_version_id": vid,
         "versions": [version],
         "comments": [],
+        "origin": origin or ("sonya_auto" if created_by == "sonya" else "user"),
     }
     store.setdefault("projects", []).insert(0, project)
     _save_store(store)
@@ -502,6 +545,7 @@ async def create_studio_project(agent, *, title: str = "", theme: str = "", task
         preview_title=preview.get("title", title),
         colors=colors,
         created_by="sonya",
+        origin="sonya_auto",
     )
 
     preview_payload = {
