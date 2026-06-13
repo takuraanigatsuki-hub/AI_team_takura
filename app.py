@@ -286,7 +286,7 @@ async def landing():
     if os.path.exists(html_file):
         with open(html_file, "r", encoding="utf-8") as f:
             return HTMLResponse(f.read())
-    return RedirectResponse("/workspace")
+    return RedirectResponse("/portal")
 
 
 @app.get("/startup", response_class=HTMLResponse)
@@ -300,8 +300,11 @@ async def startup_landing():
 
 
 @app.get("/workspace", response_class=HTMLResponse)
-async def workspace_spa():
-    """Рабочая область — чат, Kanban, студия, агенты."""
+async def workspace_spa(request: Request):
+    """Рабочая область — только desktop-клиент."""
+    from room.client_access import is_desktop_client, workspace_denied_redirect
+    if not is_desktop_client(request):
+        return RedirectResponse(workspace_denied_redirect(), status_code=302)
     html_file = os.path.join(static_dir, "index.html")
     if os.path.exists(html_file):
         with open(html_file, "r", encoding="utf-8") as f:
@@ -316,13 +319,16 @@ async def portal_spa():
     if os.path.exists(html_file):
         with open(html_file, "r", encoding="utf-8") as f:
             return HTMLResponse(f.read())
-    return RedirectResponse("/workspace")
+    return RedirectResponse("/?auth=login")
 
 
 @app.get("/app", response_class=HTMLResponse)
-async def app_spa():
-    """Обратная совместимость — редирект в рабочую область."""
-    return RedirectResponse("/workspace", status_code=302)
+async def app_spa(request: Request):
+    """Обратная совместимость."""
+    from room.client_access import is_desktop_client, workspace_denied_redirect
+    if is_desktop_client(request):
+        return RedirectResponse("/workspace", status_code=302)
+    return RedirectResponse(workspace_denied_redirect(), status_code=302)
 
 
 @app.get("/cabinet")
@@ -3897,10 +3903,19 @@ async def deploy_download():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket — auth через cookie; guest read-only."""
+    """WebSocket — только desktop-клиент (рабочая область)."""
     from room.user_auth import get_user_from_token, SESSION_COOKIE
     from room.feature_flags import is_enabled
     from room.view_tokens import validate_token
+    from room.client_access import is_desktop_client
+
+    class _WsReq:
+        headers = websocket.headers
+        query_params = websocket.query_params
+
+    if not is_desktop_client(_WsReq):
+        await websocket.close(code=4403, reason="Desktop client required")
+        return
 
     token = websocket.cookies.get(SESSION_COOKIE, "")
     user = get_user_from_token(token) if token else None
