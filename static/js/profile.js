@@ -518,6 +518,10 @@
         activity: 'Активность',
     };
 
+    function getActiveTabId() {
+        return activeTab || 'overview';
+    }
+
     function getActiveTabLabel() {
         return TAB_LABELS[activeTab] || '';
     }
@@ -686,6 +690,7 @@
         load,
         switchTab,
         getActiveTabLabel,
+        getActiveTabId,
         saveProfile,
         saveSettings,
         changePassword,

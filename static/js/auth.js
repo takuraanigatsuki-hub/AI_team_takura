@@ -153,6 +153,7 @@
         const investorBtn = canViewInvestorPortal(currentUser)
             ? `<button type="button" class="dropdown-item" onclick="switchView('investor')">💼 Investor</button>` : '';
         if (summary) summary.textContent = name.slice(0, 1).toUpperCase();
+        el.innerHTML = `
             <div class="dropdown-section-label">${name} · ${tierShort} ${bal} кр.</div>
             <button type="button" class="dropdown-item" onclick="switchView('profile')">👤 Кабинет</button>
             ${supportUserBtn}

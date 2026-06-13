@@ -172,6 +172,42 @@
         }).join('');
     }
 
+    function renderSubnav(mode, activeId) {
+        const el = document.getElementById('appSidebarSubnav');
+        const mainNav = document.getElementById('appSidebarNav');
+        if (!el) return;
+        if (mode !== 'profile') {
+            el.classList.add('hidden');
+            el.innerHTML = '';
+            mainNav?.classList.remove('hidden');
+            return;
+        }
+        const user = global.Auth?.getUser?.();
+        const tabs = [
+            { id: 'overview', label: 'Обзор' },
+            { id: 'profile', label: 'Профиль' },
+            { id: 'subscription', label: 'Подписка' },
+            { id: 'settings', label: 'Настройки' },
+            { id: 'workspaces', label: 'Workspaces' },
+            { id: 'security', label: 'Безопасность' },
+            { id: 'activity', label: 'Активность' },
+        ];
+        if (user && global.Auth?.canAccessAdmin?.(user)) {
+            tabs.push({ id: 'admin-link', label: 'Admin', admin: true });
+        }
+        el.classList.remove('hidden');
+        el.innerHTML = `
+            <button type="button" class="sb-sub-back" onclick="SidebarNav.clearSubnav()">← Назад</button>
+            <div class="sb-group-label">Кабинет</div>
+            ${tabs.map((t) => `<button type="button" class="sb-item sb-sub-item${t.id === activeId ? ' active' : ''}"
+                onclick="${t.admin ? "switchView('admin')" : `ProfileCabinet.switchTab('${t.id}')`}">${t.label}</button>`).join('')}`;
+    }
+
+    function clearSubnav() {
+        renderSubnav(null);
+        if (typeof global.switchView === 'function') global.switchView('tasks');
+    }
+
     function onNavClick(view) {
         if (isMobileNav()) closeMobileSidebar();
         if (typeof global.switchView === 'function') global.switchView(view);
@@ -244,6 +280,6 @@
         });
     }
 
-    global.SidebarNav = { render, setActive, init, setDensity, onNavClick, closeMobileSidebar, updateBadges, getNav };
+    global.SidebarNav = { render, setActive, init, setDensity, onNavClick, closeMobileSidebar, updateBadges, getNav, renderSubnav, clearSubnav };
     document.addEventListener('DOMContentLoaded', init);
 })(window);
