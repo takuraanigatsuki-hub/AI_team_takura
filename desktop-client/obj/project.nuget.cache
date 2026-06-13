@@ -1,72 +1,14 @@
 {
   "version": 2,
-  "dgSpecHash": "1U/VSG/CUnY=",
-  "success": false,
+  "dgSpecHash": "KJJTzmgLBMQ=",
+  "success": true,
   "projectFilePath": "C:\\Users\\USER\\Desktop\\AI_team_takura-main\\desktop-client\\AITeamRoom.csproj",
-  "expectedPackageFiles": [],
-  "logs": [
-    {
-      "code": "NU1100",
-      "level": "Error",
-      "message": "Не удалось разрешить \"Microsoft.Web.WebView2 (>= 1.0.2592.51)\" для \"net8.0-windows7.0\".",
-      "libraryId": "Microsoft.Web.WebView2",
-      "targetGraphs": [
-        "net8.0-windows7.0"
-      ]
-    },
-    {
-      "code": "NU1100",
-      "level": "Error",
-      "message": "Не удалось разрешить \"Microsoft.NET.ILLink.Tasks (>= 8.0.28)\" для \"net8.0-windows7.0\".",
-      "libraryId": "Microsoft.NET.ILLink.Tasks",
-      "targetGraphs": [
-        "net8.0-windows7.0"
-      ]
-    },
-    {
-      "code": "NU1100",
-      "level": "Error",
-      "message": "Не удалось разрешить \"Microsoft.Web.WebView2 (>= 1.0.2592.51)\" для \"net8.0-windows7.0/win-x64\".",
-      "libraryId": "Microsoft.Web.WebView2",
-      "targetGraphs": [
-        "net8.0-windows7.0/win-x64"
-      ]
-    },
-    {
-      "code": "NU1100",
-      "level": "Error",
-      "message": "Не удалось разрешить \"Microsoft.NET.ILLink.Tasks (>= 8.0.28)\" для \"net8.0-windows7.0/win-x64\".",
-      "libraryId": "Microsoft.NET.ILLink.Tasks",
-      "targetGraphs": [
-        "net8.0-windows7.0/win-x64"
-      ]
-    },
-    {
-      "code": "NU1100",
-      "level": "Error",
-      "message": "Не удалось разрешить \"Microsoft.NETCore.App.Runtime.win-x64 (= 8.0.28)\" для \"net8.0-windows7.0\".",
-      "libraryId": "Microsoft.NETCore.App.Runtime.win-x64",
-      "targetGraphs": [
-        "net8.0-windows7.0"
-      ]
-    },
-    {
-      "code": "NU1100",
-      "level": "Error",
-      "message": "Не удалось разрешить \"Microsoft.WindowsDesktop.App.Runtime.win-x64 (= 8.0.28)\" для \"net8.0-windows7.0\".",
-      "libraryId": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
-      "targetGraphs": [
-        "net8.0-windows7.0"
-      ]
-    },
-    {
-      "code": "NU1100",
-      "level": "Error",
-      "message": "Не удалось разрешить \"Microsoft.AspNetCore.App.Runtime.win-x64 (= 8.0.28)\" для \"net8.0-windows7.0\".",
-      "libraryId": "Microsoft.AspNetCore.App.Runtime.win-x64",
-      "targetGraphs": [
-        "net8.0-windows7.0"
-      ]
-    }
-  ]
+  "expectedPackageFiles": [
+    "C:\\Users\\USER\\.nuget\\packages\\microsoft.net.illink.tasks\\8.0.28\\microsoft.net.illink.tasks.8.0.28.nupkg.sha512",
+    "C:\\Users\\USER\\.nuget\\packages\\microsoft.web.webview2\\1.0.2592.51\\microsoft.web.webview2.1.0.2592.51.nupkg.sha512",
+    "C:\\Users\\USER\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\8.0.28\\microsoft.netcore.app.runtime.win-x64.8.0.28.nupkg.sha512",
+    "C:\\Users\\USER\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\8.0.28\\microsoft.windowsdesktop.app.runtime.win-x64.8.0.28.nupkg.sha512",
+    "C:\\Users\\USER\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\8.0.28\\microsoft.aspnetcore.app.runtime.win-x64.8.0.28.nupkg.sha512"
+  ],
+  "logs": []
 }
