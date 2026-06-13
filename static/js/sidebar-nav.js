@@ -1,31 +1,32 @@
 /**
- * Sidebar navigation — role-based (guest / member / admin)
+ * Sidebar navigation — role-based (guest / member / admin / investor)
+ * Структура вдохновлена Snow Dashboard UI Kit
  */
 (function (global) {
     const NAV_GUEST = [
-        { group: 'Inbox', items: [
+        { group: 'Работа', items: [
             { view: 'tasks', icon: '📋', label: 'Inbox', primary: true },
             { view: 'chat', icon: '💬', label: 'Чат' },
             { view: 'kanban', icon: '📌', label: 'Kanban' },
         ]},
-        { group: 'Ещё', items: [
+        { group: 'Студия', items: [
             { view: 'studio', icon: '🎮', label: '3D Студия' },
         ]},
     ];
 
     const NAV_MEMBER = [
-        { group: 'Inbox', items: [
+        { group: 'Работа', items: [
             { view: 'tasks', icon: '📋', label: 'Inbox', primary: true },
             { view: 'chat', icon: '💬', label: 'Чат' },
             { view: 'kanban', icon: '📌', label: 'Kanban' },
         ]},
-        { group: 'Обзор', items: [
+        { group: 'Аналитика', items: [
             { view: 'dashboard', icon: '📊', label: 'Dashboard' },
             { view: 'projects', icon: '📦', label: 'Проекты' },
+            { view: 'timeline', icon: '⏱', label: 'Timeline' },
         ]},
         { group: 'Планирование', items: [
             { view: 'sprint', icon: '🏃', label: 'Sprint' },
-            { view: 'timeline', icon: '⏱', label: 'Timeline' },
         ]},
         { group: 'Студия', advanced: true, items: [
             { view: 'studio', icon: '🎮', label: '3D' },
@@ -33,28 +34,33 @@
         ]},
         { group: 'Аккаунт', items: [
             { view: 'profile', icon: '👤', label: 'Кабинет' },
+            { view: 'investor', icon: '💼', label: 'Investor', investor: true },
         ]},
     ];
 
     const NAV_ADMIN = [
-        { group: 'Inbox', items: [
+        { group: 'Работа', items: [
             { view: 'tasks', icon: '📋', label: 'Inbox', primary: true },
             { view: 'chat', icon: '💬', label: 'Чат' },
             { view: 'kanban', icon: '📌', label: 'Kanban' },
         ]},
-        { group: 'Обзор', items: [
+        { group: 'Аналитика', items: [
             { view: 'dashboard', icon: '📊', label: 'Dashboard' },
             { view: 'projects', icon: '📦', label: 'Проекты' },
-            { view: 'sprint', icon: '🏃', label: 'Sprint' },
             { view: 'timeline', icon: '⏱', label: 'Timeline' },
+        ]},
+        { group: 'Планирование', items: [
+            { view: 'sprint', icon: '🏃', label: 'Sprint' },
         ]},
         { group: 'Студия', items: [
             { view: 'studio', icon: '🎮', label: '3D' },
             { view: 'sonya-studio', icon: '✨', label: 'Studio' },
+            { view: 'design', icon: '🎨', label: 'Design Lab', adminLearning: true },
         ]},
-        { group: 'Advanced', advanced: true, items: [
+        { group: 'Система', advanced: true, items: [
             { view: 'agent-learning', icon: '🔬', label: 'Обучение', adminLearning: true },
             { view: 'admin', icon: '🛡', label: 'Admin', admin: true },
+            { view: 'investor', icon: '💼', label: 'Investor', investor: true },
         ]},
         { group: 'Аккаунт', items: [
             { view: 'profile', icon: '👤', label: 'Кабинет' },
@@ -62,13 +68,16 @@
     ];
 
     const NAV_INVESTOR = [
-        { group: 'Inbox', items: [
+        { group: 'Обзор', items: [
             { view: 'investor', icon: '💼', label: 'Investor', primary: true },
-            { view: 'profile', icon: '👤', label: 'Кабинет' },
+            { view: 'dashboard', icon: '📊', label: 'Dashboard' },
         ]},
         { group: 'Просмотр', items: [
             { view: 'studio', icon: '🎮', label: '3D' },
-            { view: 'dashboard', icon: '📊', label: 'Dashboard' },
+            { view: 'projects', icon: '📦', label: 'Проекты' },
+        ]},
+        { group: 'Аккаунт', items: [
+            { view: 'profile', icon: '👤', label: 'Кабинет' },
         ]},
     ];
 
@@ -99,12 +108,13 @@
     function canShow(item, user) {
         if (item.admin && !global.Auth?.canAccessAdmin?.(user)) return false;
         if (item.adminLearning && !global.Auth?.canViewAgentLearning?.(user)) return false;
+        if (item.investor && !global.Auth?.canViewInvestorPortal?.(user)) return false;
         if (item.role === 'investor') {
             if (!user) return false;
             return user.is_investor || user.can_view_investor_portal || global.Auth?.canAccessAdmin?.(user);
         }
         if (user?.role === 'investor' || user?.is_investor) {
-            if (!['investor', 'profile', 'studio', 'dashboard'].includes(item.view)) return false;
+            if (!['investor', 'profile', 'studio', 'dashboard', 'projects'].includes(item.view)) return false;
         }
         if (user && global.ProfileCabinet?.canAccessView && !ProfileCabinet.canAccessView(user, item.view)) {
             if (!['profile', 'tasks', 'chat', 'kanban', 'studio'].includes(item.view)) return false;
@@ -112,19 +122,34 @@
         return true;
     }
 
+    function renderItem(i) {
+        if (i.action === 'search') {
+            return `<button type="button" class="sb-item sb-action" onclick="FeaturePack?.openGlobalSearch?.()" title="Поиск">
+                <span class="sb-icon">${i.icon}</span><span class="sb-label">${i.label}</span></button>`;
+        }
+        if (i.action === 'commands') {
+            return `<button type="button" class="sb-item sb-action" onclick="FeaturePack?.openCommandPalette?.()" title="Команды">
+                <span class="sb-icon">${i.icon}</span><span class="sb-label">${i.label}</span></button>`;
+        }
+        return `<button type="button" class="sb-item${i.primary ? ' sb-primary' : ''}" data-view="${i.view}" onclick="SidebarNav.onNavClick('${i.view}')" title="${i.label}">
+            <span class="sb-icon">${i.icon}</span><span class="sb-label">${i.label}</span>
+        </button>`;
+    }
+
     function render() {
         const el = document.getElementById('appSidebarNav');
         if (!el) return;
         const user = global.Auth?.getUser?.();
         const NAV = getNav(user);
-        el.innerHTML = NAV.map((g) => {
+        const quickBar = `<div class="sb-quick sb-label">
+            <button type="button" class="sb-quick-btn" onclick="FeaturePack?.openGlobalSearch?.()" title="Поиск">🔍 Поиск</button>
+            <button type="button" class="sb-quick-btn" onclick="FeaturePack?.openCommandPalette?.()" title="Команды">⌘ Команды</button>
+        </div>`;
+        el.innerHTML = quickBar + NAV.map((g) => {
             const items = g.items.filter((i) => canShow(i, user));
             if (!items.length) return '';
             const adv = g.advanced ? ' sb-group-advanced' : '';
-            return `<div class="sb-group${adv}"><div class="sb-group-label">${g.group}</div>${items.map((i) =>
-                `<button type="button" class="sb-item${i.primary ? ' sb-primary' : ''}" data-view="${i.view}" onclick="SidebarNav.onNavClick('${i.view}')" title="${i.label}">
-                    <span class="sb-icon">${i.icon}</span><span class="sb-label">${i.label}</span>
-                </button>`).join('')}</div>`;
+            return `<div class="sb-group${adv}"><div class="sb-group-label">${g.group}</div>${items.map(renderItem).join('')}</div>`;
         }).join('');
     }
 
@@ -135,7 +160,7 @@
 
     function setActive(view) {
         document.querySelectorAll('.sb-item[data-view]').forEach((b) => {
-            b.classList.toggle('active', b.dataset.view === view || (view === 'learning' && b.dataset.view === 'agent-learning'));
+            b.classList.toggle('active', b.dataset.view === view || (view === 'agent-learning' && b.dataset.view === 'agent-learning') || (view === 'agent-learning' && b.dataset.view === 'design'));
         });
         if (global.UICore) UICore.setMobileTabActive(view);
     }

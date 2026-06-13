@@ -1,0 +1,250 @@
+/**
+ * Snow Dashboard UI Kit — цвета и стили навигации
+ * Токены: https://github.com/SnowUI/home
+ */
+
+:root {
+    /* Snow raw tokens */
+    --snow-bg-1: #FFFFFF;
+    --snow-bg-2: #F9F9FA;
+    --snow-bg-4: #EDEEFC;
+    --snow-bg-5: #E6F1FD;
+    --snow-indigo: #ADADFB;
+    --snow-blue: #7DBBFF;
+    --snow-purple: #B899EB;
+    --snow-green: #71DD8C;
+    --snow-red: #FF4747;
+    --snow-orange: #FFB55B;
+    --snow-logo: #4C98FD;
+    --snow-black-10: rgba(0, 0, 0, 0.1);
+    --snow-black-4: rgba(0, 0, 0, 0.04);
+    --snow-radius: 12px;
+    --sidebar-w: 240px;
+}
+
+[data-theme="light"] {
+    --bg: var(--snow-bg-2);
+    --surface: var(--snow-bg-1);
+    --surface-2: var(--snow-bg-2);
+    --border: var(--snow-black-10);
+    --text: #000000;
+    --text-muted: rgba(0, 0, 0, 0.45);
+    --accent: var(--snow-logo);
+    --accent-text: #fff;
+    --accent-soft: rgba(76, 152, 253, 0.12);
+    --green: #3db86a;
+    --purple: var(--snow-purple);
+    --purple-soft: rgba(184, 153, 235, 0.14);
+    --red: var(--snow-red);
+    --yellow: #FFCC00;
+    --user-bg: var(--snow-bg-5);
+    --user-border: rgba(76, 152, 253, 0.25);
+    --code-bg: var(--snow-bg-2);
+    --overlay: rgba(15, 20, 25, 0.35);
+    --scrollbar: #d8dbe2;
+    --glass: rgba(255, 255, 255, 0.88);
+    --gradient-accent: linear-gradient(135deg, var(--snow-purple) 0%, var(--snow-indigo) 45%, var(--snow-blue) 100%);
+    --gradient-border: linear-gradient(135deg, rgba(184, 153, 235, 0.5), rgba(173, 173, 251, 0.35), rgba(125, 187, 255, 0.45));
+    --glow-purple: 0 0 20px rgba(173, 173, 251, 0.25);
+    --glow-cyan: 0 0 16px rgba(125, 187, 255, 0.2);
+    --empire-gold: var(--snow-orange);
+    --empire-purple: var(--snow-purple);
+    --empire-neon: var(--snow-indigo);
+}
+
+[data-theme="dark"] {
+    --bg: #333333;
+    --surface: #3a3a3a;
+    --surface-2: rgba(255, 255, 255, 0.06);
+    --border: rgba(255, 255, 255, 0.12);
+    --text: #ffffff;
+    --text-muted: rgba(255, 255, 255, 0.55);
+    --accent: var(--snow-indigo);
+    --accent-text: #1a1a2e;
+    --accent-soft: rgba(173, 173, 251, 0.14);
+    --green: var(--snow-green);
+    --purple: var(--snow-purple);
+    --purple-soft: rgba(184, 153, 235, 0.12);
+    --red: var(--snow-red);
+    --yellow: #FFCC00;
+    --user-bg: rgba(173, 173, 251, 0.1);
+    --user-border: rgba(173, 173, 251, 0.28);
+    --code-bg: #2a2a2a;
+    --overlay: rgba(0, 0, 0, 0.72);
+    --scrollbar: #555;
+    --glass: rgba(64, 64, 64, 0.92);
+    --gradient-accent: linear-gradient(135deg, var(--snow-indigo) 0%, var(--snow-blue) 50%, var(--snow-purple) 100%);
+    --gradient-border: linear-gradient(135deg, rgba(173, 173, 251, 0.45), rgba(125, 187, 255, 0.3), rgba(184, 153, 235, 0.35));
+    --glow-purple: 0 0 20px rgba(173, 173, 251, 0.3);
+    --glow-cyan: 0 0 16px rgba(125, 187, 255, 0.22);
+    --empire-gold: var(--snow-orange);
+    --empire-purple: var(--snow-purple);
+    --empire-neon: var(--snow-indigo);
+}
+
+[data-theme="light"] body::before {
+    background:
+        radial-gradient(ellipse 70% 45% at 12% -5%, rgba(237, 238, 252, 0.9), transparent 55%),
+        radial-gradient(ellipse 55% 40% at 92% 8%, rgba(230, 241, 253, 0.85), transparent 50%),
+        radial-gradient(ellipse 50% 35% at 50% 100%, rgba(125, 187, 255, 0.08), transparent 45%);
+    animation: none;
+    opacity: 1;
+}
+
+[data-theme="dark"] body::before {
+    background:
+        radial-gradient(ellipse 65% 40% at 10% -5%, rgba(173, 173, 251, 0.12), transparent 55%),
+        radial-gradient(ellipse 50% 35% at 90% 10%, rgba(125, 187, 255, 0.08), transparent 50%),
+        radial-gradient(ellipse 45% 30% at 50% 100%, rgba(184, 153, 235, 0.06), transparent 45%);
+    animation: none;
+    opacity: 1;
+}
+
+/* ─── Sidebar (Snow Dashboard style) ─── */
+.app-sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    box-shadow: 1px 0 0 var(--snow-black-4);
+}
+
+.sb-brand {
+    font-family: var(--font);
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    padding: 18px 16px 14px;
+}
+
+.sb-brand-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, var(--snow-logo), var(--snow-indigo));
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.sb-group { margin-bottom: 8px; }
+
+.sb-group-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    color: var(--text-muted);
+    padding: 8px 14px 4px;
+}
+
+.sb-item {
+    gap: 12px;
+    padding: 9px 12px;
+    margin: 2px 8px;
+    width: calc(100% - 16px);
+    border-radius: var(--snow-radius);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.sb-item:hover {
+    background: var(--accent-soft);
+}
+
+.sb-item.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 var(--accent);
+}
+
+[data-theme="light"] .sb-item.active {
+    background: var(--snow-bg-4);
+}
+
+.sb-item.sb-primary.active {
+    background: linear-gradient(90deg, var(--accent-soft), transparent);
+}
+
+.sb-icon {
+    font-size: 1.05rem;
+    min-width: 22px;
+    opacity: 0.92;
+}
+
+.sb-item.active .sb-icon { opacity: 1; }
+
+.sb-divider {
+    height: 1px;
+    margin: 8px 14px;
+    background: var(--border);
+}
+
+.sb-quick {
+    display: flex;
+    gap: 6px;
+    padding: 0 10px 8px;
+}
+
+.sb-quick-btn {
+    flex: 1;
+    padding: 7px 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.sb-quick-btn:hover {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: transparent;
+}
+
+.sb-footer {
+    padding: 8px 6px 12px;
+}
+
+.sb-badge {
+    background: var(--snow-orange);
+    color: #1a1a1a;
+}
+
+.sb-group-advanced .sb-group-label {
+    color: var(--text-muted);
+    opacity: 0.85;
+}
+
+/* Header + mobile tabs */
+.header {
+    border-bottom-color: var(--border);
+}
+
+.mobile-tab-bar {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+}
+
+.mobile-tab-bar .mtab.active {
+    color: var(--accent);
+}
+
+.mobile-tab-bar .mtab.active::before {
+    background: var(--accent);
+}
+
+.ucard-kpi-val { color: var(--accent); }
+
+.btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.btn-primary:hover {
+    filter: brightness(1.06);
+}
