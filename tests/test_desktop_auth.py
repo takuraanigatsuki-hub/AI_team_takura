@@ -30,11 +30,19 @@ def test_device_flow(client):
     data = r.json()
     assert "device_id" in data
     assert "user_code" in data
+    assert "poll_secret" in data
     assert len(data["user_code"]) == 6
 
     r2 = client.get(f"/api/auth/device/poll/{data['device_id']}")
     assert r2.status_code == 200
-    assert r2.json()["status"] == "pending"
+    assert r2.json()["status"] == "expired"
+
+    r3 = client.get(
+        f"/api/auth/device/poll/{data['device_id']}",
+        params={"secret": data["poll_secret"]},
+    )
+    assert r3.status_code == 200
+    assert r3.json()["status"] == "pending"
 
 
 def test_device_start_no_auth_required(client):
