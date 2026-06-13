@@ -10,10 +10,43 @@ from integrations.rag.url_ingest import ingest_url
 
 
 async def ingest_wikipedia_topic(agent_id: str, topic: str, pack_id: str = "wiki") -> dict:
-    url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{topic.replace(' ', '_')}"
+    from urllib.parse import quote
+    title = topic.strip().replace(" ", "_")
+    url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{quote(title, safe='()_')}"
+    headers = {
+        "User-Agent": "TakuraAI/1.0 (https://github.com/takuraanigatsuki-hub/AI_team_takura; takura.anigatsuki@gmail.com)",
+        "Accept": "application/json",
+    }
     try:
-        async with httpx.AsyncClient(timeout=20, follow_redirects=True) as client:
-            r = await client.get(url, headers={"User-Agent": "TakuraRAG/1.0"})
+        async with httpx.AsyncClient(timeout=25, follow_redirects=True) as client:
+            r = await client.get(url, headers=headers)
+            if r.status_code == 404:
+                # fallback: MediaWiki API
+                api = "https://en.wikipedia.org/w/api.php"
+                params = {
+                    "action": "query", "format": "json", "prop": "extracts",
+                    "exintro": "1", "explaintext": "1", "titles": topic,
+                }
+                r = await client.get(api, params=params, headers=headers)
+                if r.status_code != 200:
+                    return {"ok": False, "topic": topic, "error": f"HTTP {r.status_code}"}
+                pages = r.json().get("query", {}).get("pages", {})
+                page = next(iter(pages.values()), {})
+                extract = (page.get("extract") or "").strip()
+                title_out = page.get("title") or topic
+                if len(extract) < 80:
+                    return {"ok": False, "topic": topic, "error": "short extract"}
+                ingest_entry(
+                    agent_id,
+                    {
+                        "title": title_out,
+                        "content": extract,
+                        "keywords": f"wikipedia {topic}",
+                        "source": f"https://en.wikipedia.org/wiki/{quote(title, safe='()_')}",
+                    },
+                    pack_id=pack_id,
+                )
+                return {"ok": True, "topic": topic, "agent_id": agent_id, "via": "mediawiki"}
             if r.status_code != 200:
                 return {"ok": False, "topic": topic, "error": f"HTTP {r.status_code}"}
             data = r.json()
@@ -30,7 +63,7 @@ async def ingest_wikipedia_topic(agent_id: str, topic: str, pack_id: str = "wiki
             },
             pack_id=pack_id,
         )
-        return {"ok": True, "topic": topic, "agent_id": agent_id}
+        return {"ok": True, "topic": topic, "agent_id": agent_id, "via": "rest"}
     except Exception as e:
         return {"ok": False, "topic": topic, "error": str(e)}
 
