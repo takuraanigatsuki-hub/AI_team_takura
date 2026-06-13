@@ -15,6 +15,7 @@ ROLE_FIT = {
     "cursor": ["код", "code", "cursor", "github", "implement", "refactor", "sdk"],
     "presenter": ["презентац", "slides", "pitch", "слайд", "deck", "доклад"],
     "modeler": ["3d", "3д", "three", "glb", "gltf", "blender", "webgl", "модел", "сцен"],
+    "security": ["безопас", "security", "owasp", "уязвим", "cve", "audit", "pen test"],
 }
 
 
@@ -25,7 +26,7 @@ def agent_fits_role(agent_id: str, task_text: str, subtask: str) -> tuple[bool, 
 
     kind_map = {
         "table": ("frontend", "evaluator"),
-        "presentation": ("presenter", "doc_writer", "evaluator"),
+        "presentation": ("presenter", "evaluator"),
         "model_3d": ("modeler", "evaluator"),
         "site": ("architect", "frontend", "backend", "qa", "evaluator"),
         "api": ("architect", "backend", "qa", "reviewer"),
@@ -34,6 +35,7 @@ def agent_fits_role(agent_id: str, task_text: str, subtask: str) -> tuple[bool, 
         "architecture": ("architect", "evaluator"),
         "tests": ("qa", "evaluator"),
         "infra": ("devops", "evaluator"),
+        "security": ("security", "reviewer", "evaluator"),
     }
     primary = kind_map.get(kind, ())
     if agent_id in primary:
@@ -43,8 +45,11 @@ def agent_fits_role(agent_id: str, task_text: str, subtask: str) -> tuple[bool, 
     if any(k in blob for k in keywords):
         return True, "Задача совпадает с профилем роли."
 
-    if agent_id in ("evaluator", "reviewer"):
+    if agent_id == "evaluator":
         return True, "Оценка и проверка результата."
+
+    if agent_id == "reviewer" and kind in ("api", "site", "tests", "infra", "architecture"):
+        return True, "Code/architecture review."
 
     if agent_id == "pm":
         return False, "PM уже составил план — не исполняет подзадачи."
@@ -58,8 +63,9 @@ async def run_role_triage(
     agents: dict,
     room_manager,
     parent_id: str = None,
+    silent: bool = True,
 ) -> dict:
-    """Каждый агент «смотрит» задачу; в чат — вердикт; возвращает принятые назначения."""
+    """Фильтр ролей; silent=True — одна сводка вместо сообщения от каждого агента."""
     accepted: dict[str, str] = {}
     declined: list[dict] = []
 
@@ -68,24 +74,21 @@ async def run_role_triage(
         if not agent:
             continue
         fits, reason = agent_fits_role(agent_id, task_text, subtask)
-        verdict = "✅ Беру" if fits else "⏭ Пропускаю"
-        msg = f"{verdict}: *{subtask[:120]}*\n_{reason}_"
-
-        await room_manager.broadcast_work({
-            "type": "role_triage",
-            "agent_id": agent_id,
-            "agent_name": agent.name,
-            "agent_emoji": agent.emoji,
-            "fits_role": fits,
-            "reason": reason,
-            "subtask": subtask,
-            "parent_id": parent_id,
-            "message": msg,
-            "timestamp": __import__("datetime").datetime.now().isoformat(),
-        })
-
         if fits:
             accepted[agent_id] = subtask
+            if not silent:
+                await room_manager.broadcast_work({
+                    "type": "role_triage",
+                    "agent_id": agent_id,
+                    "agent_name": agent.name,
+                    "agent_emoji": agent.emoji,
+                    "fits_role": True,
+                    "reason": reason,
+                    "subtask": subtask,
+                    "parent_id": parent_id,
+                    "message": f"✅ Беру: *{subtask[:120]}*\n_{reason}_",
+                    "timestamp": __import__("datetime").datetime.now().isoformat(),
+                })
         else:
             declined.append({"agent_id": agent_id, "reason": reason})
 
@@ -101,5 +104,22 @@ async def run_role_triage(
             p["triage"] = {"accepted": list(accepted.keys()), "declined": declined}
             p["status"] = "triaging"
             room_manager.task_history._save()
+
+    if silent and room_manager and accepted:
+        names = ", ".join(
+            f"{agents[a].emoji} {agents[a].name}" for a in accepted if a in agents
+        )
+        skipped = len(declined)
+        await room_manager.broadcast_work({
+            "type": "role_triage_summary",
+            "parent_id": parent_id,
+            "message": (
+                f"🎯 **В работу:** {names}"
+                + (f" _(не по роли: {skipped})_" if skipped else "")
+            ),
+            "accepted": list(accepted.keys()),
+            "declined_count": skipped,
+            "timestamp": __import__("datetime").datetime.now().isoformat(),
+        })
 
     return accepted

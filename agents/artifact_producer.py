@@ -84,12 +84,22 @@ async def produce_artifact(agent, task_text: str, response: str, revision_of: st
         ])
         content = preview_html
         files = {"slides.html": preview_html}
+        try:
+            from integrations.pptx_builder import build_pptx_bytes
+            files["presentation.pptx"] = build_pptx_bytes(task_text, response, title=title)
+        except Exception:
+            pass
     elif art_type == "presentation":
         preview_html = _presentation_html(title, task_text, [
             {"title": "Введение", "bullets": [response[:200] if response else task_text[:80]]},
         ])
         content = preview_html
         files = {"slides.html": preview_html}
+        try:
+            from integrations.pptx_builder import build_pptx_bytes
+            files["presentation.pptx"] = build_pptx_bytes(task_text, response, title=title)
+        except Exception:
+            pass
 
     elif art_type == "model_3d":
         preview_html = _threejs_scene_html(title, task_text)
@@ -116,6 +126,11 @@ th{{background:#f3f4f6;font-weight:600}}
 </tbody></table></body></html>"""
         content = preview_html
         files = {"table.html": preview_html}
+        try:
+            from integrations.xlsx_builder import build_xlsx_bytes
+            files["table.xlsx"] = build_xlsx_bytes(task_text)
+        except Exception:
+            pass
 
     elif art_type in ("code", "api", "tests", "infra"):
         lang = "python" if agent.agent_id in ("backend", "qa", "devops") else "typescript"

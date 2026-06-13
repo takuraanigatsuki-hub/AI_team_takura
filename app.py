@@ -54,6 +54,16 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"⚠️ Snow theme init: {e}")
 
+    try:
+        from integrations.rag.ingest import ensure_indexed
+        rag = ensure_indexed(min_total=400)
+        if rag.get("skipped"):
+            print(f"📚 RAG knowledge: {rag.get('total')} chunks (cached)")
+        else:
+            print(f"📚 RAG knowledge indexed: {rag.get('total', 0)} chunks")
+    except Exception as e:
+        print(f"⚠️ RAG init: {e}")
+
     room.task_history.cleanup_stale(max_minutes=30)
     cancelled = room.task_history.stats().get("cancelled", 0)
     if cancelled:
@@ -1597,6 +1607,21 @@ async def figma_theme_sync():
         "css_path": "/static/css/figma-theme.generated.css",
         "extracted": theme.get("extracted", {}),
     }
+
+
+@app.get("/api/rag/status")
+async def rag_status():
+    from integrations.rag.ingest import get_index_stats
+    from knowledge_packs.packs_data import pack_stats
+    stats = get_index_stats()
+    return {"ok": True, "index": stats, "pack_catalog": pack_stats()}
+
+
+@app.post("/api/rag/reindex")
+async def rag_reindex(replace: bool = False):
+    from integrations.rag.ingest import ingest_all_packs, get_index_stats
+    result = ingest_all_packs(replace=replace)
+    return {"ok": True, "ingest": result, "index": get_index_stats()}
 
 
 @app.get("/api/figma/auth")

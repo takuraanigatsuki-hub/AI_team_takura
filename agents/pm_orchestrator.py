@@ -69,15 +69,18 @@ class PMOrchestratorAgent(BaseAgent):
         return "\n".join(lines)
 
     async def orchestrate_task(self, task_text: str, agents: dict, parent_id: str = None):
-        assignments = self._analyze_and_assign(task_text, agents)
+        pm_assignments = self._analyze_and_assign(task_text, agents)
+
+        from room.llm_router import route_task
+        assignments, router_note = await route_task(task_text, pm_assignments, agents)
 
         from room.role_triage import run_role_triage
         assignments = await run_role_triage(
-            task_text, assignments, agents, self.room_manager, parent_id,
+            task_text, assignments, agents, self.room_manager, parent_id, silent=True,
         )
 
         plan = self.create_plan(task_text, assignments, agents)
-        plan += "\n\n🔍 **Triage:** каждый агент проверил роль — работают только подходящие."
+        plan += f"\n\n🔍 **Маршрутизация:** {router_note}"
 
         if self.room_manager:
             self.room_manager.current_plan = {
@@ -164,8 +167,7 @@ class PMOrchestratorAgent(BaseAgent):
 
         if kind == "presentation":
             assignments["presenter"] = f"Создать презентацию (слайды): {task_text}"
-            assignments["doc_writer"] = f"Тексты слайдов и заметки: {task_text}"
-            assignments["reviewer"] = f"Проверить презентацию: {task_text}"
+            assignments["evaluator"] = f"Проверить презентацию: {task_text}"
             return assignments
 
         if kind == "model_3d":

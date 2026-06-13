@@ -35,6 +35,20 @@ def get_learned_hints(agent_id: str, task_text: str, agent_topics: list | None =
             "Учитывай изученное ранее (не копируй шаблон буквально):\n"
             + "\n".join(f"- {line}" for line in hints["summary_lines"][:4])
         )
+
+    try:
+        from integrations.rag.retrieve import retrieve_context_text
+        rag_ctx = retrieve_context_text(agent_id, task_text, limit=5)
+        if rag_ctx:
+            hints["rag_context"] = rag_ctx
+            hints["prompt_extra"] = (
+                (hints.get("prompt_extra") or "")
+                + "\n\nБаза знаний (RAG):\n"
+                + rag_ctx
+            ).strip()
+    except Exception:
+        pass
+
     return hints
 
 
