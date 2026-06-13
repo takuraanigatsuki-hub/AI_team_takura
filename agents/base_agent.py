@@ -1171,16 +1171,6 @@ class BaseAgent:
             )
             if hints.get("prompt_extra"):
                 base += f"\n\n{hints['prompt_extra']}"
-            # Hybrid RAG (embeddings) when LLM path active
-            try:
-                from integrations.rag.retrieve import retrieve_context_text_async
-                rag_extra = await retrieve_context_text_async(
-                    self.agent_id, task_text or self.current_task or "", limit=4,
-                )
-                if rag_extra and rag_extra not in base:
-                    base += f"\n\nБаза знаний (semantic RAG):\n{rag_extra}"
-            except Exception:
-                pass
         except Exception:
             pass
         try:
@@ -1198,8 +1188,16 @@ class BaseAgent:
             from integrations.llm_client import is_configured, agent_reply, chat_stream
             if is_configured():
                 streamed = ""
+                system = self._system_with_memory(task_text)
+                try:
+                    from integrations.rag.retrieve import retrieve_context_text_async
+                    rag_extra = await retrieve_context_text_async(self.agent_id, task_text, limit=4)
+                    if rag_extra:
+                        system += f"\n\nБаза знаний (semantic RAG):\n{rag_extra}"
+                except Exception:
+                    pass
                 messages = [
-                    {"role": "system", "content": self._system_with_memory(task_text)},
+                    {"role": "system", "content": system},
                     {"role": "user", "content": f"Задача: {task_text}"},
                 ]
                 if self.room_manager:
@@ -1257,7 +1255,16 @@ class BaseAgent:
             if not artifact:
                 return None
             saved = save_artifact(self.agent_id, artifact)
+            gate_passed = True
             if self.room_manager:
+                try:
+                    from room.evaluator_gate import gate_before_delivery
+                    gate_passed = await gate_before_delivery(
+                        task_text, self, response, saved, self.room_manager,
+                    )
+                except Exception:
+                    gate_passed = True
+            if self.room_manager and gate_passed:
                 from room.agent_capabilities import get_capabilities
                 from room.task_routing import delivery_channel, should_use_m365
                 caps = get_capabilities(self.agent_id)
@@ -1301,6 +1308,14 @@ class BaseAgent:
                         ),
                         "timestamp": datetime.now().isoformat(),
                     })
+            elif self.room_manager and not gate_passed:
+                await self.room_manager.broadcast_work({
+                    "type": "artifact_draft",
+                    "agent_id": self.agent_id,
+                    "artifact_id": saved["id"],
+                    "message": f"📝 Черновик «{saved['title']}» сохранён в Проектах — нужна доработка (оценка ниже порога).",
+                    "timestamp": datetime.now().isoformat(),
+                })
             return saved
         except Exception:
             return None

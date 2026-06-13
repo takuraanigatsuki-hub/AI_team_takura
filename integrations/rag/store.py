@@ -59,6 +59,7 @@ class RagStore:
         with _lock:
             conn = self._connect()
             try:
+                conn.execute("DELETE FROM rag_vec WHERE agent_id = ?", (agent_id,))
                 cur = conn.execute(
                     "DELETE FROM rag_fts WHERE agent_id = ?", (agent_id,)
                 )

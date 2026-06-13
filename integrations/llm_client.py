@@ -22,15 +22,16 @@ def _settings() -> dict:
     }
 
 
-async def chat(messages: list, max_tokens: int = 800) -> str:
+async def chat(messages: list, max_tokens: int = 800, model: str = None) -> str:
     cfg = _settings()
     if not cfg["api_key"]:
         return ""
+    use_model = model or cfg["model"]
     async with httpx.AsyncClient(timeout=60.0) as client:
         resp = await client.post(
             f"{cfg['base_url']}/chat/completions",
             headers={"Authorization": f"Bearer {cfg['api_key']}", "Content-Type": "application/json"},
-            json={"model": cfg["model"], "messages": messages, "max_tokens": max_tokens, "temperature": 0.7},
+            json={"model": use_model, "messages": messages, "max_tokens": max_tokens, "temperature": 0.7},
         )
         if resp.status_code != 200:
             raise RuntimeError(f"LLM {resp.status_code}: {resp.text[:300]}")
@@ -46,6 +47,11 @@ async def chat(messages: list, max_tokens: int = 800) -> str:
         except Exception:
             pass
         return data["choices"][0]["message"]["content"]
+
+
+def router_model() -> str:
+    import config as cfg
+    return os.environ.get("LLM_ROUTER_MODEL") or cfg.config.get("llm_router_model") or _settings()["model"]
 
 
 async def chat_stream(messages: list, max_tokens: int = 900) -> AsyncIterator[str]:
