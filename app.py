@@ -334,7 +334,7 @@ async def app_spa(request: Request):
 @app.get("/cabinet")
 async def cabinet_page():
     """Личный кабинет — портал."""
-    return RedirectResponse("/portal?view=profile")
+    return RedirectResponse("/portal?view=profile", status_code=302)
 
 
 @app.get("/investor", response_class=HTMLResponse)
@@ -389,7 +389,7 @@ async def desktop_handoff(request: Request, t: str = ""):
     session_token = consume_handoff(t)
     if not session_token:
         return RedirectResponse("/client?error=handoff_expired")
-    resp = RedirectResponse("/workspace?client=desktop")
+    resp = RedirectResponse("/workspace", status_code=302)
     _set_session_cookie(resp, session_token)
     return resp
 
@@ -680,6 +680,7 @@ async def auth_me(request: Request):
 
 class DeviceApproveBody(BaseModel):
     device_id: str
+    user_code: str = ""
 
 
 @app.post("/api/auth/device/start")
