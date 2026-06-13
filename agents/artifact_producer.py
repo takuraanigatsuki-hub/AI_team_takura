@@ -142,7 +142,7 @@ table{{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;ov
 th,td{{padding:12px 16px;text-align:left;border-bottom:1px solid #e5e7eb;font-size:14px}}
 th{{background:#f3f4f6;font-weight:600}}
 </style></head><body>
-<h1>{_esc(title)}</h1><p>{_esc(task[:120])}</p>
+<h1>{_esc(title)}</h1><p>{_esc(user_task[:120])}</p>
 <table><thead><tr><th>#</th><th>Название</th><th>Значение</th><th>Статус</th></tr></thead>
 <tbody>
 <tr><td>1</td><td>Строка A</td><td>100</td><td>OK</td></tr>

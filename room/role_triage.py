@@ -27,8 +27,8 @@ def agent_fits_role(agent_id: str, task_text: str, subtask: str) -> tuple[bool, 
     kind_map = {
         "table": ("frontend", "evaluator"),
         "presentation": ("presenter", "evaluator"),
-        "model_3d": ("modeler", "evaluator"),
-        "site": ("architect", "frontend", "backend", "qa", "evaluator"),
+        "model_3d": ("modeler", "reviewer", "evaluator"),
+        "site": ("architect", "frontend", "backend", "qa", "reviewer", "doc_writer", "evaluator"),
         "api": ("architect", "backend", "qa", "reviewer"),
         "ui": ("frontend", "evaluator"),
         "document": ("doc_writer", "evaluator"),
@@ -37,6 +37,14 @@ def agent_fits_role(agent_id: str, task_text: str, subtask: str) -> tuple[bool, 
         "infra": ("devops", "evaluator"),
         "security": ("security", "reviewer", "evaluator"),
     }
+    if kind in kind_map:
+        allowed = set(kind_map[kind])
+        if agent_id in allowed:
+            return True, f"Роль подходит для задачи типа «{kind}»."
+        if agent_id == "evaluator":
+            return True, "Оценка и проверка результата."
+        return False, f"Не входит в зону ответственности {agent_id} для «{kind}»."
+
     primary = kind_map.get(kind, ())
     if agent_id in primary:
         return True, f"Роль подходит для задачи типа «{kind}»."
