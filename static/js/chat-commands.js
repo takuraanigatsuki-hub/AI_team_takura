@@ -23,9 +23,37 @@
         return document.getElementById('slashDropdown');
     }
 
+    function isDropdownVisible() {
+        const dd = getDropdown();
+        return !!(dd && !dd.classList.contains('hidden'));
+    }
+
     function hide() {
         getDropdown()?.classList.add('hidden');
         activeIdx = 0;
+    }
+
+    function currentSlashQuery(val) {
+        val = val ?? getInput()?.value ?? '';
+        const slash = val.lastIndexOf('/');
+        if (slash < 0) return '';
+        const after = val.slice(slash + 1);
+        const space = after.indexOf(' ');
+        return (space >= 0 ? after.slice(0, space) : after).toLowerCase();
+    }
+
+    function isSlashComposing(text) {
+        const val = (text || '').trim();
+        if (!val.startsWith('/')) return false;
+        if (isDropdownVisible()) return true;
+        const body = val.slice(1).trim();
+        if (!body) return true;
+        if (!body.includes(' ')) {
+            const key = body.toLowerCase();
+            const exact = commands.some((c) => c.cmd === key);
+            if (!exact) return true;
+        }
+        return false;
     }
 
     function applyCommand(cmd) {
@@ -47,10 +75,21 @@
         input.focus();
     }
 
+    function applyActive() {
+        const dd = getDropdown();
+        if (!dd || dd.classList.contains('hidden')) return false;
+        const items = dd.querySelectorAll('.slash-item');
+        if (!items.length) return false;
+        const cmdKey = items[activeIdx]?.dataset.cmd;
+        const cmd = commands.find((c) => c.cmd === cmdKey);
+        if (cmd) applyCommand(cmd);
+        return !!cmd;
+    }
+
     function renderDropdown(query) {
         const dd = getDropdown();
         if (!dd) return;
-        const q = query.toLowerCase();
+        const q = (query || '').toLowerCase();
         const matches = commands.filter((c) =>
             c.cmd.startsWith(q) || (c.label || '').toLowerCase().includes(q)
         ).slice(0, 10);
@@ -89,7 +128,22 @@
         }
         const space = after.indexOf(' ');
         const query = space >= 0 ? after.slice(0, space) : after;
+        activeIdx = 0;
         renderDropdown(query);
+    }
+
+    function handleEnter(e) {
+        if (isDropdownVisible()) {
+            e.preventDefault();
+            applyActive();
+            return true;
+        }
+        const text = getInput()?.value.trim() || '';
+        if (isSlashComposing(text)) {
+            e.preventDefault();
+            return true;
+        }
+        return false;
     }
 
     function onKeydown(e) {
@@ -100,18 +154,21 @@
         if (e.key === 'ArrowDown') {
             e.preventDefault();
             activeIdx = (activeIdx + 1) % items.length;
-            renderDropdown(getInput()?.value.slice(getInput().value.lastIndexOf('/') + 1).split(' ')[0] || '');
+            renderDropdown(currentSlashQuery());
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             activeIdx = (activeIdx - 1 + items.length) % items.length;
-            renderDropdown(getInput()?.value.slice(getInput().value.lastIndexOf('/') + 1).split(' ')[0] || '');
-        } else if (e.key === 'Tab' || (e.key === 'Enter' && dd.classList.contains('visible-on-enter'))) {
-            const active = items[activeIdx];
-            if (active && e.key === 'Tab') {
-                e.preventDefault();
-                const cmd = commands.find((c) => c.cmd === active.dataset.cmd);
-                if (cmd) applyCommand(cmd);
-            }
+            renderDropdown(currentSlashQuery());
+        } else if (e.key === 'Tab') {
+            e.preventDefault();
+            applyActive();
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            applyActive();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            hide();
         }
     }
 
@@ -124,6 +181,13 @@
         input.addEventListener('blur', () => setTimeout(hide, 150));
     }
 
-    global.ChatCommands = { init, loadCommands, hide };
+    global.ChatCommands = {
+        init,
+        loadCommands,
+        hide,
+        handleEnter,
+        isSlashComposing,
+        applyActive,
+    };
     document.addEventListener('DOMContentLoaded', init);
 })(window);

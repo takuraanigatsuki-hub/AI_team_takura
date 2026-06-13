@@ -16,6 +16,10 @@
         }
     }
     const LEARNING_AGENT_ORDER = ['evaluator', 'pm', 'architect', 'backend', 'frontend', 'qa', 'reviewer', 'doc_writer', 'devops', 'cursor'];
+    const AGENT_ORDER = [
+        'pm', 'architect', 'backend', 'frontend', 'qa', 'reviewer',
+        'doc_writer', 'devops', 'cursor', 'presenter', 'modeler', 'evaluator',
+    ];
     const LEARNING_TYPES = new Set([
         'learning', 'learning_result', 'reflection', 'rest', 'figma_study',
         'peer_learning', 'peer_discussion', 'skill_evaluation', 'learning_project',
@@ -1086,10 +1090,17 @@
     function renderAgents() {
         const list = document.getElementById('agentsList');
         if (!list) return;
-        list.innerHTML = AGENT_ORDER.map((id) => {
-            const a = agents[id];
-            if (!a) return '';
-            return `
+        const order = AGENT_ORDER.filter((id) => agents[id]);
+        Object.keys(agents).forEach((id) => {
+            if (id !== 'security' && !order.includes(id)) order.push(id);
+        });
+        if (!order.length) {
+            list.innerHTML = '<div class="no-selection">Подключение…</div>';
+        } else {
+            list.innerHTML = order.map((id) => {
+                const a = agents[id];
+                if (!a) return '';
+                return `
                 <div class="agent-card agent-card-compact ${selectedAgent === id ? 'selected' : ''}" onclick="selectAgent('${id}')">
                     <div class="agent-top">
                         <div class="agent-emoji">${a.emoji}</div>
@@ -1101,7 +1112,8 @@
                     <button type="button" class="agent-dm" onclick="event.stopPropagation();openPrivateChat('${id}')">Личный чат</button>
                     ${id === 'frontend' ? `<button type="button" class="agent-preview-btn" onclick="event.stopPropagation();openSonyaPreview()">⚛️ React Preview</button>` : ''}
                 </div>`;
-        }).join('');
+            }).join('');
+        }
 
         const learnList = document.getElementById('learningAgentsList');
         if (learnList) {
@@ -1195,6 +1207,7 @@
         const input = document.getElementById('messageInput');
         const text = input.value.trim();
         if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+        if (window.ChatCommands?.isSlashComposing?.(text)) return;
         if (window.ChatCommands) ChatCommands.hide();
         const target = document.getElementById('targetSelect').value;
         ws.send(JSON.stringify({ type: msgType, text, target }));
@@ -1859,6 +1872,7 @@
 
         document.getElementById('messageInput')?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
+                if (window.ChatCommands?.handleEnter?.(e)) return;
                 e.preventDefault();
                 sendMessage();
             }
