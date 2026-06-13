@@ -338,17 +338,29 @@ async def investor_portal_page():
     if os.path.exists(html_file):
         with open(html_file, "r", encoding="utf-8") as f:
             return HTMLResponse(f.read())
-    return RedirectResponse("/workspace?view=investor")
+    return RedirectResponse("/portal?view=investor")
 
 
-@app.get("/desktop", response_class=HTMLResponse)
-async def desktop_app_shell():
-    """Оболочка десктоп-приложения — splash, вход, регистрация."""
+@app.get("/client", response_class=HTMLResponse)
+async def client_app_shell(request: Request):
+    """Точка входа desktop-клиента — splash и вход (только native client)."""
+    from room.client_access import is_desktop_client, workspace_denied_redirect
+    if not is_desktop_client(request):
+        return RedirectResponse(workspace_denied_redirect(), status_code=302)
     html_file = os.path.join(static_dir, "desktop.html")
     if os.path.exists(html_file):
         with open(html_file, "r", encoding="utf-8") as f:
             return HTMLResponse(f.read())
-    raise HTTPException(status_code=404, detail="Desktop shell not found")
+    raise HTTPException(status_code=404, detail="Client shell not found")
+
+
+@app.get("/desktop", response_class=HTMLResponse)
+async def desktop_app_shell(request: Request):
+    """Legacy — редирект в /client для desktop-клиента."""
+    from room.client_access import is_desktop_client, workspace_denied_redirect
+    if not is_desktop_client(request):
+        return RedirectResponse(workspace_denied_redirect(), status_code=302)
+    return RedirectResponse("/client", status_code=302)
 
 
 @app.get("/auth/device", response_class=HTMLResponse)
@@ -364,11 +376,14 @@ async def auth_device_page():
 @app.get("/desktop/handoff")
 async def desktop_handoff(request: Request, t: str = ""):
     """Одноразовый обмен handoff-токена на сессию (после входа через браузер)."""
+    from room.client_access import is_desktop_client, workspace_denied_redirect
     from room.desktop_auth import consume_handoff
+    if not is_desktop_client(request):
+        return RedirectResponse(workspace_denied_redirect())
     session_token = consume_handoff(t)
     if not session_token:
-        return RedirectResponse("/desktop?error=handoff_expired")
-    resp = RedirectResponse("/workspace?desktop=1")
+        return RedirectResponse("/client?error=handoff_expired")
+    resp = RedirectResponse("/workspace?client=desktop")
     _set_session_cookie(resp, session_token)
     return resp
 
