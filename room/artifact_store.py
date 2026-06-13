@@ -126,81 +126,120 @@ def get_latest_artifact(agent_id: str) -> Optional[dict]:
 
 
 DELIVERABLE_TYPES = frozenset({
-    "presentation", "model_3d", "ui", "site", "code", "document",
+    "presentation", "model_3d", "ui", "site", "code", "document", "project",
 })
 HIDDEN_ARTIFACT_TYPES = frozenset({
     "review", "plan", "tests", "architecture", "infra", "checklist",
 })
+# Агенты, чьи артефакты показываем во вкладке «Проекты» (пустой set = не показывать)
 AGENT_DELIVERABLE = {
-    "presenter": {"presentation"},
-    "modeler": {"model_3d"},
-    "frontend": {"ui", "site", "code"},
-    "backend": {"code"},
-    "architect": {"architecture", "document"},
-    "doc_writer": {"document"},
-    "qa": set(),
-    "reviewer": set(),
-    "pm": set(),
-    "devops": {"infra", "code"},
-    "cursor": {"code"},
-    "evaluator": set(),
-    "security": {"document"},
+    "presenter": frozenset({"presentation"}),
+    "modeler": frozenset({"model_3d"}),
+    "frontend": frozenset({"ui", "site", "code", "project"}),
+    "backend": frozenset({"code"}),
+    "architect": frozenset({"document"}),
+    "doc_writer": frozenset({"document"}),
+    "devops": frozenset({"code", "infra"}),
+    "cursor": frozenset({"code"}),
+    "security": frozenset({"document"}),
+    "qa": frozenset(),
+    "reviewer": frozenset(),
+    "pm": frozenset(),
+    "evaluator": frozenset(),
+}
+AGENT_PRIORITY = {
+    "frontend": 100,
+    "presenter": 90,
+    "modeler": 85,
+    "cursor": 80,
+    "backend": 70,
+    "doc_writer": 65,
+    "devops": 60,
+    "architect": 50,
+    "security": 40,
 }
 
 
+def _artifact_allowed(meta: dict) -> bool:
+    t = meta.get("type", "")
+    aid = meta.get("agent_id", "")
+    if t in HIDDEN_ARTIFACT_TYPES:
+        return False
+    if aid not in AGENT_DELIVERABLE:
+        return t in DELIVERABLE_TYPES
+    allowed = AGENT_DELIVERABLE[aid]
+    if not allowed:
+        return False
+    return t in allowed
+
+
+def _task_key(meta: dict) -> str:
+    raw = (meta.get("task") or meta.get("title") or meta.get("id") or "").strip().lower()
+    for prefix in ("сделай сайт:", "сверстать", "создай", "rest api", "review:", "оценка"):
+        if raw.startswith(prefix):
+            raw = raw[len(prefix):].strip()
+    return raw[:100] or meta.get("id", "")
+
+
+def _pick_better(a: dict, b: dict) -> dict:
+    pa = AGENT_PRIORITY.get(a.get("agent_id", ""), 0)
+    pb = AGENT_PRIORITY.get(b.get("agent_id", ""), 0)
+    if pa != pb:
+        return a if pa >= pb else b
+    ca = a.get("created_at") or ""
+    cb = b.get("created_at") or ""
+    return a if ca >= cb else b
+
+
 def list_deliverables(limit: int = 100, agent_id: Optional[str] = None, art_type: Optional[str] = None) -> list:
-    """Только финальные артефакты — по одному последнему на задачу/тип."""
+    """Финальные артефакты — без QA/review/evaluator, один лучший на задачу."""
     items = _load_index()
     filtered = []
     for i in items:
-        t = i.get("type", "")
-        aid = i.get("agent_id", "")
-        if t in HIDDEN_ARTIFACT_TYPES:
+        if not _artifact_allowed(i):
             continue
-        allowed = AGENT_DELIVERABLE.get(aid)
-        if allowed is not None and allowed and t not in allowed:
+        if agent_id and i.get("agent_id") != agent_id:
             continue
-        if t not in DELIVERABLE_TYPES and t not in ("document",):
-            if t not in ("project",):
-                continue
-        if agent_id and aid != agent_id:
-            continue
-        if art_type and t != art_type:
+        if art_type and i.get("type") != art_type:
             continue
         filtered.append(i)
-    # dedupe by task title — keep newest
-    seen_tasks = {}
-    out = []
+
+    best_by_task: dict[str, dict] = {}
+    orphans: list = []
     for i in filtered:
-        key = (i.get("task") or i.get("title") or i.get("id", "")).strip().lower()[:120]
+        key = _task_key(i)
         if not key:
-            out.append(i)
+            orphans.append(i)
             continue
-        prev = seen_tasks.get(key)
-        if not prev:
-            seen_tasks[key] = i
-            out.append(i)
-        else:
-            if (i.get("created_at") or "") > (prev.get("created_at") or ""):
-                out.remove(prev)
-                seen_tasks[key] = i
-                out.insert(0, i)
+        prev = best_by_task.get(key)
+        best_by_task[key] = i if not prev else _pick_better(prev, i)
+
+    out = list(best_by_task.values()) + orphans
+    out.sort(key=lambda x: x.get("created_at") or "", reverse=True)
     return out[:limit]
 
 
-def clear_non_deliverables() -> int:
+def _delete_artifact_files(artifact_id: str) -> None:
+    fp = os.path.join(ARTIFACTS_DIR, f"{artifact_id}.json")
+    if os.path.exists(fp):
+        os.remove(fp)
+    bin_dir = os.path.join(ARTIFACTS_DIR, artifact_id)
+    if os.path.isdir(bin_dir):
+        import shutil
+        shutil.rmtree(bin_dir, ignore_errors=True)
+
+
+def clear_non_deliverables() -> dict:
     items = _load_index()
     keep = list_deliverables(limit=MAX_TOTAL)
     keep_ids = {i["id"] for i in keep}
     removed = 0
     for i in items:
         if i.get("id") not in keep_ids:
-            fp = os.path.join(ARTIFACTS_DIR, f"{i['id']}.json")
-            if os.path.exists(fp):
-                os.remove(fp)
+            _delete_artifact_files(i["id"])
             removed += 1
     _save_index(keep)
-    return removed
+    return {"removed": removed, "kept": len(keep)}
 
 
 def list_all(limit: int = 100, agent_id: Optional[str] = None, art_type: Optional[str] = None,

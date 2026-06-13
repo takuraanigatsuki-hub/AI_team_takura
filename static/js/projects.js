@@ -47,12 +47,17 @@
     };
 
     async function cleanup() {
-        if (!confirm('Удалить промежуточные артефакты и оставить только готовые проекты?')) return;
+        if (!confirm('Удалить промежуточные артефакты (QA, review, дубликаты) и оставить только готовые проекты?')) return;
         try {
             const r = await fetch('/api/projects/cleanup', { method: 'DELETE', credentials: 'same-origin' });
-            const d = await r.json();
-            if (!r.ok) throw new Error(d.detail || 'Ошибка');
-            if (global.UIEnhancements) UIEnhancements.toast(`Очищено: ${d.removed || 0}`, 'success');
+            const d = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(d.detail || `Ошибка ${r.status}`);
+            const removed = d.removed || 0;
+            const kept = d.kept ?? '';
+            const msg = removed > 0
+                ? `Удалено: ${removed}${kept !== '' ? ` · осталось: ${kept}` : ''}`
+                : 'Промежуточных артефактов не найдено — уже только готовые проекты';
+            if (global.UIEnhancements) UIEnhancements.toast(msg, removed > 0 ? 'success' : 'info');
             load();
         } catch (e) {
             if (global.UIEnhancements) UIEnhancements.toast(e.message, 'error');

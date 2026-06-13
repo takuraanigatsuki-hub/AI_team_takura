@@ -2502,8 +2502,8 @@ async def list_projects(request: Request, agent_id: str = "", type: str = "", li
 async def cleanup_projects(request: Request):
     _current_user(request)
     from room.artifact_store import clear_non_deliverables
-    removed = clear_non_deliverables()
-    return {"ok": True, "removed": removed}
+    result = clear_non_deliverables()
+    return {"ok": True, **result}
 
 
 @app.get("/api/sites")
