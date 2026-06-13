@@ -266,25 +266,7 @@ body.sidebar-collapsed .app-content-wrap { margin-left: var(--sidebar-collapsed-
     font-size: 12px;
     max-width: 140px;
 }
-.dash-loading {
-    text-align: center;
-    color: var(--text-muted);
-    padding: 40px;
-    position: relative;
-}
-.dash-loading::after {
-    content: '';
-    display: inline-block;
-    width: 24px;
-    height: 24px;
-    margin-left: 8px;
-    vertical-align: middle;
-    border: 2px solid rgba(108, 99, 255, 0.25);
-    border-top-color: #6c63ff;
-    border-radius: 50%;
-    animation: dashSpin 0.7s linear infinite;
-}
-@keyframes dashSpin { to { transform: rotate(360deg); } }
+/* dash-loading spinner — unified in ui-core.css (uiSpin) */
 
 .fp-offline {
     position: fixed; top: 0; left: 0; right: 0; z-index: 500;

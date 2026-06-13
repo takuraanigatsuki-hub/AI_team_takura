@@ -88,6 +88,21 @@
 .ui-error .ui-empty-icon { color: var(--semantic-danger); }
 .ui-inline-empty { margin: var(--space-3) 0; text-align: center; font-size: 13px; }
 
+/* Static HTML placeholders (index.html before JS hydrates) */
+.ui-ph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-5) var(--space-4);
+    min-height: 80px;
+}
+.ui-ph-compact { padding: var(--space-3); min-height: 48px; }
+.ui-empty-compact {
+    padding: var(--space-4) var(--space-3);
+    max-width: none;
+}
+.ui-empty-compact .ui-empty-icon { font-size: 2rem; margin-bottom: var(--space-2); }
+
 /* Legacy aliases → unified empty states */
 .panel-empty,
 .dash-loading,

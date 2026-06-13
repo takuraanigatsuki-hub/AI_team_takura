@@ -622,7 +622,7 @@ a.dropdown-item {
 .filter-btn:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); color: var(--text); }
 .filter-btn.active { background: var(--accent-soft); color: var(--accent); border-color: transparent; font-weight: 600; }
 .tasks-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-.tasks-empty { text-align: center; padding: 40px; color: var(--text-muted); font-size: 13px; }
+/* .tasks-empty — unified in ui-core.css (.ui-empty) */
 .task-item {
     padding: 14px; border-radius: var(--radius); background: var(--surface);
     border: 1px solid var(--border); font-size: 13px;
@@ -1516,8 +1516,7 @@ a.dropdown-item {
     font-size: 11px; padding: 6px 10px; border-radius: var(--radius-sm);
     background: var(--surface-2); margin-bottom: 4px; word-break: break-all;
 }
-.panel-empty { text-align: center; color: var(--text-muted); font-size: 12px; padding: 24px; }
-.panel-error { color: var(--red); font-size: 12px; padding: 12px; }
+/* .panel-empty, .panel-error, .dash-loading — unified in ui-core.css */
 .full-width { width: 100%; margin-top: 8px; }
 
 .design-layout { flex: 1; display: flex; overflow: hidden; min-height: 0; }
