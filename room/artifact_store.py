@@ -70,6 +70,8 @@ def save_artifact(agent_id: str, artifact: dict) -> dict:
         "tags": artifact.get("tags") or [],
         "status": artifact.get("status", "completed"),
         "revision_of": artifact.get("revision_of"),
+        "user_id": artifact.get("user_id") or "",
+        "task_id": artifact.get("task_id") or "",
         "version": 1,
         "created_at": artifact.get("created_at") or datetime.now().isoformat(),
         "updated_at": datetime.now().isoformat(),
@@ -89,8 +91,9 @@ def save_artifact(agent_id: str, artifact: dict) -> dict:
     items = [i for i in items if i.get("id") != entry["id"]]
     items.insert(0, {k: entry[k] for k in (
         "id", "agent_id", "agent_name", "agent_emoji", "type", "title",
-        "description", "tags", "status", "created_at", "updated_at", "revision_of"
-    )})
+        "description", "tags", "status", "created_at", "updated_at", "revision_of",
+        "user_id", "task_id", "task",
+    ) if k in entry})
     agent_count = sum(1 for i in items if i.get("agent_id") == agent_id)
     if agent_count > MAX_PER_AGENT:
         to_drop = [i["id"] for i in items if i.get("agent_id") == agent_id][MAX_PER_AGENT:]
@@ -192,7 +195,39 @@ def _pick_better(a: dict, b: dict) -> dict:
     return a if ca >= cb else b
 
 
-def list_deliverables(limit: int = 100, agent_id: Optional[str] = None, art_type: Optional[str] = None) -> list:
+def belongs_to_user(meta: dict, user_id: str, task_history=None) -> bool:
+    if not user_id:
+        return False
+    if meta.get("user_id"):
+        return meta.get("user_id") == user_id
+    if not task_history:
+        return False
+    key = _task_key(meta)
+    if not key:
+        return False
+    for t in task_history.get_for_user(user_id, 200):
+        tkey = _task_key({"task": t.get("task", ""), "title": t.get("task", ""), "id": ""})
+        if not tkey:
+            continue
+        if key == tkey or key[:50] in tkey or tkey[:50] in key:
+            return True
+    return False
+
+
+def _filter_user(items: list, user_id: str, task_history, privileged: bool) -> list:
+    if privileged or not user_id:
+        return items
+    return [i for i in items if belongs_to_user(i, user_id, task_history)]
+
+
+def list_deliverables(
+    limit: int = 100,
+    agent_id: Optional[str] = None,
+    art_type: Optional[str] = None,
+    user_id: str = "",
+    task_history=None,
+    privileged: bool = False,
+) -> list:
     """Финальные артефакты — без QA/review/evaluator, один лучший на задачу."""
     items = _load_index()
     filtered = []
@@ -204,6 +239,8 @@ def list_deliverables(limit: int = 100, agent_id: Optional[str] = None, art_type
         if art_type and i.get("type") != art_type:
             continue
         filtered.append(i)
+
+    filtered = _filter_user(filtered, user_id, task_history, privileged)
 
     best_by_task: dict[str, dict] = {}
     orphans: list = []
@@ -229,33 +266,98 @@ def _delete_artifact_files(artifact_id: str) -> None:
         shutil.rmtree(bin_dir, ignore_errors=True)
 
 
-def clear_non_deliverables() -> dict:
+def clear_non_deliverables(
+    user_id: str = "",
+    task_history=None,
+    privileged: bool = False,
+) -> dict:
     items = _load_index()
-    keep = list_deliverables(limit=MAX_TOTAL)
-    keep_ids = {i["id"] for i in keep}
+    if privileged and not user_id:
+        keep = list_deliverables(limit=MAX_TOTAL, privileged=True)
+        keep_ids = {i["id"] for i in keep}
+        removed = 0
+        for i in items:
+            if i.get("id") not in keep_ids:
+                _delete_artifact_files(i["id"])
+                removed += 1
+        _save_index(keep)
+        return {"removed": removed, "kept": len(keep)}
+
+    if not user_id:
+        return {"removed": 0, "kept": 0}
+
+    user_keep = list_deliverables(
+        limit=MAX_TOTAL, user_id=user_id, task_history=task_history, privileged=False,
+    )
+    keep_ids = {i["id"] for i in user_keep}
+    new_items = []
     removed = 0
     for i in items:
-        if i.get("id") not in keep_ids:
+        if belongs_to_user(i, user_id, task_history):
+            if i.get("id") in keep_ids:
+                new_items.append(i)
+            else:
+                _delete_artifact_files(i["id"])
+                removed += 1
+        else:
+            new_items.append(i)
+    _save_index(new_items)
+    kept = sum(1 for i in new_items if belongs_to_user(i, user_id, task_history))
+    return {"removed": removed, "kept": kept}
+
+
+def delete_all_for_user(user_id: str, task_history) -> dict:
+    if not user_id:
+        return {"removed": 0, "kept": 0}
+    items = _load_index()
+    new_items = []
+    removed = 0
+    for i in items:
+        if belongs_to_user(i, user_id, task_history):
             _delete_artifact_files(i["id"])
             removed += 1
-    _save_index(keep)
-    return {"removed": removed, "kept": len(keep)}
+        else:
+            new_items.append(i)
+    _save_index(new_items)
+    return {"removed": removed, "kept": 0}
 
 
-def list_all(limit: int = 100, agent_id: Optional[str] = None, art_type: Optional[str] = None,
-             deliverables_only: bool = False) -> list:
+def list_all(
+    limit: int = 100,
+    agent_id: Optional[str] = None,
+    art_type: Optional[str] = None,
+    deliverables_only: bool = False,
+    user_id: str = "",
+    task_history=None,
+    privileged: bool = False,
+) -> list:
     if deliverables_only:
-        return list_deliverables(limit=limit, agent_id=agent_id, art_type=art_type)
+        return list_deliverables(
+            limit=limit,
+            agent_id=agent_id,
+            art_type=art_type,
+            user_id=user_id,
+            task_history=task_history,
+            privileged=privileged,
+        )
     items = _load_index()
     if agent_id:
         items = [i for i in items if i.get("agent_id") == agent_id]
     if art_type:
         items = [i for i in items if i.get("type") == art_type]
+    items = _filter_user(items, user_id, task_history, privileged)
     return items[:limit]
 
 
-def stats() -> dict:
-    items = _load_index()
+def stats(user_id: str = "", task_history=None, privileged: bool = False) -> dict:
+    items = list_deliverables(
+        limit=MAX_TOTAL,
+        user_id=user_id,
+        task_history=task_history,
+        privileged=privileged,
+    ) if user_id and not privileged else _load_index()
+    if user_id and not privileged:
+        pass  # items already filtered deliverables
     by_agent = {}
     by_type = {}
     for i in items:
