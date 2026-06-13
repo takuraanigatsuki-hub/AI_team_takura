@@ -1758,7 +1758,11 @@
         let startView = viewParam || (user?.default_view) || (isPortal ? 'profile' : 'tasks');
         const allowedViews = isPortal
             ? ['profile', 'admin', 'support']
-            : ['studio', 'chat', 'agent-learning', 'learning', 'design', 'masha', 'sonya-projects', 'sonya-studio', 'tasks', 'projects', 'kanban', 'sprint', 'timeline', 'dashboard', 'investor'];
+            : ['chat', 'agent-learning', 'learning', 'design', 'masha', 'sonya-projects', 'sonya-studio', 'tasks', 'projects', 'kanban', 'sprint', 'timeline', 'dashboard', 'investor'];
+        if (startView === 'studio') {
+            startView = 'agent-learning';
+            agentLearningPanel = canViewAgentLearning(user) ? 'learning' : 'sonya-projects';
+        }
         if (!allowedViews.includes(startView)) {
             startView = isPortal ? 'profile' : 'tasks';
         }
@@ -1774,8 +1778,9 @@
         if (!isPortal && startView === 'admin' && !window.AdminPanel?.canAccess?.(user)) {
             startView = user ? 'tasks' : 'tasks';
         }
-        if (AGENT_LEARNING_VIEWS.has(startView) && !canViewAgentLearning(user)) {
-            startView = 'tasks';
+        if (['learning', 'design', 'masha'].includes(startView) && !canViewAgentLearning(user)) {
+            agentLearningPanel = 'sonya-projects';
+            startView = 'agent-learning';
         }
         if (startView === 'timeline' && !canViewAgentLearning(user)) {
             startView = 'tasks';
@@ -1803,7 +1808,6 @@
             if (window.FeaturePack) FeaturePack.init();
             if (window.SiteSearch) SiteSearch.init();
             if (window.PipelineUI) PipelineUI.load();
-            if (window.StudioMinimap) StudioMinimap.init();
             if (window.SonyaStudio) SonyaStudio.init();
             updateChatWelcome();
             document.addEventListener('auth:updated', () => {

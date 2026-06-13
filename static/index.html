@@ -141,39 +141,6 @@
 </header>
 
 <div class="main" id="mainContent">
-    <!-- 3D STUDIO -->
-    <div id="studioView" class="studio-view view-enter">
-        <canvas id="studioCanvas"></canvas>
-        <div id="studioLoading" class="studio-loading hidden">
-            <div class="studio-loading-ring" aria-hidden="true"></div>
-            <span>Загрузка 3D-сцены…</span>
-        </div>
-        <div id="studioError" class="studio-error" style="display:none"></div>
-        <div class="studio-overlay">
-            <div class="studio-hud studio-hud-left">
-                <div class="studio-hint">🖱 вращение · zoom · клик — чат</div>
-            </div>
-            <div class="studio-hud studio-hud-right">
-                <details class="studio-agents-dropdown">
-                    <summary class="studio-agents-btn">👥 Агенты</summary>
-                    <div class="studio-agents-list" id="studioLegend"></div>
-                </details>
-            </div>
-        </div>
-        <aside class="studio-minimap-panel" aria-label="Карта команды">
-            <div class="minimap-head">
-                <span class="minimap-title">🗺️ Карта команды</span>
-                <span class="minimap-live" id="minimapLive">● live</span>
-            </div>
-            <canvas id="studioMinimap" class="studio-minimap" width="200" height="150"></canvas>
-            <div class="minimap-legend">
-                <span><i class="dot dot-active"></i> в работе</span>
-                <span><i class="dot dot-idle"></i> свободен</span>
-                <span><i class="dot dot-rest"></i> отдых / библиотека</span>
-            </div>
-        </aside>
-    </div>
-
     <!-- SONYA DESIGN STUDIO -->
     <div id="sonyaStudioView" class="sonya-studio-layout hidden">
         <aside class="ss-sidebar">
@@ -233,18 +200,18 @@
         </aside>
     </div>
 
-    <!-- AGENT LEARNING (admin only) -->
+    <!-- AGENT LEARNING -->
     <div id="agentLearningSubnav" class="agent-learning-subnav hidden" aria-hidden="true">
         <div class="al-inner">
             <div>
-                <h2 class="al-title">🔬 Обучение агентов</h2>
-                <p class="al-sub muted">Внутренний процесс команды — не показывается обычным пользователям</p>
+                <h2 class="al-title">📚 Обучение</h2>
+                <p class="al-sub muted">Проекты агентов на проверку — как у Сони</p>
             </div>
             <div class="al-tabs" role="tablist">
                 <button type="button" class="al-tab active" id="alTabLearning" role="tab" onclick="switchAgentLearningPanel('learning')">📚 Лента</button>
                 <button type="button" class="al-tab" id="alTabMasha" role="tab" onclick="switchAgentLearningPanel('masha')">🎓 Маша</button>
                 <button type="button" class="al-tab" id="alTabDesign" role="tab" onclick="switchAgentLearningPanel('design')">🎨 Design Lab</button>
-                <button type="button" class="al-tab" id="alTabSonyaProjects" role="tab" onclick="switchAgentLearningPanel('sonya-projects')">✨ Проекты Сони</button>
+                <button type="button" class="al-tab" id="alTabSonyaProjects" role="tab" onclick="switchAgentLearningPanel('sonya-projects')">✨ Проекты</button>
             </div>
         </div>
     </div>
@@ -902,8 +869,6 @@
 
 <script>window.APP_SHELL = 'workspace';</script>
 <script src="/static/js/app-shell.js?v=1"></script>
-<script src="/static/vendor/three.min.js"></script>
-<script src="/static/vendor/OrbitControls.js"></script>
 <script src="/static/js/sounds.js?v=2"></script>
 <script src="/static/js/wow.js?v=6"></script>
 <script src="/static/js/pipeline.js?v=7"></script>
@@ -913,13 +878,7 @@
 <script src="/static/js/kanban.js?v=7"></script>
 <script src="/static/js/onboarding.js?v=1"></script>
 <script src="/static/js/voice.js?v=2"></script>
-<script src="/static/js/minimap.js?v=5"></script>
 <script src="/static/js/themes-auto.js?v=2"></script>
-<script src="/static/vendor/OBJLoader.js"></script>
-<script src="/static/vendor/MTLLoader.js"></script>
-<script src="/static/js/studio-textures.js?v=1"></script>
-<script src="/static/js/studio-models.js?v=3"></script>
-<script src="/static/js/studio.js?v=22"></script>
 <script src="/static/js/react-preview.js?v=7"></script>
 <script src="/static/js/integrations.js?v=11"></script>
 <script src="/static/js/sonya-design-lab.js?v=8"></script>
