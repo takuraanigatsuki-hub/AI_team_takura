@@ -6,10 +6,24 @@ import config as cfg
 from integrations.rag.store import get_store
 
 
-async def retrieve_for_agent(agent_id: str, query: str, limit: int = 6) -> list[dict]:
+async def retrieve_for_agent(
+    agent_id: str,
+    query: str,
+    limit: int = 6,
+    workspace_id: str = "",
+) -> list[dict]:
     if not query or not agent_id:
         return []
-    store = get_store()
+
+    hits = await _retrieve_store(agent_id, query, limit, workspace_id)
+    if workspace_id:
+        global_hits = await _retrieve_store(agent_id, query, max(2, limit // 2), "")
+        hits = _merge_hits(global_hits, hits, limit)
+    return hits
+
+
+async def _retrieve_store(agent_id: str, query: str, limit: int, workspace_id: str) -> list[dict]:
+    store = get_store(workspace_id)
     fts_hits = store.search(agent_id, query, limit=limit)
 
     if not cfg.config.get("rag_hybrid", True):
@@ -70,8 +84,14 @@ def retrieve_context_text(agent_id: str, query: str, limit: int = 5, max_chars: 
     return "\n".join(lines)
 
 
-async def retrieve_context_text_async(agent_id: str, query: str, limit: int = 5, max_chars: int = 2400) -> str:
-    hits = await retrieve_for_agent(agent_id, query, limit=limit)
+async def retrieve_context_text_async(
+    agent_id: str,
+    query: str,
+    limit: int = 5,
+    max_chars: int = 2400,
+    workspace_id: str = "",
+) -> str:
+    hits = await retrieve_for_agent(agent_id, query, limit=limit, workspace_id=workspace_id)
     if not hits:
         return ""
     lines = []

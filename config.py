@@ -40,12 +40,16 @@ _defaults = {
     "figma_discover_team_files": True,
     "figma_discovery_catalog": [],
     "openai_api_key": "",
-    "openai_base_url": "https://api.openai.com/v1",
-    "llm_model": "gpt-4o-mini",
-    "llm_router_model": "gpt-4o-mini",
+    "openai_base_url": "https://api.smartaipi.com/v1",
+    "llm_model": "gpt-5.4-mini",
+    "llm_router_model": "gpt-5.4-nano",
     "embedding_model": "text-embedding-3-small",
     "evaluator_min_score": 6,
     "rag_hybrid": True,
+    "react_enabled": True,
+    "react_max_steps": 5,
+    "sandbox_enabled": True,
+    "sandbox_docker_image": "python:3.12-slim",
     "room_api_key": "",
     "auto_theme": False,
     "telegram_notify_tasks": False,
@@ -126,6 +130,18 @@ def _load_config() -> dict:
         cfg["rag_hybrid"] = False
     elif rag_hybrid:
         cfg["rag_hybrid"] = True
+    react = os.environ.get("REACT_ENABLED", "")
+    if react.lower() in ("0", "false", "no"):
+        cfg["react_enabled"] = False
+    elif react:
+        cfg["react_enabled"] = True
+    cfg["react_max_steps"] = int(os.environ.get("REACT_MAX_STEPS") or cfg.get("react_max_steps") or 5)
+    sandbox = os.environ.get("SANDBOX_ENABLED", "")
+    if sandbox.lower() in ("0", "false", "no"):
+        cfg["sandbox_enabled"] = False
+    elif sandbox:
+        cfg["sandbox_enabled"] = True
+    cfg["sandbox_docker_image"] = os.environ.get("SANDBOX_DOCKER_IMAGE") or cfg.get("sandbox_docker_image") or "python:3.12-slim"
     cfg["room_api_key"] = os.environ.get("ROOM_API_KEY") or cfg.get("room_api_key") or ""
     for key, env in (
         ("telegram_bot_token", "TELEGRAM_BOT_TOKEN"),

@@ -46,6 +46,11 @@ def create(name: str, owner_id: str, description: str = "") -> dict:
     workspaces = _load()
     workspaces.insert(0, ws)
     _save(workspaces)
+    try:
+        from integrations.rag.workspace_store import ensure_workspace_store
+        ensure_workspace_store(ws["id"], seed_from_global=True)
+    except Exception:
+        pass
     return ws
 
 

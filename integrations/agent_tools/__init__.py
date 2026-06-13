@@ -15,6 +15,7 @@ AGENT_TOOLS: dict[str, list[dict]] = {
     "backend": [
         {"name": "rag_search", "description": "Backend/API знания"},
         {"name": "code_gen", "description": "Генерация Python/FastAPI кода"},
+        {"name": "sandbox_run", "description": "Выполнить Python в Docker sandbox"},
     ],
     "frontend": [
         {"name": "rag_search", "description": "React/CSS/UI знания"},
@@ -24,6 +25,7 @@ AGENT_TOOLS: dict[str, list[dict]] = {
     "qa": [
         {"name": "rag_search", "description": "Testing/QA знания"},
         {"name": "write_tests", "description": "Генерация pytest/Playwright"},
+        {"name": "sandbox_run", "description": "Запуск тестового кода в sandbox"},
     ],
     "reviewer": [
         {"name": "rag_search", "description": "Code review checklist"},

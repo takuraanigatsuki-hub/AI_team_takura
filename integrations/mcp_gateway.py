@@ -66,6 +66,12 @@ async def invoke_tool(agent_id: str, tool_name: str, arguments: dict = None) -> 
             text = r.text[:8000]
         return {"ok": True, "tool": tool_name, "status": r.status_code, "text": text}
 
+    if tool_name in ("sandbox_run", "run_python", "code_exec"):
+        from integrations.sandbox.docker_runner import run_python
+        code = arguments.get("code") or arguments.get("python") or ""
+        timeout = int(arguments.get("timeout") or 30)
+        return {"ok": True, "tool": tool_name, **await run_python(code, timeout=timeout)}
+
     return {"ok": False, "error": f"Unknown tool: {tool_name}", "agent_id": agent_id}
 
 

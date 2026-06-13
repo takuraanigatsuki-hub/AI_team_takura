@@ -1187,6 +1187,13 @@ class BaseAgent:
         try:
             from integrations.llm_client import is_configured, agent_reply, chat_stream
             if is_configured():
+                try:
+                    from room.react_loop import run_react_for_agent
+                    react_out = await run_react_for_agent(self, task_text)
+                    if react_out and react_out.strip():
+                        return react_out.strip()
+                except Exception:
+                    pass
                 streamed = ""
                 system = self._system_with_memory(task_text)
                 try:

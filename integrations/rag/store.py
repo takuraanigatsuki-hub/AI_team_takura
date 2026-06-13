@@ -8,9 +8,10 @@ import threading
 from typing import Optional
 
 _lock = threading.Lock()
-_store: Optional["RagStore"] = None
+_stores: dict[str, "RagStore"] = {}
 
 DEFAULT_DB = os.path.join(os.path.dirname(__file__), "..", "..", "data", "rag", "knowledge.db")
+WS_ROOT = os.path.join(os.path.dirname(__file__), "..", "..", "data", "rag", "workspaces")
 
 
 class RagStore:
@@ -264,10 +265,19 @@ class RagStore:
                 conn.close()
 
 
-def get_store() -> RagStore:
-    global _store
-    if _store is None:
+def get_store(workspace_id: str = "") -> RagStore:
+    ws = (workspace_id or "").strip()
+    key = ws or "__global__"
+    if key not in _stores:
         import config as cfg
-        path = cfg.config.get("rag_db_path") or DEFAULT_DB
-        _store = RagStore(path)
-    return _store
+        if ws:
+            path = os.path.abspath(os.path.join(WS_ROOT, ws, "knowledge.db"))
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+        else:
+            path = os.path.abspath(cfg.config.get("rag_db_path") or DEFAULT_DB)
+        _stores[key] = RagStore(path)
+    return _stores[key]
+
+
+def clear_store_cache() -> None:
+    _stores.clear()
