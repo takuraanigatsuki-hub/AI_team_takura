@@ -1056,6 +1056,7 @@
         scrollToBottom('messages');
         applyChatSearchFilter();
     }
+    window.appendChatSystemMessage = addSystemMessage;
 
     let chatSearchQuery = '';
 

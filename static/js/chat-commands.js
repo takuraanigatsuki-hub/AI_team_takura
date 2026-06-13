@@ -4,6 +4,7 @@
  */
 (function (global) {
     let commands = [];
+    let helpText = '';
     let activeIdx = 0;
 
     async function loadCommands() {
@@ -12,6 +13,7 @@
             if (r.ok) {
                 const d = await r.json();
                 commands = d.commands || [];
+                helpText = d.help || '';
             }
         } catch (_) { /* ignore */ }
     }
@@ -34,6 +36,31 @@
         activeIdx = 0;
     }
 
+    function escapeHtml(text) {
+        const d = document.createElement('div');
+        d.textContent = String(text);
+        return d.innerHTML;
+    }
+
+    function showHelpInChat() {
+        if (!helpText) {
+            loadCommands().then(() => showHelpInChat());
+            return;
+        }
+        if (global.appendChatSystemMessage) {
+            global.appendChatSystemMessage(helpText);
+            return;
+        }
+        const box = document.getElementById('messages');
+        if (!box) return;
+        const div = document.createElement('div');
+        div.className = 'message system';
+        div.dataset.searchText = helpText.toLowerCase();
+        div.innerHTML = `<div class="msg-body"><div class="msg-text">${escapeHtml(helpText)}</div></div>`;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+    }
+
     function currentSlashQuery(val) {
         val = val ?? getInput()?.value ?? '';
         const slash = val.lastIndexOf('/');
@@ -51,9 +78,33 @@
             || null;
     }
 
+    /** Поле содержит только префикс команды — промпт ещё не дописан */
+    function isOnlyAppliedPrefix(text) {
+        const val = (text || '').trim();
+        if (!val || val.startsWith('/')) return false;
+
+        for (const cmd of commands) {
+            const mode = cmd.apply_mode;
+            if (mode === 'help' || mode === 'chat') continue;
+
+            const prefix = (cmd.prefix || '').trim();
+            if (prefix) {
+                const bare = prefix.replace(/:\s*$/, '').trim();
+                if (val === prefix || val === bare) return true;
+                continue;
+            }
+
+            const labelPrefix = `${cmd.label || cmd.cmd}: `.trim();
+            const labelBare = labelPrefix.replace(/:\s*$/, '').trim();
+            if (val === labelPrefix || val === labelBare) return true;
+        }
+        return false;
+    }
+
     /** Незавершённая команда — Enter должен применить, а не отправить */
     function isIncompleteSlashInput(text) {
         const val = (text || '').trim();
+        if (isOnlyAppliedPrefix(val)) return true;
         if (!val.startsWith('/')) return false;
         if (isDropdownVisible()) return true;
 
@@ -66,6 +117,8 @@
 
         const cmd = findCommand(cmdToken);
         if (!cmd || cmd.cmd !== cmdToken) return true;
+        if (cmd.apply_mode === 'help') return true;
+        if (cmd.apply_mode === 'chat' && !rest) return true;
         if (!rest) return true;
 
         const prefix = (cmd.prefix || '').trim();
@@ -94,6 +147,17 @@
         return findCommand(cmdToken) || commands[0] || null;
     }
 
+    function setMsgTypeForCommand(cmd) {
+        if (!cmd || !global.setMsgType) return;
+        if (cmd.msg_type === 'learning') {
+            setMsgType('learning');
+        } else if (cmd.msg_type === 'chat' || cmd.apply_mode === 'chat') {
+            setMsgType('chat');
+        } else if (cmd.apply_mode !== 'help') {
+            setMsgType('task');
+        }
+    }
+
     function applyCommand(cmd) {
         const input = getInput();
         if (!input || !cmd) return;
@@ -109,10 +173,28 @@
             if (sp >= 0) userRest = afterSlash.slice(sp + 1).trim();
         }
 
+        if (cmd.apply_mode === 'help' || cmd.cmd === 'help') {
+            input.value = before;
+            hide();
+            showHelpInChat();
+            input.focus();
+            return;
+        }
+
+        if (cmd.apply_mode === 'chat' || cmd.cmd === 'chat') {
+            input.value = before + (userRest ? userRest : '');
+            hide();
+            setMsgTypeForCommand(cmd);
+            input.focus();
+            const len = input.value.length;
+            input.setSelectionRange(len, len);
+            return;
+        }
+
         const prompt = (cmd.prefix || '').trim();
         let newVal = before;
         if (prompt) {
-            newVal += prompt + (userRest ? ` ${userRest}` : ' ');
+            newVal += prompt + (userRest ? userRest : ' ');
         } else if (userRest) {
             newVal += userRest;
         } else {
@@ -125,13 +207,7 @@
         if (cmd.target && document.getElementById('targetSelect')) {
             document.getElementById('targetSelect').value = cmd.target;
         }
-        if (cmd.msg_type === 'learning' && global.setMsgType) {
-            setMsgType('learning');
-        } else if (cmd.msg_type === 'chat' && global.setMsgType) {
-            setMsgType('chat');
-        } else if (global.setMsgType) {
-            setMsgType('task');
-        }
+        setMsgTypeForCommand(cmd);
 
         input.focus();
         const len = input.value.length;
@@ -145,6 +221,7 @@
     }
 
     function applyIfIncomplete(text) {
+        if (isOnlyAppliedPrefix(text)) return true;
         if (!isIncompleteSlashInput(text)) return false;
         applyActive();
         return true;
@@ -156,7 +233,7 @@
         const q = (query || '').toLowerCase();
         const matches = commands.filter((c) =>
             c.cmd.startsWith(q) || (c.label || '').toLowerCase().includes(q)
-        ).slice(0, 10);
+        ).slice(0, 12);
         if (!matches.length) {
             hide();
             return;
@@ -198,6 +275,10 @@
 
     function handleEnter(e) {
         const text = getInput()?.value ?? '';
+        if (isOnlyAppliedPrefix(text)) {
+            e.preventDefault();
+            return true;
+        }
         if (!isIncompleteSlashInput(text) && !isDropdownVisible()) return false;
         e.preventDefault();
         applyActive();
@@ -246,6 +327,7 @@
         handleEnter,
         isSlashComposing,
         isIncompleteSlashInput,
+        isOnlyAppliedPrefix,
         applyIfIncomplete,
         applyActive,
     };
