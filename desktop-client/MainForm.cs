@@ -36,6 +36,11 @@ internal sealed class MainForm : Form
             await _webView.EnsureCoreWebView2Async(env);
             var core = _webView.CoreWebView2;
             core.Settings.UserAgent = Program.DesktopUserAgent;
+            core.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
+            core.WebResourceRequested += (_, args) =>
+            {
+                args.Request.Headers.SetHeader("x-ai-team-client", "desktop");
+            };
             core.Settings.AreDefaultContextMenusEnabled = true;
             core.Settings.IsStatusBarEnabled = false;
             core.Settings.IsZoomControlEnabled = false;
