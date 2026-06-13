@@ -134,9 +134,6 @@ body.sidebar-collapsed .sb-brand {
     padding: 14px 8px;
 }
 
-@media (max-width: 900px) {
-    .sb-mobile-toggle { display: inline-flex !important; }
-
 .sb-nav { flex: 1; overflow-y: auto; padding: 8px 6px; }
 
 .sb-group { margin-bottom: 12px; }
@@ -322,6 +319,7 @@ body.sidebar-collapsed .sb-brand {
 }
 
 @media (max-width: 900px) {
+    .sb-collapse { display: none; }
     .sb-mobile-toggle { display: inline-flex !important; }
     .sb-overlay {
         display: none;
