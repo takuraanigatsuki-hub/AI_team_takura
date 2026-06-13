@@ -25,9 +25,17 @@ def test_login_form_preview():
     assert "useState" in preview["code"]
 
 
-def test_site_task_detection():
-    assert is_site_task("создай landing page для стартапа") is True
-    assert is_site_task("сделай кнопку") is False
+def test_site_preview_varies_by_task():
+    a = generate_react_preview("Сделай landing page для SaaS-стартапа")
+    b = generate_react_preview("Сделай landing page для фитнес-приложения")
+    assert a["code"] != b["code"] or a["title"] != b["title"]
+    assert "MySite" not in a["code"]
+
+
+def test_theme_ecommerce_not_landing_template():
+    preview = generate_react_preview("Сделай landing page для моего продукта", theme="ecommerce")
+    assert preview["title"] == "E-commerce"
+    assert "Продукт" in preview["code"] or "2 490" in preview["code"]
 
 
 def test_production_polish_task():

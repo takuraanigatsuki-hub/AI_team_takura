@@ -103,11 +103,15 @@
             }) : '<div class="panel-empty">Нет проектов.<br>Нажмите «Новый проект».</div>';
             return;
         }
-        el.innerHTML = projects.map((p) => `
+        el.innerHTML = projects.map((p) => {
+            const themeLabel = p.theme ? ({ landing: 'Landing', dashboard: 'Dashboard', mobile: 'Mobile', ecommerce: 'E-commerce', design_system: 'UI Kit', portfolio: 'Portfolio' }[p.theme] || p.theme) : '';
+            const sub = [themeLabel, statusLabel(p.status), `v${p.version_count || 1}`].filter(Boolean).join(' · ');
+            return `
             <button type="button" class="ss-project-item ${p.id === activeId ? 'active' : ''}" data-id="${p.id}">
                 <strong>${esc(p.title)}</strong>
-                <small>${statusLabel(p.status)} · v${p.version_count || 1}${p.open_comments ? ` · 💬 ${p.open_comments}` : ''}</small>
-            </button>`).join('');
+                <small>${esc(sub)}${p.open_comments ? ` · 💬 ${p.open_comments}` : ''}</small>
+            </button>`;
+        }).join('');
         el.querySelectorAll('.ss-project-item').forEach((btn) => {
             btn.addEventListener('click', () => openProject(btn.dataset.id));
         });

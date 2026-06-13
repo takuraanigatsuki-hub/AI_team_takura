@@ -24,3 +24,10 @@ def test_apply_and_publish_russian():
 
 def test_unrelated_task_not_studio():
     assert match_studio_intent("напиши unit-тесты для api") is None
+
+
+def test_title_from_task_not_page_fragment():
+    from integrations.sonya_commands import title_from_task
+    assert title_from_task("Сделай landing page для моего продукта") == "Landing · для моего продукта"
+    assert title_from_task("Сделай landing для SaaS") == "Landing · для saas"
+    assert title_from_task("Создай dashboard для аналитики") == "Dashboard для аналитики"

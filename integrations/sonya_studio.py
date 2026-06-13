@@ -389,7 +389,7 @@ async def apply_open_comments(agent, project_id: str) -> Optional[dict]:
     if agent.room_manager:
         await agent._broadcast(f"🎨 Studio: правлю «{p.get('title')}» по {len(open_comments)} комментариям…", "learning")
 
-    preview = generate_react_preview(task)
+    preview = await _generate_studio_preview(task, theme=p.get("theme", ""), colors=full.get("colors"))
     updated = add_version(
         project_id,
         task=task,
@@ -488,15 +488,11 @@ async def create_studio_project(agent, *, title: str = "", theme: str = "", task
     patterns = load_patterns()
     theme_id, theme_title = random.choice(PROJECT_THEMES)
     theme = theme or theme_id
-    title = title or theme_title
     colors = _pick_colors(patterns)
     color_hint = ", ".join(colors[:5])
-    if not task:
-        task = (
-            f"{theme_title}. Собственный проект Sonya Studio. "
-            f"Палитра: {color_hint}. Современный UI, React компонент."
-        )
-    preview = generate_react_preview(task)
+    task = _augment_task_for_theme(task, theme, theme_title, color_hint)
+    title = _resolve_project_title(title=title, task=task, theme=theme) or theme_title
+    preview = await _generate_studio_preview(task, theme=theme, colors=colors)
     project = create_project(
         title=title,
         description=f"Проект Sonya Studio · {theme_title}",

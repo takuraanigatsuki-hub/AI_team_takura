@@ -395,8 +395,9 @@ class FrontendDevAgent(BaseAgent):
             return msg
 
         if action == "create":
-            title = intent.get("title") or ""
+            from integrations.sonya_commands import title_from_task
             task = intent.get("task") or text
+            title = intent.get("title") or title_from_task(task) or ""
             project = await create_studio_project(self, title=title, task=task)
             response = (
                 f"✨ **Sonya Studio** · проект «{project.get('title')}» создан!\n"
