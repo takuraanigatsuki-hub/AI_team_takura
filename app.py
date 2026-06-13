@@ -988,7 +988,7 @@ async def admin_update_site(body: AdminSiteUpdate, request: Request):
         cursor_enabled=body.cursor_enabled,
         git_auto_sync=body.git_auto_sync,
     )
-    result = await update_config(update, request)
+    result = await update_config(update)
     import config as cfg_module
     if body.cursor_model:
         cfg_module.config["cursor_model"] = body.cursor_model.strip()
@@ -1005,14 +1005,7 @@ async def admin_update_site(body: AdminSiteUpdate, request: Request):
         cfg_module.config["auto_theme"] = body.auto_theme
     if body.telegram_notify_tasks is not None:
         cfg_module.config["telegram_notify_tasks"] = body.telegram_notify_tasks
-    cfg = await get_config()
-    agents = await get_agents()
-    return {
-        "ok": True,
-        "config": cfg,
-        "agents_count": len(agents.get("agents", [])),
-        "active_agents": sum(1 for a in agents.get("agents", []) if a.get("status") in ("working", "thinking", "learning")),
-    }
+    return {"ok": True, "config": result}
 
 
 @app.post("/api/admin/console")
@@ -3210,23 +3203,6 @@ async def chat_slash_commands():
 @app.get("/api/learning/masha-lab")
 async def masha_learning_lab():
     return room._learning_store().get_dashboard()
-
-
-@app.get("/api/learning/agent-hub")
-async def learning_agent_hub(request: Request):
-    from room.user_auth import can_view_agent_learning
-    from room.agent_learning_hub import build_agent_learning_hub
-    from room.message_filter import is_privileged
-
-    user = _current_user(request)
-    if not can_view_agent_learning(user):
-        raise HTTPException(status_code=403, detail="Обучение доступно только администраторам")
-    privileged = is_privileged(user.get("role", ""))
-    return build_agent_learning_hub(
-        privileged=privileged,
-        user_id=user.get("id", ""),
-        task_history=room.task_history,
-    )
 
 
 class LearningSubmitBody(BaseModel):

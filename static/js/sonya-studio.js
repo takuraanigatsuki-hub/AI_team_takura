@@ -439,7 +439,7 @@
                 if (window.UIEnhancements) {
                     UIEnhancements.toast('Авто-проект Сони — смотрите Обучение → Проекты Сони', 'success');
                 }
-                if (window.switchAgentLearningPanel) switchAgentLearningPanel('agent-projects');
+                if (window.switchAgentLearningPanel) switchAgentLearningPanel('sonya-projects');
                 return;
             }
             await loadProjects(project.id);

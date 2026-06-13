@@ -300,9 +300,20 @@
     }
 
     async function loadSonyaLearning() {
-        if (global.AgentLearningProjects) {
-            if (global.switchAgentLearningPanel) switchAgentLearningPanel('agent-projects');
-            return AgentLearningProjects.load('frontend');
+        const grid = el('slProjectsGrid');
+        if (grid) grid.innerHTML = global.UICore ? UICore.loadingState('Загрузка…', { compact: true }) : '<div class="panel-empty">Загрузка…</div>';
+        try {
+            const r = await fetch('/api/sonya/projects?scope=learning', { credentials: 'same-origin' });
+            const d = global.UICore?.parseApiJson
+                ? await UICore.parseApiJson(r, 'Проекты Сони')
+                : await r.json();
+            renderSonyaLearningProjects(grid, d.projects || []);
+        } catch (e) {
+            if (grid) {
+                grid.innerHTML = global.UICore
+                    ? UICore.errorState(e.message, { retryOnclick: 'SonyaDesignLab.loadSonyaLearning()' })
+                    : `<div class="panel-error">${escape(e.message)}</div>`;
+            }
         }
     }
 
@@ -330,7 +341,7 @@
                 <p class="muted">${escape(themeLabel)} · v${p.version_count || 1}</p>
                 <div class="color-row">${colors}</div>
                 <div class="dl-card-foot">
-                    <button type="button" class="btn-secondary btn-sm" onclick="switchAgentLearningPanel('agent-projects');AgentLearningProjects.openSonyaProject('${escape(p.id)}')">Открыть</button>
+                    <button type="button" class="btn-secondary btn-sm" onclick="switchView('sonya-studio');SonyaStudio.openProject('${escape(p.id)}')">Открыть</button>
                     ${voteButtons('studio_project', p.id)}
                 </div>
             </article>`;
