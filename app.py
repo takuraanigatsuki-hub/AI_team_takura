@@ -1671,6 +1671,46 @@ async def rag_ingest_default_docs():
     return {"ok": True, "report": result, "index": get_index_stats()}
 
 
+@app.post("/api/rag/ingest-corpora")
+async def rag_ingest_corpora(include_wikipedia: bool = True):
+    from integrations.rag.corpora_ingest import ingest_all_corpora
+    from integrations.rag.ingest import get_index_stats
+    result = await ingest_all_corpora(include_wikipedia=include_wikipedia)
+    return {"ok": True, "report": result, "index": get_index_stats()}
+
+
+class SandboxRunRequest(BaseModel):
+    code: str = ""
+    timeout: int = 30
+
+
+@app.post("/api/sandbox/run")
+async def sandbox_run(body: SandboxRunRequest):
+    from integrations.sandbox.docker_runner import run_python, docker_available
+    result = await run_python(body.code, timeout=min(body.timeout, 60))
+    return {"ok": True, "docker": docker_available(), **result}
+
+
+@app.get("/api/router/logs")
+async def router_logs(limit: int = 50):
+    from room.router_logs import list_logs
+    return {"ok": True, "logs": list_logs(limit=min(limit, 500))}
+
+
+@app.post("/api/router/export-finetune")
+async def router_export_finetune(limit: int = 5000):
+    from room.router_logs import export_finetune_jsonl
+    path = export_finetune_jsonl(limit=min(limit, 10000))
+    return {"ok": True, "path": path}
+
+
+@app.post("/api/workspaces/{workspace_id}/rag/seed")
+async def workspace_rag_seed(workspace_id: str):
+    from integrations.rag.workspace_store import ensure_workspace_store
+    store = ensure_workspace_store(workspace_id, seed_from_global=True)
+    return {"ok": True, "workspace_id": workspace_id, "stats": store.stats()}
+
+
 @app.get("/api/llm/status")
 async def llm_status():
     from integrations.llm_client import is_configured, router_model, _settings
@@ -1682,6 +1722,10 @@ async def llm_status():
         "embeddings_configured": emb_ok(),
         "model": s.get("model"),
         "router_model": router_model(),
+        "base_url": s.get("base_url"),
+        "provider": "Smart AIPI" if "smartaipi" in (s.get("base_url") or "") else "OpenAI-compatible",
+        "react_enabled": __import__("config").config.get("react_enabled"),
+        "sandbox_enabled": __import__("config").config.get("sandbox_enabled"),
     }
 
 

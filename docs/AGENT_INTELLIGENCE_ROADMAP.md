@@ -68,7 +68,7 @@ Router автоматически начнёт использовать LLM вм
 
 ---
 
-## Фаза B — Умная команда (в работе)
+## Фаза B — Умная команда ✅
 
 - [x] Agent tool registry (`integrations/agent_tools/`)
 - [x] MCP gateway (`integrations/mcp_gateway.py`)
@@ -78,31 +78,17 @@ Router автоматически начнёт использовать LLM вм
 - [x] Project memory (`room/project_memory.py`)
 - [x] Evaluator gate — артеfact не уходит пользователю без оценки ≥ порога
 
-### MCP по агентам
-
-| Агент | MCP / интеграция |
-|-------|------------------|
-| PM | Notion, Linear/Jira, Calendar |
-| Architect | GitHub repos, Mermaid |
-| Backend | PostgreSQL, HTTP API |
-| Frontend | Figma, Browser |
-| QA | Playwright |
-| DevOps | GitHub Actions, Docker |
-| Cursor | Cursor SDK ✅ |
-| Presenter | pptx ✅, Gamma API |
-| Security | Semgrep, OWASP feeds |
-| Doc Writer | Confluence export |
-| Modeler | glTF / Three.js assets |
-
 ---
 
-## Фаза C — Production (1–2 месяца)
+## Фаза C — Production (в работе)
 
-- [ ] ReAct loop: plan → tool → observe → repeat
-- [ ] Docker sandbox для выполнения кода
-- [ ] Fine-tuned router на логах задач
-- [ ] 5 GB packs: автоматический ingest corpora (docs, books, CVE)
-- [ ] Multi-tenant knowledge isolation per workspace
+- [x] ReAct loop: plan → tool → observe → repeat (`room/react_loop.py`)
+- [x] Docker sandbox для выполнения кода (`integrations/sandbox/`)
+- [x] Router logs + export fine-tune JSONL (`room/router_logs.py`)
+- [x] Bulk corpora ingest — docs + Wikipedia (`integrations/rag/corpora_ingest.py`)
+- [x] Multi-tenant RAG isolation per workspace (`integrations/rag/workspace_store.py`)
+- [ ] Fine-tuned router (обучение на накопленных логах)
+- [ ] Полный Docker sandbox в CI + Playwright MCP
 
 ---
 
