@@ -83,13 +83,14 @@ internal static class InstallerTheme
 
     public static void ApplyFormShadow(Form form)
     {
+        if (!form.IsHandleCreated) return;
         try
         {
             const int dwmwaUseImmersiveDarkMode = 20;
             const int dwmwaWindowCornerPreference = 33;
-            const int cornerRound = 2;
-            var dark = 1;
-            DwmSetWindowAttribute(form.Handle, dwmwaUseImmersiveDarkMode, ref dark, sizeof(int));
+            var darkMode = 1;
+            var cornerRound = 2;
+            DwmSetWindowAttribute(form.Handle, dwmwaUseImmersiveDarkMode, ref darkMode, sizeof(int));
             DwmSetWindowAttribute(form.Handle, dwmwaWindowCornerPreference, ref cornerRound, sizeof(int));
         }
         catch { /* older Windows */ }
