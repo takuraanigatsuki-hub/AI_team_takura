@@ -1889,6 +1889,10 @@ a.dropdown-item {
 .dl-studied-head time, .dl-memory-head time { font-size: 10px; color: var(--text-muted); }
 .dl-memory-card h4 { font-size: 12px; margin-bottom: 4px; }
 .dl-memory-card p { color: var(--text-muted); line-height: 1.45; font-size: 11px; }
+.dl-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.dl-vote-row { display: inline-flex; gap: 4px; }
+.dl-vote-btn { border: 1px solid var(--border); background: var(--surface-2); border-radius: 6px; padding: 2px 8px; cursor: pointer; font-size: 14px; line-height: 1.2; }
+.dl-vote-btn:hover { background: var(--surface-3); border-color: var(--accent); }
 .dl-memory-badge {
     font-size: 9px;
     font-weight: 700;

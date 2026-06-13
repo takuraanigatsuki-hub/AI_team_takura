@@ -83,7 +83,6 @@
             renderStudied(studiedEl, cache.studied || []);
             renderKnowledge(knowEl, cache.knowledge || []);
             renderPalette(paletteEl, cache.color_palette || []);
-            renderPortfolio(el('dlPortfolio'), cache.portfolio || cache.recent_portfolio || []);
             renderDiscovery(cache.discovery || {});
             updateAgentBadge(cache.agent);
         } catch (e) {
@@ -118,6 +117,30 @@
             <div class="dl-stat"><span>${data.portfolio_count || 0}</span><small>проектов</small></div>`;
     }
 
+    function voteButtons(targetType, targetId) {
+        const id = escape(targetId);
+        return `<div class="dl-vote-row">
+            <button type="button" class="dl-vote-btn" title="Нравится" onclick="SonyaDesignLab.vote('${targetType}','${id}',1)">👍</button>
+            <button type="button" class="dl-vote-btn" title="Улучшить" onclick="SonyaDesignLab.vote('${targetType}','${id}',-1)">👎</button>
+        </div>`;
+    }
+
+    async function vote(targetType, targetId, voteVal) {
+        try {
+            const r = await fetch('/api/sonya/feedback', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ target_type: targetType, target_id: targetId, vote: voteVal }),
+            });
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.detail || 'Ошибка');
+            toast(voteVal > 0 ? '👍 Соня запомнит — стиль нравится' : '👎 Соня учтёт — нужно улучшать', 'success');
+        } catch (e) {
+            toast(e.message, 'error');
+        }
+    }
+
     function renderStudied(container, items) {
         if (!container) return;
         if (!items.length) {
@@ -126,6 +149,7 @@
         }
         container.innerHTML = items.slice(0, 12).map((s) => {
             const srcBadge = s.source === 'figma_auto' ? '<span class="dl-memory-badge">Auto</span> ' : '';
+            const fid = s.file_key || s.url || s.file_name || '';
             const colors = (s.colors || []).slice(0, 6).map((c) =>
                 `<span class="color-swatch" style="background:${c}" title="${escape(c)}"></span>`
             ).join('');
@@ -137,7 +161,10 @@
                 </div>
                 <div class="color-row">${colors}</div>
                 ${frames ? `<p class="muted">${escape(frames)}</p>` : ''}
-                ${s.url ? `<a href="${escape(s.url)}" target="_blank" rel="noopener" class="dl-link">Figma ↗</a>` : '<span class="muted">локальный референс</span>'}
+                <div class="dl-card-foot">
+                    ${s.url ? `<a href="${escape(s.url)}" target="_blank" rel="noopener" class="dl-link">Figma ↗</a>` : '<span class="muted">локальный референс</span>'}
+                    ${fid ? voteButtons('figma_file', fid) : ''}
+                </div>
             </article>`;
         }).join('');
     }
@@ -151,6 +178,7 @@
         container.innerHTML = items.map((k) => {
             const src = k.source || 'design';
             const badge = { figma: 'Figma', figma_auto: 'Auto', figma_builtin: 'Reference', figma_web: 'Web', figma_portfolio: 'Проект', import: 'Import' }[src] || src;
+            const kid = k.url || k.topic || k.title || '';
             return `<article class="dl-memory-card">
                 <div class="dl-memory-head">
                     <span class="dl-memory-badge">${escape(badge)}</span>
@@ -160,7 +188,10 @@
                 <p>${escape((k.summary || '').slice(0, 220))}</p>
                 ${(k.figma_data?.colors || []).length ? `<div class="color-row">${k.figma_data.colors.slice(0, 5).map((c) =>
                     `<span class="color-swatch" style="background:${c}"></span>`).join('')}</div>` : ''}
-                ${k.url ? `<a href="${escape(k.url)}" target="_blank" rel="noopener" class="dl-link">Источник ↗</a>` : ''}
+                <div class="dl-card-foot">
+                    ${k.url ? `<a href="${escape(k.url)}" target="_blank" rel="noopener" class="dl-link">Источник ↗</a>` : ''}
+                    ${kid ? voteButtons('knowledge', kid) : ''}
+                </div>
             </article>`;
         }).join('');
     }
@@ -251,6 +282,83 @@
                     <time>${formatTime(e.timestamp)}</time>
                 </div>`;
             }).join('');
+    }
+
+    async function communityScan() {
+        toast('🌐 Сканирую Figma Community team…', 'info');
+        try {
+            const r = await fetch('/api/figma/studio/community-scan', { method: 'POST', credentials: 'same-origin' });
+            const data = await r.json();
+            if (!r.ok) throw new Error(data.detail || 'Ошибка');
+            toast(data.added ? `Community: +${data.added} в очередь` : `Найдено ${data.found || 0}, новых ${data.added || 0}`, data.added ? 'success' : 'info');
+            await loadLab();
+        } catch (e) {
+            toast(e.message, 'error');
+        }
+    }
+
+    async function loadSonyaLearning() {
+        const grid = el('slProjectsGrid');
+        if (grid) grid.innerHTML = global.UICore ? UICore.loadingState('Загрузка…', { compact: true }) : '<div class="panel-empty">Загрузка…</div>';
+        try {
+            const r = await fetch('/api/sonya/projects?scope=learning', { credentials: 'same-origin' });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            const d = await r.json();
+            renderSonyaLearningProjects(grid, d.projects || []);
+        } catch (e) {
+            if (grid) {
+                grid.innerHTML = global.UICore
+                    ? UICore.errorState(e.message, { retryOnclick: 'SonyaDesignLab.loadSonyaLearning()' })
+                    : `<div class="panel-error">${escape(e.message)}</div>`;
+            }
+        }
+    }
+
+    function renderSonyaLearningProjects(container, projects) {
+        if (!container) return;
+        if (!projects.length) {
+            container.innerHTML = global.UICore ? UICore.emptyState({
+                icon: '✨',
+                title: 'Авто-проектов пока нет',
+                text: 'Соня создаст их после изучения Figma Community — Design Lab → «Найти и изучить»',
+                primaryLabel: 'Design Lab',
+                primaryOnclick: "switchAgentLearningPanel('design')",
+            }) : '<div class="panel-empty">Авто-проектов пока нет</div>';
+            return;
+        }
+        container.innerHTML = projects.map((p) => {
+            const themeLabel = p.theme ? ({ landing: 'Landing', dashboard: 'Dashboard', mobile: 'Mobile' }[p.theme] || p.theme) : 'UI';
+            const colors = (p.colors || []).slice(0, 5).map((c) =>
+                `<span class="color-swatch" style="background:${c}"></span>`).join('');
+            return `<article class="dl-studied-card">
+                <div class="dl-studied-head">
+                    <strong>${escape(p.title)}</strong>
+                    <span class="dl-memory-badge">${escape(p.status || 'draft')}</span>
+                </div>
+                <p class="muted">${escape(themeLabel)} · v${p.version_count || 1}</p>
+                <div class="color-row">${colors}</div>
+                <div class="dl-card-foot">
+                    <button type="button" class="btn-secondary btn-sm" onclick="switchView('sonya-studio');SonyaStudio.openProject('${escape(p.id)}')">Открыть</button>
+                    ${voteButtons('studio_project', p.id)}
+                </div>
+            </article>`;
+        }).join('');
+    }
+
+    async function cleanupLearning() {
+        if (!confirm('Удалить черновики авто-проектов Сони? Опубликованные останутся.')) return;
+        try {
+            const r = await fetch('/api/sonya/projects/cleanup?scope=learning', {
+                method: 'DELETE',
+                credentials: 'same-origin',
+            });
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.detail || 'Ошибка');
+            toast(`Удалено: ${d.removed || 0}`, 'success');
+            await loadSonyaLearning();
+        } catch (e) {
+            toast(e.message, 'error');
+        }
     }
 
     async function discoverScan() {
@@ -423,6 +531,7 @@
 
     function bind() {
         el('dlDiscoverScan')?.addEventListener('click', discoverScan);
+        el('dlCommunityScan')?.addEventListener('click', communityScan);
         el('dlDiscoverStudy')?.addEventListener('click', discoverStudy);
         el('dlStudyBtn')?.addEventListener('click', studyUrl);
         el('dlImportBtn')?.addEventListener('click', importToReact);
@@ -437,10 +546,14 @@
     global.SonyaDesignLab = {
         load,
         loadLab,
+        loadSonyaLearning,
         studyUrl,
         importToReact,
         discoverScan,
         discoverStudy,
+        communityScan,
+        cleanupLearning,
+        vote,
         toastCopy,
     };
 })(window);
