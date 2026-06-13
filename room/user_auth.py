@@ -736,7 +736,9 @@ def ensure_owner(email: str, password: str, name: str = "Owner") -> dict:
             u["setup_complete"] = True
             u.update(owner_billing)
             if name:
-                u["name"] = name.strip()[:80]
+                u["name"] = validate_display_name(name)
+            if not u.get("username"):
+                u["username"] = _allocate_username(normalize_username(u.get("name") or email.split("@")[0]), u.get("id"), users)
             u["updated_at"] = datetime.now().isoformat()
             updated = u
             break

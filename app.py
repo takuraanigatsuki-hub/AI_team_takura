@@ -684,6 +684,22 @@ async def auth_me(request: Request):
     return user
 
 
+@app.get("/api/auth/check-username")
+async def auth_check_username(request: Request, u: str = ""):
+    from room.user_auth import check_username_available, get_user_from_token
+    me = get_user_from_token(_get_session_token(request))
+    exclude = me.get("id") if me else None
+    return check_username_available(u, exclude)
+
+
+@app.get("/api/auth/check-name")
+async def auth_check_name(request: Request, name: str = ""):
+    from room.user_auth import check_display_name_available, get_user_from_token
+    me = get_user_from_token(_get_session_token(request))
+    exclude = me.get("id") if me else None
+    return check_display_name_available(name, exclude)
+
+
 class DeviceApproveBody(BaseModel):
     device_id: str
     user_code: str = ""
