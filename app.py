@@ -90,12 +90,27 @@ async def lifespan(app: FastAPI):
 
     try:
         from integrations.playwright_runner import playwright_installed
-        from integrations.sandbox.docker_runner import docker_available
+        from integrations.sandbox.docker_runner import docker_bin, docker_engine_ready
         pw = "✅" if playwright_installed() else "⚠️ pip install playwright && playwright install chromium"
-        dk = "✅" if docker_available() else "⚠️ Docker не найден (local sandbox)"
+        if docker_bin():
+            dk = "✅ (запущен)" if await docker_engine_ready() else "⏳ установлен, ждём engine (откройте Docker Desktop)"
+        else:
+            dk = "⚠️ Docker не найден (local sandbox)"
         print(f"🧪 QA Playwright: {pw} | Sandbox Docker: {dk}")
     except Exception:
         pass
+
+    async def _docker_warmup():
+        try:
+            from integrations.sandbox.docker_runner import ensure_sandbox_image, docker_engine_ready
+            if await docker_engine_ready():
+                r = await ensure_sandbox_image()
+                if r.get("ok"):
+                    print(f"🐳 Docker sandbox image ready")
+        except Exception:
+            pass
+
+    asyncio.create_task(_docker_warmup())
 
     room.task_history.cleanup_stale(max_minutes=30)
     cancelled = room.task_history.stats().get("cancelled", 0)
@@ -1734,12 +1749,16 @@ async def workspace_rag_seed(workspace_id: str):
 @app.get("/api/qa/playwright/status")
 async def qa_playwright_status():
     from integrations.playwright_runner import playwright_installed
-    from integrations.sandbox.docker_runner import docker_available
+    from integrations.sandbox.docker_runner import docker_bin, docker_engine_ready
+    exe = docker_bin()
+    engine = await docker_engine_ready() if exe else False
     return {
         "ok": True,
         "playwright_installed": playwright_installed(),
-        "docker_available": docker_available(),
-        "hint": "pip install playwright && playwright install chromium",
+        "docker_installed": bool(exe),
+        "docker_engine_ready": engine,
+        "docker_available": engine,
+        "sandbox_mode": "docker" if engine else "local",
     }
 
 
