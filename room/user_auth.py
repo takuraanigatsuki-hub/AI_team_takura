@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import re
 import secrets
 import uuid
 from datetime import datetime, timedelta
@@ -12,6 +13,13 @@ USERS_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "users.json")
 SESSIONS_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "sessions.json")
 SESSION_COOKIE = "ai_team_session"
 SESSION_DAYS = 30
+
+USERNAME_RE = re.compile(r"^[a-z][a-z0-9_]{2,31}$")
+RESERVED_USERNAMES = frozenset({
+    "admin", "owner", "support", "root", "system", "api", "www", "mail",
+    "help", "mod", "moderator", "takura", "ai_team", "aiteam", "guest",
+    "null", "undefined", "login", "register", "user", "test",
+})
 
 PRIMARY_OWNER_EMAILS = frozenset({
     "takura.anigatsuki@gmail.com",
@@ -149,14 +157,139 @@ def _find_user_by_email(email: str) -> Optional[dict]:
     email = email.strip().lower()
     for u in _load(USERS_FILE):
         if u.get("email") == email:
-            return _apply_primary_owner(u)
+            return _apply_primary_owner(_ensure_username_field(u))
     return None
+
+
+def normalize_username(raw: str) -> str:
+    u = (raw or "").strip().lower()
+    u = re.sub(r"[^a-z0-9_]", "_", u)
+    u = re.sub(r"_+", "_", u).strip("_")
+    return u[:32]
+
+
+def validate_username(raw: str) -> str:
+    username = normalize_username(raw)
+    if len(username) < 3:
+        raise ValueError("Логин минимум 3 символа (латиница, цифры, _)")
+    if len(username) > 32:
+        raise ValueError("Логин не длиннее 32 символов")
+    if not USERNAME_RE.match(username):
+        raise ValueError("Логин: латиница, цифры и _; должен начинаться с буквы")
+    if username in RESERVED_USERNAMES:
+        raise ValueError("Этот логин зарезервирован")
+    return username
+
+
+def validate_display_name(raw: str) -> str:
+    name = (raw or "").strip()
+    if len(name) < 2:
+        raise ValueError("Имя минимум 2 символа")
+    if len(name) > 80:
+        raise ValueError("Имя не длиннее 80 символов")
+    return name
+
+
+def _find_user_by_username(username: str, exclude_id: str | None = None) -> Optional[dict]:
+    key = normalize_username(username)
+    if not key:
+        return None
+    for u in _load(USERS_FILE):
+        if exclude_id and u.get("id") == exclude_id:
+            continue
+        if normalize_username(u.get("username") or "") == key:
+            return _apply_primary_owner(_ensure_username_field(u))
+    return None
+
+
+def _find_user_by_display_name(name: str, exclude_id: str | None = None) -> Optional[dict]:
+    key = (name or "").strip().casefold()
+    if not key:
+        return None
+    for u in _load(USERS_FILE):
+        if exclude_id and u.get("id") == exclude_id:
+            continue
+        if (u.get("name") or "").strip().casefold() == key:
+            return u
+    return None
+
+
+def _username_exists(username: str, exclude_id: str | None, users: list | None = None) -> bool:
+    users = users if users is not None else _load(USERS_FILE)
+    key = normalize_username(username)
+    for u in users:
+        if exclude_id and u.get("id") == exclude_id:
+            continue
+        if normalize_username(u.get("username") or "") == key:
+            return True
+    return False
+
+
+def _allocate_username(base: str, exclude_id: str | None, users: list) -> str:
+    base = normalize_username(base) or "user"
+    try:
+        base = validate_username(base)
+    except ValueError:
+        base = "user"
+    candidate = base
+    n = 0
+    while _username_exists(candidate, exclude_id, users):
+        n += 1
+        suffix = f"_{n}"
+        candidate = f"{base[: max(3, 32 - len(suffix))]}{suffix}"
+    return candidate
+
+
+def _ensure_username_field(user: dict, persist: bool = True) -> dict:
+    if not user or user.get("username"):
+        return user
+    users = _load(USERS_FILE)
+    base = normalize_username(user.get("email", "").split("@")[0]) or "user"
+    user["username"] = _allocate_username(base, user.get("id"), users)
+    user["updated_at"] = datetime.now().isoformat()
+    if persist:
+        for i, u in enumerate(users):
+            if u.get("id") == user.get("id"):
+                users[i] = user
+                _save_users(users)
+                break
+    return user
+
+
+def check_username_available(raw: str, exclude_user_id: str | None = None) -> dict:
+    try:
+        username = validate_username(raw)
+    except ValueError as e:
+        return {"ok": False, "available": False, "username": normalize_username(raw), "reason": str(e)}
+    taken = _find_user_by_username(username, exclude_user_id) is not None
+    return {"ok": True, "available": not taken, "username": username, "reason": "Занят" if taken else ""}
+
+
+def check_display_name_available(raw: str, exclude_user_id: str | None = None) -> dict:
+    try:
+        name = validate_display_name(raw)
+    except ValueError as e:
+        return {"ok": False, "available": False, "name": (raw or "").strip(), "reason": str(e)}
+    taken = _find_user_by_display_name(name, exclude_user_id) is not None
+    return {"ok": True, "available": not taken, "name": name, "reason": "Имя уже занято" if taken else ""}
+
+
+def _find_user_by_login(login_id: str) -> Optional[dict]:
+    login_id = (login_id or "").strip()
+    if not login_id:
+        return None
+    if "@" in login_id:
+        return _find_user_by_email(login_id)
+    user = _find_user_by_username(login_id)
+    if user:
+        return user
+    return _find_user_by_username(normalize_username(login_id))
 
 
 def _find_user(user_id: str) -> Optional[dict]:
     for u in _load(USERS_FILE):
         if u.get("id") == user_id:
-            return _apply_primary_owner(u)
+            return _apply_primary_owner(_ensure_username_field(u))
     return None
 
 
@@ -210,6 +343,7 @@ def _public_user(user: dict) -> dict:
     return {
         "id": user["id"],
         "email": user["email"],
+        "username": user.get("username") or "",
         "name": user.get("name", ""),
         "role": role,
         "role_label": _role_label(role),
@@ -357,7 +491,7 @@ def support_account_summary(user_id: str) -> Optional[dict]:
     }
 
 
-def register(email: str, password: str, name: str = "") -> tuple[dict, str]:
+def register(email: str, password: str, name: str = "", username: str = "") -> tuple[dict, str]:
     email = email.strip().lower()
     if not email or "@" not in email:
         raise ValueError("Некорректный email")
@@ -366,13 +500,26 @@ def register(email: str, password: str, name: str = "") -> tuple[dict, str]:
     if _find_user_by_email(email):
         raise ValueError("Email уже зарегистрирован")
 
+    users = _load(USERS_FILE)
+    display_name = validate_display_name(name or email.split("@")[0])
+    if _find_user_by_display_name(display_name):
+        raise ValueError("Это имя уже занято")
+
+    if username.strip():
+        uname = validate_username(username)
+        if _username_exists(uname, None, users):
+            raise ValueError("Этот логин уже занят")
+    else:
+        uname = _allocate_username(normalize_username(display_name) or email.split("@")[0], None, users)
+
     salt, digest = _hash_password(password)
     from room.subscriptions import initial_billing_for_register
 
     user = {
         "id": str(uuid.uuid4())[:12],
         "email": email,
-        "name": (name or email.split("@")[0]).strip()[:80],
+        "username": uname,
+        "name": display_name,
         "password": f"{salt}:{digest}",
         "role": "member",
         "privileges": [],
@@ -381,17 +528,16 @@ def register(email: str, password: str, name: str = "") -> tuple[dict, str]:
         "created_at": datetime.now().isoformat(),
         **initial_billing_for_register(),
     }
-    users = _load(USERS_FILE)
     users.append(user)
     _save_users(users)
     token = _create_session(user["id"])
     return _public_user(user), token
 
 
-def login(email: str, password: str) -> tuple[dict, str]:
-    user = _find_user_by_email(email)
+def login(login_id: str, password: str) -> tuple[dict, str]:
+    user = _find_user_by_login(login_id)
     if not user or not _verify_password(password, user.get("password", "")):
-        raise ValueError("Неверный email или пароль")
+        raise ValueError("Неверный логин, email или пароль")
     if user.get("disabled"):
         raise ValueError("Аккаунт заблокирован. Обратитесь в поддержку.")
     token = _create_session(user["id"])
@@ -470,7 +616,10 @@ def complete_setup(user_id: str, *, name: str = "", goal: str = "",
     for u in users:
         if u.get("id") == user_id:
             if name:
-                u["name"] = name.strip()[:80]
+                new_name = validate_display_name(name)
+                if _find_user_by_display_name(new_name, exclude_id=user_id):
+                    raise ValueError("Это имя уже занято")
+                u["name"] = new_name
             if default_view in ALLOWED_DEFAULT_VIEWS:
                 u["default_view"] = default_view
             if theme in ("light", "dark", "auto"):
