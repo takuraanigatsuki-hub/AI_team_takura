@@ -1750,6 +1750,8 @@ async def _build_design_lab_payload() -> dict:
     """Полный ответ Дизайн-лаба — один источник для /api/figma/studio и /api/figma/design-lab."""
     from integrations.figma_discovery import enrich_discovery_status
     from integrations.figma_learning import get_studio_stats, load_patterns, load_portfolio
+    from integrations.sonya_feedback import feedback_summary
+    from integrations.sonya_studio import list_projects as list_sonya_projects
 
     stats = get_studio_stats()
     if stats.get("discovery"):
@@ -1784,6 +1786,8 @@ async def _build_design_lab_payload() -> dict:
         "frame_names": patterns.get("frames", [])[:20],
         "portfolio": load_portfolio()[:20],
         "recent_portfolio": stats.get("recent_portfolio") or load_portfolio()[:5],
+        "feedback": feedback_summary(30),
+        "sonya_learning_projects": list_sonya_projects("learning")[:12],
     }
 
 
@@ -2246,6 +2250,7 @@ async def sonya_create_project(body: SonyaProjectCreate, request: Request):
         description=body.description,
         task=body.task or f"UI проект от {author}. Современный интерфейс, React.",
         created_by=author,
+        origin="user",
     )
     from integrations.sonya_studio_notify import notify_studio
     await notify_studio("project", project_title=project.get("title", ""), project_id=project.get("id", ""))
@@ -2671,11 +2676,7 @@ async def list_sites(request: Request):
         if os.path.isfile(user_latest):
             _append_site(latest_rel, {"title": "Последний сайт"}, is_latest=True)
 
-    sites.sort(key=lambda s: (0 if s.get("is_latest") else 1, s.get("modified_at", "")), reverse=False)
-    if sites and sites[0].get("is_latest"):
-        pass
-    else:
-        sites.sort(key=lambda s: s.get("modified_at", ""), reverse=True)
+    sites.sort(key=lambda s: (0 if s.get("is_latest") else 1, s.get("modified_at", "")), reverse=True)
     return {"sites": sites}
 
 
