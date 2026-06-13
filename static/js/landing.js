@@ -3,12 +3,14 @@
     let mode = 'login';
     let currentUser = null;
     let downloadUrl = '/api/downloads/desktop/win/setup';
+    let portableUrl = '/api/downloads/desktop/win/portable';
     let activeTab = 'home';
 
     const TAB_ALIASES = {
         capabilities: 'platform',
         pricing: 'download',
-        figma: 'demo',
+        figma: 'how',
+        demo: 'how',
         start: 'download',
     };
 
@@ -51,7 +53,7 @@
         document.getElementById('lpNavToggle')?.setAttribute('aria-expanded', 'false');
         window.scrollTo({ top: 0, behavior: opts?.instant ? 'auto' : 'smooth' });
 
-        if (tab === 'demo' && opts?.playDemo) {
+        if (tab === 'how' && opts?.playDemo) {
             setTimeout(() => window.LandingDemo?.playGuidedDemo?.(), 400);
         }
     }
@@ -67,12 +69,11 @@
 
     document.addEventListener('click', (e) => {
         const trigger = e.target.closest('[data-lp-tab]');
-        if (!trigger || trigger.tagName === 'A' && trigger.classList.contains('lp-menu-key-link')) return;
-        if (trigger.dataset.lpTab) {
-            e.preventDefault();
-            const playDemo = trigger.dataset.lpTab === 'demo' && trigger.classList.contains('lp-menu-key');
-            switchTab(trigger.dataset.lpTab, { playDemo });
-        }
+        if (!trigger) return;
+        if (trigger.tagName === 'A' && trigger.getAttribute('href')?.startsWith('/api/')) return;
+        e.preventDefault();
+        const playDemo = trigger.dataset.lpTab === 'how' && trigger.classList.contains('lp-play-demo');
+        switchTab(trigger.dataset.lpTab, { playDemo });
     });
 
     window.addEventListener('hashchange', () => {
@@ -83,10 +84,13 @@
 
     window.addEventListener('keydown', (e) => {
         if (e.target.closest('input, textarea, select') || modal?.classList.contains('hidden') === false) return;
-        const map = { '1': 'home', '2': 'features', '3': 'platform', '4': 'how', '5': 'team', '6': 'integrations', '7': 'demo', '8': 'download' };
+        const map = {
+            '1': 'home', '2': 'features', '3': 'platform', '4': 'how',
+            '5': 'team', '6': 'integrations', '7': 'download',
+        };
         if (map[e.key]) {
             e.preventDefault();
-            switchTab(map[e.key], { playDemo: e.key === '7' });
+            switchTab(map[e.key], { playDemo: e.key === '4' && e.shiftKey });
         }
     });
 
@@ -94,11 +98,13 @@
         mode = m || 'login';
         updateModalUI();
         modal.classList.remove('hidden');
+        document.body.classList.add('lp-modal-open');
         (mode === 'register' ? document.getElementById('authEmail') : document.getElementById('authLogin'))?.focus();
     }
 
     function closeModal() {
         modal.classList.add('hidden');
+        document.body.classList.remove('lp-modal-open');
         errorEl.classList.add('hidden');
         form.reset();
         window.AuthFields?.clearFieldState(document.getElementById('authUsername'), document.getElementById('authUsernameHint'));
@@ -130,13 +136,14 @@
         document.getElementById('authSwitch').textContent = isReg ? 'Войти' : 'Зарегистрироваться';
     }
 
-    function applyDownloadLinks(url) {
-        downloadUrl = url || downloadUrl;
+    function applyDownloadLinks(setupUrl, portUrl) {
+        downloadUrl = setupUrl || downloadUrl;
+        portableUrl = portUrl || portableUrl;
         document.querySelectorAll(
-            '#lpBtnDownload, #lpBtnDownloadUser, #lpHeroDownload, #lpHeroDownloadUser, #lpSectionDownload, #lpCtaDownload'
-        ).forEach((el) => {
-            if (el) el.setAttribute('href', downloadUrl);
-        });
+            '#lpBtnDownload, #lpBtnDownloadUser, #lpSectionDownload, #lpCtaDownload'
+        ).forEach((el) => { if (el) el.setAttribute('href', downloadUrl); });
+        const portable = document.getElementById('lpPortableDownload');
+        if (portable) portable.setAttribute('href', portableUrl);
     }
 
     function parseAuthError(d, fallback) {
@@ -146,6 +153,29 @@
         return fallback || 'Ошибка';
     }
 
+    function canSeeAdmin(user) {
+        if (!user) return false;
+        return user.is_owner || user.is_admin || ['owner', 'admin', 'tech_admin'].includes(user.role);
+    }
+
+    function updateFooter(user) {
+        const supportBtn = document.getElementById('lpFooterSupport');
+        const cabBtn = document.getElementById('lpFooterCabinetBtn');
+        const cabLink = document.getElementById('lpFooterCabinetLink');
+        const adminLink = document.getElementById('lpFooterAdmin');
+
+        supportBtn?.classList.remove('hidden');
+        if (user) {
+            cabBtn?.classList.add('hidden');
+            cabLink?.classList.remove('hidden');
+            adminLink?.classList.toggle('hidden', !canSeeAdmin(user));
+        } else {
+            cabBtn?.classList.remove('hidden');
+            cabLink?.classList.add('hidden');
+            adminLink?.classList.add('hidden');
+        }
+    }
+
     async function initDownloadLinks() {
         try {
             const r = await fetch('/api/downloads/desktop/info');
@@ -153,19 +183,26 @@
             const info = await r.json();
             const setup = info.platforms?.find((p) => p.id === 'win-setup' && p.url);
             const portable = info.platforms?.find((p) => p.id === 'win-portable' && p.url);
-            applyDownloadLinks((setup || portable)?.url || downloadUrl);
+            applyDownloadLinks(
+                (setup || portable)?.url || downloadUrl,
+                portable?.url || portableUrl
+            );
+            const meta = document.getElementById('lpDlMeta');
+            if (meta && setup?.size_mb) meta.textContent = `WebView2 · .NET 8 · ~${setup.size_mb} MB`;
         } catch (_) {
-            applyDownloadLinks(downloadUrl);
+            applyDownloadLinks(downloadUrl, portableUrl);
         }
     }
 
     function showGuestUI() {
+        currentUser = null;
         document.getElementById('lpAuthGuest')?.classList.remove('hidden');
         document.getElementById('lpAuthUser')?.classList.add('hidden');
         document.getElementById('lpHeroCtaGuest')?.classList.remove('hidden');
         document.getElementById('lpHeroCtaUser')?.classList.add('hidden');
         document.getElementById('lpDlGuest')?.classList.remove('hidden');
         document.getElementById('lpDlUser')?.classList.add('hidden');
+        updateFooter(null);
     }
 
     function showUserUI(user) {
@@ -176,6 +213,7 @@
         document.getElementById('lpHeroCtaUser')?.classList.remove('hidden');
         document.getElementById('lpDlGuest')?.classList.add('hidden');
         document.getElementById('lpDlUser')?.classList.remove('hidden');
+        updateFooter(user);
 
         const name = user.name || user.email?.split('@')[0] || 'Пользователь';
         const pill = document.getElementById('lpUserPill');
@@ -207,24 +245,33 @@
 
     async function logout() {
         await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
-        currentUser = null;
         showGuestUI();
+    }
+
+    function goCabinet() {
+        if (currentUser) location.href = '/portal?view=profile';
+        else openModal('login');
     }
 
     document.getElementById('btnLogin')?.addEventListener('click', () => openModal('login'));
     document.getElementById('btnRegister')?.addEventListener('click', () => openModal('register'));
     document.getElementById('btnHeroStart')?.addEventListener('click', () => openModal('register'));
-    document.getElementById('btnHeroDemo')?.addEventListener('click', () => {
-        switchTab('demo', { playDemo: true });
-    });
     document.getElementById('btnCtaRegister')?.addEventListener('click', () => openModal('register'));
     document.getElementById('btnCtaLogin')?.addEventListener('click', () => openModal('login'));
+    document.getElementById('btnHeroCabinet')?.addEventListener('click', goCabinet);
+    document.getElementById('btnDlCabinet')?.addEventListener('click', goCabinet);
+    document.getElementById('lpFooterCabinetBtn')?.addEventListener('click', goCabinet);
+    document.getElementById('lpFooterSupport')?.addEventListener('click', () => global.SupportTickets?.open?.({ landing: true }));
     document.getElementById('btnLogout')?.addEventListener('click', logout);
     document.getElementById('authClose')?.addEventListener('click', closeModal);
     document.getElementById('authBackdrop')?.addEventListener('click', closeModal);
     document.getElementById('authSwitch')?.addEventListener('click', () => {
         mode = mode === 'login' ? 'register' : 'login';
         updateModalUI();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) closeModal();
     });
 
     form?.addEventListener('submit', async (e) => {
@@ -250,6 +297,8 @@
             body = { login: document.getElementById('authLogin').value.trim(), password };
         }
 
+        const submitBtn = document.getElementById('authSubmit');
+        if (submitBtn) submitBtn.disabled = true;
         try {
             const r = await fetch(url, {
                 method: 'POST',
@@ -259,15 +308,24 @@
             });
             const d = await r.json();
             if (!r.ok) throw new Error(parseAuthError(d, 'Ошибка'));
+
             const next = new URLSearchParams(location.search).get('next');
             if (next && next.startsWith('/')) {
                 location.href = next;
                 return;
             }
-            location.href = mode === 'register' ? '/portal?setup=1' : '/portal?view=profile';
+
+            if (mode === 'login') {
+                closeModal();
+                showUserUI(d.user || d);
+                return;
+            }
+            location.href = '/portal?setup=1';
         } catch (err) {
             errorEl.textContent = err.message;
             errorEl.classList.remove('hidden');
+        } finally {
+            if (submitBtn) submitBtn.disabled = false;
         }
     });
 
@@ -279,8 +337,10 @@
             closeModal();
         } else if (!user && params.get('auth') === 'login') {
             openModal('login');
+            history.replaceState({}, '', location.pathname + location.hash);
         } else if (!user && params.get('auth') === 'register') {
             openModal('register');
+            history.replaceState({}, '', location.pathname + location.hash);
         }
         if (window.LandingDemo) LandingDemo.init();
     });
@@ -293,6 +353,7 @@
     });
 
     window.LandingTabs = { switchTab, active: () => activeTab };
+    window.LandingAuth = { openLogin: () => openModal('login'), openRegister: () => openModal('register') };
 
     if (window.AuthFields) {
         AuthFields.bindUsernameCheck(document.getElementById('authUsername'), document.getElementById('authUsernameHint'));

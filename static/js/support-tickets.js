@@ -224,7 +224,95 @@
         }
     }
 
+    function renderGuestLanding() {
+        const body = document.getElementById('supportChatBody');
+        const compose = document.getElementById('supportChatCompose');
+        if (!body) return;
+
+        const chips = FALLBACK_TEMPLATES.map((t) => `
+            <button type="button" class="support-topic-chip" data-guest-tid="${esc(t.id)}">
+                <span>${t.icon || '💬'}</span> ${esc(t.title)}
+            </button>`).join('');
+
+        body.innerHTML = `
+            <div class="support-chat-messages">
+                <div class="support-chat-msg bot">
+                    <div class="support-chat-avatar">💬</div>
+                    <div class="support-chat-bubble">
+                        <strong>Поддержка AI Team</strong>
+                        <p>Опишите проблему — мы ответим на email. Войдите в аккаунт, чтобы видеть историю диалогов.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="support-topic-menu">
+                <div class="support-topic-label">Тема обращения:</div>
+                <div class="support-topic-chips" id="lpGuestTopicChips">${chips}</div>
+            </div>
+            <div class="lp-guest-report-fields">
+                <label class="lp-label">Email для ответа</label>
+                <input type="email" id="guestReportEmail" class="lp-input" placeholder="you@company.com" required>
+                <label class="lp-label">Имя (необязательно)</label>
+                <input type="text" id="guestReportName" class="lp-input" maxlength="80" placeholder="Алексей">
+            </div>`;
+
+        compose.innerHTML = `
+            <textarea id="guestReportMessage" rows="3" placeholder="Опишите проблему или баг…"></textarea>
+            <div class="support-guest-actions">
+                <button type="button" class="btn-primary btn-sm" onclick="SupportTickets.submitGuestReport()">Отправить репорт</button>
+                <button type="button" class="btn-secondary btn-sm" onclick="LandingAuth?.openLogin?.()">Войти в аккаунт</button>
+            </div>`;
+
+        let selectedTpl = FALLBACK_TEMPLATES.find((t) => t.id === 'other') || FALLBACK_TEMPLATES[3];
+        body.querySelectorAll('[data-guest-tid]').forEach((btn) => {
+            btn.onclick = () => {
+                body.querySelectorAll('[data-guest-tid]').forEach((b) => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedTpl = FALLBACK_TEMPLATES.find((t) => t.id === btn.dataset.guestTid) || selectedTpl;
+            };
+        });
+        body.dataset.guestTemplateId = selectedTpl.id;
+        body.querySelector('[data-guest-tid="other"]')?.classList.add('active');
+    }
+
+    async function submitGuestReport() {
+        const body = document.getElementById('supportChatBody');
+        const email = document.getElementById('guestReportEmail')?.value?.trim();
+        const name = document.getElementById('guestReportName')?.value?.trim();
+        const message = document.getElementById('guestReportMessage')?.value?.trim();
+        const activeChip = body?.querySelector('[data-guest-tid].active');
+        const templateId = activeChip?.dataset.guestTid || 'other';
+        const tpl = FALLBACK_TEMPLATES.find((t) => t.id === templateId) || FALLBACK_TEMPLATES[3];
+
+        if (!email || !email.includes('@')) { toast('Укажите email для ответа', 'warn'); return; }
+        if (!message) { toast('Опишите проблему', 'warn'); return; }
+
+        try {
+            const r = await fetch('/api/support/guest-report', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email,
+                    name,
+                    message,
+                    subject: tpl.subject || tpl.title,
+                    category: tpl.category || 'other',
+                    template_id: templateId,
+                }),
+            });
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.detail || 'Ошибка отправки');
+            toast('Обращение отправлено — ответим на ' + email, 'success');
+            document.getElementById('guestReportMessage').value = '';
+        } catch (e) {
+            toast(e.message || 'Не удалось отправить', 'error');
+        }
+    }
+
     function renderGuest() {
+        if (document.body.classList.contains('lp-landing')) {
+            renderGuestLanding();
+            return;
+        }
         const body = document.getElementById('supportChatBody');
         const compose = document.getElementById('supportChatCompose');
         if (!body) return;
@@ -237,20 +325,22 @@
                     </div>
                 </div>
             </div>`;
-        compose.innerHTML = `<a href="/?auth=login" class="btn-primary" style="text-decoration:none">Войти</a>`;
+        compose.innerHTML = `<button type="button" class="btn-primary btn-sm" onclick="LandingAuth?.openLogin?.() || (location.href='/?auth=login')">Войти</button>`;
     }
 
-    async function open() {
-        const user = global.Auth?.getUser();
-        if (user && isStaff(user)) {
+    async function open(opts) {
+        const user = global.Auth?.getUser?.() || null;
+        if (user && isStaff(user) && !opts?.landing) {
             global.switchView?.('support');
             return;
         }
 
         ensureModal();
         document.getElementById('supportTicketModal')?.classList.remove('hidden');
+        document.body.classList.add('lp-modal-open');
 
         if (!user) {
+            await loadTemplates();
             renderGuest();
             return;
         }
@@ -261,6 +351,7 @@
 
     function close() {
         document.getElementById('supportTicketModal')?.classList.add('hidden');
+        document.body.classList.remove('lp-modal-open');
     }
 
     function backToHub() {

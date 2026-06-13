@@ -3615,6 +3615,58 @@ class TicketUpdateBody(BaseModel):
     priority: str | None = None
 
 
+class GuestReportBody(BaseModel):
+    email: str
+    name: str = ""
+    subject: str = ""
+    message: str
+    category: str = "other"
+    template_id: str = ""
+
+
+@app.post("/api/support/guest-report")
+async def support_guest_report(body: GuestReportBody, request: Request):
+    """Обращение в поддержку без авторизации (лендинг)."""
+    import uuid
+    from room.ticket_store import create_ticket, get_template
+    from room import notifications
+
+    email = (body.email or "").strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Укажите корректный email")
+    message = (body.message or "").strip()
+    subject = (body.subject or "").strip()
+    category = body.category or "other"
+    template_id = (body.template_id or "").strip()
+    if template_id:
+        tpl = get_template(template_id)
+        if tpl:
+            if not subject:
+                subject = tpl.get("subject", tpl.get("title", ""))
+            category = tpl.get("category", category)
+    if not message and not subject:
+        raise HTTPException(status_code=400, detail="Опишите проблему")
+
+    name = (body.name or "").strip() or email.split("@")[0]
+    ticket = create_ticket(
+        user_id=f"guest-{uuid.uuid4().hex[:8]}",
+        user_email=email,
+        user_name=name[:80],
+        subject=subject or "Обращение с сайта",
+        message=message or subject,
+        category=category,
+        template_id=template_id,
+    )
+    notifications.push(
+        "💬 Гостевой тикет",
+        f"{ticket['subject']} — {email}",
+        user_id="",
+        ntype="support",
+        link=f"support:{ticket['id']}",
+    )
+    return {"ok": True, "ticket": ticket}
+
+
 @app.get("/api/support/templates")
 async def support_templates():
     from room.ticket_store import list_templates
