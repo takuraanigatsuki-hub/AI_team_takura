@@ -46,11 +46,15 @@
             el = document.createElement('div');
             el.id = 'diffOverlay';
             el.className = 'activity-overlay';
+            el.onclick = (e) => { if (e.target === el) el.style.display = 'none'; };
             document.body.appendChild(el);
         }
         const diff = d.content_diff || {};
         el.innerHTML = `<div class="activity-card wide">
-            <h2>Diff: ${escape(d.from?.title)} → ${escape(d.to?.title)}</h2>
+            <div class="activity-header">
+                <h2>Diff: ${escape(d.from?.title)} → ${escape(d.to?.title)}</h2>
+                <button type="button" class="icon-btn" onclick="document.getElementById('diffOverlay').style.display='none'" aria-label="Закрыть">×</button>
+            </div>
             <p>+${diff.added || 0} / -${diff.removed || 0} lines</p>
             <div class="diff-view">${diff.html || ''}</div>
             <button class="btn-primary" onclick="document.getElementById('diffOverlay').style.display='none'">Закрыть</button>

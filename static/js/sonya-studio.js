@@ -118,6 +118,12 @@
     }
 
     async function openProject(id) {
+        commentMode = false;
+        hideCommentForm();
+        const wrap = document.getElementById('ssCanvasWrap');
+        const btn = document.getElementById('ssCommentModeBtn');
+        if (wrap) wrap.classList.remove('comment-mode');
+        if (btn) { btn.classList.remove('active'); btn.textContent = '💬 Комментарий'; }
         activeId = id;
         renderProjectList();
         try {
@@ -302,13 +308,16 @@
     }
 
     function setupCanvasClick() {
-        const wrap = document.getElementById('ssCanvasWrap');
-        if (!wrap || wrap.dataset.bound) return;
-        wrap.dataset.bound = '1';
-        wrap.addEventListener('click', (e) => {
+        const layer = document.getElementById('ssCommentLayer');
+        if (!layer || layer.dataset.bound) return;
+        layer.dataset.bound = '1';
+        layer.addEventListener('click', (e) => {
             if (!commentMode || !activeProject) return;
+            if (e.target.closest('.ss-pin')) return;
             if (e.target.closest('.ss-comment-form-inner')) return;
-            const rect = wrap.getBoundingClientRect();
+            const wrap = document.getElementById('ssCanvasWrap');
+            const rect = wrap?.getBoundingClientRect();
+            if (!rect) return;
             const x = (e.clientX - rect.left) / rect.width;
             const y = (e.clientY - rect.top) / rect.height;
             pendingPin = { x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) };
@@ -440,8 +449,8 @@
         setupCanvasClick();
         document.getElementById('ssCommentSubmit')?.addEventListener('click', submitComment);
         document.getElementById('ssCommentCancel')?.addEventListener('click', () => {
-            commentMode = false;
-            toggleCommentMode();
+            hideCommentForm();
+            pendingPin = null;
         });
         document.getElementById('ssCommentInput')?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitComment(); }
