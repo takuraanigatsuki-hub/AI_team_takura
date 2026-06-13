@@ -1223,12 +1223,12 @@ async def admin_console(body: AdminConsoleRequest, request: Request):
         if not text:
             raise HTTPException(status_code=400, detail="Укажите prompt для Cursor")
         run_req = CursorRunRequest(prompt=text, repo_url=body.repo_url or "")
-        result = await cursor_run(run_req)
+        result = await cursor_run(run_req, request)
         log.append(f"Cursor run: {result.get('run_id', '—')}")
         return {"ok": True, "log": log, "result": result}
 
     if action == "git_sync":
-        result = await git_sync_now()
+        result = await git_sync_now(request)
         log.append(f"Git: {result.get('action', '—')}")
         return {"ok": True, "log": log, "result": result}
 
