@@ -73,7 +73,7 @@ Router автоматически начнёт использовать LLM вм
 - [x] Agent tool registry (`integrations/agent_tools/`)
 - [x] MCP gateway (`integrations/mcp_gateway.py`)
 - [x] Embeddings + hybrid search (FTS + vectors)
-- [ ] Playwright MCP для QA
+- [x] Playwright QA tools (`integrations/playwright_runner.py` + httpx fallback)
 - [x] Расширение packs: ingest URL docs (FastAPI, React, OWASP)
 - [x] Project memory (`room/project_memory.py`)
 - [x] Evaluator gate — артеfact не уходит пользователю без оценки ≥ порога
