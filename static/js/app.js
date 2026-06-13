@@ -30,7 +30,6 @@
     let selectedAgent = null;
     let agents = {};
     let reconnectTimer = null;
-    let studioInited = false;
     const privateChats = {};
     let privateChatZIndex = 350;
     let taskHistory = [];
@@ -53,7 +52,6 @@
             btn.textContent = theme === 'dark' ? '☀️' : '🌙';
             btn.title = theme === 'dark' ? 'Светлая тема' : 'Тёмная тема';
         }
-        if (window.StudioApp) StudioApp.setTheme(theme === 'dark');
     }
 
     window.toggleTheme = function () {
@@ -78,6 +76,19 @@
 
     function canViewLearningHub(user) {
         return !!user || true;
+    }
+
+    function syncAgentLearningTabs(user) {
+        const admin = canViewAgentLearning(user);
+        document.getElementById('alTabLearning')?.classList.toggle('hidden', !admin);
+        document.getElementById('alTabMasha')?.classList.toggle('hidden', !admin);
+        document.getElementById('alTabDesign')?.classList.toggle('hidden', !admin);
+        const sub = document.querySelector('#agentLearningSubnav .al-sub');
+        if (sub) {
+            sub.textContent = admin
+                ? 'Лента обучения, проекты агентов на проверку и Design Lab'
+                : 'Проекты агентов и Сони — следите за обучением команды';
+        }
     }
 
     function isPrivilegedUser(user) {
@@ -113,7 +124,10 @@
     };
 
     window.switchView = function (view) {
-        if (view === 'studio') view = 'agent-learning';
+        if (view === 'studio') {
+            agentLearningPanel = canViewAgentLearning(user) ? 'learning' : 'sonya-projects';
+            view = 'agent-learning';
+        }
         if (window.AppShell?.redirectIfCrossShell?.(view)) return;
         const user = window.Auth?.getUser();
         if (view === 'admin') {
@@ -143,16 +157,15 @@
             switchView('investor');
             return;
         } else if (AGENT_LEARNING_VIEWS.has(view)) {
-            const adminOnly = view === 'design' || view === 'masha';
+            const adminOnly = view === 'design' || view === 'masha' || view === 'learning';
             if (adminOnly && !canViewAgentLearning(user)) {
-                const msg = 'Design Lab доступен только администраторам';
-                if (window.UIEnhancements) UIEnhancements.toast(msg, 'warn');
-                else alert(msg);
                 agentLearningPanel = 'sonya-projects';
                 view = 'agent-learning';
             } else if (view === 'learning' || view === 'design' || view === 'masha' || view === 'sonya-projects') {
                 agentLearningPanel = view === 'design' ? 'design' : (view === 'masha' ? 'masha' : (view === 'sonya-projects' ? 'sonya-projects' : 'learning'));
                 view = 'agent-learning';
+            } else if (view === 'agent-learning' && !adminOnly && !canViewAgentLearning(user)) {
+                agentLearningPanel = 'sonya-projects';
             }
         } else if (view === 'timeline') {
             if (!canViewAgentLearning(user)) {
@@ -181,13 +194,13 @@
             el.classList.remove('view-enter');
         });
         const isAgentLearning = view === 'agent-learning';
+        syncAgentLearningTabs(user);
         document.getElementById('agentLearningSubnav')?.classList.toggle('hidden', !isAgentLearning);
         document.getElementById('alTabLearning')?.classList.toggle('active', isAgentLearning && agentLearningPanel === 'learning');
         document.getElementById('alTabMasha')?.classList.toggle('active', isAgentLearning && agentLearningPanel === 'masha');
         document.getElementById('alTabDesign')?.classList.toggle('active', isAgentLearning && agentLearningPanel === 'design');
         document.getElementById('alTabSonyaProjects')?.classList.toggle('active', isAgentLearning && agentLearningPanel === 'sonya-projects');
 
-        document.getElementById('studioView')?.classList.toggle('hidden', view !== 'studio');
         document.getElementById('chatView')?.classList.toggle('hidden', view !== 'chat');
         document.getElementById('learningView')?.classList.toggle('hidden', !isAgentLearning || agentLearningPanel !== 'learning');
         document.getElementById('tasksView')?.classList.toggle('hidden', view !== 'tasks');
@@ -254,21 +267,7 @@
             }, 30000);
         }
 
-        if (view === 'studio') {
-            document.getElementById('studioView')?.classList.add('view-enter');
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    if (!studioInited) {
-                        initStudio();
-                    } else if (window.StudioApp) {
-                        const canvas = document.getElementById('studioCanvas');
-                        StudioApp.wake(canvas);
-                        if (window.StudioMinimap) StudioMinimap.update(Object.values(agents));
-                    }
-                });
-            });
-        } else {
-            const viewElId = {
+        const viewElId = {
                 chat: 'chatView', tasks: 'tasksView', dashboard: 'dashboardView',
                 kanban: 'kanbanView', sprint: 'sprintView', timeline: 'timelineView',
                 projects: 'projectsView', profile: 'profileView', admin: 'adminView',
@@ -279,7 +278,6 @@
             if (viewEl && !viewEl.classList.contains('hidden')) {
                 viewEl.classList.add('view-enter');
             }
-        }
 
         if (window.AppShell?.urlForView) {
             const shell = window.AppShell.isPortal?.() ? 'portal' : 'workspace';
