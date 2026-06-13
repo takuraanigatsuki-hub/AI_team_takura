@@ -69,7 +69,7 @@ function Ensure-GradleWrapper {
         Expand-Archive -Path $gradleZip -DestinationPath $env:TEMP -Force
     }
     Push-Location $AndroidDir
-    & "$gradleHome\bin\gradle.bat" wrapper --gradle-version 8.7
+    & "$gradleHome\bin\gradle.bat" wrapper --gradle-version 8.7 2>&1 | Out-Host
     Pop-Location
 }
 
@@ -83,7 +83,7 @@ function Invoke-GradleBuild {
     param([string]$Task)
     if (Test-GradleWrapperReady) {
         Push-Location $AndroidDir
-        & (Join-Path $AndroidDir "gradlew.bat") $Task --no-daemon
+        & (Join-Path $AndroidDir "gradlew.bat") $Task --no-daemon 2>&1 | Out-Host
         $code = $LASTEXITCODE
         Pop-Location
         if ($null -eq $code) { $code = 1 }
@@ -97,7 +97,7 @@ function Invoke-GradleBuild {
         return 1
     }
     Push-Location $AndroidDir
-       & "$gradleHome\bin\gradle.bat" $Task --no-daemon
+       & "$gradleHome\bin\gradle.bat" $Task --no-daemon 2>&1 | Out-Host
     $code = $LASTEXITCODE
     Pop-Location
     if ($null -eq $code) { $code = 1 }
@@ -116,10 +116,10 @@ $env:JAVA_HOME = $env:JAVA_HOME  # winget usually sets this
 Push-Location $AndroidDir
 Write-Host "==> gradle assembleRelease..." -ForegroundColor Yellow
 Pop-Location
-$code = Invoke-GradleBuild "assembleRelease"
+[int]$code = Invoke-GradleBuild "assembleRelease"
 if ($code -ne 0) {
     Write-Host "Release failed, trying assembleDebug..." -ForegroundColor Yellow
-    $code = Invoke-GradleBuild "assembleDebug"
+    [int]$code = Invoke-GradleBuild "assembleDebug"
     if ($code -ne 0) { exit $code }
     $apk = Get-ChildItem -Path (Join-Path $AndroidDir "app\build\outputs\apk\debug") -Filter "*.apk" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
 } else {
