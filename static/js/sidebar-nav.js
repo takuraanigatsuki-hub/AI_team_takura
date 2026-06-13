@@ -122,7 +122,7 @@
 
     function canShow(item, user) {
         if (item.admin && !global.Auth?.canAccessAdmin?.(user)) return false;
-        if (item.supportPanel && !global.Auth?.canManageTickets?.(user)) return false;
+        if (item.supportPanel && !global.Auth?.canManageTickets?.(user) && !user?.is_support) return false;
         if (item.adminLearning && !global.Auth?.canViewAgentLearning?.(user)) return false;
         if (item.investor && !global.Auth?.canViewInvestorPortal?.(user)) return false;
         if (item.role === 'investor') {

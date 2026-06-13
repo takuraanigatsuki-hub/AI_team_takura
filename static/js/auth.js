@@ -162,5 +162,5 @@
         return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     }
 
-    global.Auth = { fetchMe, getUser, isLoggedIn, logout, updateHeader, updateNavVisibility, roleBadgeHtml, canAccessAdmin, canManageTickets, canViewAgentLearning, canViewInvestorPortal };
+    global.Auth = { fetchMe, getUser, isLoggedIn, logout, updateHeader, updateNavVisibility, roleBadgeHtml, canAccessAdmin, canManageTickets, isSupportStaff, canViewAgentLearning, canViewInvestorPortal };
 })(window);

@@ -66,8 +66,8 @@
 
     function getUiMode(user) {
         if (!user) return 'guest';
+        if (user.is_support || user.role === 'support') return 'support';
         if (global.Auth?.canAccessAdmin?.(user)) return 'admin';
-        if (user.role === 'support' || (user.can_manage_tickets && user.role === 'support')) return 'support';
         if (user.role === 'investor') return 'investor';
         return 'member';
     }
