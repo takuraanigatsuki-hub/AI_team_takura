@@ -1330,6 +1330,9 @@ class BaseAgent:
                 for fname, finfo in (saved.get("files") or {}).items():
                     if isinstance(finfo, dict) and finfo.get("download"):
                         msg += f"\n📎 [{fname}]({finfo['download']})"
+                user_id = saved.get("user_id") or artifact.get("user_id") or ""
+                task_id = saved.get("task_id") or artifact.get("task_id") or ""
+                owner = {"user_id": user_id, "task_id": task_id} if user_id else {}
                 await self.room_manager.broadcast_work({
                     "type": "artifact_created",
                     "agent_id": self.agent_id,
@@ -1342,6 +1345,7 @@ class BaseAgent:
                     "capabilities": caps.get("skills", [])[:6],
                     "message": msg,
                     "timestamp": datetime.now().isoformat(),
+                    **owner,
                 })
                 pptx_url = None
                 for fname, finfo in (saved.get("files") or {}).items():

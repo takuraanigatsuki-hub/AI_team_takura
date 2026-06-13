@@ -125,9 +125,16 @@ class FrontendDevAgent(BaseAgent):
         if not should_emit_react_preview(task_text, original_task):
             return
         preview = await self._build_preview(task_text)
+        ct = self.current_task or {}
+        uid = getattr(self, "_active_user_id", "") or ct.get("user_id") or ""
+        tid = getattr(self, "_active_task_id", "") or ct.get("task_id") or ""
+        owner = {"user_id": uid, "task_id": tid} if uid else {}
         if preview.get("is_site") or should_export_site(task_text):
             try:
-                site_path = export_site_html(preview["code"], task_text, preview["title"])
+                site_path = export_site_html(
+                    preview["code"], task_text, preview["title"],
+                    user_id=uid, task_id=tid,
+                )
                 preview["site_path"] = site_path
                 preview["site_url"] = "/api/sites/latest"
             except Exception:
@@ -145,6 +152,7 @@ class FrontendDevAgent(BaseAgent):
                 "timestamp": preview["timestamp"],
                 "is_site": preview.get("is_site", False),
                 "site_url": preview.get("site_url"),
+                **owner,
             })
             site_url = preview.get("site_url", "/api/sites/latest")
             is_site = preview.get("is_site") or should_export_site(task_text)
@@ -158,6 +166,7 @@ class FrontendDevAgent(BaseAgent):
                     "site_url": site_url,
                     "message": f"🌐 **Сайт готов!** [Открыть]({site_url}) · или **🎨 Preview** в шапке",
                     "timestamp": preview["timestamp"],
+                    **owner,
                 })
                 await self.room_manager.broadcast_work({
                     "type": "result_ready",
@@ -174,6 +183,7 @@ class FrontendDevAgent(BaseAgent):
                         f"• Кнопка **🎨 Preview** — живой React"
                     ),
                     "timestamp": preview["timestamp"],
+                    **owner,
                 })
             elif kind == "table":
                 await self.room_manager.broadcast_work({
@@ -188,6 +198,7 @@ class FrontendDevAgent(BaseAgent):
                         f"Нажмите **🎨 Preview** в шапке."
                     ),
                     "timestamp": preview["timestamp"],
+                    **owner,
                 })
 
     async def handle_direct_chat(self, text: str, force_chat: bool = False):
@@ -257,6 +268,7 @@ class FrontendDevAgent(BaseAgent):
         original_task = task.get("original_task") or ""
         sender = task.get("sender", "Пользователь")
         task_id = task.get("task_id")
+        self._active_user_id, self._active_task_id = self._resolve_task_user(task)
 
         from room.task_routing import resolve_task_intent, wants_powerpoint_file
         intent_kind = resolve_task_intent(task_text, original_task)

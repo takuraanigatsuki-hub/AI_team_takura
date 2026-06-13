@@ -47,7 +47,7 @@
     };
 
     async function cleanup() {
-        if (!confirm('Удалить промежуточные артефакты (QA, review, дубликаты) и оставить только готовые проекты?')) return;
+        if (!confirm('Удалить промежуточные артефакты (QA, review, дубликаты) среди ваших проектов?')) return;
         try {
             const r = await fetch('/api/projects/cleanup', { method: 'DELETE', credentials: 'same-origin' });
             const d = await r.json().catch(() => ({}));
@@ -56,8 +56,23 @@
             const kept = d.kept ?? '';
             const msg = removed > 0
                 ? `Удалено: ${removed}${kept !== '' ? ` · осталось: ${kept}` : ''}`
-                : 'Промежуточных артефактов не найдено — уже только готовые проекты';
+                : 'Промежуточных артефактов не найдено';
             if (global.UIEnhancements) UIEnhancements.toast(msg, removed > 0 ? 'success' : 'info');
+            load();
+        } catch (e) {
+            if (global.UIEnhancements) UIEnhancements.toast(e.message, 'error');
+            else alert(e.message);
+        }
+    }
+
+    async function deleteAll() {
+        if (!confirm('Удалить ВСЕ ваши проекты без восстановления?')) return;
+        try {
+            const r = await fetch('/api/projects/mine', { method: 'DELETE', credentials: 'same-origin' });
+            const d = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(d.detail || `Ошибка ${r.status}`);
+            const msg = (d.removed || 0) > 0 ? `Удалено проектов: ${d.removed}` : 'Ваших проектов не было';
+            if (global.UIEnhancements) UIEnhancements.toast(msg, 'success');
             load();
         } catch (e) {
             if (global.UIEnhancements) UIEnhancements.toast(e.message, 'error');
@@ -135,5 +150,5 @@
         return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     }
 
-    global.ProjectsUI = { load, setFilter, setSearch, cleanup };
+    global.ProjectsUI = { load, setFilter, setSearch, cleanup, deleteAll };
 })(window);

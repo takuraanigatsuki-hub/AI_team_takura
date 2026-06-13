@@ -481,7 +481,8 @@
             <div class="tasks-stats" id="projectsStats"></div>
             <div class="projects-toolbar">
                 <input type="search" id="projectsSearch" class="chat-search projects-search" placeholder="Поиск…" oninput="ProjectsUI.setSearch(this.value)">
-                <button type="button" class="btn-secondary btn-sm" onclick="ProjectsUI.cleanup()">🗑 Очистить</button>
+                <button type="button" class="btn-secondary btn-sm" onclick="ProjectsUI.cleanup()" title="Убрать QA, review и дубликаты">🧹 Очистить</button>
+                <button type="button" class="btn-secondary btn-sm tasks-btn-danger" onclick="ProjectsUI.deleteAll()" title="Удалить все ваши проекты">🗑 Удалить всё</button>
             </div>
             <div class="projects-filters">
                 <button type="button" class="filter-btn proj-filter active" data-agent="" data-type="" onclick="ProjectsUI.setFilter('','')">Все</button>
@@ -868,7 +869,7 @@
 <script src="/static/js/admin-panel.js?v=6"></script>
 <script src="/static/js/setup-wizard.js?v=3"></script>
 <script src="/static/js/cinematic-onboarding.js?v=1"></script>
-<script src="/static/js/projects.js?v=7"></script>
+<script src="/static/js/projects.js?v=8"></script>
 <script src="/static/js/sites.js?v=1"></script>
 <script src="/static/js/sprint.js?v=5"></script>
 <script src="/static/js/power-pack.js?v=8"></script>

@@ -1402,9 +1402,22 @@ async def search_site(request: Request, q: str = "", limit: int = 30):
 
 
 @app.get("/api/sites/latest")
-async def get_latest_site():
-    """Готовый HTML-сайт от Сони"""
-    site_file = os.path.join(os.path.dirname(__file__), "output", "sites", "latest.html")
+async def get_latest_site(request: Request):
+    """Последний HTML-сайт текущего пользователя."""
+    from room.message_filter import is_privileged
+
+    user = _optional_user(request)
+    uid = user.get("id", "") if user else ""
+    privileged = is_privileged(user.get("role", "")) if user else False
+    sites_dir = os.path.join(os.path.dirname(__file__), "output", "sites")
+    site_file = None
+    if uid:
+        site_file = os.path.join(sites_dir, "users", uid.replace("/", "_")[:64], "latest.html")
+    if not site_file or not os.path.exists(site_file):
+        if privileged:
+            site_file = os.path.join(sites_dir, "latest.html")
+        else:
+            raise HTTPException(status_code=404, detail="Сайт ещё не создан. Дайте Соне задачу со словом «сайт».")
     if os.path.exists(site_file):
         return FileResponse(site_file, media_type="text/html")
     raise HTTPException(status_code=404, detail="Сайт ещё не создан. Дайте Соне задачу со словом «сайт».")
@@ -1473,7 +1486,7 @@ async def get_dashboard(request: Request):
             "name": agent.name,
             "emoji": agent.emoji,
             "status": agent.status,
-            "learned_count": len(agent.learned_topics),
+            "learned_count": len(agent.learned_topics) if platform_admin else None,
             "role": agent.role,
         })
         total_knowledge += len(agent.learned_topics)
@@ -1485,10 +1498,11 @@ async def get_dashboard(request: Request):
         if platform_admin
         else room.task_history.stats_for_user(viewer.get("user_id", ""))
     )
+    member_view = not platform_admin and bool(viewer.get("user_id"))
     return {
         "team_size": len(agents_data),
         "agents": agents_data,
-        "total_knowledge": total_knowledge,
+        "total_knowledge": total_knowledge if not member_view else None,
         "task_stats": task_stats,
         "figma_configured": _figma_is_configured() if platform_admin else False,
         "git_auto_sync": cfg_module.config.get("git_auto_sync", True) if platform_admin else False,
@@ -1510,35 +1524,36 @@ async def get_activity(request: Request, limit: int = 30):
     }
     uid = viewer["user_id"]
     privileged = is_privileged(viewer.get("role", ""))
-    user_task_texts = set()
-    if uid and not privileged:
-        for t in room.task_history.get_for_user(uid, 50):
-            txt = (t.get("task") or t.get("text") or "").strip().lower()[:80]
-            if txt:
-                user_task_texts.add(txt)
+
+    def _msg_belongs_to_user(msg: dict) -> bool:
+        if privileged or not uid:
+            return True
+        msg_uid = msg.get("user_id") or msg.get("owner_user_id") or ""
+        if msg_uid:
+            return msg_uid == uid
+        task_id = msg.get("task_id") or ""
+        if task_id:
+            t = room.task_history._find(task_id)
+            return bool(t and room.task_history._belongs_to_user(t, uid))
+        msg_type = msg.get("type", "")
+        if msg_type == "user_message":
+            return False
+        return False
 
     items = []
-    for msg in reversed(filter_messages_for_viewer(room.work_history, viewer)[-limit * 3:]):
+    for msg in reversed(filter_messages_for_viewer(room.work_history, viewer)[-limit * 5:]):
         msg_type = msg.get("type", "message")
         if msg_type in ("agents_state", "history", "task_history", "direct_user_echo", "balance_update"):
             continue
         preview = (msg.get("message") or msg.get("text") or "")[:120]
         if not preview and msg_type not in ("github_sync_started", "github_sync_done", "git_sync_done"):
             continue
+        if not _msg_belongs_to_user(msg):
+            continue
         if not privileged and uid:
-            msg_uid = msg.get("user_id") or msg.get("owner_user_id") or ""
-            if msg_type == "user_message":
-                if msg_uid and msg_uid != uid:
-                    continue
-            elif msg_uid and msg_uid != uid:
+            low = preview.lower()
+            if "подключил" in low or "покинул" in low or "пользователь покинул" in low or "пользователь подключ" in low:
                 continue
-            elif "подключил" in preview.lower() or "покинул" in preview.lower() or "пользователь" in preview.lower():
-                continue
-            elif user_task_texts and msg_type in ("message", "task_done", "result_ready", "site_ready", "pm_plan"):
-                hay = preview.lower()
-                if not any(hay in t or t[:40] in hay for t in user_task_texts):
-                    if not msg_uid:
-                        continue
         items.append({
             "type": msg_type,
             "message": preview,
@@ -2485,11 +2500,21 @@ async def get_kanban(request: Request):
 async def list_projects(request: Request, agent_id: str = "", type: str = "", limit: int = 80,
                       deliverables: bool = True):
     from room.artifact_store import list_all, stats, list_deliverables
+    from room.message_filter import is_privileged
+
+    user = _optional_user(request)
+    uid = user.get("id", "") if user else ""
+    privileged = is_privileged(user.get("role", "")) if user else False
+    th = room.task_history
+
     items = list_all(
         limit=min(limit, 200),
         agent_id=agent_id or None,
         art_type=type or None,
         deliverables_only=deliverables,
+        user_id=uid,
+        task_history=th,
+        privileged=privileged,
     )
     full = []
     for meta in items:
@@ -2498,49 +2523,86 @@ async def list_projects(request: Request, agent_id: str = "", type: str = "", li
         if art:
             preview = art.get("preview_html") or art.get("content", "")
             full.append({**meta, "has_preview": bool(preview), "file_count": len(art.get("files") or {})})
-    st = stats()
-    if deliverables:
-        ditems = list_deliverables(limit=500)
-        by_type = {}
-        for i in ditems:
-            by_type[i.get("type", "?")] = by_type.get(i.get("type", "?"), 0) + 1
-        st = {"total": len(ditems), "by_type": by_type, "by_agent": {}}
+    ditems = list_deliverables(
+        limit=500, user_id=uid, task_history=th, privileged=privileged,
+    ) if deliverables else items
+    by_type = {}
+    for i in ditems:
+        by_type[i.get("type", "?")] = by_type.get(i.get("type", "?"), 0) + 1
+    st = {"total": len(ditems), "by_type": by_type, "by_agent": {}}
     return {"projects": full, "stats": st}
 
 
 @app.delete("/api/projects/cleanup")
 async def cleanup_projects(request: Request):
-    _current_user(request)
+    from room.message_filter import is_privileged
     from room.artifact_store import clear_non_deliverables
-    result = clear_non_deliverables()
+
+    user = _current_user(request)
+    uid = user.get("id", "")
+    result = clear_non_deliverables(
+        user_id=uid,
+        task_history=room.task_history,
+        privileged=is_privileged(user.get("role", "")),
+    )
+    return {"ok": True, **result}
+
+
+@app.delete("/api/projects/mine")
+async def delete_all_my_projects(request: Request):
+    from room.artifact_store import delete_all_for_user
+
+    user = _current_user(request)
+    uid = user.get("id", "")
+    result = delete_all_for_user(uid, room.task_history)
     return {"ok": True, **result}
 
 
 @app.get("/api/sites")
-async def list_sites():
-    """Список готовых HTML-сайтов."""
-    sites_dir = os.path.join(os.path.dirname(__file__), "output", "sites")
-    if not os.path.isdir(sites_dir):
+async def list_sites(request: Request):
+    """Список готовых HTML-сайтов текущего пользователя."""
+    from room.message_filter import is_privileged
+    from room.sites_registry import list_for_user
+
+    user = _optional_user(request)
+    uid = user.get("id", "") if user else ""
+    privileged = is_privileged(user.get("role", "")) if user else False
+    if not uid and not privileged:
         return {"sites": []}
+
+    sites_dir = os.path.join(os.path.dirname(__file__), "output", "sites")
+    entries = list_for_user(uid, privileged=privileged, limit=40)
     sites = []
-    for name in sorted(os.listdir(sites_dir), reverse=True):
+    for entry in entries:
+        name = entry.get("filename") or entry.get("id", "")
         if not name.endswith(".html"):
             continue
         fp = os.path.join(sites_dir, name)
+        if not os.path.isfile(fp):
+            continue
         try:
             st = os.stat(fp)
             sites.append({
                 "id": name,
-                "title": name.replace(".html", "").replace("_", " ")[:80],
+                "title": entry.get("title") or name.replace(".html", "").replace("_", " ")[:80],
                 "url": f"/output/sites/{name}",
                 "preview_url": f"/output/sites/{name}",
-                "is_latest": name == "latest.html",
+                "is_latest": False,
                 "size_kb": round(st.st_size / 1024, 1),
                 "modified_at": datetime.fromtimestamp(st.st_mtime).isoformat(),
             })
         except OSError:
             continue
-    return {"sites": sites[:40]}
+    latest = None
+    if uid:
+        user_latest = os.path.join(sites_dir, "users", uid.replace("/", "_")[:64], "latest.html")
+        if os.path.isfile(user_latest):
+            latest = user_latest
+    if latest:
+        for s in sites:
+            if s["id"] == os.path.basename(latest):
+                s["is_latest"] = True
+    return {"sites": sites}
 
 
 @app.get("/api/projects/{artifact_id}")
