@@ -1,7 +1,7 @@
 /* Enhancements: sidebar, unified cards, density, investor, security */
 
 :root {
-    --sidebar-w: 220px;
+    --sidebar-w: 240px;
     --sidebar-collapsed-w: 64px;
 }
 
@@ -27,7 +27,8 @@ body.has-sidebar {
 
 body.sidebar-collapsed .app-sidebar { width: var(--sidebar-collapsed-w); }
 body.sidebar-collapsed .sb-label,
-body.sidebar-collapsed .sb-group-label { display: none; }
+body.sidebar-collapsed .sb-group-label,
+body.sidebar-collapsed .sb-quick { display: none; }
 
 .app-content-wrap {
     flex: 1;
