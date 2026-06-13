@@ -48,19 +48,19 @@
     async function fetchDesignLab() {
         const urls = ['/api/figma/design-lab', '/api/design-lab', '/api/figma/studio'];
         let lastErr = null;
+        const parse = global.UICore?.parseApiJson;
         for (const url of urls) {
             try {
                 const r = await fetch(url, { credentials: 'same-origin' });
-                if (r.ok) {
-                    return normalizeLabPayload(await r.json());
+                if (parse) {
+                    return normalizeLabPayload(await parse(r, 'Design Lab'));
                 }
-                let detail = '';
+                if (r.ok) return normalizeLabPayload(await r.json());
+                let detail = r.statusText;
                 try {
                     const d = await r.json();
-                    detail = d.detail || r.statusText;
-                } catch (_) {
-                    detail = r.statusText;
-                }
+                    detail = d.detail || detail;
+                } catch (_) { /* plain-text error body */ }
                 lastErr = new Error(detail || `HTTP ${r.status}`);
             } catch (e) {
                 lastErr = e;
@@ -133,8 +133,9 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ target_type: targetType, target_id: targetId, vote: voteVal }),
             });
-            const d = await r.json();
-            if (!r.ok) throw new Error(d.detail || 'Ошибка');
+            const parse = global.UICore?.parseApiJson;
+            if (parse) await parse(r, 'Оценка');
+            else if (!r.ok) throw new Error(`HTTP ${r.status}`);
             toast(voteVal > 0 ? '👍 Соня запомнит — стиль нравится' : '👎 Соня учтёт — нужно улучшать', 'success');
         } catch (e) {
             toast(e.message, 'error');
@@ -288,8 +289,9 @@
         toast('🌐 Сканирую Figma Community team…', 'info');
         try {
             const r = await fetch('/api/figma/studio/community-scan', { method: 'POST', credentials: 'same-origin' });
-            const data = await r.json();
-            if (!r.ok) throw new Error(data.detail || 'Ошибка');
+            const data = global.UICore?.parseApiJson
+                ? await UICore.parseApiJson(r, 'Community scan')
+                : await r.json();
             toast(data.added ? `Community: +${data.added} в очередь` : `Найдено ${data.found || 0}, новых ${data.added || 0}`, data.added ? 'success' : 'info');
             await loadLab();
         } catch (e) {
@@ -302,8 +304,9 @@
         if (grid) grid.innerHTML = global.UICore ? UICore.loadingState('Загрузка…', { compact: true }) : '<div class="panel-empty">Загрузка…</div>';
         try {
             const r = await fetch('/api/sonya/projects?scope=learning', { credentials: 'same-origin' });
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            const d = await r.json();
+            const d = global.UICore?.parseApiJson
+                ? await UICore.parseApiJson(r, 'Проекты Сони')
+                : await r.json();
             renderSonyaLearningProjects(grid, d.projects || []);
         } catch (e) {
             if (grid) {
@@ -352,8 +355,9 @@
                 method: 'DELETE',
                 credentials: 'same-origin',
             });
-            const d = await r.json();
-            if (!r.ok) throw new Error(d.detail || 'Ошибка');
+            const d = global.UICore?.parseApiJson
+                ? await UICore.parseApiJson(r, 'Очистка')
+                : await r.json();
             toast(`Удалено: ${d.removed || 0}`, 'success');
             await loadSonyaLearning();
         } catch (e) {

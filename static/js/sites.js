@@ -7,7 +7,9 @@
         try {
             const r = await fetch('/api/sites', { credentials: 'same-origin' });
             if (!r.ok) throw new Error('Не удалось загрузить сайты');
-            const d = await r.json();
+            const d = global.UICore?.parseApiJson
+                ? await UICore.parseApiJson(r, 'Сайты')
+                : await r.json();
             render(d.sites || [], el);
         } catch (e) {
             el.innerHTML = global.UICore

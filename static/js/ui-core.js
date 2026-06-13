@@ -539,6 +539,33 @@
         document.title = `${meta.name} — AI Team Room`;
     }
 
+    async function parseApiJson(response, fallbackLabel) {
+        const ct = (response.headers.get('content-type') || '').toLowerCase();
+        let data = null;
+        if (ct.includes('application/json')) {
+            try {
+                data = await response.json();
+            } catch (_) {
+                data = null;
+            }
+        }
+        if (data == null) {
+            const text = (await response.text().catch(() => '')).trim();
+            const msg = text.slice(0, 160) || `${fallbackLabel || 'Запрос'}: HTTP ${response.status}`;
+            if (!response.ok) throw new Error(msg);
+            throw new Error('Сервер вернул не-JSON ответ. Перезапустите сервер (python main.py).');
+        }
+        if (!response.ok) {
+            let detail = data.detail;
+            if (typeof detail === 'string') throw new Error(detail);
+            if (Array.isArray(detail)) {
+                throw new Error(detail.map((x) => x.msg || JSON.stringify(x)).join(', '));
+            }
+            throw new Error(`${fallbackLabel || 'Ошибка'}: HTTP ${response.status}`);
+        }
+        return data;
+    }
+
     global.UICore = {
         esc,
         emptyState,
@@ -547,6 +574,7 @@
         authRequiredState,
         inlineEmpty,
         staticLoading,
+        parseApiJson,
         renderTaskCard,
         renderKanbanCard,
         getUiMode,

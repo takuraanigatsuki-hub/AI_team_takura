@@ -74,7 +74,9 @@
                 return;
             }
             if (!r.ok) throw new Error('HTTP ' + r.status);
-            const d = await r.json();
+            const d = global.UICore?.parseApiJson
+                ? await UICore.parseApiJson(r, 'Studio')
+                : await r.json();
             projects = d.projects || [];
             renderProjectList();
             const urlProject = new URLSearchParams(location.search).get('project');
@@ -471,8 +473,10 @@
                 method: 'DELETE',
                 credentials: 'same-origin',
             });
-            const d = await r.json();
-            if (!r.ok) throw new Error(d.detail || 'Ошибка очистки');
+            const d = global.UICore?.parseApiJson
+                ? await UICore.parseApiJson(r, 'Очистка Studio')
+                : await r.json().catch(() => ({}));
+            if (!r.ok && !global.UICore?.parseApiJson) throw new Error(d.detail || 'Ошибка очистки');
             if (window.UIEnhancements) {
                 UIEnhancements.toast(`Удалено черновиков: ${d.removed || 0}`, 'success');
             }

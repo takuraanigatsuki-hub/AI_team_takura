@@ -65,7 +65,9 @@
                 return;
             }
             if (!r.ok) throw new Error('HTTP ' + r.status);
-            const d = await r.json();
+            const d = global.UICore?.parseApiJson
+                ? await UICore.parseApiJson(r, 'Timeline')
+                : await r.json();
             events = filterEvents(d.events || []);
             render({ ...d, events, total: events.length });
         } catch (e) {
