@@ -2164,6 +2164,30 @@ async def project_preview(artifact_id: str):
     return HTMLResponse(html)
 
 
+@app.get("/api/projects/{artifact_id}/file/{filename}")
+async def project_file_download(artifact_id: str, filename: str):
+    import os
+    from room.artifact_store import get_artifact, ARTIFACTS_DIR
+    art = get_artifact(artifact_id)
+    if not art:
+        raise HTTPException(status_code=404, detail="Not found")
+    finfo = (art.get("files") or {}).get(filename)
+    if not finfo or not isinstance(finfo, dict) or not finfo.get("binary"):
+        raise HTTPException(status_code=404, detail="File not found")
+    safe = os.path.basename(filename)
+    path = os.path.join(ARTIFACTS_DIR, artifact_id, safe)
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="File missing on disk")
+    media = {
+        ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".pdf": "application/pdf",
+    }
+    ext = os.path.splitext(safe)[1].lower()
+    return FileResponse(path, media_type=media.get(ext, "application/octet-stream"), filename=safe)
+
+
 @app.get("/api/agents/{agent_id}/activity")
 async def agent_activity(agent_id: str):
     from room.artifact_store import get_agent_artifacts, stats as art_stats

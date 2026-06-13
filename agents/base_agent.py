@@ -1255,6 +1255,9 @@ class BaseAgent:
                 msg = f"📦 **{saved['title']}** ({saved['type']}) — смотрите в «Проекты»"
                 if preview_url:
                     msg += f"\n🔗 [Открыть результат]({preview_url})"
+                for fname, finfo in (saved.get("files") or {}).items():
+                    if isinstance(finfo, dict) and finfo.get("download"):
+                        msg += f"\n📎 [{fname}]({finfo['download']})"
                 await self.room_manager.broadcast_work({
                     "type": "artifact_created",
                     "agent_id": self.agent_id,

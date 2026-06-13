@@ -33,6 +33,25 @@ def _save_index(items: list) -> None:
         json.dump(items[:MAX_TOTAL], f, ensure_ascii=False, indent=2)
 
 
+def _persist_files(artifact_id: str, files: dict) -> dict:
+    """Сохраняет бинарные файлы на диск; в JSON — метаданные."""
+    if not files:
+        return {}
+    out = {}
+    bin_dir = os.path.join(ARTIFACTS_DIR, artifact_id)
+    for name, content in files.items():
+        if isinstance(content, bytes):
+            os.makedirs(bin_dir, exist_ok=True)
+            safe = os.path.basename(name)
+            fp = os.path.join(bin_dir, safe)
+            with open(fp, "wb") as f:
+                f.write(content)
+            out[safe] = {"binary": True, "size": len(content), "download": f"/api/projects/{artifact_id}/file/{safe}"}
+        else:
+            out[name] = content
+    return out
+
+
 def save_artifact(agent_id: str, artifact: dict) -> dict:
     _ensure()
     entry = {
@@ -46,7 +65,7 @@ def save_artifact(agent_id: str, artifact: dict) -> dict:
         "task": (artifact.get("task") or "")[:500],
         "content": artifact.get("content") or "",
         "preview_html": artifact.get("preview_html") or "",
-        "files": artifact.get("files") or {},
+        "files": {},
         "tags": artifact.get("tags") or [],
         "status": artifact.get("status", "completed"),
         "revision_of": artifact.get("revision_of"),
@@ -57,6 +76,10 @@ def save_artifact(agent_id: str, artifact: dict) -> dict:
     if entry.get("revision_of"):
         prev = get_artifact(entry["revision_of"])
         entry["version"] = (prev.get("version") or 1) + 1 if prev else 2
+
+    raw_files = artifact.get("files") or {}
+    entry["files"] = _persist_files(entry["id"], raw_files)
+
     path = os.path.join(ARTIFACTS_DIR, f"{entry['id']}.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(entry, f, ensure_ascii=False, indent=2)
