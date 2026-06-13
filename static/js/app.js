@@ -1832,6 +1832,9 @@
         if (isPortal && startView === 'support' && !window.SupportPanel?.canAccess?.(user) && !window.Auth?.canManageTickets?.(user) && !user?.is_support) {
             startView = 'profile';
         }
+        if (isPortal && !viewParam && user && (user.is_support || user.role === 'support') && window.Auth?.canManageTickets?.(user) && !window.Auth?.canAccessAdmin?.(user)) {
+            startView = 'support';
+        }
         if (!isPortal && startView === 'admin' && !window.AdminPanel?.canAccess?.(user)) {
             startView = user ? 'tasks' : 'tasks';
         }
