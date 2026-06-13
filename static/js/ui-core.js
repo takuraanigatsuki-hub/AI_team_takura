@@ -318,6 +318,10 @@
         const bar = document.getElementById('mobileTabBar');
         if (!bar) return;
         document.body.classList.add('has-mobile-tabs');
+        if (global.APP_SHELL === 'portal' || global.AppShell?.isPortal?.()) {
+            bindMobileTabClicks(bar);
+            return;
+        }
         renderMobileTabs(global.Auth?.getUser?.());
     }
 
