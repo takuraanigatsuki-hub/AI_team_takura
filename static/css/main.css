@@ -3096,6 +3096,10 @@ body.has-pipeline-collapsed .toast-container { bottom: 88px; }
     padding: 20px 24px 0;
     border-bottom: 1px solid var(--border);
     background: var(--surface);
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
 }
 .profile-topbar-head h2 { font-size: 18px; margin: 0 0 4px; }
 .profile-topbar-head .muted { font-size: 12px; margin-bottom: 14px; }
