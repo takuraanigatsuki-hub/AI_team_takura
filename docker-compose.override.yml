@@ -1,13 +1,13 @@
 # Production overlay: hide DB ports, proxy :80 -> app
 services:
   ai-team-room:
-    ports: []
+    ports: !override []
 
   postgres:
-    ports: []
+    ports: !override []
 
   redis:
-    ports: []
+    ports: !override []
 
   caddy:
     image: caddy:2-alpine
