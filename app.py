@@ -1556,6 +1556,42 @@ async def figma_status():
     return await get_connection_status()
 
 
+@app.get("/api/figma/theme")
+async def figma_theme_get():
+    """Текущая Snow/Figma тема (JSON + путь к CSS)."""
+    from integrations.figma_theme import ensure_theme_files, CSS_PATH
+    theme = ensure_theme_files()
+    return {
+        "ok": True,
+        "source": theme.get("source"),
+        "updated_at": theme.get("updated_at"),
+        "css_path": "/static/css/figma-theme.generated.css",
+        "light": theme.get("light"),
+        "dark": theme.get("dark"),
+        "extracted": theme.get("extracted", {}),
+    }
+
+
+@app.post("/api/figma/theme/sync")
+async def figma_theme_sync():
+    """Синхронизация цветов из Figma Snow Dashboard → generated CSS."""
+    from integrations.figma_theme import sync_from_figma, CSS_PATH
+    from integrations.figma_rate_limit import FigmaRateLimitError
+    try:
+        theme = await sync_from_figma()
+    except FigmaRateLimitError as e:
+        raise HTTPException(status_code=429, detail=str(e), headers={"Retry-After": str(int(e.retry_after))})
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    return {
+        "ok": True,
+        "source": theme.get("source"),
+        "updated_at": theme.get("updated_at"),
+        "css_path": "/static/css/figma-theme.generated.css",
+        "extracted": theme.get("extracted", {}),
+    }
+
+
 @app.get("/api/figma/auth")
 async def figma_auth_start():
     from integrations.figma_oauth import oauth_app_configured, build_auth_url, get_redirect_uri

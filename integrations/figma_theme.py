@@ -59,6 +59,14 @@ DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "figma-snow-th
 CSS_PATH = os.path.join(os.path.dirname(__file__), "..", "static", "css", "figma-theme.generated.css")
 
 
+FIGMA_BRAND_COLORS = frozenset({
+    "#0acf83", "#a259ff", "#f25022", "#ff7262", "#1abcfe",
+})
+SNOW_SIGNATURE_COLORS = frozenset({
+    "#f9f9fa", "#edeefc", "#e6f1fd", "#4c98fd", "#adadfb", "#7dbbff", "#b899eb",
+})
+
+
 def _hex_luminance(hex_color: str) -> float:
     h = hex_color.lstrip("#")
     if len(h) != 6:
@@ -118,21 +126,24 @@ def merge_figma_colors(raw: dict) -> dict:
             all_colors.extend(src.get("colors", []))
 
     if all_colors:
-        picked = _pick_semantic_colors(all_colors)
-        # Только если цвета похожи на UI kit (не hello/brand page)
-        ui_colors = [c for c in all_colors if c.lower() not in ("#0acf83", "#a259ff", "#f25022", "#ff7262", "#1abcfe")]
-        if len(ui_colors) >= 3:
+        ui_colors = [c.lower() for c in all_colors if c.lower() not in FIGMA_BRAND_COLORS]
+        has_snow_signature = any(c in SNOW_SIGNATURE_COLORS for c in ui_colors)
+        if has_snow_signature and len(ui_colors) >= 3:
             picked = _pick_semantic_colors(ui_colors)
             merged["source"] = "figma+official"
-            if picked.get("surface"):
-                merged["light"]["surface"] = picked["surface"]
-            if picked.get("bg"):
+            merged["light"]["surface"] = picked.get("surface") or merged["light"]["surface"]
+            if picked.get("bg") and picked["bg"].lower() != "#ffffff":
                 merged["light"]["bg"] = picked["bg"]
+            elif (picked.get("surface") or "").lower() == "#ffffff":
+                merged["light"]["bg"] = SNOW_OFFICIAL["light"]["bg"]
             if picked.get("text"):
                 merged["light"]["text"] = picked["text"]
             if picked.get("accent"):
                 merged["light"]["accent"] = picked["accent"]
-                merged["light"]["accent_soft"] = f"rgba({int(picked['accent'][1:3],16)}, {int(picked['accent'][3:5],16)}, {int(picked['accent'][5:7],16)}, 0.12)"
+                r, g, b = int(picked["accent"][1:3], 16), int(picked["accent"][3:5], 16), int(picked["accent"][5:7], 16)
+                merged["light"]["accent_soft"] = f"rgba({r}, {g}, {b}, 0.12)"
+        else:
+            merged["source"] = "snowui-official"
 
     return merged
 
