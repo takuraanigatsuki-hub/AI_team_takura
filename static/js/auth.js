@@ -87,7 +87,8 @@
 
     function canViewInvestorPortal(user) {
         if (!user) return false;
-        if (user.can_view_investor_portal) return true;
+        if (user.can_view_investor_portal || user.is_investor) return true;
+        if (user.role === 'investor') return true;
         return canAccessAdmin(user);
     }
 

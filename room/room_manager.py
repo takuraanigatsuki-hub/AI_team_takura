@@ -80,6 +80,15 @@ class RoomManager:
             "joined_at": datetime.now().isoformat(),
         }
 
+        if user and user.get("id"):
+            from room.message_filter import is_privileged
+            if not is_privileged(user.get("role", "")):
+                self.task_history.claim_orphans_for_user(
+                    user.get("id", ""),
+                    user.get("email", ""),
+                    user.get("name", ""),
+                )
+
         meta = self.connection_meta[websocket]
         viewer = {"user_id": meta.get("user_id", ""), "role": meta.get("role", "guest")}
         from room.message_filter import filter_messages_for_viewer, filter_agents_for_viewer

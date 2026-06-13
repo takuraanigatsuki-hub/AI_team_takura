@@ -53,6 +53,7 @@
     let agentLearningPanel = 'learning';
 
     const AGENT_LEARNING_VIEWS = new Set(['agent-learning', 'learning', 'design', 'masha']);
+    const INVESTOR_VIEWS = new Set(['investor', 'profile', 'studio', 'dashboard']);
 
     function canViewAgentLearning(user) {
         if (!user) return false;

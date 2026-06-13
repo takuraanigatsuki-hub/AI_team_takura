@@ -216,8 +216,8 @@
         if (view === 'investor') {
             return global.Auth?.canViewInvestorPortal?.(user) || false;
         }
-        if (user?.role === 'investor') {
-            return ['investor', 'profile', 'studio'].includes(view);
+        if (user?.role === 'investor' || user?.is_investor) {
+            return ['investor', 'profile', 'studio', 'dashboard'].includes(view);
         }
         if (['learning', 'design', 'agent-learning'].includes(view)) {
             if (global.Auth?.canViewAgentLearning) return Auth.canViewAgentLearning(user);
