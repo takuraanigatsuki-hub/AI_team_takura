@@ -411,7 +411,7 @@ async def desktop_download_info():
     installer = os.path.join(dist_dir, "AI_Team_Room_Setup.exe")
     portable = os.path.join(dist_dir, "AI_Team_Room.exe")
     info = {
-        "version": os.environ.get("DESKTOP_APP_VERSION", "1.0.0"),
+        "version": os.environ.get("DESKTOP_APP_VERSION", "1.1.0"),
         "platforms": [],
     }
     if os.path.isfile(installer):
