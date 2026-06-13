@@ -29,6 +29,18 @@ if (-not (Test-Path $Portable)) {
 }
 Write-Host "OK Portable: $Portable" -ForegroundColor Green
 
+Write-Host "==> PyInstaller (installer exe)..." -ForegroundColor Yellow
+python -m PyInstaller build-installer.spec --noconfirm
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+$Installer = Join-Path $Root "dist\AI_Team_Room_Setup.exe"
+if (Test-Path $Installer) {
+    Write-Host "OK Installer: $Installer" -ForegroundColor Green
+} else {
+    Write-Host "Installer build failed" -ForegroundColor Red
+    exit 1
+}
+
 $Iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
 if (-not (Test-Path $Iscc)) {
     $Iscc = "$env:ProgramFiles\Inno Setup 6\ISCC.exe"

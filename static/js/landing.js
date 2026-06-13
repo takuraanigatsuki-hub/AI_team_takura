@@ -1,7 +1,8 @@
-/** Landing page — вход, регистрация, личный кабинет на главной */
+/** Landing page — вход, регистрация, скачивание приложения */
 (function () {
     let mode = 'login';
     let currentUser = null;
+    let downloadUrl = '/api/downloads/desktop/win/setup';
 
     const modal = document.getElementById('authModal');
     const form = document.getElementById('authForm');
@@ -31,6 +32,27 @@
         document.getElementById('authName').style.display = isReg ? 'block' : 'none';
         document.getElementById('authSwitchText').textContent = isReg ? 'Уже есть аккаунт?' : 'Нет аккаунта?';
         document.getElementById('authSwitch').textContent = isReg ? 'Войти' : 'Зарегистрироваться';
+    }
+
+    function applyDownloadLinks(url) {
+        downloadUrl = url || downloadUrl;
+        document.querySelectorAll(
+            '#lpBtnDownload, #lpBtnDownloadUser, #lpHeroDownload, #lpHeroDownloadUser, #lpSectionDownload, #lpCtaDownload'
+        ).forEach((el) => {
+            if (el) el.setAttribute('href', downloadUrl);
+        });
+    }
+
+    async function initDownloadLinks() {
+        try {
+            const r = await fetch('/api/downloads/desktop/info');
+            const info = await r.json();
+            const setup = info.platforms?.find((p) => p.id === 'win-setup' && p.url);
+            const portable = info.platforms?.find((p) => p.id === 'win-portable' && p.url);
+            applyDownloadLinks((setup || portable)?.url || downloadUrl);
+        } catch (_) {
+            applyDownloadLinks(downloadUrl);
+        }
     }
 
     function showGuestUI() {
@@ -64,12 +86,6 @@
                 <span class="lp-user-pill-name" title="${esc(name)}">👤 ${esc(name)}</span>
                 ${tierLabel ? `<span class="lp-user-pill-tier${tierClass}" title="${esc(tierLabel)}">${tierEmoji} ${esc(tierLabel)}</span>` : ''}`;
         }
-
-        const ws = user.default_view && user.default_view !== 'profile'
-            ? `/workspace?view=${encodeURIComponent(user.default_view)}`
-            : '/workspace';
-        document.getElementById('lpBtnWorkspace')?.setAttribute('href', ws);
-        document.getElementById('lpHeroWorkspace')?.setAttribute('href', ws);
     }
 
     async function initAuth() {
@@ -85,16 +101,6 @@
         return null;
     }
 
-    async function goDashboard() {
-        const user = currentUser || await initAuth();
-        if (user) {
-            const view = user.default_view && user.default_view !== 'profile' ? user.default_view : 'tasks';
-            location.href = `/workspace?view=${encodeURIComponent(view)}`;
-        } else {
-            openModal('login');
-        }
-    }
-
     async function logout() {
         await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
         currentUser = null;
@@ -103,7 +109,6 @@
 
     document.getElementById('btnLogin')?.addEventListener('click', () => openModal('login'));
     document.getElementById('btnRegister')?.addEventListener('click', () => openModal('register'));
-    document.getElementById('btnDashboard')?.addEventListener('click', goDashboard);
     document.getElementById('btnHeroStart')?.addEventListener('click', () => openModal('register'));
     document.getElementById('btnHeroDemo')?.addEventListener('click', () => {
         document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' });
@@ -150,6 +155,7 @@
     });
 
     const params = new URLSearchParams(location.search);
+    initDownloadLinks();
     initAuth().then((user) => {
         if (user && !params.get('auth')) {
             closeModal();
