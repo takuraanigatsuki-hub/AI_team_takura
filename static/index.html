@@ -33,7 +33,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css?v=48">
     <link rel="stylesheet" href="/static/css/feature-pack.css?v=7">
-    <link rel="stylesheet" href="/static/css/enhancements.css?v=17">
+    <link rel="stylesheet" href="/static/css/enhancements.css?v=18">
     <link rel="stylesheet" href="/static/css/snow-theme.css?v=3">
     <link rel="stylesheet" href="/static/css/figma-theme.generated.css?v=2">
     <link rel="stylesheet" href="/static/css/ui-core.css?v=9">
@@ -47,36 +47,55 @@
 <aside class="app-sidebar" id="appSidebar" aria-label="Навигация">
     <div class="sb-brand">
         <span class="sb-brand-mark" aria-hidden="true">🤖</span>
-        <span class="sb-label">AI Team</span>
+        <div class="sb-brand-text">
+            <span class="sb-label">AI Team Room</span>
+            <span class="sb-sublabel">командная студия</span>
+        </div>
         <button type="button" class="sb-collapse" id="sidebarToggle" title="Свернуть панель" aria-label="Свернуть панель">◀</button>
     </div>
     <nav class="sb-nav" id="appSidebarNav"></nav>
+    <nav class="sb-subnav hidden" id="appSidebarSubnav" aria-label="Подраздел"></nav>
+    <div class="sb-footer" id="sbFooter">
+        <div class="sb-footer-ws" id="sbWorkspace"></div>
+    </div>
 </aside>
 
 <div class="sb-overlay hidden" id="sidebarOverlay" aria-hidden="true"></div>
 
 <div class="app-content-wrap">
-<header class="header">
+<header class="header header-unified">
     <div class="header-row header-row-main">
         <button type="button" class="hdr-btn hdr-icon sb-mobile-toggle" id="mobileNavToggle" aria-label="Меню" aria-expanded="false" title="Навигация">☰</button>
-        <a href="/" class="logo logo-link" title="Главный сайт">
+        <a href="/" class="logo logo-link logo-mobile-only" title="Главный сайт">
             <div class="logo-mark">🤖</div>
             <div class="logo-text">
                 <h1>AI Team Room</h1>
-                <p>3D студия · команда</p>
             </div>
         </a>
+        <div class="header-view-title" id="headerViewTitle">
+            <span class="header-view-icon" id="headerViewIcon" aria-hidden="true">📋</span>
+            <div class="header-view-text">
+                <span class="header-view-name" id="headerViewName">Inbox</span>
+                <span class="header-view-sub muted" id="headerViewSub"></span>
+            </div>
+        </div>
+        <button type="button" class="header-search-btn" onclick="FeaturePack?.openCommandPalette?.()" title="Быстрый доступ (Ctrl+K)">
+            <span aria-hidden="true">⌘</span>
+            <span class="header-search-ph">Поиск и команды…</span>
+            <kbd>K</kbd>
+        </button>
         <div class="header-context" id="headerContext" title="Статус команды">
             <span class="ctx-dot" id="headerContextDot"></span>
             <span id="headerContextText">Подключение…</span>
         </div>
         <div class="header-status header-status-compact">
             <button type="button" class="status-chip status-chip-action hidden" id="awaitingChip" title="Задачи на проверке" onclick="switchView('tasks');filterTasks('awaiting')">⏳</button>
-            <span class="status-chip" id="workspaceSwitcher" title="Workspace"></span>
         </div>
-        <div class="header-actions">
-            <details class="header-dropdown">
-                <summary class="hdr-btn" title="AI, инструменты, голос">⋯ Меню</summary>
+        <div class="header-actions header-actions-compact">
+            <button type="button" class="hdr-btn hdr-icon activity-toggle" id="activityToggle" title="Лента событий" aria-expanded="false" aria-controls="activityPanel">📡<span class="activity-badge" id="activityBadge"></span></button>
+            <button type="button" class="hdr-btn hdr-icon fp-notify-btn" id="fpNotifyBtn" title="Уведомления" onclick="FeaturePack?.toggleNotifyPanel?.()">🔔<span class="fp-notify-badge" id="fpNotifyBadge" style="display:none">0</span></button>
+            <details class="header-dropdown header-dropdown-tools">
+                <summary class="hdr-btn hdr-icon" title="Инструменты">⋯</summary>
                 <div class="dropdown-menu dropdown-menu-wide" id="headerToolsMenu">
                     <div class="dropdown-section-label hidden" data-ui="admin-tools">AI & Cursor</div>
                     <button type="button" class="dropdown-item hidden" data-ui="admin-tools" onclick="Integrations.toggleCursorPanel()">⚡ Cursor SDK <span class="integration-badge" id="cursorBadgeMenu">…</span></button>
@@ -102,14 +121,12 @@
                     <button type="button" class="dropdown-item fp-show-mobile" onclick="toggleTheme()">🌓 Тема</button>
                 </div>
             </details>
-            <button type="button" class="hdr-btn hdr-icon activity-toggle" id="activityToggle" title="Лента событий" aria-expanded="false" aria-controls="activityPanel">📡<span class="activity-badge" id="activityBadge"></span></button>
-            <button type="button" class="hdr-btn hdr-icon fp-notify-btn" id="fpNotifyBtn" title="Уведомления" onclick="FeaturePack?.toggleNotifyPanel?.()">🔔<span class="fp-notify-badge" id="fpNotifyBadge" style="display:none">0</span></button>
-            <button type="button" class="hdr-btn hdr-icon fp-hide-desktop" title="Быстрый доступ (Ctrl+K)" onclick="FeaturePack?.openCommandPalette?.()">⌘</button>
+            <span class="hdr-balance hidden" id="headerBalanceChip" title="Баланс"></span>
             <button type="button" class="hdr-btn hdr-icon hidden" id="pwaInstallBtn" onclick="installPWA()" title="Установить приложение">📲</button>
             <button type="button" class="hdr-btn hdr-icon fp-hide-mobile hidden" id="settingsBtn" onclick="showSettings()" title="Настройки">⚙️</button>
             <button type="button" class="hdr-btn hdr-icon fp-hide-mobile" id="themeToggle" onclick="toggleTheme()" title="Тема">☀️</button>
             <details class="header-dropdown header-dropdown-account">
-                <summary class="hdr-btn hdr-icon" id="userMenuSummary" title="Аккаунт">👤</summary>
+                <summary class="hdr-btn hdr-icon hdr-account" id="userMenuSummary" title="Аккаунт">👤</summary>
                 <div class="dropdown-menu" id="userMenu">
                     <a href="/" class="dropdown-item">На сайт</a>
                     <a href="/?auth=login" class="dropdown-item">Вход</a>
@@ -401,14 +418,14 @@
 
     <!-- PROFILE / ЛИЧНЫЙ КАБИНЕТ -->
     <div id="profileView" class="profile-layout hidden">
-        <aside class="profile-sidebar">
-            <div class="profile-sidebar-head">
-                <h2>👤 Личный кабинет</h2>
-                <p class="muted">Обзор · профиль · подписка · активность</p>
-            </div>
-            <nav class="profile-tab-nav" id="profileTabNav"></nav>
-        </aside>
-        <main class="profile-main">
+        <main class="profile-main profile-main-unified">
+            <header class="profile-topbar">
+                <div class="profile-topbar-head">
+                    <h2>👤 Личный кабинет</h2>
+                    <p class="muted">Обзор · профиль · подписка · настройки</p>
+                </div>
+                <nav class="profile-tab-nav profile-tab-nav-horizontal" id="profileTabNav" aria-label="Разделы кабинета"></nav>
+            </header>
             <div id="profileTabContent" class="profile-tab-content">
                 <div class="ui-loading-inline ui-ph" aria-busy="true" role="status"><span class="ui-loading-ring sm" aria-hidden="true"></span><span class="muted">Загрузка…</span></div>
             </div>
