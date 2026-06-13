@@ -312,7 +312,7 @@
                     <div class="profile-avatar">${esc((user.name || user.email || '?')[0]).toUpperCase()}</div>
                     <div class="profile-head">
                         <h2>${esc(user.name || 'Пользователь')}</h2>
-                        <p class="muted">${esc(user.email)}</p>
+                        <p class="muted">@${esc(user.username || '—')} · ${esc(user.email)}</p>
                         <div class="ss-badges" style="margin-top:10px">
                             ${global.Auth?.roleBadgeHtml ? global.Auth.roleBadgeHtml(user) : `<span class="ss-badge">${roleLabel(user.role)}</span>`}
                             <span class="ss-badge">${esc(sub.tier_emoji || '')} ${esc(sub.tier_name || 'Free')}</span>
@@ -325,6 +325,7 @@
                     <section class="pf-panel pf-panel-compact">
                         <h3 class="pf-panel-title">Аккаунт</h3>
                         <ul class="profile-meta-list">
+                            <li><span>Логин</span><strong class="pf-mono">@${esc(user.username || '—')}</strong></li>
                             <li><span>ID</span><strong class="pf-mono">${esc(user.id)}</strong></li>
                             <li><span>Регистрация</span><strong>${fmtDate(user.created_at)}</strong></li>
                             <li><span>Дней в команде</span><strong>${s.days_member ?? '—'}</strong></li>
@@ -355,11 +356,16 @@
                 <form class="profile-form" id="profileNameForm" onsubmit="ProfileCabinet.saveProfile(event)">
                     <label class="sw-label">Отображаемое имя</label>
                     <input type="text" id="pfName" class="design-input" value="${esc(user.name)}" maxlength="80">
+                    <p class="auth-field-hint" id="pfNameHint"></p>
+                    <label class="sw-label">Логин</label>
+                    <input type="text" id="pfUsername" class="design-input" value="${esc(user.username || '')}" maxlength="32" pattern="[a-zA-Z][a-zA-Z0-9_]{2,31}">
+                    <p class="auth-field-hint" id="pfUsernameHint"></p>
                     <label class="sw-label">Email</label>
                     <input type="email" class="design-input" value="${esc(user.email)}" disabled>
-                    <p class="muted profile-hint">Email изменить нельзя — это ваш логин.</p>
+                    <p class="muted profile-hint">Email не меняется. Вход — по email или логину.</p>
                     <button type="submit" class="btn-primary btn-sm">Сохранить профиль</button>
                 </form>`;
+            wireProfileFieldChecks();
             return;
         }
 
@@ -606,15 +612,29 @@
         }
     }
 
+    function wireProfileFieldChecks() {
+        if (!window.AuthFields) return;
+        AuthFields.bindUsernameCheck(document.getElementById('pfUsername'), document.getElementById('pfUsernameHint'));
+        AuthFields.bindNameCheck(document.getElementById('pfName'), document.getElementById('pfNameHint'));
+    }
+
     async function saveProfile(e) {
         e.preventDefault();
         const name = document.getElementById('pfName')?.value?.trim();
+        const username = document.getElementById('pfUsername')?.value?.trim();
+        if (!window.AuthFields?.fieldsAvailable(
+            document.getElementById('pfUsername'),
+            document.getElementById('pfName')
+        )) {
+            alert('Исправьте логин или имя — они уже заняты');
+            return;
+        }
         try {
             const r = await fetch('/api/auth/profile', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'same-origin',
-                body: JSON.stringify({ name }),
+                body: JSON.stringify({ name, username }),
             });
             const d = await r.json();
             if (!r.ok) throw new Error(d.detail || 'Ошибка');

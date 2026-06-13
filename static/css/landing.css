@@ -471,6 +471,10 @@ a { color: inherit; text-decoration: none; }
 .lp-btn-full { width: 100%; margin-top: 16px; }
 .lp-error { color: #ff4757; font-size: 13px; margin-top: 8px; }
 .lp-error.hidden { display: none; }
+.auth-field-hint { font-size: 12px; margin: -4px 0 10px; min-height: 16px; color: var(--lp-muted, #8892a6); }
+.auth-field-hint--ok { color: #2ed573; }
+.auth-field-hint--bad { color: #ff4757; }
+.auth-field-hint--pending { color: #8892a6; }
 .lp-switch { text-align: center; margin-top: 16px; font-size: 14px; color: var(--lp-muted); }
 .lp-link { background: none; border: none; color: var(--lp-accent-2); cursor: pointer; font-size: 14px; text-decoration: underline; }
 

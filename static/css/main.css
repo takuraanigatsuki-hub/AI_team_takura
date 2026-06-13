@@ -3175,6 +3175,10 @@ body.has-pipeline-collapsed .toast-container { bottom: 88px; }
 .profile-form { display: flex; flex-direction: column; gap: 4px; }
 .profile-form .btn-primary { align-self: flex-start; margin-top: 12px; }
 .profile-hint { font-size: 12px; margin: 4px 0 8px; }
+.auth-field-hint { font-size: 12px; margin: -2px 0 8px; min-height: 16px; color: var(--text-muted, #8892a6); }
+.auth-field-hint--ok { color: #2ed573; }
+.auth-field-hint--bad { color: #ff4757; }
+.auth-field-hint--pending { color: var(--text-muted, #8892a6); }
 
 .profile-danger-zone {
     margin-top: 32px;
