@@ -10,6 +10,8 @@ internal static class InstallEngine
 {
     public const string AppName = "AI Team Room";
     public const string ExeName = "AI_Team_Room.exe";
+    public const string UpdaterExeName = "AI_Team_Room_Updater.exe";
+    public const string UninstallExeName = "AI_Team_Room_Uninstall.exe";
     private const string UninstallRegKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\AITeamRoom";
     private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("AITeamRoom.v1.takura");
 
@@ -40,12 +42,22 @@ internal static class InstallEngine
         ct.ThrowIfCancellationRequested();
         Directory.CreateDirectory(targetDir);
 
-        progress.Report((12, "Распаковка приложения…"));
+        progress.Report((10, "Распаковка приложения…"));
         ct.ThrowIfCancellationRequested();
         var exePath = Path.Combine(targetDir, ExeName);
-        await ExtractEmbeddedExeAsync(exePath, progress, ct);
+        await ExtractEmbeddedExeAsync("AI_Team_Room.exe", exePath, progress, 12, 35, ct);
 
-        progress.Report((48, "Шифрование конфигурации…"));
+        progress.Report((38, "Установка updater…"));
+        ct.ThrowIfCancellationRequested();
+        var updaterPath = Path.Combine(targetDir, UpdaterExeName);
+        await ExtractEmbeddedExeAsync("AI_Team_Room_Updater.exe", updaterPath, progress, 38, 44, ct);
+
+        progress.Report((46, "Установка удаления…"));
+        ct.ThrowIfCancellationRequested();
+        var uninstallPath = Path.Combine(targetDir, UninstallExeName);
+        await ExtractEmbeddedExeAsync("AI_Team_Room_Uninstall.exe", uninstallPath, progress, 46, 52, ct);
+
+        progress.Report((54, "Шифрование конфигурации…"));
         ct.ThrowIfCancellationRequested();
         var configJson = JsonSerializer.Serialize(new
         {
@@ -63,7 +75,7 @@ internal static class InstallEngine
         }, new JsonSerializerOptions { WriteIndented = true });
         WriteProtected(Path.Combine(targetDir, "install.meta.secure"), metaJson);
 
-        progress.Report((60, "Создание ярлыков…"));
+        progress.Report((66, "Создание ярлыков…"));
         ct.ThrowIfCancellationRequested();
         if (desktopShortcut)
         {
@@ -82,9 +94,9 @@ internal static class InstallEngine
             CreateShortcut(exePath, menu);
         }
 
-        progress.Report((80, "Регистрация в системе…"));
+        progress.Report((84, "Регистрация в системе…"));
         ct.ThrowIfCancellationRequested();
-        RegisterUninstall(targetDir, exePath);
+        RegisterUninstall(targetDir, exePath, uninstallPath, updaterPath);
 
         progress.Report((100, "Готово"));
     }
