@@ -25,14 +25,15 @@ internal sealed class MainForm : Form
 
         _titleBar = new TitleBar();
         _titleBar.Attach(this);
-        _titleBar.RefreshClicked += (_, _) => _webView.CoreWebView2?.Reload();
-        _titleBar.SettingsClicked += (_, _) => ShowSettings();
 
         _webView = new Microsoft.Web.WebView2.WinForms.WebView2
         {
             Dock = DockStyle.Fill,
             DefaultBackgroundColor = AppTheme.Bg,
         };
+
+        _titleBar.RefreshClicked += (_, _) => _webView.CoreWebView2?.Reload();
+        _titleBar.SettingsClicked += (_, _) => ShowSettings();
 
         Controls.Add(_webView);
         Controls.Add(_titleBar);

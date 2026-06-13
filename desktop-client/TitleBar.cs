@@ -118,7 +118,11 @@ internal sealed class TitleBar : Panel
         return btn;
     }
 
-    private void MinimizeHost() => _host?.WindowState = FormWindowState.Minimized;
+    private void MinimizeHost()
+    {
+        if (_host != null)
+            _host.WindowState = FormWindowState.Minimized;
+    }
 
     private void ToggleMaximize()
     {
