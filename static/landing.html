@@ -101,8 +101,38 @@
     </section>
     </section>
 
-    <!-- ─── Demo ─── -->
-    <section class="lp-panel" id="panel-demo" data-lp-panel="demo">
+    <!-- ─── Как работает (+ Demo) ─── -->
+    <section class="lp-panel" id="panel-how" data-lp-panel="how">
+    <section class="lp-how" id="how">
+        <p class="lp-section-label">Как это работает</p>
+        <h2>От задачи до деплоя</h2>
+        <p class="lp-section-desc">Три основных шага — и интерактивное demo, чтобы увидеть всё за пару минут.</p>
+        <div class="lp-steps">
+            <article class="lp-step">
+                <span class="lp-step-num">1</span>
+                <h3>Поставьте задачу</h3>
+                <p>Опишите цель в чате — PM Виктор разобьёт её на подзадачи и назначит агентов.</p>
+            </article>
+            <article class="lp-step">
+                <span class="lp-step-num">2</span>
+                <h3>Наблюдайте в 3D</h3>
+                <p>Следите за прогрессом в студии: кто работает, что готово, какие артефакты появились.</p>
+            </article>
+            <article class="lp-step">
+                <span class="lp-step-num">3</span>
+                <h3>Получите результат</h3>
+                <p>Код, UI, презентации и деплой — с GitHub sync и React Preview в один клик.</p>
+            </article>
+        </div>
+        <div class="lp-how-flow">
+            <article class="lp-how-flow-item"><span>💬</span><div><strong>Чат & @mentions</strong><p>Streaming LLM, история задач, артефакты в одном потоке.</p></div></article>
+            <article class="lp-how-flow-item"><span>📌</span><div><strong>Kanban & Sprint</strong><p>PM автоматически ведёт backlog и спринты.</p></div></article>
+            <article class="lp-how-flow-item"><span>🎨</span><div><strong>Figma → React</strong><p>Compare, score совпадения, preview и deploy ZIP.</p></div></article>
+            <article class="lp-how-flow-item"><span>⚡</span><div><strong>Cursor & GitHub</strong><p>PR, auto-sync, Cloud Agent для кода.</p></div></article>
+            <article class="lp-how-flow-item"><span>🚀</span><div><strong>Deploy</strong><p>Preview URL и bundle — результат в один клик.</p></div></article>
+        </div>
+    </section>
+
     <section class="lp-activity" aria-label="Активность комнат">
         <div class="lp-activity-inner">
             <div class="lp-activity-feed">
@@ -146,7 +176,7 @@
     <section class="lp-guided" id="demo">
         <div class="lp-guided-grid">
             <div class="lp-guided-copy">
-                <h2>Landing за 2 минуты</h2>
+                <h2>Demo · landing за 2 минуты</h2>
                 <p class="lp-lead">Один сценарий вместо списка фич — задача → Kanban → Figma → PR → Deploy.</p>
                 <ol class="lp-demo-steps">
                     <li class="lp-demo-step active" data-step="0"><span>1</span> Задача в чат</li>
@@ -302,40 +332,26 @@ PR #42 · checks ✓</pre>
     </section>
     </section>
 
-    <!-- ─── Как работает ─── -->
-    <section class="lp-panel" id="panel-how" data-lp-panel="how">
-    <section class="lp-how" id="how">
-        <p class="lp-section-label">Как это работает</p>
-        <h2>Три шага до результата</h2>
-        <div class="lp-steps">
-            <article class="lp-step">
-                <span class="lp-step-num">1</span>
-                <h3>Поставьте задачу</h3>
-                <p>Опишите цель в чате — PM Виктор разобьёт её на подзадачи и назначит агентов.</p>
-            </article>
-            <article class="lp-step">
-                <span class="lp-step-num">2</span>
-                <h3>Наблюдайте в 3D</h3>
-                <p>Следите за прогрессом в студии: кто работает, что готово, какие артефакты появились.</p>
-            </article>
-            <article class="lp-step">
-                <span class="lp-step-num">3</span>
-                <h3>Получите результат</h3>
-                <p>Код, UI, презентации и деплой — с GitHub sync и React Preview в один клик.</p>
-            </article>
-        </div>
-    </section>
-    </section>
-
     <!-- ─── Команда ─── -->
     <section class="lp-panel" id="panel-team" data-lp-panel="team">
     <section class="lp-team" id="team">
         <p class="lp-section-label">Команда</p>
         <h2>13 специализированных агентов</h2>
-        <div class="lp-agents">
-            <span>👔 PM</span><span>🏛️ Architect</span><span>⚙️ Backend</span><span>🎨 Frontend</span>
-            <span>🧪 QA</span><span>🔍 Review</span><span>📝 Docs</span><span>🔧 DevOps</span>
-            <span>⚡ Cursor</span><span>📽️ Presenter</span><span>🧊 3D</span><span>📊 Evaluator</span><span>🛡️ Security</span>
+        <p class="lp-section-desc">Каждый агент — узкая роль, своя база знаний и инструменты. PM координирует всю команду.</p>
+        <div class="lp-team-grid">
+            <article class="lp-team-card"><span class="lp-team-emoji">👔</span><h3>Виктор · PM</h3><p>Декомпозиция задач, Kanban, спринты, оркестрация команды.</p></article>
+            <article class="lp-team-card"><span class="lp-team-emoji">🏛️</span><h3>Architect</h3><p>C4, API design, ADR, диаграммы и техническая стратегия.</p></article>
+            <article class="lp-team-card"><span class="lp-team-emoji">⚙️</span><h3>Backend</h3><p>FastAPI, PostgreSQL, REST/gRPC, бизнес-логика.</p></article>
+            <article class="lp-team-card"><span class="lp-team-emoji">🎨</span><h3>Frontend</h3><p>React, TypeScript, UI/UX, доступность и responsive.</p></article>
+            <article class="lp-team-card"><span class="lp-team-emoji">🧪</span><h3>QA</h3><p>pytest, Playwright, чек-листы, регресс и sandbox.</p></article>
+            <article class="lp-team-card"><span class="lp-team-emoji">🔍</span><h3>Reviewer</h3><p>Code review, SOLID, рефакторинг, качество кода.</p></article>
+            <article class="lp-team-card"><span class="lp-team-emoji">📝</span><h3>Doc Writer</h3><p>README, OpenAPI, гайды и документация продукта.</p></article>
+            <article class="lp-team-card"><span class="lp-team-emoji">🔧</span><h3>DevOps</h3><p>Docker, CI/CD, GitHub Actions, деплой и инфра.</p></article>
+            <article class="lp-team-card"><span class="lp-team-emoji">⚡</span><h3>Cursor · Лео</h3><p>AI-кодинг, Cloud Agent, PR на GitHub.</p></article>
+            <article class="lp-team-card"><span class="lp-team-emoji">📽️</span><h3>Presenter · Ника</h3><p>Pitch deck, HTML-слайды, презентации для инвесторов.</p></article>
+            <article class="lp-team-card"><span class="lp-team-emoji">🧊</span><h3>3D · Зоя</h3><p>Three.js, glTF, WebGL-сцены и интерактивные модели.</p></article>
+            <article class="lp-team-card"><span class="lp-team-emoji">📊</span><h3>Evaluator</h3><p>Оценка качества агентов, метрики и улучшения.</p></article>
+            <article class="lp-team-card"><span class="lp-team-emoji">🛡️</span><h3>Security</h3><p>OWASP, аудит, фильтрация и безопасность (admin).</p></article>
         </div>
     </section>
     </section>
@@ -345,48 +361,81 @@ PR #42 · checks ✓</pre>
     <section class="lp-integrations" id="integrations">
         <p class="lp-section-label">Интеграции</p>
         <h2>Подключается к вашему стеку</h2>
-        <div class="lp-integrations-grid">
-            <span>🎨 Figma</span>
-            <span>⚡ Cursor SDK</span>
-            <span>🐙 GitHub</span>
-            <span>✈️ Telegram</span>
-            <span>🧩 Linear</span>
-            <span>📋 Jira</span>
-            <span>📝 Notion</span>
-            <span>▲ Vercel</span>
+        <p class="lp-section-desc">OAuth, webhooks и синхронизация — агенты работают с привычными инструментами.</p>
+        <div class="lp-int-grid">
+            <article class="lp-int-card"><span>🎨</span><h3>Figma</h3><p>OAuth, импорт макетов, Compare vs React, Sonya Studio pipeline.</p></article>
+            <article class="lp-int-card"><span>⚡</span><h3>Cursor SDK</h3><p>Cloud Agent, локальный код, PR и ревью через Лео.</p></article>
+            <article class="lp-int-card"><span>🐙</span><h3>GitHub</h3><p>Auto-sync, commit + push, PR и CI checks.</p></article>
+            <article class="lp-int-card"><span>✈️</span><h3>Telegram</h3><p>Бот для контроля комнаты, уведомления и команды.</p></article>
+            <article class="lp-int-card"><span>🧩</span><h3>Linear</h3><p>Импорт задач и синхронизация backlog с Kanban.</p></article>
+            <article class="lp-int-card"><span>📋</span><h3>Jira</h3><p>Тикеты, спринты и статусы для enterprise-команд.</p></article>
+            <article class="lp-int-card"><span>📝</span><h3>Notion</h3><p>Документация, brief и база знаний проекта.</p></article>
+            <article class="lp-int-card"><span>▲</span><h3>Vercel</h3><p>Deploy preview, bundle и production URL.</p></article>
         </div>
     </section>
     </section>
 
     <!-- ─── Скачать ─── -->
     <section class="lp-panel" id="panel-download" data-lp-panel="download">
-    <section class="lp-download-compact" id="download">
-        <div class="lp-dl-card" id="pricing">
-            <div class="lp-dl-card-glow" aria-hidden="true"></div>
-            <div class="lp-dl-card-inner">
-                <span class="lp-badge">Windows · Desktop</span>
-                <h2>Скачайте <span class="lp-gradient">AI Team Room</span></h2>
-                <p class="lp-dl-lead">Рабочая область — в приложении. На сайте — кабинет, admin и поддержка.</p>
-                <ul class="lp-dl-tags">
-                    <li>✨ Splash</li>
-                    <li>🌐 Вход через браузер</li>
-                    <li>🚀 Сервер 24/7</li>
-                </ul>
-                <div class="lp-dl-actions" id="lpDlGuest">
-                    <a href="/api/downloads/desktop/win/setup" class="lp-btn-xl" id="lpSectionDownload">⬇ Скачать для Windows</a>
-                    <button type="button" class="lp-btn-xl-outline" id="btnCtaRegister">Создать аккаунт</button>
-                    <button type="button" class="lp-btn-ghost-soft" id="btnCtaLogin">Вход</button>
+    <section class="lp-download-full" id="download">
+        <p class="lp-section-label">Скачать</p>
+        <h2>Установите <span class="lp-gradient">AI Team Room</span></h2>
+        <p class="lp-section-desc">Рабочая область — в нативном приложении. На сайте — кабинет, подписки и поддержка.</p>
+
+        <div class="lp-dl-layout">
+            <div class="lp-dl-main">
+                <div class="lp-dl-card">
+                    <div class="lp-dl-card-glow" aria-hidden="true"></div>
+                    <div class="lp-dl-card-inner">
+                        <span class="lp-badge">Windows · x64 · Desktop</span>
+                        <ul class="lp-dl-tags">
+                            <li>✨ Splash & 3D-студия</li>
+                            <li>🌐 Вход через браузер</li>
+                            <li>🔐 DPAPI-конфиг</li>
+                            <li>🚀 Сервер 24/7</li>
+                        </ul>
+                        <div class="lp-dl-actions" id="lpDlGuest">
+                            <a href="/api/downloads/desktop/win/setup" class="lp-btn-xl" id="lpSectionDownload">⬇ Установщик для Windows</a>
+                            <a href="/api/downloads/desktop/win/portable" class="lp-btn-xl-outline" id="lpPortableDownload">📦 Portable (.exe)</a>
+                            <button type="button" class="lp-btn-xl-outline" id="btnCtaRegister">Создать аккаунт</button>
+                            <button type="button" class="lp-btn-ghost-soft" id="btnCtaLogin">Уже есть аккаунт · Вход</button>
+                        </div>
+                        <div class="lp-dl-actions hidden" id="lpDlUser">
+                            <a href="/api/downloads/desktop/win/setup" class="lp-btn-xl" id="lpCtaDownload">⬇ Скачать приложение</a>
+                            <button type="button" class="lp-btn-xl-outline" id="btnDlCabinet">👤 Личный кабинет</button>
+                        </div>
+                        <p class="lp-dl-meta" id="lpDlMeta">WebView2 · .NET 8 · ~140 MB</p>
+                    </div>
                 </div>
-                <div class="lp-dl-actions hidden" id="lpDlUser">
-                    <a href="/api/downloads/desktop/win/setup" class="lp-btn-xl" id="lpCtaDownload">⬇ Скачать приложение</a>
-                    <a href="/portal?view=profile" class="lp-btn-xl-outline">👤 Кабинет</a>
-                </div>
-                <nav class="lp-dl-portal" aria-label="Разделы сайта">
-                    <a href="/portal?view=profile">Кабинет</a>
-                    <a href="/portal?view=admin">Admin</a>
-                    <a href="/portal?view=support">Поддержка</a>
-                </nav>
             </div>
+            <aside class="lp-dl-side">
+                <div class="lp-dl-box">
+                    <h3>📦 В комплекте</h3>
+                    <ul>
+                        <li>Inbox, чат, Kanban, 3D-студия</li>
+                        <li>Figma → React, Sonya Studio</li>
+                        <li>Cursor SDK + GitHub sync</li>
+                        <li>Splash, handoff, ярлыки</li>
+                        <li>Зашифрованный config.secure</li>
+                    </ul>
+                </div>
+                <div class="lp-dl-box">
+                    <h3>⚙️ Установка</h3>
+                    <ol class="lp-dl-steps">
+                        <li><strong>1.</strong> Скачайте установщик</li>
+                        <li><strong>2.</strong> Выберите папку и ярлыки</li>
+                        <li><strong>3.</strong> Войдите — email, логин или браузер</li>
+                    </ol>
+                </div>
+                <div class="lp-dl-box">
+                    <h3>💻 Требования</h3>
+                    <ul>
+                        <li>Windows 10/11 (64-bit)</li>
+                        <li>Microsoft Edge WebView2</li>
+                        <li>Интернет для сервера takura</li>
+                    </ul>
+                </div>
+            </aside>
         </div>
     </section>
     </section>
@@ -397,11 +446,12 @@ PR #42 · checks ✓</pre>
         <span class="lp-logo-mark">🤖</span>
         <span>AI Team Room · takura</span>
     </div>
-    <div class="lp-footer-links">
-        <a href="/portal?view=profile">Кабинет</a>
-        <a href="/portal?view=admin">Admin</a>
-        <a href="/portal?view=support">Поддержка</a>
-    </div>
+    <nav class="lp-footer-links" id="lpFooterLinks" aria-label="Подвал">
+        <button type="button" class="lp-footer-btn" id="lpFooterSupport">💬 Поддержка</button>
+        <button type="button" class="lp-footer-btn hidden" id="lpFooterCabinetBtn">👤 Кабинет</button>
+        <a href="/portal?view=profile" class="lp-footer-link hidden" id="lpFooterCabinetLink">👤 Кабинет</a>
+        <a href="/portal?view=admin" class="lp-footer-link hidden" id="lpFooterAdmin">Admin</a>
+    </nav>
 </footer>
 
 <!-- Auth modal -->
