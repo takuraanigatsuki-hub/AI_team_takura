@@ -4,6 +4,12 @@
     let currentUser = null;
     let downloadUrl = '/api/downloads/desktop/win/setup';
     let portableUrl = '/api/downloads/desktop/win/portable';
+    let androidApkUrl = '/api/downloads/android/apk';
+    let mobileWebUrl = '/mobile';
+    const isAndroidDevice = /Android/i.test(navigator.userAgent || '');
+    const isIOSDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    const isMobileDevice = isAndroidDevice || isIOSDevice
+        || ((navigator.maxTouchPoints || 0) > 1 && window.matchMedia('(max-width: 900px)').matches);
     let activeTab = 'home';
 
     const TAB_ALIASES = {
@@ -136,9 +142,84 @@
         document.getElementById('authSwitch').textContent = isReg ? 'Войти' : 'Зарегистрироваться';
     }
 
-    function applyDownloadLinks(setupUrl, portUrl) {
+    const isCompanionPlatform = isAndroidDevice || isIOSDevice;
+
+    function applyPlatformChrome() {
+        document.body.classList.toggle('lp-platform-android', isAndroidDevice);
+        document.body.classList.toggle('lp-platform-mobile', isMobileDevice);
+        document.body.classList.toggle('lp-platform-companion', isCompanionPlatform);
+        document.querySelectorAll('.lp-dl-win, .lp-dl-badge-win, .lp-dl-tags-win, .lp-dl-side-win').forEach((el) => {
+            el.classList.toggle('hidden', isCompanionPlatform);
+        });
+        document.querySelectorAll('.lp-dl-android, .lp-dl-badge-android, .lp-dl-tags-android, .lp-dl-side-android').forEach((el) => {
+            el.classList.toggle('hidden', !isCompanionPlatform);
+        });
+        document.querySelectorAll('.lp-nav-dl').forEach((el) => {
+            if (isIOSDevice && !isAndroidDevice) {
+                el.textContent = el.dataset.dlLabelAndroid || '📱 Companion';
+                el.setAttribute('href', mobileWebUrl);
+            } else {
+                el.textContent = isAndroidDevice
+                    ? (el.dataset.dlLabelAndroid || '📱 Android')
+                    : (el.dataset.dlLabelWin || 'Скачать');
+            }
+        });
+        document.querySelectorAll('#lpHeroDownload, #lpHeroDownloadUser').forEach((el) => {
+            if (!el) return;
+            if (isAndroidDevice) el.textContent = 'Скачать для Android';
+            else if (isIOSDevice) el.textContent = 'Открыть companion';
+            else el.textContent = 'Скачать приложение';
+        });
+        const heading = document.getElementById('lpDlHeading');
+        const desc = document.getElementById('lpDlDesc');
+        if (heading && isAndroidDevice) {
+            heading.innerHTML = 'Companion для <span class="lp-gradient">Android</span>';
+        }
+        if (desc && isAndroidDevice) {
+            desc.textContent = 'Управляйте командой с телефона: задачи, агенты, обучение и быстрые команды PM.';
+        }
+        if (isIOSDevice && !isAndroidDevice) {
+            if (heading) heading.innerHTML = 'Companion <span class="lp-gradient">скоро на iOS</span>';
+            if (desc) desc.textContent = 'Пока откройте веб-приложение /mobile или зайдите с Android для APK.';
+            document.querySelectorAll('#lpSectionDownloadAndroid, #lpCtaDownloadAndroid').forEach((el) => {
+                if (el) {
+                    el.href = mobileWebUrl;
+                    el.textContent = '🌐 Открыть веб-приложение';
+                }
+            });
+        }
+    }
+
+    function applyDownloadLinks(setupUrl, portUrl, apkUrl, apkMeta) {
         downloadUrl = setupUrl || downloadUrl;
         portableUrl = portUrl || portableUrl;
+        androidApkUrl = apkUrl || androidApkUrl;
+        const hasApk = !!(apkMeta?.url || (apkUrl && apkUrl.includes('android')));
+
+        if (isCompanionPlatform) {
+            const href = isAndroidDevice && hasApk ? androidApkUrl : mobileWebUrl;
+            document.querySelectorAll(
+                '#lpBtnDownload, #lpBtnDownloadUser, #lpSectionDownloadAndroid, #lpCtaDownloadAndroid, #lpHeroDownload, #lpHeroDownloadUser'
+            ).forEach((el) => { if (el) el.setAttribute('href', href); });
+            const apkBtn = document.getElementById('lpSectionDownloadAndroid');
+            if (apkBtn && isAndroidDevice) {
+                apkBtn.textContent = hasApk ? '📱 Скачать APK для Android' : '🌐 Открыть веб-приложение';
+            }
+            const ctaApk = document.getElementById('lpCtaDownloadAndroid');
+            if (ctaApk && isAndroidDevice) {
+                ctaApk.textContent = hasApk ? '📱 Скачать APK' : '🌐 Веб-приложение';
+            }
+            const meta = document.getElementById('lpDlMeta');
+            if (meta) {
+                if (isAndroidDevice && hasApk) {
+                    meta.textContent = `Android APK · ~${apkMeta?.size_mb || '?'} MB`;
+                } else {
+                    meta.textContent = 'Веб-приложение · установка на главный экран';
+                }
+            }
+            return;
+        }
+
         document.querySelectorAll(
             '#lpBtnDownload, #lpBtnDownloadUser, #lpSectionDownload, #lpCtaDownload'
         ).forEach((el) => { if (el) el.setAttribute('href', downloadUrl); });
@@ -177,20 +258,35 @@
     }
 
     async function initDownloadLinks() {
+        applyPlatformChrome();
         try {
-            const r = await fetch('/api/downloads/desktop/info');
+            const r = await fetch('/api/downloads/info');
             if (!r.ok) throw new Error('HTTP ' + r.status);
             const info = await r.json();
             const setup = info.platforms?.find((p) => p.id === 'win-setup' && p.url);
             const portable = info.platforms?.find((p) => p.id === 'win-portable' && p.url);
+            const apk = info.platforms?.find((p) => p.id === 'android-apk' && p.url);
             applyDownloadLinks(
                 (setup || portable)?.url || downloadUrl,
-                portable?.url || portableUrl
+                portable?.url || portableUrl,
+                apk?.url || androidApkUrl,
+                apk
             );
             const meta = document.getElementById('lpDlMeta');
-            if (meta && setup?.size_mb) meta.textContent = `WebView2 · .NET 8 · ~${setup.size_mb} MB`;
+            if (meta && !isAndroidDevice && setup?.size_mb) {
+                meta.textContent = `WebView2 · .NET 8 · ~${setup.size_mb} MB`;
+            }
+            if (apk?.size_mb && meta && isAndroidDevice) {
+                meta.textContent = `Android APK · ~${apk.size_mb} MB`;
+                meta.dataset.apkSize = String(apk.size_mb);
+            }
         } catch (_) {
-            applyDownloadLinks(downloadUrl, portableUrl);
+            applyDownloadLinks(
+                downloadUrl,
+                portableUrl,
+                androidApkUrl,
+                androidApkUrl ? { url: androidApkUrl } : null
+            );
         }
     }
 
@@ -200,8 +296,17 @@
         document.getElementById('lpAuthUser')?.classList.add('hidden');
         document.getElementById('lpHeroCtaGuest')?.classList.remove('hidden');
         document.getElementById('lpHeroCtaUser')?.classList.add('hidden');
-        document.getElementById('lpDlGuest')?.classList.remove('hidden');
-        document.getElementById('lpDlUser')?.classList.add('hidden');
+        if (isCompanionPlatform) {
+            document.getElementById('lpDlGuest')?.classList.add('hidden');
+            document.getElementById('lpDlGuestAndroid')?.classList.remove('hidden');
+            document.getElementById('lpDlUser')?.classList.add('hidden');
+            document.getElementById('lpDlUserAndroid')?.classList.add('hidden');
+        } else {
+            document.getElementById('lpDlGuest')?.classList.remove('hidden');
+            document.getElementById('lpDlGuestAndroid')?.classList.add('hidden');
+            document.getElementById('lpDlUser')?.classList.add('hidden');
+            document.getElementById('lpDlUserAndroid')?.classList.add('hidden');
+        }
         updateFooter(null);
     }
 
@@ -211,8 +316,17 @@
         document.getElementById('lpAuthUser')?.classList.remove('hidden');
         document.getElementById('lpHeroCtaGuest')?.classList.add('hidden');
         document.getElementById('lpHeroCtaUser')?.classList.remove('hidden');
-        document.getElementById('lpDlGuest')?.classList.add('hidden');
-        document.getElementById('lpDlUser')?.classList.remove('hidden');
+        if (isCompanionPlatform) {
+            document.getElementById('lpDlGuest')?.classList.add('hidden');
+            document.getElementById('lpDlGuestAndroid')?.classList.add('hidden');
+            document.getElementById('lpDlUser')?.classList.add('hidden');
+            document.getElementById('lpDlUserAndroid')?.classList.remove('hidden');
+        } else {
+            document.getElementById('lpDlGuest')?.classList.add('hidden');
+            document.getElementById('lpDlGuestAndroid')?.classList.add('hidden');
+            document.getElementById('lpDlUser')?.classList.remove('hidden');
+            document.getElementById('lpDlUserAndroid')?.classList.add('hidden');
+        }
         updateFooter(user);
 
         const name = user.name || user.email?.split('@')[0] || 'Пользователь';
@@ -260,6 +374,8 @@
     document.getElementById('btnCtaLogin')?.addEventListener('click', () => openModal('login'));
     document.getElementById('btnHeroCabinet')?.addEventListener('click', goCabinet);
     document.getElementById('btnDlCabinet')?.addEventListener('click', goCabinet);
+    document.getElementById('btnDlCabinetMob')?.addEventListener('click', goCabinet);
+    document.getElementById('btnCtaRegisterMob')?.addEventListener('click', () => openModal('register'));
     document.getElementById('lpFooterCabinetBtn')?.addEventListener('click', goCabinet);
     document.getElementById('lpFooterSupport')?.addEventListener('click', () => global.SupportTickets?.open?.({ landing: true }));
     document.getElementById('btnLogout')?.addEventListener('click', logout);

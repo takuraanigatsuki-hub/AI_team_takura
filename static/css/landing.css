@@ -528,7 +528,22 @@ a { color: inherit; text-decoration: none; }
     .lp-nav { display: none; }
     .lp-header-right { grid-column: 2; }
     .lp-hero { grid-template-columns: 1fr; padding-top: 32px; }
-    .lp-hero-visual { order: -1; }
+    .lp-hero-visual { order: -1; min-height: 320px; }
+    .lp-showcase {
+        width: min(400px, 92vw);
+        height: min(340px, 78vw);
+        min-height: 260px;
+    }
+    .lp-showcase-desktop {
+        inset: 8% 22% 14% 0;
+        transform: perspective(900px) rotateY(-2deg) scale(0.96);
+    }
+    .lp-showcase-phone {
+        width: 38%;
+        min-width: 100px;
+        max-width: 130px;
+        transform: translateY(0);
+    }
     .lp-nav-toggle { display: block; }
     .lp-nav {
         display: none;
@@ -555,60 +570,219 @@ a { color: inherit; text-decoration: none; }
     .lp-menu-key { min-height: 70px; padding: 12px; }
 }
 
-/* ─── 3D Hero ─── */
-.lp-hero-visual { position: relative; min-height: 420px; }
-.lp-studio-wrap {
+/* ─── Hero device showcase (PC + phone) ─── */
+.lp-hero-visual {
     position: relative;
-    width: 100%;
-    height: min(480px, 58vh);
-    min-height: 360px;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid var(--lp-border);
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
-    background: #0e1016;
-}
-#landingCanvas {
-    display: block;
-    width: 100%;
-    height: 100%;
-    cursor: grab;
-}
-#landingCanvas:active { cursor: grabbing; }
-.lp-studio-loading {
-    position: absolute;
-    inset: 0;
+    min-height: 400px;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    background: rgba(8, 9, 13, 0.85);
-    font-size: 13px;
-    color: var(--lp-muted);
-    z-index: 2;
-}
-.lp-studio-loading.hidden { display: none; }
-.lp-studio-ring {
-    width: 36px;
-    height: 36px;
-    border: 3px solid var(--lp-border);
-    border-top-color: var(--lp-accent);
-    border-radius: 50%;
-    animation: lpSpin 0.8s linear infinite;
-}
-@keyframes lpSpin { to { transform: rotate(360deg); } }
-.lp-studio-hint {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    padding: 5px 10px;
-    border-radius: 8px;
-    background: rgba(0, 0, 0, 0.65);
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.8);
-    z-index: 3;
     pointer-events: none;
+}
+.lp-showcase-glow {
+    position: absolute;
+    inset: 5% 0 0;
+    background: radial-gradient(ellipse at 58% 42%, rgba(139, 92, 246, 0.24) 0%, rgba(122, 162, 255, 0.08) 38%, transparent 68%);
+    pointer-events: none;
+    animation: lpGlow 8s ease-in-out infinite alternate;
+}
+.lp-showcase {
+    position: relative;
+    width: min(540px, 100%);
+    height: min(380px, 72vw);
+    min-height: 280px;
+    margin: 0 auto;
+    pointer-events: none;
+}
+.lp-showcase-desktop {
+    position: absolute;
+    inset: 0 16% 6% 0;
+    transform: perspective(1200px) rotateY(-4deg);
+    transform-origin: left center;
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.lp-showcase-win-title {
+    margin-left: 8px;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 0.02em;
+}
+.lp-showcase-desk-body { min-height: 240px; }
+.lp-showcase-sidebar {
+    width: 132px;
+    padding: 10px 8px;
+    background: #12121a;
+    gap: 3px;
+}
+.lp-showcase-sb-brand {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 8px 10px;
+    color: var(--lp-text);
+    border-bottom: 1px solid var(--lp-border);
+    margin-bottom: 6px;
+}
+.lp-showcase-sb-group {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(148, 150, 168, 0.7);
+    padding: 8px 8px 4px;
+}
+.lp-showcase-main {
+    background: #0a0b10;
+    padding: 14px 14px 12px;
+}
+.lp-showcase-main-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.lp-showcase-main-title {
+    font-size: 13px;
+    font-weight: 700;
+}
+.lp-showcase-pill {
+    font-size: 9px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(108, 99, 255, 0.18);
+    color: var(--lp-accent-2);
+    border: 1px solid rgba(108, 99, 255, 0.28);
+}
+.lp-showcase-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+.lp-showcase-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.lp-showcase-card strong {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 2px;
+}
+.lp-showcase-card small {
+    font-size: 9px;
+    color: var(--lp-muted);
+}
+.lp-showcase-card-dot {
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    margin-top: 4px;
+    background: var(--lp-accent);
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.55);
+}
+.lp-showcase-card-dot.lp-dot-review { background: #7aa2ff; box-shadow: 0 0 8px rgba(122, 162, 255, 0.45); }
+.lp-showcase-card-dot.lp-dot-todo { background: rgba(148, 150, 168, 0.5); box-shadow: none; }
+
+.lp-showcase-phone {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 34%;
+    min-width: 112px;
+    max-width: 148px;
+    z-index: 3;
+    filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.55));
+    transform: translateY(4%);
+}
+.lp-phone-bezel {
+    background: linear-gradient(145deg, #1a1f2e, #0d1118);
+    border-radius: 22px;
+    padding: 7px 5px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+.lp-phone-notch {
+    width: 36%;
+    height: 4px;
+    margin: 0 auto 6px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.55);
+}
+.lp-phone-screen {
+    background: #0b0f17;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.lp-phone-header {
+    padding: 8px 10px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(20, 27, 40, 0.95), rgba(11, 15, 23, 0.9));
+}
+.lp-phone-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 3px;
+    padding: 6px 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.lp-phone-tabs span {
+    text-align: center;
+    font-size: 11px;
+    padding: 5px 2px;
+    border-radius: 8px;
+    opacity: 0.45;
+}
+.lp-phone-tabs span.active {
+    opacity: 1;
+    background: #141b28;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.lp-phone-content { padding: 8px 7px 10px; }
+.lp-phone-h2 {
+    font-size: 10px;
+    font-weight: 700;
+    margin-bottom: 7px;
+}
+.lp-phone-task {
+    padding: 7px 8px;
+    margin-bottom: 5px;
+    border-radius: 10px;
+    background: #141b28;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.lp-phone-task strong {
+    display: block;
+    font-size: 8px;
+    font-weight: 600;
+    line-height: 1.35;
+    margin-bottom: 2px;
+}
+.lp-phone-task small {
+    font-size: 7px;
+    color: #8b95a8;
+}
+.lp-phone-task.dim { opacity: 0.65; }
+
+@media (max-width: 520px) {
+    .lp-showcase-phone {
+        width: 42%;
+        min-width: 96px;
+        max-width: 120px;
+    }
+    .lp-showcase-sidebar { width: 108px; }
+    .lp-showcase-sb-brand { font-size: 10px; }
+    .lp-mock-sidebar .lp-mock-nav { font-size: 10px; padding: 6px 6px; }
 }
 
 /* Mini chat */
@@ -779,7 +953,9 @@ a { color: inherit; text-decoration: none; }
     padding: 12px;
     min-height: 160px;
 }
-.lp-mock-nav {
+/* Skeleton bars inside Figma / React compare mocks */
+.lp-figma-mock .lp-mock-nav,
+.lp-react-mock .lp-mock-nav {
     height: 8px;
     width: 40%;
     background: rgba(255, 255, 255, 0.12);
@@ -787,13 +963,32 @@ a { color: inherit; text-decoration: none; }
     margin-bottom: 16px;
 }
 .lp-react-nav { background: rgba(122, 162, 255, 0.35); }
-.lp-mock-hero-card {
-    width: min(420px, 92vw);
+
+/* App mock primitives (Figma compare + hero showcase) */
+.lp-mock-app {
+    background: var(--lp-surface);
+    border: 1px solid var(--lp-border);
     border-radius: 16px;
     overflow: hidden;
-    border: 1px solid var(--lp-border);
-    box-shadow: 0 24px 60px rgba(0,0,0,.45);
-    background: var(--lp-card);
+}
+.lp-mock-sidebar .lp-mock-nav {
+    height: auto;
+    width: auto;
+    margin-bottom: 0;
+    font-size: 11px;
+    line-height: 1.3;
+    padding: 7px 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--lp-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.lp-mock-sidebar .lp-mock-nav.active {
+    background: rgba(157, 78, 221, 0.2);
+    color: var(--lp-accent-2);
+    box-shadow: inset 2px 0 0 var(--lp-accent);
 }
 .lp-mock-rows { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .lp-mock-row { height: 10px; border-radius: 6px; background: rgba(255,255,255,.06); }
@@ -1158,6 +1353,34 @@ a { color: inherit; text-decoration: none; }
     font-size: 11px;
     color: var(--lp-muted);
 }
+.lp-dl-badge-android {
+    background: rgba(94, 207, 138, 0.14);
+    color: #5ecf8a;
+}
+.lp-dl-actions a.lp-btn-xl,
+.lp-dl-actions a.lp-btn-xl-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+/* Platform-specific chrome */
+body.lp-platform-android .lp-mock-hero-card {
+    box-shadow: 0 20px 50px rgba(94, 207, 138, 0.12);
+}
+body.lp-platform-mobile .lp-hero-visual {
+    margin-bottom: 8px;
+}
+body.lp-platform-mobile .lp-mock-hero-card {
+    width: min(380px, 100%);
+}
+body.lp-platform-mobile .lp-dl-layout {
+    gap: 16px;
+}
+body.lp-platform-companion .lp-dl-side {
+    order: 2;
+}
 
 body.lp-modal-open { overflow: hidden; }
 .lp-modal:not(.hidden) .lp-modal-card {
@@ -1190,6 +1413,10 @@ body.lp-modal-open { overflow: hidden; }
 
 @media (max-width: 900px) {
     .lp-dl-layout { grid-template-columns: 1fr; }
+    .lp-mock-hero-card { width: min(360px, 100%); }
+    .lp-mock-body { min-height: 200px; }
+    .lp-mock-sidebar { width: 100px; padding: 10px 8px; }
+    .lp-mock-sidebar .lp-mock-nav { font-size: 10px; padding: 6px; }
     .lp-figma-split { grid-template-columns: 1fr; }
     .lp-figma-score { flex-direction: row; padding: 16px 0; }
     .lp-guided-grid { grid-template-columns: 1fr; }

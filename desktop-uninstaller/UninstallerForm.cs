@@ -1,5 +1,7 @@
 namespace AITeamRoom.Uninstaller;
 
+using AITeamRoom.Installer;
+
 internal sealed class UninstallerForm : Form
 {
     public UninstallerForm(string installDir)

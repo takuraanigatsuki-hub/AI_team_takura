@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/landing.css?v=12">
+    <link rel="stylesheet" href="/static/css/landing.css?v=13">
     <link rel="stylesheet" href="/static/css/support.css?v=3">
     <link rel="icon" href="/static/icons/icon-192.png">
 </head>
@@ -41,12 +41,12 @@
         <div class="lp-header-actions" id="lpAuthGuest">
             <button type="button" class="lp-btn-ghost lp-btn-sm" id="btnLogin">Вход</button>
             <button type="button" class="lp-btn-primary lp-btn-sm" id="btnRegister">Регистрация</button>
-            <a href="/api/downloads/desktop/win/setup" class="lp-btn-accent lp-btn-sm" id="lpBtnDownload">Скачать</a>
+            <a href="/api/downloads/desktop/win/setup" class="lp-btn-accent lp-btn-sm lp-nav-dl" id="lpBtnDownload" data-dl-label-win="Скачать" data-dl-label-android="📱 Android">Скачать</a>
         </div>
         <div class="lp-header-actions lp-user-bar hidden" id="lpAuthUser">
             <span class="lp-user-pill" id="lpUserPill">👤 …</span>
             <a href="/portal?view=profile" class="lp-btn-ghost lp-btn-sm">Кабинет</a>
-            <a href="/api/downloads/desktop/win/setup" class="lp-btn-accent lp-btn-sm" id="lpBtnDownloadUser">Скачать</a>
+            <a href="/api/downloads/desktop/win/setup" class="lp-btn-accent lp-btn-sm lp-nav-dl" id="lpBtnDownloadUser" data-dl-label-win="Скачать" data-dl-label-android="📱 Android">Скачать</a>
             <button type="button" class="lp-btn-ghost lp-btn-sm" id="btnLogout">Выход</button>
         </div>
     </div>
@@ -76,22 +76,75 @@
                 <div><strong id="lpLivePr">23</strong><span>PR за сутки</span></div>
             </div>
         </div>
-        <div class="lp-hero-visual">
-            <div class="lp-mock-app lp-mock-hero-card">
-                <div class="lp-mock-bar"><span></span><span></span><span></span></div>
-                <div class="lp-mock-body">
-                    <div class="lp-mock-sidebar">
-                        <div class="lp-mock-nav active">📋 Inbox</div>
-                        <div class="lp-mock-nav">💬 Чат</div>
-                        <div class="lp-mock-nav">📚 Обучение</div>
-                        <div class="lp-mock-nav">📊 Панель</div>
+        <div class="lp-hero-visual" role="img" aria-label="Превью интерфейса AI Team Room на ПК и телефоне">
+            <div class="lp-showcase-glow" aria-hidden="true"></div>
+            <div class="lp-showcase" aria-hidden="true">
+                <div class="lp-showcase-desktop lp-mock-app">
+                    <div class="lp-mock-bar">
+                        <span></span><span></span><span></span>
+                        <span class="lp-showcase-win-title">AI Team Room</span>
                     </div>
-                    <div class="lp-mock-main">
-                        <div class="lp-mock-hero-block"></div>
-                        <div class="lp-mock-rows">
-                            <div class="lp-mock-row"></div>
-                            <div class="lp-mock-row short"></div>
-                            <div class="lp-mock-row"></div>
+                    <div class="lp-mock-body lp-showcase-desk-body">
+                        <div class="lp-mock-sidebar lp-showcase-sidebar">
+                            <div class="lp-showcase-sb-brand">🤖 AI Team</div>
+                            <div class="lp-showcase-sb-group">Работа</div>
+                            <div class="lp-mock-nav active">📋 Inbox</div>
+                            <div class="lp-mock-nav">💬 Чат</div>
+                            <div class="lp-mock-nav">📌 Kanban</div>
+                            <div class="lp-showcase-sb-group">Обучение</div>
+                            <div class="lp-mock-nav">📚 Обучение</div>
+                            <div class="lp-showcase-sb-group">Аналитика</div>
+                            <div class="lp-mock-nav">📊 Панель</div>
+                            <div class="lp-mock-nav">📦 Проекты</div>
+                        </div>
+                        <div class="lp-mock-main lp-showcase-main">
+                            <div class="lp-showcase-main-head">
+                                <span class="lp-showcase-main-title">Inbox</span>
+                                <span class="lp-showcase-pill">3 задачи</span>
+                            </div>
+                            <div class="lp-showcase-cards">
+                                <div class="lp-showcase-card">
+                                    <span class="lp-showcase-card-dot"></span>
+                                    <div><strong>Landing hero UI</strong><small>Соня · In Progress</small></div>
+                                </div>
+                                <div class="lp-showcase-card">
+                                    <span class="lp-showcase-card-dot lp-dot-review"></span>
+                                    <div><strong>API auth refresh</strong><small>Макс · Review</small></div>
+                                </div>
+                                <div class="lp-showcase-card">
+                                    <span class="lp-showcase-card-dot lp-dot-todo"></span>
+                                    <div><strong>Deploy preview</strong><small>Кирилл · Todo</small></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="lp-showcase-phone">
+                    <div class="lp-phone-bezel">
+                        <div class="lp-phone-notch"></div>
+                        <div class="lp-phone-screen">
+                            <div class="lp-phone-header">🤖 AI Team</div>
+                            <div class="lp-phone-tabs">
+                                <span class="active">📋</span>
+                                <span>👥</span>
+                                <span>📚</span>
+                                <span>💬</span>
+                            </div>
+                            <div class="lp-phone-content">
+                                <div class="lp-phone-h2">Inbox</div>
+                                <div class="lp-phone-task">
+                                    <strong>Landing hero</strong>
+                                    <small>Соня · сейчас</small>
+                                </div>
+                                <div class="lp-phone-task">
+                                    <strong>Auth API</strong>
+                                    <small>Макс · 12 мин</small>
+                                </div>
+                                <div class="lp-phone-task dim">
+                                    <strong>Standup prep</strong>
+                                    <small>Виктор · todo</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -378,47 +431,72 @@ PR #42 · checks ✓</pre>
     <section class="lp-panel" id="panel-download" data-lp-panel="download">
     <section class="lp-download-full" id="download">
         <p class="lp-section-label">Скачать</p>
-        <h2>Установите <span class="lp-gradient">AI Team Room</span></h2>
-        <p class="lp-section-desc">Рабочая область — в нативном приложении. На сайте — кабинет, подписки и поддержка.</p>
+        <h2 id="lpDlHeading">Установите <span class="lp-gradient">AI Team Room</span></h2>
+        <p class="lp-section-desc" id="lpDlDesc">Рабочая область — в нативном приложении. На сайте — кабинет, подписки и поддержка.</p>
 
         <div class="lp-dl-layout">
             <div class="lp-dl-main">
                 <div class="lp-dl-card">
                     <div class="lp-dl-card-glow" aria-hidden="true"></div>
                     <div class="lp-dl-card-inner">
-                        <span class="lp-badge">Windows · x64 · Desktop</span>
-                        <ul class="lp-dl-tags">
-                            <li>✨ Splash & 3D-студия</li>
+                        <span class="lp-badge lp-dl-badge-win">Windows · x64 · Desktop</span>
+                        <span class="lp-badge lp-dl-badge-android hidden">Android · Companion</span>
+                        <ul class="lp-dl-tags lp-dl-tags-win">
+                            <li>✨ Inbox & чат</li>
                             <li>🌐 Вход через браузер</li>
                             <li>🔐 DPAPI-конфиг</li>
                             <li>🚀 Сервер 24/7</li>
                         </ul>
-                        <div class="lp-dl-actions" id="lpDlGuest">
+                        <ul class="lp-dl-tags lp-dl-tags-android hidden">
+                            <li>📋 Задачи с телефона</li>
+                            <li>👥 Статус агентов live</li>
+                            <li>📚 Обучение & проекты</li>
+                            <li>💬 Быстрая задача PM</li>
+                        </ul>
+                        <div class="lp-dl-actions lp-dl-win" id="lpDlGuest">
                             <a href="/api/downloads/desktop/win/setup" class="lp-btn-xl" id="lpSectionDownload">⬇ Установщик для Windows</a>
                             <a href="/api/downloads/desktop/win/portable" class="lp-btn-xl-outline" id="lpPortableDownload">📦 Portable (.exe)</a>
                             <button type="button" class="lp-btn-xl-outline" id="btnCtaRegister">Создать аккаунт</button>
                             <button type="button" class="lp-btn-ghost-soft" id="btnCtaLogin">Уже есть аккаунт · Вход</button>
                         </div>
-                        <div class="lp-dl-actions hidden" id="lpDlUser">
+                        <div class="lp-dl-actions lp-dl-android hidden" id="lpDlGuestAndroid">
+                            <a href="/api/downloads/android/apk" class="lp-btn-xl" id="lpSectionDownloadAndroid">📱 Скачать APK для Android</a>
+                            <a href="/mobile" class="lp-btn-xl-outline" id="lpMobileWeb">🌐 Открыть веб-приложение</a>
+                            <button type="button" class="lp-btn-xl-outline" id="btnCtaRegisterMob">Создать аккаунт</button>
+                        </div>
+                        <div class="lp-dl-actions hidden lp-dl-win" id="lpDlUser">
                             <a href="/api/downloads/desktop/win/setup" class="lp-btn-xl" id="lpCtaDownload">⬇ Скачать приложение</a>
                             <button type="button" class="lp-btn-xl-outline" id="btnDlCabinet">👤 Личный кабинет</button>
+                        </div>
+                        <div class="lp-dl-actions hidden lp-dl-android" id="lpDlUserAndroid">
+                            <a href="/api/downloads/android/apk" class="lp-btn-xl" id="lpCtaDownloadAndroid">📱 Скачать APK</a>
+                            <a href="/mobile" class="lp-btn-xl-outline">🌐 Companion</a>
+                            <button type="button" class="lp-btn-xl-outline" id="btnDlCabinetMob">👤 Кабинет</button>
                         </div>
                         <p class="lp-dl-meta" id="lpDlMeta">WebView2 · .NET 8 · ~140 MB</p>
                     </div>
                 </div>
             </div>
             <aside class="lp-dl-side">
-                <div class="lp-dl-box">
-                    <h3>📦 В комплекте</h3>
+                <div class="lp-dl-box lp-dl-side-win">
+                    <h3>📦 В комплекте (Windows)</h3>
                     <ul>
-                        <li>Inbox, чат, Kanban, 3D-студия</li>
+                        <li>Inbox, чат, Kanban, обучение</li>
                         <li>Figma → React, Sonya Studio</li>
                         <li>Cursor SDK + GitHub sync</li>
-                        <li>Splash, handoff, ярлыки</li>
-                        <li>Зашифрованный config.secure</li>
+                        <li>Updater и удаление в стиле setup</li>
                     </ul>
                 </div>
-                <div class="lp-dl-box">
+                <div class="lp-dl-box lp-dl-side-android hidden">
+                    <h3>📱 Companion (Android)</h3>
+                    <ul>
+                        <li>Inbox и статус агентов</li>
+                        <li>Обучение — проекты на проверку</li>
+                        <li>Быстрая задача для PM</li>
+                        <li>Push через PWA (скоро)</li>
+                    </ul>
+                </div>
+                <div class="lp-dl-box lp-dl-side-win">
                     <h3>⚙️ Установка</h3>
                     <ol class="lp-dl-steps">
                         <li><strong>1.</strong> Скачайте установщик</li>
@@ -426,12 +504,28 @@ PR #42 · checks ✓</pre>
                         <li><strong>3.</strong> Войдите — email, логин или браузер</li>
                     </ol>
                 </div>
-                <div class="lp-dl-box">
+                <div class="lp-dl-box lp-dl-side-android hidden">
+                    <h3>⚙️ Установка APK</h3>
+                    <ol class="lp-dl-steps">
+                        <li><strong>1.</strong> Скачайте APK</li>
+                        <li><strong>2.</strong> Разрешите установку из браузера</li>
+                        <li><strong>3.</strong> Войдите в companion</li>
+                    </ol>
+                </div>
+                <div class="lp-dl-box lp-dl-side-win">
                     <h3>💻 Требования</h3>
                     <ul>
                         <li>Windows 10/11 (64-bit)</li>
                         <li>Microsoft Edge WebView2</li>
                         <li>Интернет для сервера takura</li>
+                    </ul>
+                </div>
+                <div class="lp-dl-box lp-dl-side-android hidden">
+                    <h3>💻 Требования</h3>
+                    <ul>
+                        <li>Android 7+ (API 24)</li>
+                        <li>Интернет для сервера takura</li>
+                        <li>iOS — позже</li>
                     </ul>
                 </div>
             </aside>
@@ -485,6 +579,6 @@ PR #42 · checks ✓</pre>
 
 <script src="/static/js/support-tickets.js?v=3"></script>
 <script src="/static/js/auth-fields.js?v=1"></script>
-<script src="/static/js/landing.js?v=11"></script>
+<script src="/static/js/landing.js?v=13"></script>
 </body>
 </html>

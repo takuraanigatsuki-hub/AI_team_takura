@@ -18,6 +18,18 @@ backups/*.tar.gz
 dist/
 build/
 *.spec.bak
+.android-sdk/
+**/.gradle/
+android-companion/android/app/build/
+android-companion/android/build/
+**/bin/
+**/obj/
+desktop-client/bin/
+desktop-installer/bin/
+desktop-updater/bin/
+desktop-uninstaller/bin/
+publish-*/
+**/publish-*/
 
 # IDE / OS
 .idea/

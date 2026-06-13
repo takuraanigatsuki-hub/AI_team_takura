@@ -1,0 +1,1 @@
+# WebView companion — без obfuscation

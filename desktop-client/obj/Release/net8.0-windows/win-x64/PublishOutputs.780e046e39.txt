@@ -1,2 +1,0 @@
-C:\Users\USER\Desktop\AI_team_takura-main\dist\publish-client\AI_Team_Room.pdb
-C:\Users\USER\Desktop\AI_team_takura-main\dist\publish-client\AI_Team_Room.exe

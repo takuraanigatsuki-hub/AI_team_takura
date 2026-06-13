@@ -550,6 +550,19 @@
 .dl-mode-blocked .dl-panel-head h1 { font-size: 1.2rem; }
 .dl-mode-blocked .dl-portal-links { padding-top: 10px; }
 
+.dl-platform-android .ds-btn-primary {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3);
+}
+.dl-platform-android .dl-app-icon {
+    background: rgba(34, 197, 94, 0.15);
+    border-color: rgba(34, 197, 94, 0.28);
+}
+.dl-platform-ios .dl-notice {
+    background: rgba(99, 102, 241, 0.12);
+    border-color: rgba(99, 102, 241, 0.28);
+}
+
 @media (max-width: 480px) {
     .dl-header-nav { gap: 10px; font-size: 12px; }
     .dl-panel { padding: 18px 16px 14px; border-radius: 18px; }

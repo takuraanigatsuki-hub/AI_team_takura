@@ -417,44 +417,104 @@ async def mobile_companion_page():
     raise HTTPException(status_code=404, detail="Mobile page not found")
 
 
-@app.get("/api/downloads/desktop/info")
-async def desktop_download_info():
-    """Метаданные установщика для страницы загрузки."""
+@app.get("/api/downloads/info")
+async def downloads_info():
+    """Метаданные всех платформ: Windows + Android."""
     dist_dir = os.path.join(os.path.dirname(__file__), "dist")
+    version = os.environ.get("APP_VERSION", os.environ.get("DESKTOP_APP_VERSION", "1.1.0"))
+    platforms = []
+
     installer = os.path.join(dist_dir, "AI_Team_Room_Setup.exe")
     portable = os.path.join(dist_dir, "AI_Team_Room.exe")
-    info = {
-        "version": os.environ.get("DESKTOP_APP_VERSION", "1.1.0"),
-        "platforms": [],
-    }
+    apk = os.path.join(dist_dir, "AI_Team_Room.apk")
+
+    if os.path.isfile(apk):
+        st = os.stat(apk)
+        platforms.append({
+            "id": "android-apk",
+            "label": "Android — приложение (.apk)",
+            "filename": "AI_Team_Room.apk",
+            "url": "/api/downloads/android/apk",
+            "size_mb": round(st.st_size / (1024 * 1024), 2),
+            "platform": "android",
+        })
+    else:
+        platforms.append({
+            "id": "android-apk",
+            "label": "Android — приложение",
+            "filename": "AI_Team_Room.apk",
+            "url": "",
+            "size_mb": 0,
+            "platform": "android",
+            "hint": "Сборка: scripts/build-android.ps1",
+        })
+
+    platforms.append({
+        "id": "android-pwa",
+        "label": "Android — веб-приложение",
+        "filename": "",
+        "url": "/mobile",
+        "size_mb": 0,
+        "platform": "android",
+    })
+
     if os.path.isfile(installer):
         st = os.stat(installer)
-        info["platforms"].append({
+        platforms.append({
             "id": "win-setup",
             "label": "Windows — установщик",
             "filename": "AI_Team_Room_Setup.exe",
             "url": "/api/downloads/desktop/win/setup",
             "size_mb": round(st.st_size / (1024 * 1024), 1),
+            "platform": "windows",
         })
     if os.path.isfile(portable):
         st = os.stat(portable)
-        info["platforms"].append({
+        platforms.append({
             "id": "win-portable",
             "label": "Windows — portable",
             "filename": "AI_Team_Room.exe",
             "url": "/api/downloads/desktop/win/portable",
             "size_mb": round(st.st_size / (1024 * 1024), 1),
+            "platform": "windows",
         })
-    if not info["platforms"]:
-        info["platforms"].append({
+    if not any(p.get("id") == "win-setup" and p.get("url") for p in platforms):
+        platforms.append({
             "id": "win-build",
             "label": "Windows — собрать из исходников",
             "filename": "",
             "url": "",
             "size_mb": 0,
-            "hint": "Запустите scripts/build-desktop.ps1 на Windows для сборки .exe",
+            "platform": "windows",
+            "hint": "scripts/build-desktop.ps1",
         })
+
+    return {"version": version, "platforms": platforms}
+
+
+@app.get("/api/downloads/desktop/info")
+async def desktop_download_info():
+    """Метаданные установщика для страницы загрузки (Windows + Android для совместимости)."""
+    info = await downloads_info()
     return info
+
+
+@app.get("/api/downloads/android/info")
+async def android_download_info():
+    info = await downloads_info()
+    android_only = [p for p in info["platforms"] if p.get("platform") == "android"]
+    return {"version": info["version"], "platforms": android_only}
+
+
+@app.get("/api/downloads/android/apk")
+async def android_download_apk():
+    path = os.path.join(os.path.dirname(__file__), "dist", "AI_Team_Room.apk")
+    if not os.path.isfile(path):
+        raise HTTPException(
+            status_code=404,
+            detail="APK not built yet. Run scripts/build-android.ps1",
+        )
+    return FileResponse(path, filename="AI_Team_Room.apk", media_type="application/vnd.android.package-archive")
 
 
 @app.get("/api/downloads/desktop/win/setup")
