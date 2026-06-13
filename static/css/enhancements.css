@@ -140,11 +140,26 @@ body.sidebar-collapsed .app-content-wrap { margin-left: var(--sidebar-collapsed-
 }
 .sb-sub-back:hover { background: rgba(167,139,250,.08); color: var(--text); }
 .sb-sub-item { font-size: 12px; }
-.sb-footer {
-    margin-top: auto;
-    padding: 10px 12px 14px;
-    border-top: 1px solid var(--border, rgba(255,255,255,.08));
-    flex-shrink: 0;
+.sb-footer-link {
+    display: block;
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text-muted);
+    border: 1px solid var(--border, rgba(255,255,255,.08));
+    transition: color .15s, border-color .15s, background .15s;
+}
+.sb-footer-link:hover {
+    color: var(--text);
+    border-color: var(--accent);
+    background: rgba(167,139,250,.06);
+}
+.mtab-link {
+    text-decoration: none;
+    color: inherit;
 }
 .sb-ws-label {
     display: block;

@@ -162,7 +162,7 @@ class SecurityMonitor:
                 f"🛡 Threat: {threat_type}",
                 detail[:200],
                 ntype="security",
-                link="/app?view=admin",
+                link="/portal?view=admin",
             )
         except Exception:
             pass

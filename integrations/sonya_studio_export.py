@@ -97,7 +97,7 @@ def build_handoff_package(project_id: str) -> Optional[dict]:
         "react_code": current.get("react_code", ""),
         "published_at": handoff.get("published_at") or project.get("published_at"),
         "figma_url": handoff.get("figma_url"),
-        "studio_url": f"/app?view=sonya-studio&project={project_id}",
+        "studio_url": f"/workspace?view=sonya-studio&project={project_id}",
         "figma_import_steps": [
             "1. Скачайте handoff.zip (tokens.css + App.jsx + README)",
             "2. В Figma создайте файл или откройте шаблон",

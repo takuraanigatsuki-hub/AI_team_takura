@@ -13,7 +13,7 @@ def _app_link(project_id: str = "") -> str:
     import os
     port = int(cfg.config.get("port", 8000))
     base_url = os.environ.get("APP_PUBLIC_URL") or f"http://localhost:{port}"
-    base = f"{base_url}/app?view=sonya-studio"
+    base = f"{base_url}/workspace?view=sonya-studio"
     if project_id:
         return f"{base}&project={project_id}"
     return base

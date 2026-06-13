@@ -66,8 +66,8 @@
         }
 
         const ws = user.default_view && user.default_view !== 'profile'
-            ? `/app?view=${encodeURIComponent(user.default_view)}`
-            : '/app';
+            ? `/workspace?view=${encodeURIComponent(user.default_view)}`
+            : '/workspace';
         document.getElementById('lpBtnWorkspace')?.setAttribute('href', ws);
         document.getElementById('lpHeroWorkspace')?.setAttribute('href', ws);
     }
@@ -89,7 +89,7 @@
         const user = currentUser || await initAuth();
         if (user) {
             const view = user.default_view && user.default_view !== 'profile' ? user.default_view : 'tasks';
-            location.href = `/app?view=${encodeURIComponent(view)}`;
+            location.href = `/workspace?view=${encodeURIComponent(view)}`;
         } else {
             openModal('login');
         }
@@ -137,7 +137,12 @@
             });
             const d = await r.json();
             if (!r.ok) throw new Error(d.detail || 'Ошибка');
-            location.href = mode === 'register' ? '/app?setup=1' : '/app?view=dashboard';
+            const next = new URLSearchParams(location.search).get('next');
+            if (next && next.startsWith('/')) {
+                location.href = next;
+                return;
+            }
+            location.href = mode === 'register' ? '/workspace?setup=1' : '/workspace?view=dashboard';
         } catch (err) {
             errorEl.textContent = err.message;
             errorEl.classList.remove('hidden');

@@ -842,7 +842,7 @@ class RoomManager:
                     task_title[:200],
                     user_id=uid,
                     ntype="task",
-                    link="/app#tasks",
+                    link="/workspace#tasks",
                 )
         except Exception:
             pass

@@ -33,13 +33,31 @@ def test_startup_landing(client):
 
 
 def test_app_spa(client):
-    r = client.get("/app")
+    r = client.get("/app", follow_redirects=False)
+    assert r.status_code == 302
+    assert r.headers.get("location") == "/workspace"
+
+    r = client.get("/workspace")
     assert r.status_code == 200
     assert 'id="appSidebar"' in r.text or "app-sidebar" in r.text
     assert "3D студия" in r.text or "3D Studio" in r.text
     assert "search.js" in r.text
-    assert 'id="siteSearchInput"' not in r.text  # overlay created dynamically
+    assert 'id="siteSearchInput"' not in r.text
     assert "SiteSearch" in r.text
+
+
+def test_portal_spa(client):
+    r = client.get("/portal")
+    assert r.status_code == 200
+    assert 'id="profileView"' in r.text
+    assert 'APP_SHELL = \'portal\'' in r.text
+    assert "three.min.js" not in r.text
+
+
+def test_cabinet_redirect(client):
+    r = client.get("/cabinet", follow_redirects=False)
+    assert r.status_code == 302
+    assert r.headers.get("location") == "/portal?view=profile"
 
 
 def test_auth_register_login(client):
