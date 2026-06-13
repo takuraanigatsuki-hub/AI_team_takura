@@ -47,6 +47,13 @@ async def lifespan(app: FastAPI):
     seeded = seed_all_agents(room.agents)
     print(f"📚 Seed knowledge: {sum(seeded.values())} topics loaded")
 
+    try:
+        from integrations.figma_theme import ensure_theme_files
+        theme = ensure_theme_files()
+        print(f"🎨 Snow theme: {theme.get('source', 'ok')} (accent {theme.get('light', {}).get('accent', '')})")
+    except Exception as e:
+        print(f"⚠️ Snow theme init: {e}")
+
     room.task_history.cleanup_stale(max_minutes=30)
     cancelled = room.task_history.stats().get("cancelled", 0)
     if cancelled:

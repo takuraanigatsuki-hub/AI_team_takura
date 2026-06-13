@@ -1,7 +1,7 @@
-/* Auto-generated Figma/Snow theme — source: figma+official — 2026-06-13T00:44:03.502722+00:00 */
+/* Auto-generated Figma/Snow theme — source: snowui-official — 2026-06-13T00:45:33.233311+00:00 */
 [data-theme="light"] {
-    --bg: #ffffff;
-    --surface: #ffffff;
+    --bg: #F9F9FA;
+    --surface: #FFFFFF;
     --surface-2: #F9F9FA;
     --border: rgba(0, 0, 0, 0.1);
     --text: #000000;
@@ -17,7 +17,7 @@
     --user-bg: #E6F1FD;
     --user-border: rgba(76, 152, 253, 0.12);
     --code-bg: #F9F9FA;
-    --glass: #ffffffe0;
+    --glass: #FFFFFFe0;
     --snow-bg-4: #EDEEFC;
     --snow-bg-5: #E6F1FD;
     --snow-logo: #4C98FD;
