@@ -503,7 +503,6 @@
 
     async function load() {
         renderTabs();
-        if (global.SidebarNav?.renderSubnav) SidebarNav.renderSubnav('profile', activeTab);
         await Promise.all([loadStats(), loadPlans()]);
         renderContent();
     }
@@ -529,7 +528,6 @@
     function switchTab(tab) {
         activeTab = tab;
         renderTabs();
-        if (global.SidebarNav?.renderSubnav) SidebarNav.renderSubnav('profile', activeTab);
         if (global.UICore?.setViewTitle) UICore.setViewTitle('profile', getActiveTabLabel());
         if (tab === 'subscription' && !plans) loadPlans().then(renderContent);
         else if (tab === 'workspaces') renderContent();

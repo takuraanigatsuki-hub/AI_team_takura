@@ -2966,9 +2966,8 @@ body.has-pipeline-collapsed .toast-container { bottom: 88px; }
 .profile-quick-links { display: flex; flex-wrap: wrap; gap: 8px; }
 
 @media (max-width: 768px) {
-    .profile-layout { flex-direction: column; }
     .profile-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
-    .profile-tab-nav { flex-direction: row; flex-wrap: wrap; }
+    .profile-tab-nav-horizontal { padding-bottom: 10px; }
 }
 
 .sub-balance-card {

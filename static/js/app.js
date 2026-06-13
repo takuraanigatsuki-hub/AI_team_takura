@@ -207,11 +207,6 @@
         if (view === 'dashboard' && window.PowerPack) PowerPack.loadCostWidget();
         if (view === 'investor' && window.InvestorPortal) InvestorPortal.load();
         if (view === 'profile' && window.ProfileCabinet) ProfileCabinet.load();
-        if (view === 'profile' && window.SidebarNav) {
-            SidebarNav.renderSubnav('profile', ProfileCabinet.getActiveTabId?.() || 'overview');
-        } else if (window.SidebarNav) {
-            SidebarNav.renderSubnav(null);
-        }
         if (view === 'admin' && window.AdminPanel) AdminPanel.load();
         if (view === 'support' && window.SupportPanel) SupportPanel.load();
 
