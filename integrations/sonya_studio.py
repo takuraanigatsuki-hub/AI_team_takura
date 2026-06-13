@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import uuid
 from datetime import datetime
 from typing import Optional
@@ -19,6 +20,86 @@ PROJECT_THEMES = [
     ("design_system", "Design System UI Kit"),
     ("portfolio", "Creative Portfolio"),
 ]
+
+_THEME_LABELS = dict(PROJECT_THEMES)
+
+_GENERIC_LANDING = re.compile(
+    r"^(?:сделай\s+)?(?:landing|лендинг)\s*(?:page\s+)?(?:для\s+)?(?:моего\s+)?(?:продукт|product)",
+    re.I,
+)
+
+
+def _theme_title(theme_id: str) -> str:
+    return _THEME_LABELS.get(theme_id, theme_id or "UI проект")
+
+
+def _resolve_project_title(*, title: str, task: str, theme: str) -> str:
+    from integrations.sonya_commands import title_from_task
+
+    theme_label = _theme_title(theme)
+    derived = title_from_task(task, "")
+    clean = (title or "").strip()
+    if clean and clean.lower() not in ("page для моего продукта", "ui проект", "новый проект"):
+        return clean[:80]
+    if derived and not _GENERIC_LANDING.search(task or ""):
+        return derived[:80]
+    if theme_label:
+        return theme_label[:80]
+    return derived or "UI проект"
+
+
+def _augment_task_for_theme(task: str, theme_id: str, theme_title: str, color_hint: str) -> str:
+    base = (task or "").strip()
+    if not base:
+        return (
+            f"{theme_title}. Собственный проект Sonya Studio. "
+            f"Палитра: {color_hint}. Современный UI, React компонент."
+        )
+    if _GENERIC_LANDING.search(base) and theme_title:
+        return (
+            f"{theme_title}. {base} "
+            f"Уникальный дизайн, палитра: {color_hint}. Адаптивная вёрстка."
+        )
+    return base
+
+
+async def _generate_studio_preview(task: str, *, theme: str = "", colors: Optional[list] = None) -> dict:
+    hints = {}
+    theme_title = _theme_title(theme)
+    if theme_title:
+        hints["prompt_extra"] = (
+            f"Категория UI: {theme_title}. "
+            "Сделай уникальный результат под задачу — не копируй generic шаблон MySite."
+        )
+    try:
+        from integrations.llm_client import is_configured
+        if is_configured():
+            from integrations.llm_codegen import generate_react_from_llm
+            preview = await generate_react_from_llm(task, hints)
+            code = preview.get("code") or ""
+            if code and "function App" in code:
+                if colors:
+                    primary = colors[0]
+                    for old in ("#4f7df3", "#6c63ff", "#667eea"):
+                        code = code.replace(old, primary)
+                    preview = {**preview, "code": code}
+                if not preview.get("title") or preview.get("title") == task[:60]:
+                    preview["title"] = _headline_from_preview_task(task, theme)
+                return preview
+    except Exception:
+        pass
+    preview = generate_react_preview(task, theme=theme, colors=colors)
+    if not preview.get("title"):
+        preview["title"] = _headline_from_preview_task(task, theme)
+    return preview
+
+
+def _headline_from_preview_task(task: str, theme: str = "") -> str:
+    from integrations.sonya_commands import title_from_task
+    title = title_from_task(task, "")
+    if title and not _GENERIC_LANDING.search(task or ""):
+        return title
+    return _theme_title(theme) or title or "UI проект"
 
 
 def _now() -> str:
@@ -132,17 +213,20 @@ def create_project(
         import random
         theme_id, theme_title = random.choice(PROJECT_THEMES)
         theme = theme or theme_id
-        title = title or theme_title
+        title = _resolve_project_title(title=title, task="", theme=theme) or theme_title
         task = f"{theme_title}. Современный UI, адаптивная вёрстка, палитра команды."
-        preview = generate_react_preview(task)
+        colors = colors or ["#6c63ff", "#5ecf8a", "#1a1d2e", "#f0f0f5", "#c792ea"]
+        preview = generate_react_preview(task, theme=theme, colors=colors)
         react_code = preview.get("code", "")
         preview_title = preview.get("title", title)
-        colors = colors or ["#6c63ff", "#5ecf8a", "#1a1d2e", "#f0f0f5", "#c792ea"]
     elif not react_code:
-        preview = generate_react_preview(task)
+        title = _resolve_project_title(title=title, task=task, theme=theme) or title or "UI проект"
+        colors = colors or ["#6c63ff", "#5ecf8a", "#1a1d2e", "#f0f0f5"]
+        preview = generate_react_preview(task, theme=theme, colors=colors)
         react_code = preview.get("code", "")
         preview_title = preview_title or preview.get("title", title)
-        colors = colors or ["#6c63ff", "#5ecf8a", "#1a1d2e", "#f0f0f5"]
+    else:
+        title = _resolve_project_title(title=title, task=task, theme=theme) or title or "UI проект"
 
     pid = _uid("proj-")
     vid = _uid("ver-")
@@ -193,10 +277,10 @@ def add_version(
         return None
 
     if not react_code:
-        preview = generate_react_preview(task)
+        preview = generate_react_preview(task, theme=p.get("theme", ""), colors=p.get("colors"))
         react_code = preview.get("code", "")
         preview_title = preview_title or preview.get("title", p.get("title", "UI"))
-        colors = colors or preview.get("colors") or p.get("colors", [])
+        colors = colors or p.get("colors", [])
 
     vid = _uid("ver-")
     num = len(p.get("versions", [])) + 1

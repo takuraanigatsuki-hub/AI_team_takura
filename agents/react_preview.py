@@ -591,6 +591,7 @@ function App() {
 _WEBSITE = """
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const brand = "{brand}";
   const headline = "{headline}";
   const subtitle = "{subtitle}";
   const features = [
@@ -625,15 +626,15 @@ function App() {
       </header>
 
       <section style={{
-        background: 'linear-gradient(135deg, #1a1d2e 0%, #2d3561 50%, #4f7df3 100%)',
+        background: 'linear-gradient(135deg, #1a1d2e 0%, #2d3561 50%, ' + s.primary + ' 100%)',
         color: '#fff', padding: '64px 24px', textAlign: 'center'
       }}>
         <p style={{ opacity: 0.8, fontSize: 13, marginBottom: 8 }}>✨ Собрано Соней · React</p>
         <h1 style={{ fontSize: 'clamp(28px, 5vw, 42px)', margin: '0 0 16px', fontWeight: 800 }}>
-          {task.length > 60 ? task.slice(0, 60) + '…' : task}
+          {headline}
         </h1>
         <p style={{ fontSize: 16, opacity: 0.85, maxWidth: 520, margin: '0 auto 28px', lineHeight: 1.6 }}>
-          Современный адаптивный сайт с интерактивными элементами. Готов к доработке и деплою.
+          {subtitle}
         </p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
           <button style={{
@@ -679,7 +680,7 @@ function App() {
       </section>
 
       <footer style={{ background: s.dark, color: '#9ca3af', padding: '24px', textAlign: 'center', fontSize: 12 }}>
-        © 2026 MySite · Сделано командой AI Team Room
+        © 2026 {brand} · Сделано командой AI Team Room
       </footer>
     </div>
   );
