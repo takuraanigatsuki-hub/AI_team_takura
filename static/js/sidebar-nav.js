@@ -9,8 +9,8 @@
             { view: 'chat', icon: '💬', label: 'Чат' },
             { view: 'kanban', icon: '📌', label: 'Kanban' },
         ]},
-        { group: 'Студия', items: [
-            { view: 'studio', icon: '🎮', label: '3D Студия' },
+        { group: 'Обучение', items: [
+            { view: 'agent-learning', icon: '📚', label: 'Обучение' },
         ]},
     ];
 
@@ -28,8 +28,8 @@
         { group: 'Планирование', items: [
             { view: 'sprint', icon: '🏃', label: 'Sprint' },
         ]},
-        { group: 'Студия', advanced: true, items: [
-            { view: 'studio', icon: '🎮', label: '3D' },
+        { group: 'Обучение', advanced: true, items: [
+            { view: 'agent-learning', icon: '📚', label: 'Обучение' },
             { view: 'sonya-studio', icon: '✨', label: 'Sonya Studio' },
         ]},
         { group: 'Обзор', items: [
@@ -59,13 +59,12 @@
         { group: 'Планирование', items: [
             { view: 'sprint', icon: '🏃', label: 'Sprint' },
         ]},
-        { group: 'Студия', items: [
-            { view: 'studio', icon: '🎮', label: '3D' },
+        { group: 'Обучение', items: [
+            { view: 'agent-learning', icon: '📚', label: 'Обучение' },
             { view: 'sonya-studio', icon: '✨', label: 'Sonya Studio' },
             { view: 'design', icon: '🎨', label: 'Design Lab', adminLearning: true },
         ]},
         { group: 'Система', advanced: true, items: [
-            { view: 'agent-learning', icon: '🔬', label: 'Обучение', adminLearning: true },
             { view: 'investor', icon: '💼', label: 'Investor', investor: true },
         ]},
     ];
@@ -76,7 +75,7 @@
             { view: 'dashboard', icon: '📊', label: 'Панель' },
         ]},
         { group: 'Просмотр', items: [
-            { view: 'studio', icon: '🎮', label: '3D' },
+            { view: 'agent-learning', icon: '📚', label: 'Обучение' },
             { view: 'projects', icon: '📦', label: 'Проекты' },
         ]},
     ];
