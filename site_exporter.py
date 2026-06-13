@@ -78,8 +78,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     try:
         from room.sites_registry import register
         register(filename, user_id=user_id, title=title, task_id=task_id)
-    except Exception:
-        pass
+        if user_id:
+            rel_latest = f"users/{user_id.replace('/', '_')[:64]}/latest.html"
+            register(rel_latest, user_id=user_id, title=title or "Последний сайт", task_id=task_id)
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning("sites register failed: %s", exc)
 
     if user_id:
         user_dir = os.path.join(OUTPUT_DIR, "users", user_id.replace("/", "_")[:64])

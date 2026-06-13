@@ -18,7 +18,12 @@ HIDDEN_AGENT_IDS = frozenset({"security"})
 TIMELINE_LEARNING_TYPES = frozenset({
     "learning", "learning_result", "reflection", "rest", "figma_study",
     "peer_learning", "peer_discussion", "skill_evaluation", "learning_project",
-    "agents_state",
+})
+
+TIMELINE_SKIP_TYPES = frozenset({
+    "agents_state", "history", "task_history", "agent_stream", "agent_stream_start",
+    "presence_update", "balance_update", "pipeline_update", "cursor_progress",
+    "react_preview", "sonya_studio_update",
 })
 
 
@@ -76,6 +81,23 @@ def should_show_timeline_event(event: dict, viewer: dict | None) -> bool:
 
 def filter_timeline_for_viewer(events: list, viewer: dict | None) -> list:
     return [e for e in events if should_show_timeline_event(e, viewer)]
+
+
+def should_record_timeline_event(event: dict) -> bool:
+    """Не писать в timeline служебные WS-события без текста."""
+    msg_type = event.get("type", "")
+    if msg_type in TIMELINE_SKIP_TYPES:
+        return False
+    text = (event.get("message") or event.get("text") or "").strip()
+    if not text and msg_type in TIMELINE_SKIP_TYPES:
+        return False
+    if not text and not event.get("agent_id") and not event.get("agent_name"):
+        return False
+    return True
+
+
+def filter_timeline_noise(events: list) -> list:
+    return [e for e in events if should_record_timeline_event(e)]
 
 
 def filter_agents_for_viewer(agents: list, viewer: dict | None) -> list:

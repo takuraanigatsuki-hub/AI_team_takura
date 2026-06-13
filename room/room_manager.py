@@ -154,14 +154,18 @@ class RoomManager:
         if channel != "learning":
             try:
                 from integrations.timeline_store import append_event
-                append_event({
+                from room.message_filter import should_record_timeline_event
+                entry = {
                     "type": message.get("type"),
                     "agent_id": message.get("agent_id"),
                     "agent_name": message.get("agent_name"),
+                    "agent_emoji": message.get("agent_emoji"),
                     "message": (message.get("message") or "")[:200],
                     "timestamp": message.get("timestamp"),
                     "channel": channel,
-                })
+                }
+                if should_record_timeline_event(entry):
+                    append_event(entry)
             except Exception:
                 pass
         if channel == "learning":

@@ -56,6 +56,10 @@ def list_for_user(user_id: str = "", privileged: bool = False, limit: int = 40) 
     return visible[:limit]
 
 
+def _user_latest_rel(user_id: str) -> str:
+    return f"users/{user_id.replace('/', '_')[:64]}/latest.html"
+
+
 def latest_for_user(user_id: str = "", privileged: bool = False) -> Optional[dict]:
     items = list_for_user(user_id, privileged=privileged, limit=1)
     return items[0] if items else None

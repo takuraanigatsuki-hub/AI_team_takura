@@ -52,7 +52,13 @@ class FrontendDevAgent(BaseAgent):
 
         if preview.get("is_site"):
             try:
-                site_path = export_site_html(preview["code"], enhanced, preview["title"])
+                ct = self.current_task or {}
+                uid = getattr(self, "_active_user_id", "") or ct.get("user_id") or ""
+                tid = getattr(self, "_active_task_id", "") or ct.get("task_id") or ""
+                site_path = export_site_html(
+                    preview["code"], enhanced, preview["title"],
+                    user_id=uid, task_id=tid,
+                )
                 preview["site_path"] = site_path
                 preview["site_url"] = "/api/sites/latest"
             except Exception:

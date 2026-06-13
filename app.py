@@ -2435,14 +2435,14 @@ async def get_standup():
 @app.get("/api/timeline")
 async def get_timeline(request: Request, limit: int = 100):
     from integrations.timeline_store import get_events
-    from room.message_filter import filter_timeline_for_viewer, is_privileged
+    from room.message_filter import filter_timeline_for_viewer, filter_timeline_noise, is_privileged
     from room.user_auth import can_view_agent_learning
 
     user = _optional_user(request)
     if not user or not can_view_agent_learning(user):
         raise HTTPException(status_code=403, detail="Timeline доступен только администраторам")
     viewer = {"user_id": user.get("id", ""), "role": user.get("role", "guest")}
-    events = get_events(limit=min(limit, 500))
+    events = filter_timeline_noise(get_events(limit=min(limit, 500)))
     if not is_privileged(viewer.get("role", "")):
         events = filter_timeline_for_viewer(events, viewer)
     return {"events": events}
@@ -2451,7 +2451,7 @@ async def get_timeline(request: Request, limit: int = 100):
 @app.get("/api/timeline/replay")
 async def get_timeline_replay(request: Request, hours: float = 1.0):
     from integrations.timeline_store import replay_summary
-    from room.message_filter import filter_timeline_for_viewer, is_privileged
+    from room.message_filter import filter_timeline_for_viewer, filter_timeline_noise, is_privileged
     from room.user_auth import can_view_agent_learning
 
     user = _optional_user(request)
@@ -2459,9 +2459,9 @@ async def get_timeline_replay(request: Request, hours: float = 1.0):
         raise HTTPException(status_code=403, detail="Timeline доступен только администраторам")
     viewer = {"user_id": user.get("id", ""), "role": user.get("role", "guest")}
     data = replay_summary(hours=min(max(hours, 0.25), 24))
-    if is_privileged(viewer.get("role", "")):
-        return data
-    events = filter_timeline_for_viewer(data.get("events") or [], viewer)
+    events = filter_timeline_noise(data.get("events") or [])
+    if not is_privileged(viewer.get("role", "")):
+        events = filter_timeline_for_viewer(events, viewer)
     by_type = {}
     for e in events:
         t = e.get("type", "unknown")
@@ -2562,7 +2562,7 @@ async def delete_all_my_projects(request: Request):
 async def list_sites(request: Request):
     """Список готовых HTML-сайтов текущего пользователя."""
     from room.message_filter import is_privileged
-    from room.sites_registry import list_for_user
+    from room.sites_registry import list_for_user, _user_latest_rel
 
     user = _optional_user(request)
     uid = user.get("id", "") if user else ""
@@ -2573,35 +2573,46 @@ async def list_sites(request: Request):
     sites_dir = os.path.join(os.path.dirname(__file__), "output", "sites")
     entries = list_for_user(uid, privileged=privileged, limit=40)
     sites = []
-    for entry in entries:
-        name = entry.get("filename") or entry.get("id", "")
+    seen: set[str] = set()
+
+    def _append_site(name: str, entry: dict, *, is_latest: bool = False):
+        if not name or name in seen:
+            return
         if not name.endswith(".html"):
-            continue
+            return
         fp = os.path.join(sites_dir, name)
         if not os.path.isfile(fp):
-            continue
+            return
         try:
             st = os.stat(fp)
+            seen.add(name)
             sites.append({
                 "id": name,
                 "title": entry.get("title") or name.replace(".html", "").replace("_", " ")[:80],
                 "url": f"/output/sites/{name}",
                 "preview_url": f"/output/sites/{name}",
-                "is_latest": False,
+                "is_latest": is_latest,
                 "size_kb": round(st.st_size / 1024, 1),
                 "modified_at": datetime.fromtimestamp(st.st_mtime).isoformat(),
             })
         except OSError:
-            continue
-    latest = None
-    if uid:
-        user_latest = os.path.join(sites_dir, "users", uid.replace("/", "_")[:64], "latest.html")
+            pass
+
+    latest_rel = _user_latest_rel(uid) if uid else ""
+    for entry in entries:
+        name = entry.get("filename") or entry.get("id", "")
+        _append_site(name, entry, is_latest=(name == latest_rel))
+
+    if uid and latest_rel not in seen:
+        user_latest = os.path.join(sites_dir, latest_rel)
         if os.path.isfile(user_latest):
-            latest = user_latest
-    if latest:
-        for s in sites:
-            if s["id"] == os.path.basename(latest):
-                s["is_latest"] = True
+            _append_site(latest_rel, {"title": "Последний сайт"}, is_latest=True)
+
+    sites.sort(key=lambda s: (0 if s.get("is_latest") else 1, s.get("modified_at", "")), reverse=False)
+    if sites and sites[0].get("is_latest"):
+        pass
+    else:
+        sites.sort(key=lambda s: s.get("modified_at", ""), reverse=True)
     return {"sites": sites}
 
 
