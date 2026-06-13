@@ -18,6 +18,8 @@ SESSION_COOKIE = "ai_team_session"
 PUBLIC_WRITE = frozenset({
     "/api/auth/register",
     "/api/auth/login",
+    "/api/v1/auth/register",
+    "/api/v1/auth/login",
     "/api/telegram/webhook",
     "/api/billing/stripe/webhook",
 })
@@ -104,7 +106,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             monitor.scan_payload(f"{path}?{query}", ip=ip, path=path)
 
             if method in ("POST", "PATCH", "PUT", "DELETE") and is_enabled("require_auth_mutations"):
-                if path not in PUBLIC_WRITE and not _api_key_ok(request):
+                if path.startswith("/api/v1/"):
+                    pass  # JWT auth handled by api.deps in route dependencies
+                elif path not in PUBLIC_WRITE and not _api_key_ok(request):
                     user = _get_user(request)
                     if not user:
                         log_event("auth_denied", ip=ip, path=path, severity="warn")

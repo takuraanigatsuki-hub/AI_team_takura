@@ -198,6 +198,13 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             print(f"   ⚠️ Startup git sync: {e}")
 
+    try:
+        from api import init_api
+        await init_api()
+        print("⚙️ REST API v1: /api/v1 (auth + items CRUD, OpenAPI /docs)")
+    except Exception as e:
+        print(f"⚠️ REST API v1 init: {e}")
+
     print("🚀 AI Team Room запущен!")
     print("📡 Открой браузер: http://localhost:8000")
 
@@ -227,6 +234,11 @@ async def lifespan(app: FastAPI):
     except Exception:
         pass
     await room.stop_all_agents()
+    try:
+        from api import shutdown_api
+        await shutdown_api()
+    except Exception:
+        pass
     print("👋 AI Team Room остановлен")
 
 
@@ -243,6 +255,13 @@ app = FastAPI(
 
 from middleware.security import SecurityMiddleware
 app.add_middleware(SecurityMiddleware)
+
+from api import api_router
+app.include_router(
+    api_router,
+    prefix="/api/v1",
+    tags=["MVP REST API"],
+)
 
 # Подключаем статику
 static_dir = os.path.join(os.path.dirname(__file__), "static")
