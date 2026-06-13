@@ -41,15 +41,21 @@ def main():
     c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     c.connect(HOST, username="root", password=PASSWORD, timeout=30, allow_agent=False, look_for_keys=False)
 
+    # Upload security fixes
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    sftp = c.open_sftp()
+    for rel in ("room/security_monitor.py", "middleware/security.py"):
+        local = root / rel
+        if local.exists():
+            sftp.put(str(local), f"{INSTALL}/{rel}")
+            print(f"uploaded {rel}")
+    sftp.close()
+
     # Clear blocked IPs
-    run(c, f"""python3 - <<'PY'
-import json, os
-p = "{INSTALL}/data/blocked_ips.json"
-os.makedirs(os.path.dirname(p), exist_ok=True)
-with open(p, "w", encoding="utf-8") as f:
-    json.dump({{}}, f)
-print("blocked_ips cleared")
-PY""")
+    run(c, f"bash -lc 'echo {{}} > {INSTALL}/data/blocked_ips.json'")
+
+    run(c, f"cd {INSTALL} && docker compose up -d --build", t=900)
 
     # Create owners
     run(c, (
