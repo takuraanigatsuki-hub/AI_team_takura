@@ -1,0 +1,18 @@
+/**
+ * Landing — premium palette (source of truth for app via premium-theme.css)
+ */
+:root {
+    --lp-bg: #0a0b10;
+    --lp-surface: #12141c;
+    --lp-surface-2: #181b26;
+    --lp-border: rgba(255, 255, 255, 0.07);
+    --lp-text: #f2f3f7;
+    --lp-muted: #9496a8;
+    --lp-accent: #a78bfa;
+    --lp-accent-2: #7aa2ff;
+    --lp-gold: #d4b872;
+    --lp-gradient: linear-gradient(135deg, #8b5cf6 0%, #7aa2ff 52%, #c4a574 100%);
+    --lp-glow: 0 0 28px rgba(139, 92, 246, 0.28);
+    --lp-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --lp-radius: 14px;
+}
