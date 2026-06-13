@@ -85,8 +85,9 @@ def main():
         run(c, f"cd {INSTALL} && docker compose -f docker-compose.prod.yml build --pull", timeout=1200)
         run(c, f"cd {INSTALL} && docker compose -f docker-compose.prod.yml up -d", timeout=600)
     else:
+        run(c, "mkdir -p /etc/caddy")
         upload_file(c, "/etc/caddy/Caddyfile", CADDY_IP)
-        run(c, "apt-get install -y -qq caddy 2>/dev/null || (apt-get update -qq && apt-get install -y -qq debian-keyring debian-archive-keyring apt-transport-https curl && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg 2>/dev/null; apt-get install -y -qq caddy 2>/dev/null || true)")
+        run(c, "apt-get update -qq && apt-get install -y -qq caddy 2>/dev/null || true")
         run(c, "systemctl enable caddy 2>/dev/null; systemctl restart caddy 2>/dev/null || true")
         run(c, f"cd {INSTALL} && docker compose up -d", timeout=300)
 
