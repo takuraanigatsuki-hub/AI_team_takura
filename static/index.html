@@ -77,17 +77,17 @@
             <details class="header-dropdown">
                 <summary class="hdr-btn" title="AI, инструменты, голос">⋯ Меню</summary>
                 <div class="dropdown-menu dropdown-menu-wide" id="headerToolsMenu">
-                    <div class="dropdown-section-label" data-ui="team-tools">AI & Cursor</div>
-                    <button type="button" class="dropdown-item hidden" data-ui="team-tools" onclick="Integrations.toggleCursorPanel()">⚡ Cursor SDK <span class="integration-badge" id="cursorBadgeMenu">…</span></button>
+                    <div class="dropdown-section-label hidden" data-ui="admin-tools">AI & Cursor</div>
+                    <button type="button" class="dropdown-item hidden" data-ui="admin-tools" onclick="Integrations.toggleCursorPanel()">⚡ Cursor SDK <span class="integration-badge" id="cursorBadgeMenu">…</span></button>
                     <button type="button" class="dropdown-item hidden" data-ui="console" onclick="switchView('admin'); AdminPanel?.focusConsole?.()">🖥 Консоль</button>
-                    <button type="button" class="dropdown-item hidden" data-ui="team-tools" onclick="PowerPack.runPipeline()">⚡ Pipeline</button>
+                    <button type="button" class="dropdown-item hidden" data-ui="admin-tools" onclick="PowerPack.runPipeline()">⚡ Pipeline</button>
                     <button type="button" class="dropdown-item" onclick="ReactPreview.toggle()">🎨 React Preview</button>
                     <div class="dropdown-section-label">Инструменты</div>
                     <button type="button" class="dropdown-item" onclick="WowFeatures.showStandup()">📊 Standup</button>
                     <button type="button" class="dropdown-item" onclick="PowerPack.showMemory()">🧠 Project memory</button>
                     <button type="button" class="dropdown-item hidden" data-ui="admin-tools" onclick="PowerPack.downloadBackup()">📦 Backup</button>
-                    <button type="button" class="dropdown-item hidden" data-ui="team-tools" onclick="PowerPack.createViewLink()">🔗 View-link</button>
-                    <button type="button" class="dropdown-item hidden" data-ui="team-tools" onclick="WowFeatures.deployNow()">🚀 Deploy</button>
+                    <button type="button" class="dropdown-item hidden" data-ui="admin-tools" onclick="PowerPack.createViewLink()">🔗 View-link</button>
+                    <button type="button" class="dropdown-item hidden" data-ui="admin-tools" onclick="WowFeatures.deployNow()">🚀 Deploy</button>
                     <div class="dropdown-section-label">Голос</div>
                     <button type="button" class="dropdown-item" onclick="VoiceRoom.readStandup()">🔊 Standup TTS</button>
                     <button type="button" class="dropdown-item" onclick="PowerPack.voiceStandupRound()">🎙 Voice round</button>
@@ -97,7 +97,7 @@
                     <button type="button" class="dropdown-item" onclick="SiteSearch?.open?.()">🔍 Поиск по данным <kbd>Ctrl+Shift+F</kbd></button>
                     <button type="button" class="dropdown-item" onclick="FeaturePack?.showShortcutsModal?.()">⌨️ Горячие клавиши</button>
                     <button type="button" class="dropdown-item" onclick="FeaturePack?.toggleFocusMode?.()">🎯 Фокус-режим</button>
-                    <button type="button" class="dropdown-item fp-show-mobile" onclick="showSettings()">⚙️ Настройки</button>
+                    <button type="button" class="dropdown-item hidden" data-ui="settings-entry" onclick="showSettings()">⚙️ Настройки</button>
                     <button type="button" class="dropdown-item fp-show-mobile" onclick="toggleTheme()">🌓 Тема</button>
                 </div>
             </details>
@@ -717,7 +717,7 @@
                 <h3 class="settings-section-title">Cursor SDK</h3>
                 <div class="form-group">
                     <label>GitHub repo (cloud, опционально)</label>
-                    <input type="url" id="cursorRepoInput" value="https://github.com/takuraanigatsuki-hub/AI_team_takura" placeholder="https://github.com/org/repo">
+                    <input type="url" id="cursorRepoInput" value="" placeholder="https://github.com/org/repo">
                 </div>
                 <div class="form-group">
                     <label>Ветка</label>
