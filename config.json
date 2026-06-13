@@ -34,7 +34,7 @@
     "git_auto_sync": true,
     "m365_enabled": true,
     "git_sync_interval_sec": 60,
-    "llm_model": "gpt-4o-mini",
+    "llm_model": "gpt-5.4-mini",
     "auto_theme": false,
     "telegram_notify_tasks": true,
     "telegram_notify_studio": true,

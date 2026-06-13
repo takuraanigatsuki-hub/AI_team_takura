@@ -27,7 +27,7 @@ async def chat(messages: list, max_tokens: int = 800, model: str = None) -> str:
     if not cfg["api_key"]:
         return ""
     use_model = model or cfg["model"]
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(timeout=60.0, trust_env=False) as client:
         resp = await client.post(
             f"{cfg['base_url']}/chat/completions",
             headers={"Authorization": f"Bearer {cfg['api_key']}", "Content-Type": "application/json"},
