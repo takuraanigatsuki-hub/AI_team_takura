@@ -49,7 +49,11 @@
                 const e = await r.json().catch(() => ({}));
                 throw new Error(e.detail || 'HTTP ' + r.status);
             }
-            if (global.UIEnhancements) UIEnhancements.toast('Шаблон запущен', 'success');
+            if (global.UIEnhancements) UIEnhancements.toast('Шаблон запущен — смотрите Inbox', 'success');
+            if (global.Auth?.fetchMe) await Auth.fetchMe();
+            if (global.Auth?.updateHeader) Auth.updateHeader();
+            if (global.switchView) switchView('tasks');
+            if (global.loadTasks) loadTasks();
         } catch (e) {
             if (global.UIEnhancements) UIEnhancements.toast(e.message, 'error');
             else alert(e.message);

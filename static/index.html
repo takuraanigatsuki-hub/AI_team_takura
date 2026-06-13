@@ -475,22 +475,35 @@
     <div id="projectsView" class="projects-layout hidden">
         <div class="projects-panel">
             <div class="projects-header">
-                <h2>📦 Проекты команды</h2>
-                <p class="muted">Код, UI, презентации, 3D — артефакты каждого агента</p>
+                <h2>📦 Готовые проекты</h2>
+                <p class="muted">Финальные результаты: сайты, UI, презентации, 3D</p>
             </div>
             <div class="tasks-stats" id="projectsStats"></div>
             <div class="projects-toolbar">
-                <input type="search" id="projectsSearch" class="chat-search projects-search" placeholder="Поиск проектов…" oninput="ProjectsUI.setSearch(this.value)">
-                <button type="button" class="btn-secondary btn-sm" onclick="PowerPack.compareProjects()">⇔ Сравнить</button>
+                <input type="search" id="projectsSearch" class="chat-search projects-search" placeholder="Поиск…" oninput="ProjectsUI.setSearch(this.value)">
+                <button type="button" class="btn-secondary btn-sm" onclick="ProjectsUI.cleanup()">🗑 Очистить</button>
             </div>
             <div class="projects-filters">
                 <button type="button" class="filter-btn proj-filter active" data-agent="" data-type="" onclick="ProjectsUI.setFilter('','')">Все</button>
                 <button type="button" class="filter-btn proj-filter" data-agent="" data-type="presentation" onclick="ProjectsUI.setFilter('','presentation')">📽️</button>
                 <button type="button" class="filter-btn proj-filter" data-agent="" data-type="model_3d" onclick="ProjectsUI.setFilter('','model_3d')">🧊</button>
                 <button type="button" class="filter-btn proj-filter" data-agent="" data-type="ui" onclick="ProjectsUI.setFilter('','ui')">🎨</button>
-                <button type="button" class="filter-btn proj-filter" data-agent="" data-type="code" onclick="ProjectsUI.setFilter('','code')">💻</button>
+                <button type="button" class="filter-btn proj-filter" data-agent="" data-type="site" onclick="ProjectsUI.setFilter('','site')">🌐</button>
             </div>
             <div class="projects-grid" id="projectsGrid">
+                <div class="ui-loading-inline ui-ph" aria-busy="true" role="status"><span class="ui-loading-ring sm" aria-hidden="true"></span><span class="muted">Загрузка…</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SITES VIEW -->
+    <div id="sitesView" class="projects-layout hidden">
+        <div class="projects-panel">
+            <div class="projects-header">
+                <h2>🌐 Готовые сайты</h2>
+                <p class="muted">HTML-лендинги и страницы от команды</p>
+            </div>
+            <div class="projects-grid" id="sitesGrid">
                 <div class="ui-loading-inline ui-ph" aria-busy="true" role="status"><span class="ui-loading-ring sm" aria-hidden="true"></span><span class="muted">Загрузка…</span></div>
             </div>
         </div>

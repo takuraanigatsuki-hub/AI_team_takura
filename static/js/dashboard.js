@@ -152,7 +152,7 @@
     function renderKpis() {
         const s = data.tasks?.stats || {};
         const gitCard = data.admin
-            ? `<div class="dash-card"><div class="dash-card-num">${data.git?.changed_files || 0}</div><div class="dash-card-label">Git diff</div></div>`
+            ? `<div class="dash-card"><div class="dash-card-num">${s.awaiting_approval || 0}</div><div class="dash-card-label">На проверке</div></div>`
             : `<div class="dash-card"><div class="dash-card-num">${s.awaiting_approval || 0}</div><div class="dash-card-label">На проверке</div></div>`;
         return `<div class="dash-cards">
             <div class="dash-card"><div class="dash-card-num">${s.completed || 0}</div><div class="dash-card-label">Выполнено</div></div>
