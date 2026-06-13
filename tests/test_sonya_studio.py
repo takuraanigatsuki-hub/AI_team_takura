@@ -22,11 +22,13 @@ def authed_client(client):
         "name": "Studio Tester",
     })
     assert r.status_code == 200
+    up = client.post("/api/subscription/upgrade", json={"tier": "pro"})
+    assert up.status_code == 200
     return client
 
 
 def test_sonya_project_lifecycle(authed_client):
-    from integrations.sonya_studio import get_project, list_projects
+    from integrations.sonya_studio import list_projects
 
     r = authed_client.post("/api/sonya/projects", json={
         "title": "Test Landing",
@@ -36,13 +38,13 @@ def test_sonya_project_lifecycle(authed_client):
     pid = r.json()["project"]["id"]
     assert pid
 
-    r2 = client.get(f"/api/sonya/projects/{pid}")
+    r2 = authed_client.get(f"/api/sonya/projects/{pid}")
     assert r2.status_code == 200
     data = r2.json()
     assert data["current_version"]["react_code"]
     assert "function App" in data["current_version"]["react_code"]
 
-    r3 = client.post(f"/api/sonya/projects/{pid}/comments", json={
+    r3 = authed_client.post(f"/api/sonya/projects/{pid}/comments", json={
         "text": "Сделай кнопку CTA зелёной",
         "x": 0.7,
         "y": 0.8,
@@ -50,13 +52,13 @@ def test_sonya_project_lifecycle(authed_client):
     assert r3.status_code == 200
     assert r3.json()["comment"]["status"] == "open"
 
-    r4 = client.post(f"/api/sonya/projects/{pid}/apply-comments")
+    r4 = authed_client.post(f"/api/sonya/projects/{pid}/apply-comments")
     assert r4.status_code == 200
     updated = r4.json()["project"]
     assert updated["current_version"]["version_num"] >= 2
     assert updated["open_comments"] == 0
 
-    r5 = client.post(f"/api/sonya/projects/{pid}/publish", json={"figma_url": ""})
+    r5 = authed_client.post(f"/api/sonya/projects/{pid}/publish", json={"figma_url": ""})
     assert r5.status_code == 200
     pub = r5.json()["project"]
     assert pub["status"] == "published"
