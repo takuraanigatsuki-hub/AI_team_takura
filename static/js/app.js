@@ -309,65 +309,6 @@
         }
     }
 
-    function hideStudioLoading() {
-        document.getElementById('studioLoading')?.classList.add('hidden');
-    }
-
-    function showStudioLoading() {
-        document.getElementById('studioLoading')?.classList.remove('hidden');
-    }
-
-    let threeWaitAttempts = 0;
-
-    function initStudio() {
-        const canvas = document.getElementById('studioCanvas');
-        if (!canvas || !window.StudioApp) return;
-
-        if (typeof THREE === 'undefined') {
-            threeWaitAttempts += 1;
-            if (threeWaitAttempts > 40) {
-                hideStudioLoading();
-                const err = document.getElementById('studioError');
-                if (err) {
-                    err.textContent = 'Three.js не загружен. Обновите страницу (Ctrl+F5) или очистите кэш PWA.';
-                    err.style.display = 'flex';
-                }
-                return;
-            }
-            setTimeout(initStudio, 150);
-            return;
-        }
-
-        showStudioLoading();
-        let attempts = 0;
-        const tryInit = () => {
-            attempts += 1;
-            const ok = StudioApp.init(canvas, openPrivateChat);
-            if (ok) {
-                studioInited = true;
-                hideStudioLoading();
-                if (Object.keys(agents).length) {
-                    StudioApp.updateAgents(Object.values(agents));
-                }
-                updateStudioLegend();
-                if (window.StudioMinimap) StudioMinimap.update(Object.values(agents));
-                return;
-            }
-            if (attempts < 60) {
-                requestAnimationFrame(tryInit);
-                return;
-            }
-            hideStudioLoading();
-            const err = document.getElementById('studioError');
-            if (err) {
-                err.textContent = 'Не удалось запустить 3D-сцену. Обновите страницу (Ctrl+F5).';
-                err.style.display = 'flex';
-            }
-        };
-
-        requestAnimationFrame(tryInit);
-    }
-
     // ─── Private chat windows ────────────────────────────
     window.openPrivateChat = async function (agentId) {
         const agent = agents[agentId];
@@ -566,10 +507,7 @@
 
     function onAgentEffects(data) {
         if (!data.agent_id) return;
-        const plain = String(data.message || '').replace(/[*#_`]/g, '').slice(0, 48);
-        if (plain && window.StudioApp) StudioApp.showSpeechBubble(data.agent_id, plain);
         if (data.type === 'task_done') {
-            if (window.StudioApp) StudioApp.burstConfetti(data.agent_id);
             if (window.SoundFX) SoundFX.taskDone();
         }
     }
@@ -622,7 +560,6 @@
                 break;
             case 'react_preview':
                 if (window.ReactPreview) ReactPreview.onMessage(data);
-                if (window.StudioApp?.pulseScreen) StudioApp.pulseScreen('frontend');
                 break;
             case 'task_history':
                 updateTaskHistory(data);
@@ -874,25 +811,9 @@
         agentsList.forEach((a) => { agents[a.agent_id] = a; });
         renderAgents();
         if (selectedAgent && agents[selectedAgent]) renderAgentDetail(agents[selectedAgent]);
-        if (studioInited && window.StudioApp) StudioApp.updateAgents(agentsList);
-        updateStudioLegend();
-        if (window.StudioMinimap) StudioMinimap.update(agentsList);
         const working = agentsList.filter((a) => ['working', 'learning', 'thinking'].includes(a.status)).length;
         if (window.UIEnhancements) UIEnhancements.updateAgentFooter(working);
         if (window.UICore) UICore.updateHeaderContext({ agentsWorking: working });
-    }
-
-    function updateStudioLegend() {
-        const el = document.getElementById('studioLegend');
-        if (!el) return;
-        el.innerHTML = AGENT_ORDER.map((id) => {
-            const a = agents[id];
-            if (!a) return '';
-            return `<button type="button" class="legend-item" onclick="openPrivateChat('${id}')">
-                <span class="legend-emoji">${a.emoji}</span>
-                <span class="legend-name">${a.name}</span>
-            </button>`;
-        }).join('');
     }
 
     // ─── Work chat ───────────────────────────────────────
