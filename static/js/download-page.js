@@ -13,12 +13,22 @@
         document.title = 'Скачать приложение — AI Team Room';
     }
 
+    function blockedFallbackHtml() {
+        return `
+            <p class="dl-error">Установщик пока недоступен на сервере.</p>
+            <a class="ds-btn ds-btn-primary dl-cta" href="/">На главную</a>`;
+    }
+
     function renderPlatforms(platforms) {
         if (!cards) return;
         const setup = platforms.find((p) => p.id === 'win-setup' && p.url);
         const portable = platforms.find((p) => p.id === 'win-portable' && p.url);
 
-        if (isBlocked && setup) {
+        if (isBlocked) {
+            if (!setup) {
+                cards.innerHTML = blockedFallbackHtml();
+                return;
+            }
             const size = setup.size_mb ? ` · ${setup.size_mb} MB` : '';
             cards.innerHTML = `
                 <a class="ds-btn ds-btn-primary dl-cta" href="${setup.url}" download="${setup.filename || ''}">
@@ -43,15 +53,22 @@
     if (!cards) return;
 
     fetch('/api/downloads/desktop/info')
-        .then((r) => r.json())
+        .then((r) => {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        })
         .then((info) => {
             if (!info.platforms?.length) {
-                cards.innerHTML = '<p class="dl-error">Файлы пока не собраны на сервере.</p>';
+                cards.innerHTML = isBlocked
+                    ? blockedFallbackHtml()
+                    : '<p class="dl-error">Файлы пока не собраны на сервере.</p>';
                 return;
             }
             renderPlatforms(info.platforms);
         })
         .catch(() => {
-            cards.innerHTML = '<p class="dl-error">Не удалось загрузить информацию о сборке.</p>';
+            cards.innerHTML = isBlocked
+                ? blockedFallbackHtml()
+                : '<p class="dl-error">Не удалось загрузить информацию о сборке.</p>';
         });
 })();

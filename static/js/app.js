@@ -275,6 +275,18 @@
                 viewEl.classList.add('view-enter');
             }
         }
+
+        if (window.AppShell?.urlForView) {
+            const shell = window.AppShell.isPortal?.() ? 'portal' : 'workspace';
+            const portalViews = window.AppShell.PORTAL_VIEWS;
+            const inShell = shell === 'portal' ? portalViews?.has(view) : !portalViews?.has(view);
+            if (inShell) {
+                const nextPath = AppShell.urlForView(view);
+                if (location.pathname + location.search !== nextPath) {
+                    history.replaceState({}, '', nextPath);
+                }
+            }
+        }
     };
 
     function updateChatWelcome() {
@@ -1878,11 +1890,11 @@
 
         if (window.UIEnhancements) UIEnhancements.init();
 
-        if (!isPortal) {
-            const needsSetup = user && !user.setup_complete;
-            if (needsSetup || setupParam === '1') {
-                if (window.SetupWizard) await SetupWizard.maybeStart(user);
-            } else if (window.CinematicOnboarding) {
+        const needsSetup = user && !user.setup_complete;
+        if (needsSetup || setupParam === '1') {
+            if (window.SetupWizard) await SetupWizard.maybeStart(user);
+        } else if (!isPortal) {
+            if (window.CinematicOnboarding) {
                 CinematicOnboarding.start();
             } else if (window.Onboarding) {
                 Onboarding.start();

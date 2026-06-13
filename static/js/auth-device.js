@@ -15,6 +15,8 @@
     async function checkAuth() {
         if (!deviceId) {
             statusEl.textContent = 'Неверная ссылка. Запустите вход из приложения снова.';
+            guestEl?.classList.add('hidden');
+            approveBtn?.classList.add('hidden');
             return;
         }
         try {
@@ -56,7 +58,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'same-origin',
-                body: JSON.stringify({ device_id: deviceId }),
+                body: JSON.stringify({ device_id: deviceId, user_code: userCode }),
             });
             const d = await r.json().catch(() => ({}));
             if (!r.ok) throw new Error(errText(d, r.status));

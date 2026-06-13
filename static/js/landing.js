@@ -149,7 +149,7 @@
                 body: JSON.stringify(body),
             });
             const d = await r.json();
-            if (!r.ok) throw new Error(d.detail || 'Ошибка');
+            if (!r.ok) throw new Error(parseAuthError(d, 'Ошибка'));
             const next = new URLSearchParams(location.search).get('next');
             if (next && next.startsWith('/')) {
                 location.href = next;
@@ -167,9 +167,11 @@
     initAuth().then((user) => {
         if (user && !params.get('auth')) {
             closeModal();
+        } else if (!user && params.get('auth') === 'login') {
+            openModal('login');
+        } else if (!user && params.get('auth') === 'register') {
+            openModal('register');
         }
-        if (params.get('auth') === 'login') openModal('login');
-        if (params.get('auth') === 'register') openModal('register');
         if (window.LandingDemo) LandingDemo.init();
     });
 

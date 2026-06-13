@@ -15,6 +15,7 @@
 
     let mode = 'login';
     let devicePollTimer = null;
+    const POLL_FAIL_MAX = 8;
 
     const steps = [
         { pct: 15, sub: 'Инициализация модулей…', step: 'init' },
@@ -22,6 +23,13 @@
         { pct: 75, sub: '3D-студия и Kanban…', step: 'studio' },
         { pct: 100, sub: 'Готово!', step: 'ready' },
     ];
+
+    function parseApiError(d, fallback) {
+        const detail = d?.detail;
+        if (typeof detail === 'string') return detail;
+        if (Array.isArray(detail)) return detail.map((x) => x.msg || String(x)).join(', ');
+        return fallback || 'Ошибка';
+    }
 
     function setBootStep(activeStep) {
         bootSteps.forEach((li) => {
@@ -41,7 +49,7 @@
         try {
             const r = await fetch('/api/auth/me', { credentials: 'same-origin' });
             if (r.ok) {
-                location.href = '/workspace?client=desktop';
+                location.href = '/workspace';
                 return;
             }
         } catch (_) { /* show auth */ }
@@ -85,8 +93,8 @@
                 body: JSON.stringify(body),
             });
             const d = await r.json();
-            if (!r.ok) throw new Error(d.detail || 'Ошибка входа');
-            location.href = mode === 'register' ? '/workspace?setup=1&client=desktop' : '/workspace?client=desktop';
+            if (!r.ok) throw new Error(parseApiError(d, 'Ошибка входа'));
+            location.href = mode === 'register' ? '/workspace?setup=1' : '/workspace';
         } catch (err) {
             errorEl.textContent = err.message || String(err);
             errorEl.classList.remove('hidden');
@@ -102,13 +110,7 @@
         try {
             const r = await fetch('/api/auth/device/start', { method: 'POST', credentials: 'same-origin' });
             const d = await r.json();
-            if (!r.ok) {
-                const msg = d.detail || '';
-                if (r.status === 401 || msg === 'Authentication required') {
-                    throw new Error('Не удалось начать вход. Обновите страницу и попробуйте снова.');
-                }
-                throw new Error(msg || 'Не удалось начать вход');
-            }
+            if (!r.ok) throw new Error(parseApiError(d, 'Не удалось начать вход'));
             const url = d.verify_url;
             browserHint.innerHTML = `Код: <strong>${d.user_code}</strong> · откройте браузер и подтвердите вход`;
             if (window.pywebview && window.pywebview.api && window.pywebview.api.open_external) {
@@ -116,19 +118,23 @@
             } else {
                 window.open(url, '_blank', 'noopener');
             }
-            pollDevice(d.device_id, d.poll_interval || 2);
+            pollDevice(d.device_id, d.poll_secret, d.poll_interval || 2);
         } catch (err) {
             browserHint.textContent = err.message || String(err);
             browserBtn.disabled = false;
         }
     }
 
-    function pollDevice(deviceId, intervalSec) {
+    function pollDevice(deviceId, pollSecret, intervalSec) {
         if (devicePollTimer) clearInterval(devicePollTimer);
+        let fails = 0;
         devicePollTimer = setInterval(async () => {
             try {
-                const r = await fetch(`/api/auth/device/poll/${encodeURIComponent(deviceId)}`, { credentials: 'same-origin' });
+                const qs = new URLSearchParams({ secret: pollSecret || '' });
+                const r = await fetch(`/api/auth/device/poll/${encodeURIComponent(deviceId)}?${qs}`, { credentials: 'same-origin' });
+                if (!r.ok) throw new Error('poll HTTP ' + r.status);
                 const d = await r.json();
+                fails = 0;
                 if (d.status === 'ok' && d.handoff_token) {
                     clearInterval(devicePollTimer);
                     browserHint.textContent = 'Вход подтверждён! Открываем приложение…';
@@ -138,7 +144,14 @@
                     browserHint.textContent = 'Время истекло. Нажмите «Войти через браузер» снова.';
                     browserBtn.disabled = false;
                 }
-            } catch (_) { /* retry */ }
+            } catch (_) {
+                fails += 1;
+                if (fails >= POLL_FAIL_MAX) {
+                    clearInterval(devicePollTimer);
+                    browserHint.textContent = 'Не удалось связаться с сервером. Проверьте сеть и попробуйте снова.';
+                    browserBtn.disabled = false;
+                }
+            }
         }, intervalSec * 1000);
     }
 
