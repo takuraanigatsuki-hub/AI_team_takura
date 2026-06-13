@@ -14,6 +14,7 @@
             updateHeader();
             applyUserTheme(currentUser);
             if (window.AdminPanel) AdminPanel.updateNavVisibility(currentUser);
+            if (window.SupportPanel) SupportPanel.updateNavVisibility(currentUser);
             updateNavVisibility(currentUser);
             if (window.UIAccess) UIAccess.applyMenuVisibility(currentUser);
             if (window.Workspaces) Workspaces.load();
@@ -152,5 +153,5 @@
         return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     }
 
-    global.Auth = { fetchMe, getUser, isLoggedIn, logout, updateHeader, updateNavVisibility, roleBadgeHtml, canAccessAdmin, canViewAgentLearning, canViewInvestorPortal };
+    global.Auth = { fetchMe, getUser, isLoggedIn, logout, updateHeader, updateNavVisibility, roleBadgeHtml, canAccessAdmin, canManageTickets, canViewAgentLearning, canViewInvestorPortal };
 })(window);
