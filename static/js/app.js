@@ -1747,13 +1747,16 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ template_id: templateId }),
             });
-            const d = await r.json();
-            if (d.ok) {
-                switchView('chat');
-                addSystemMessage(`📋 Шаблон «${templateId}» запущен командой`);
-            }
+            const d = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(d.detail || 'HTTP ' + r.status);
+            if (global.Auth?.fetchMe) await Auth.fetchMe();
+            if (global.Auth?.updateHeader) Auth.updateHeader();
+            switchView('tasks');
+            loadTasks();
+            if (window.UIEnhancements) UIEnhancements.toast(`Шаблон «${templateId}» запущен`, 'success');
         } catch (e) {
-            addSystemMessage('Ошибка шаблона: ' + e);
+            if (window.UIEnhancements) UIEnhancements.toast(String(e.message || e), 'error');
+            else addSystemMessage('Ошибка шаблона: ' + e);
         }
     };
 
