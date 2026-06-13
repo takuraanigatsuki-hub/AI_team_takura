@@ -12,7 +12,7 @@ HOST = os.environ.get("VPS_HOST", "80.78.245.66")
 USERS = ("root", "ubuntu", "admin")
 PASSWORD = os.environ.get("VPS_PASSWORD", "")
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "takura.anigatsuki@yandex.ru")
-OWNER_PASSWORD = os.environ.get("OWNER_PASSWORD", "Ds1245QCr5!")
+OWNER_PASSWORD = os.environ.get("OWNER_PASSWORD", "")
 APP_DOMAIN = os.environ.get("APP_DOMAIN", "localhost")
 USE_PROD = os.environ.get("USE_PROD", "0")
 
@@ -117,7 +117,8 @@ def main():
         key_line = pub.read_text(encoding="utf-8").strip()
         run(client, f"mkdir -p ~/.ssh && chmod 700 ~/.ssh && grep -Fq '{key_line[:40]}' ~/.ssh/authorized_keys 2>/dev/null || echo '{key_line}' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys")
 
-    cmd = (
+    if not OWNER_PASSWORD:
+        raise SystemExit("Set OWNER_PASSWORD env var")
         f"chmod +x /tmp/reg-ru-bootstrap.sh && "
         f"USE_PROD={USE_PROD} "
         f"OWNER_EMAIL='{OWNER_EMAIL}' "
