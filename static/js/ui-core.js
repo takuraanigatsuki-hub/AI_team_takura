@@ -405,6 +405,36 @@
         document.querySelector('.onboard-banner')?.remove();
     }
 
+    function dismissAwaitingCoachmark() {
+        try { localStorage.setItem('ai-team-awaiting-tip-v1', '1'); } catch (_) {}
+        document.querySelectorAll('.ui-coachmark').forEach((el) => el.remove());
+        document.querySelectorAll('.ui-coach-target').forEach((el) => el.classList.remove('ui-coach-target'));
+        document.getElementById('awaitingChip')?.classList.remove('coach-pulse');
+    }
+
+    function checkAwaitingCoachmark(awaitingCount) {
+        if (!awaitingCount || localStorage.getItem('ai-team-awaiting-tip-v1')) return;
+        const tasksView = document.getElementById('tasksView');
+        const onInbox = tasksView && !tasksView.classList.contains('hidden');
+        const card = document.querySelector('.task-card.awaiting_approval');
+        if (!onInbox || !card) {
+            document.getElementById('awaitingChip')?.classList.add('coach-pulse');
+            return;
+        }
+        if (card.querySelector('.ui-coachmark')) return;
+        card.classList.add('ui-coach-target');
+        const tip = document.createElement('div');
+        tip.className = 'ui-coachmark';
+        tip.setAttribute('role', 'note');
+        tip.innerHTML = `
+            <strong>⏳ Задача ждёт решения</strong>
+            <p>Нажмите <em>✓ Принять</em> или <em>✎ Правки</em> — команда продолжит работу</p>
+            <button type="button" class="btn-primary btn-sm" onclick="UICore.dismissAwaitingCoachmark()">Понятно</button>`;
+        card.appendChild(tip);
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        announceLive('Задача ждёт вашего решения в Inbox');
+    }
+
     global.UICore = {
         esc,
         emptyState,

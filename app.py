@@ -67,6 +67,11 @@ async def lifespan(app: FastAPI):
     primary = bootstrap_primary_owner("takura.anigatsuki@gmail.com")
     if primary:
         print(f"👑 Primary owner upgraded: {primary['email']} (tier Owner, full access)")
+        migrated = room.task_history.assign_all_orphans_to(
+            primary["id"], primary.get("name") or primary.get("email", "")
+        )
+        if migrated:
+            print(f"📋 Legacy tasks without user_id migrated: {migrated} → {primary['email']}")
 
     # Запускаем агентов
     await room.start_all_agents()
@@ -1227,6 +1232,10 @@ async def get_tasks(request: Request):
     if not user:
         return empty
     uid = user.get("id", "")
+    if not is_privileged(user.get("role", "")):
+        room.task_history.claim_orphans_for_user(
+            uid, user.get("email", ""), user.get("name", "")
+        )
     if is_privileged(user.get("role", "")):
         return {
             "stats": room.task_history.stats(),

@@ -368,6 +368,56 @@ class TaskHistory:
         self._save()
         return total
 
+    def _is_orphan(self, task: dict) -> bool:
+        return not (task.get("user_id") or "").strip()
+
+    def claim_orphans_for_user(
+        self, user_id: str, email: str = "", name: str = ""
+    ) -> int:
+        """Привязать legacy-задачи без user_id по sender / user_name."""
+        if not user_id:
+            return 0
+        email_l = (email or "").strip().lower()
+        name_l = (name or "").strip().lower()
+        count = 0
+        for t in self.tasks:
+            if not self._is_orphan(t):
+                continue
+            sender = (t.get("sender") or "").strip().lower()
+            uname = (t.get("user_name") or "").strip().lower()
+            matched = (
+                (email_l and (sender == email_l or uname == email_l))
+                or (name_l and name_l in (sender, uname))
+            )
+            if matched:
+                t["user_id"] = user_id
+                if name and not t.get("user_name"):
+                    t["user_name"] = name
+                count += 1
+        if count:
+            self._save()
+        return count
+
+    def assign_all_orphans_to(self, user_id: str, user_name: str = "") -> int:
+        """Admin/owner: все задачи без user_id → указанный аккаунт."""
+        if not user_id:
+            return 0
+        count = 0
+        for t in self.tasks:
+            if not self._is_orphan(t):
+                continue
+            t["user_id"] = user_id
+            if user_name and not t.get("user_name"):
+                t["user_name"] = user_name
+            t.setdefault("legacy_migrated", True)
+            count += 1
+        if count:
+            self._save()
+        return count
+
+    def orphan_count(self) -> int:
+        return sum(1 for t in self.tasks if self._is_orphan(t))
+
     def add_comment(
         self,
         task_id: str,

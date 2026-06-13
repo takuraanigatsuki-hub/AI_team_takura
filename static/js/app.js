@@ -169,7 +169,11 @@
         if (window.UICore) UICore.setMobileTabActive(view);
         if (view === 'tasks') {
             loadTasks();
-            if (window.UICore) UICore.initGuestOnboarding();
+            if (window.UICore) {
+                UICore.initGuestOnboarding();
+                const aw = taskStats?.awaiting_approval || 0;
+                if (aw > 0) setTimeout(() => UICore.checkAwaitingCoachmark(aw), 400);
+            }
         }
         if (view === 'projects' && window.ProjectsUI) ProjectsUI.load();
         if (view === 'kanban' && window.KanbanUI) KanbanUI.refresh();
@@ -1159,6 +1163,7 @@
             chip.textContent = awaiting > 0 ? `⏳ ${awaiting} на проверке` : '';
         }
         if (window.UICore) UICore.updateHeaderContext({ taskStats: { ...taskStats, awaiting_approval: awaiting } });
+        if (window.UICore && awaiting > 0) UICore.checkAwaitingCoachmark(awaiting);
     }
 
     function updateTaskHistory(data) {
