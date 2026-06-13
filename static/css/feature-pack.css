@@ -259,9 +259,12 @@ body.fp-ambient::before {
 }
 
 .fp-hide-mobile { display: inline-flex; }
+.fp-show-mobile { display: none !important; }
 
 @media (max-width: 900px) {
     .fp-hide-mobile { display: none !important; }
+    .fp-show-mobile { display: block !important; }
+    .dropdown-item.fp-show-mobile { display: block; }
     .fp-footer-meta { display: none; }
 }
 

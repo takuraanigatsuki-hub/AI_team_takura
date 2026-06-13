@@ -8,9 +8,9 @@
 
     // ─── Presence ───
     function updatePresence(data) {
-        const el = document.getElementById('presencePill');
         const n = data.count || 0;
         const text = n <= 1 ? '👤 вы' : `👥 ${n} в комнате`;
+        const el = document.getElementById('presencePill');
         if (el) {
             el.textContent = text;
             el.title = (data.visitors || []).map((v) => v.name).join(', ');

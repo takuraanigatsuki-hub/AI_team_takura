@@ -103,7 +103,9 @@
             if (!user) return false;
             return user.is_investor || user.can_view_investor_portal || global.Auth?.canAccessAdmin?.(user);
         }
-        if (user?.role === 'investor' && !['investor', 'profile', 'studio', 'dashboard'].includes(item.view)) return false;
+        if (user?.role === 'investor' || user?.is_investor) {
+            if (!['investor', 'profile', 'studio', 'dashboard'].includes(item.view)) return false;
+        }
         if (user && global.ProfileCabinet?.canAccessView && !ProfileCabinet.canAccessView(user, item.view)) {
             if (!['profile', 'tasks', 'chat', 'kanban', 'studio'].includes(item.view)) return false;
         }

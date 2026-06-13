@@ -236,23 +236,57 @@
         });
     }
 
+    function bindMobileTabClicks(bar) {
+        bar.querySelectorAll('.mtab[data-view]').forEach((btn) => {
+            btn.onclick = () => {
+                if (btn.dataset.view && global.switchView) global.switchView(btn.dataset.view);
+            };
+        });
+        const more = bar.querySelector('#mobileTabMore');
+        if (more) {
+            more.onclick = () => {
+                if (global.FeaturePack?.openCommandPalette) FeaturePack.openCommandPalette();
+                else if (global.SidebarNav) SidebarNav.onNavClick('dashboard');
+            };
+        }
+    }
+
+    function renderMobileTabs(user) {
+        const bar = document.getElementById('mobileTabBar');
+        if (!bar) return;
+        const mode = getUiMode(user);
+        let tabs;
+        if (mode === 'investor') {
+            tabs = [
+                { view: 'investor', icon: '💼', label: 'Investor' },
+                { view: 'dashboard', icon: '📊', label: 'Hub' },
+                { view: 'studio', icon: '🎮', label: '3D' },
+                { view: 'profile', icon: '👤', label: 'Профиль' },
+            ];
+        } else {
+            tabs = [
+                { view: 'tasks', icon: '📋', label: 'Inbox', badge: true },
+                { view: 'chat', icon: '💬', label: 'Чат' },
+                { view: 'kanban', icon: '📌', label: 'Board' },
+                { view: 'dashboard', icon: '📊', label: 'Hub' },
+            ];
+        }
+        bar.innerHTML = tabs.map((t) =>
+            `<button type="button" class="mtab" data-view="${t.view}"><span class="mtab-icon">${t.icon}</span>${t.label}${t.badge ? '<span class="mtab-badge" id="mobileTabBadge" style="display:none">0</span>' : ''}</button>`
+        ).join('') + '<button type="button" class="mtab" id="mobileTabMore"><span class="mtab-icon">⌘</span>Ещё</button>';
+        bindMobileTabClicks(bar);
+    }
+
     function initMobileNav() {
         const bar = document.getElementById('mobileTabBar');
         if (!bar) return;
         document.body.classList.add('has-mobile-tabs');
-        bar.querySelectorAll('.mtab[data-view]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                if (btn.dataset.view && global.switchView) global.switchView(btn.dataset.view);
-            });
-        });
-        bar.querySelector('#mobileTabMore')?.addEventListener('click', () => {
-            if (global.FeaturePack?.openCommandPalette) FeaturePack.openCommandPalette();
-            else if (global.SidebarNav) SidebarNav.onNavClick('dashboard');
-        });
+        renderMobileTabs(global.Auth?.getUser?.());
     }
 
     function onAuthUpdated() {
         if (global.SidebarNav?.render) SidebarNav.render();
+        renderMobileTabs(global.Auth?.getUser?.());
     }
 
     document.addEventListener('auth:updated', onAuthUpdated);
@@ -449,6 +483,7 @@
         updateHeaderContext,
         setMobileTabActive,
         initMobileNav,
+        renderMobileTabs,
         initActivityPanel,
         initGuestOnboarding,
         toggleActivityPanel,

@@ -90,6 +90,7 @@
             { label: '💬 Рабочий чат', run: go('chat') },
             { label: '📌 Kanban', run: go('kanban') },
             { label: '📊 Dashboard', run: go('dashboard') },
+            { label: '💼 Investor Portal', run: go('investor') },
             { label: '📋 Новая задача', run: () => { go('chat')(); if (global.setMsgType) setMsgType('task'); document.getElementById('messageInput')?.focus(); } },
             { label: '📋 Шаблон задачи', run: () => { go('tasks')(); global.TaskTemplates?.showPicker?.(); } },
             { label: '📦 Проекты', run: go('projects') },

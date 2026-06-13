@@ -5,7 +5,7 @@
     const SHORTCUTS = [
         { keys: 'Ctrl+1', action: () => switchView('studio'), label: '3D Студия' },
         { keys: 'Ctrl+2', action: () => switchView('chat'), label: 'Рабочий чат' },
-        { keys: 'Ctrl+3', action: () => switchView('tasks'), label: 'Задачи' },
+        { keys: 'Ctrl+3', action: () => switchView('tasks'), label: 'Inbox' },
         { keys: 'Ctrl+4', action: () => switchView('dashboard'), label: 'Dashboard' },
         { keys: 'Ctrl+5', action: () => switchView('profile'), label: 'Кабинет' },
         { keys: 'Ctrl+Shift+L', action: () => {
@@ -22,6 +22,8 @@
             const t = document.createElement('div');
             t.id = 'toastContainer';
             t.className = 'toast-container';
+            t.setAttribute('aria-live', 'polite');
+            t.setAttribute('aria-relevant', 'additions');
             document.body.appendChild(t);
         }
         if (!document.getElementById('statusFooter')) {

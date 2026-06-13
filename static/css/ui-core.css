@@ -42,8 +42,15 @@
 .header-legacy-chip { display: none !important; }
 
 @media (max-width: 900px) {
-    .header-context { display: none; }
-    .header-legacy-chip.fp-show-mobile { display: inline-flex !important; }
+    .header-context {
+        display: flex;
+        flex: 1;
+        min-width: 0;
+        margin: 0 4px;
+        padding: 3px 8px;
+        font-size: 10px;
+    }
+    .header-legacy-chip.fp-show-mobile { display: none !important; }
 }
 
 /* ─── Unified empty state ─── */

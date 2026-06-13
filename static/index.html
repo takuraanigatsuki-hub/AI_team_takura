@@ -74,13 +74,7 @@
         </div>
         <div class="header-status header-status-compact">
             <button type="button" class="status-chip status-chip-action hidden" id="awaitingChip" title="Задачи на проверке" onclick="switchView('tasks');filterTasks('awaiting')">⏳</button>
-            <span class="status-chip header-legacy-chip fp-show-mobile" id="activeAgentsPill" title="Агенты в работе">—</span>
-            <span class="status-chip header-legacy-chip fp-hide-mobile" id="presencePill" title="В комнате">👤 …</span>
             <span class="status-chip" id="workspaceSwitcher" title="Workspace"></span>
-            <div class="conn-pill header-legacy-chip fp-show-mobile" title="WebSocket">
-                <div class="conn-dot" id="connDot"></div>
-                <span id="connText">Подключение</span>
-            </div>
         </div>
         <div class="header-actions">
             <details class="header-dropdown">
@@ -106,6 +100,8 @@
                     <button type="button" class="dropdown-item" onclick="FeaturePack?.openCommandPalette?.()">⌘ Команды <kbd>Ctrl+K</kbd></button>
                     <button type="button" class="dropdown-item" onclick="FeaturePack?.showShortcutsModal?.()">⌨️ Горячие клавиши</button>
                     <button type="button" class="dropdown-item" onclick="FeaturePack?.toggleFocusMode?.()">🎯 Фокус-режим</button>
+                    <button type="button" class="dropdown-item fp-show-mobile" onclick="showSettings()">⚙️ Настройки</button>
+                    <button type="button" class="dropdown-item fp-show-mobile" onclick="toggleTheme()">🌓 Тема</button>
                 </div>
             </details>
             <button type="button" class="hdr-btn hdr-icon activity-toggle" id="activityToggle" title="Лента событий" aria-expanded="false" aria-controls="activityPanel">📡<span class="activity-badge" id="activityBadge"></span></button>
@@ -113,8 +109,8 @@
             <button type="button" class="hdr-btn hdr-icon fp-hide-desktop" title="Поиск (Ctrl+Shift+F)" onclick="SiteSearch?.open?.()">🔍</button>
             <button type="button" class="hdr-btn hdr-icon fp-hide-desktop" title="Команды (Ctrl+K)" onclick="FeaturePack?.openCommandPalette?.()">⌘</button>
             <button type="button" class="hdr-btn hdr-icon hidden" id="pwaInstallBtn" onclick="installPWA()" title="Установить приложение">📲</button>
-            <button type="button" class="hdr-btn hdr-icon" id="settingsBtn" onclick="showSettings()" title="Настройки">⚙️</button>
-            <button type="button" class="hdr-btn hdr-icon" id="themeToggle" onclick="toggleTheme()" title="Тема">☀️</button>
+            <button type="button" class="hdr-btn hdr-icon fp-hide-mobile" id="settingsBtn" onclick="showSettings()" title="Настройки">⚙️</button>
+            <button type="button" class="hdr-btn hdr-icon fp-hide-mobile" id="themeToggle" onclick="toggleTheme()" title="Тема">☀️</button>
             <details class="header-dropdown header-dropdown-account">
                 <summary class="hdr-btn hdr-icon" id="userMenuSummary" title="Аккаунт">👤</summary>
                 <div class="dropdown-menu" id="userMenu">
@@ -827,15 +823,15 @@
 <script src="/static/js/react-preview.js?v=6"></script>
 <script src="/static/js/integrations.js?v=10"></script>
 <script src="/static/js/sonya-design-lab.js?v=6"></script>
-<script src="/static/js/ui-enhancements.js?v=7"></script>
-<script src="/static/js/feature-pack.js?v=9"></script>
+<script src="/static/js/ui-enhancements.js?v=8"></script>
+<script src="/static/js/feature-pack.js?v=10"></script>
 <script src="/static/js/search.js?v=3"></script>
 <script src="/static/js/dashboard.js?v=8"></script>
 <script src="/static/js/workspaces.js?v=1"></script>
 <script src="/static/js/agent-activity.js?v=3"></script>
-<script src="/static/js/ui-access.js?v=1"></script>
-<script src="/static/js/auth.js?v=11"></script>
-<script src="/static/js/profile.js?v=10"></script>
+<script src="/static/js/ui-access.js?v=2"></script>
+<script src="/static/js/auth.js?v=12"></script>
+<script src="/static/js/profile.js?v=11"></script>
 <script src="/static/js/admin-panel.js?v=5"></script>
 <script src="/static/js/setup-wizard.js?v=3"></script>
 <script src="/static/js/cinematic-onboarding.js?v=1"></script>

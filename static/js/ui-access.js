@@ -64,9 +64,11 @@
         const admin = canAccessConsole(u);
         const team = canUseTeamTools(u);
         const learning = global.Auth?.canViewAgentLearning?.(u);
+        const investor = global.Auth?.canViewInvestorPortal?.(u);
         const blocked = [];
         if (!learning) blocked.push('Обучение', 'Дизайн-лаб');
         if (!team && !admin) blocked.push('Pipeline', 'Deploy', 'Cursor SDK');
+        if (!investor) blocked.push('Investor Portal', '💼 Investor');
         return commands.filter((c) => !blocked.some((b) => c.label.includes(b)));
     }
 

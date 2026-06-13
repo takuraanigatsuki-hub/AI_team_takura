@@ -103,15 +103,15 @@
                 return;
             }
         } else if (view === 'investor') {
-            if (!user || (!user.can_view_investor_portal && !window.Auth?.canAccessAdmin?.(user))) {
+            if (!window.Auth?.canViewInvestorPortal?.(user)) {
                 const msg = 'Investor Portal — войдите с ролью investor или admin';
                 if (window.UIEnhancements) UIEnhancements.toast(msg, 'warn');
                 else alert(msg);
-                switchView(user ? 'profile' : 'studio');
+                switchView(user ? 'profile' : 'tasks');
                 return;
             }
-        } else if (user?.role === 'investor' && !['investor', 'profile', 'studio'].includes(view)) {
-            if (window.UIEnhancements) UIEnhancements.toast('Investor — только просмотр', 'warn');
+        } else if (user && (user.role === 'investor' || user.is_investor) && !INVESTOR_VIEWS.has(view)) {
+            if (window.UIEnhancements) UIEnhancements.toast('Investor — доступны только разделы просмотра', 'warn');
             switchView('investor');
             return;
         } else if (AGENT_LEARNING_VIEWS.has(view)) {
@@ -796,11 +796,6 @@
         if (window.StudioMinimap) StudioMinimap.update(agentsList);
         const working = agentsList.filter((a) => ['working', 'learning', 'thinking'].includes(a.status)).length;
         if (window.UIEnhancements) UIEnhancements.updateAgentFooter(working);
-        const pill = document.getElementById('activeAgentsPill');
-        if (pill) {
-            pill.textContent = working ? `${working} активны` : 'все свободны';
-            pill.className = 'status-chip header-legacy-chip fp-show-mobile' + (working ? ' has-active' : '');
-        }
         if (window.UICore) UICore.updateHeaderContext({ agentsWorking: working });
     }
 
