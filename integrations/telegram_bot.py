@@ -286,7 +286,7 @@ def _format_status(room) -> tuple[str, str]:
         plain.append("Активны: " + ", ".join(f"{a.emoji}{a.name}" for a in working[:6]))
     else:
         plain.append("Команда в ожидании — можно давать задачи.")
-    plain.append(f"\nDashboard: {_app_url()}/app?view=dashboard")
+    plain.append(f"\nDashboard: {_app_url()}/workspace?view=dashboard")
     text = "\n".join(plain)
     return text, _md_to_html(text.replace("📊 Статус", "<b>📊 Статус AI Team Room</b>", 1))
 
@@ -402,7 +402,7 @@ async def _run_action(chat_id: str, action: str, room, message_id: int = None):
 def _format_studio() -> tuple[str, str]:
     from integrations.sonya_studio import list_projects
 
-    base = f"{_app_url()}/app?view=sonya-studio"
+    base = f"{_app_url()}/workspace?view=sonya-studio"
     projects = list_projects()[:8]
     if not projects:
         text = f"✨ Sonya Design Studio\n\nПроектов пока нет.\nОткройте Studio в браузере:\n{base}"

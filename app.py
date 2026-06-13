@@ -338,7 +338,7 @@ async def investor_portal_page():
     if os.path.exists(html_file):
         with open(html_file, "r", encoding="utf-8") as f:
             return HTMLResponse(f.read())
-    return RedirectResponse("/app?view=investor")
+    return RedirectResponse("/workspace?view=investor")
 
 
 async def _security_monitor_loop(room_mgr: RoomManager):

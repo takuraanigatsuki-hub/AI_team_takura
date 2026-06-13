@@ -140,6 +140,12 @@ body.sidebar-collapsed .app-content-wrap { margin-left: var(--sidebar-collapsed-
 }
 .sb-sub-back:hover { background: rgba(167,139,250,.08); color: var(--text); }
 .sb-sub-item { font-size: 12px; }
+.sb-footer {
+    margin-top: auto;
+    padding: 10px 12px 14px;
+    border-top: 1px solid var(--border, rgba(255,255,255,.08));
+    flex-shrink: 0;
+}
 .sb-footer-link {
     display: block;
     margin-top: 8px;

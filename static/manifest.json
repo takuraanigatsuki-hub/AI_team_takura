@@ -29,7 +29,7 @@
       "name": "Командный чат",
       "short_name": "Чат",
       "description": "Открыть командный чат",
-      "url": "/app?view=chat",
+      "url": "/workspace?view=chat",
       "icons": [{"src": "/static/icons/icon-192.png", "sizes": "192x192"}]
     }
   ]
