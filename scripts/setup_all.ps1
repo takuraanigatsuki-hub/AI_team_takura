@@ -50,4 +50,4 @@ if (-not $docker) {
 Write-Host ""
 Write-Host "Setup complete. Start server:" -ForegroundColor Green
 Write-Host "  cd $Root"
-Write-Host "  & `"$Py`" main.py"
+Write-Host ('  & "' + $Py + '" main.py')
