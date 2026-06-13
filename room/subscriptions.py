@@ -38,7 +38,7 @@ SUBSCRIPTION_PLANS = {
         "monthly_credits": 2000,
         "signup_bonus": 500,
         "max_tasks_per_day": 200,
-        "description": "+ Sonya Studio, Timeline",
+        "description": "+ Sonya Studio",
     },
     "team": {
         "id": "team",
@@ -76,8 +76,7 @@ VIEW_MIN_TIER = {
     "projects": "starter",
     "sprint": "starter",
     "sonya-studio": "pro",
-    "timeline": "pro",
-    # learning, design, agent-learning — только по роли (owner/admin/tech_admin)
+    # timeline, learning, design — только по роли (owner/admin/tech_admin)
 }
 
 FEATURE_MIN_TIER = {

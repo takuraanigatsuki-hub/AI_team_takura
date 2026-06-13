@@ -15,6 +15,12 @@ HIDDEN_MSG_TYPES = frozenset({
 
 HIDDEN_AGENT_IDS = frozenset({"security"})
 
+TIMELINE_LEARNING_TYPES = frozenset({
+    "learning", "learning_result", "reflection", "rest", "figma_study",
+    "peer_learning", "peer_discussion", "skill_evaluation", "learning_project",
+    "agents_state",
+})
+
 
 def is_privileged(role: str = "") -> bool:
     return (role or "") in PRIVILEGED_ROLES
@@ -54,6 +60,22 @@ def should_show_message(message: dict, viewer: dict | None) -> bool:
 
 def filter_messages_for_viewer(messages: list, viewer: dict | None) -> list:
     return [m for m in messages if should_show_message(m, viewer)]
+
+
+def should_show_timeline_event(event: dict, viewer: dict | None) -> bool:
+    """Скрыть процесс обучения агентов от обычных пользователей."""
+    viewer = viewer or {}
+    if is_privileged(viewer.get("role", "")):
+        return True
+    if event.get("channel") == "learning":
+        return False
+    if event.get("type", "") in TIMELINE_LEARNING_TYPES:
+        return False
+    return should_show_message(event, viewer)
+
+
+def filter_timeline_for_viewer(events: list, viewer: dict | None) -> list:
+    return [e for e in events if should_show_timeline_event(e, viewer)]
 
 
 def filter_agents_for_viewer(agents: list, viewer: dict | None) -> list:

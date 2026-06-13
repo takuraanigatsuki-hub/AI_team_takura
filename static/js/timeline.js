@@ -8,6 +8,12 @@
         if (el) el.innerHTML = global.UICore ? UICore.loadingState() : '<div class="dash-loading">Загрузка…</div>';
         try {
             const r = await fetch(`/api/timeline/replay?hours=${h}`, { credentials: 'same-origin' });
+            if (r.status === 403) {
+                if (el) {
+                    el.innerHTML = global.UICore ? UICore.errorState('Timeline доступен только администраторам') : '<div class="panel-error">Timeline доступен только администраторам</div>';
+                }
+                return;
+            }
             if (r.status === 401) {
                 if (el) {
                     el.innerHTML = global.UICore ? UICore.authRequiredState({

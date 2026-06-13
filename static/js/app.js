@@ -143,6 +143,14 @@
                 agentLearningPanel = view === 'design' ? 'design' : (view === 'masha' ? 'masha' : 'learning');
                 view = 'agent-learning';
             }
+        } else if (view === 'timeline') {
+            if (!canViewAgentLearning(user)) {
+                const msg = 'Timeline доступен только администраторам';
+                if (window.UIEnhancements) UIEnhancements.toast(msg, 'warn');
+                else alert(msg);
+                switchView(user ? 'tasks' : 'tasks');
+                return;
+            }
         } else if (user && window.ProfileCabinet && !ProfileCabinet.canAccessView(user, view)) {
             const sub = user.subscription || {};
             const msg = `Нужен тариф выше. Ваш: ${sub.tier_name || 'Free'} (ур. ${sub.level || 1})`;
@@ -1792,6 +1800,9 @@
             startView = user ? 'tasks' : 'tasks';
         }
         if (AGENT_LEARNING_VIEWS.has(startView) && !canViewAgentLearning(user)) {
+            startView = 'tasks';
+        }
+        if (startView === 'timeline' && !canViewAgentLearning(user)) {
             startView = 'tasks';
         }
         if (user?.role === 'investor' && !viewParam) {

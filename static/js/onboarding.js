@@ -4,7 +4,7 @@
     const STEPS = [
         { title: '3D Студия', text: 'Живая команда агентов. Кликните на аватар — личный чат.', view: 'studio' },
         { title: 'Рабочий чат', text: 'Режим «Задача» → Enter. «Вся команда» идёт через PM Виктора.', view: 'chat' },
-        { title: 'Kanban & Timeline', text: 'Следите за задачами и replay активности команды.', view: 'kanban' },
+        { title: 'Kanban', text: 'Следите за задачами на доске — статусы и прогресс команды.', view: 'kanban' },
         { title: 'Дизайн-лаб', text: 'Соня изучает Figma и запоминает паттерны. React Preview и Compare.', view: 'design' },
         { title: 'Готово!', text: 'Ctrl+K — палитра команд. Standup и Deploy в шапке.', view: 'studio' },
     ];

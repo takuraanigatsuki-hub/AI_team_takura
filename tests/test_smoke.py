@@ -111,8 +111,7 @@ def test_templates(client):
 
 def test_timeline(client):
     r = client.get("/api/timeline/replay?hours=1")
-    assert r.status_code == 200
-    assert "events" in r.json()
+    assert r.status_code == 403
 
 
 def test_kanban(client):

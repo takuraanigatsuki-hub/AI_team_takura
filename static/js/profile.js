@@ -223,6 +223,9 @@
             if (global.Auth?.canViewAgentLearning) return Auth.canViewAgentLearning(user);
             return user?.role === 'owner' || user?.role === 'admin' || user?.role === 'tech_admin';
         }
+        if (view === 'timeline') {
+            return global.Auth?.canViewAgentLearning?.(user) || false;
+        }
         const sub = user?.subscription;
         if (!sub) return true;
         if (sub.unlimited || user.is_owner) return true;

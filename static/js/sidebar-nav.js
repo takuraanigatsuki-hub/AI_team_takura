@@ -24,7 +24,6 @@
             { view: 'dashboard', icon: '📊', label: 'Панель' },
             { view: 'projects', icon: '📦', label: 'Проекты' },
             { view: 'sites', icon: '🌐', label: 'Сайты' },
-            { view: 'timeline', icon: '⏱', label: 'Timeline' },
         ]},
         { group: 'Планирование', items: [
             { view: 'sprint', icon: '🏃', label: 'Sprint' },
@@ -62,7 +61,7 @@
             { view: 'dashboard', icon: '📊', label: 'Панель' },
             { view: 'projects', icon: '📦', label: 'Проекты' },
             { view: 'sites', icon: '🌐', label: 'Сайты' },
-            { view: 'timeline', icon: '⏱', label: 'Timeline' },
+            { view: 'timeline', icon: '⏱', label: 'Timeline', adminLearning: true },
         ]},
         { group: 'Планирование', items: [
             { view: 'sprint', icon: '🏃', label: 'Sprint' },

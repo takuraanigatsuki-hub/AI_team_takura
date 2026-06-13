@@ -151,17 +151,19 @@ class RoomManager:
 
     def _append_history(self, message: dict, channel: str):
         message["channel"] = channel
-        try:
-            from integrations.timeline_store import append_event
-            append_event({
-                "type": message.get("type"),
-                "agent_id": message.get("agent_id"),
-                "agent_name": message.get("agent_name"),
-                "message": (message.get("message") or "")[:200],
-                "timestamp": message.get("timestamp"),
-            })
-        except Exception:
-            pass
+        if channel != "learning":
+            try:
+                from integrations.timeline_store import append_event
+                append_event({
+                    "type": message.get("type"),
+                    "agent_id": message.get("agent_id"),
+                    "agent_name": message.get("agent_name"),
+                    "message": (message.get("message") or "")[:200],
+                    "timestamp": message.get("timestamp"),
+                    "channel": channel,
+                })
+            except Exception:
+                pass
         if channel == "learning":
             self.learning_history.append(message)
             if len(self.learning_history) > self.max_history:

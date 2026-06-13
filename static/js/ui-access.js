@@ -72,7 +72,7 @@
         const learning = global.Auth?.canViewAgentLearning?.(u);
         const investor = global.Auth?.canViewInvestorPortal?.(u);
         const blocked = [];
-        if (!learning) blocked.push('Обучение', 'Дизайн-лаб');
+        if (!learning) blocked.push('Обучение', 'Дизайн-лаб', 'Timeline', '⏱ Timeline');
         if (!admin) {
             blocked.push(
                 'Pipeline', 'Deploy', 'Cursor SDK', 'Cursor Panel', 'Cursor',
