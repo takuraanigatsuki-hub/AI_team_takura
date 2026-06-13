@@ -300,6 +300,11 @@
     }
 
     async function loadSonyaLearning() {
+        if (global.AgentLearningProjects) {
+            switchAgentLearningPanel('agent-projects');
+            await AgentLearningProjects.load('frontend');
+            return;
+        }
         const grid = el('slProjectsGrid');
         if (grid) grid.innerHTML = global.UICore ? UICore.loadingState('Загрузка…', { compact: true }) : '<div class="panel-empty">Загрузка…</div>';
         try {
@@ -341,7 +346,7 @@
                 <p class="muted">${escape(themeLabel)} · v${p.version_count || 1}</p>
                 <div class="color-row">${colors}</div>
                 <div class="dl-card-foot">
-                    <button type="button" class="btn-secondary btn-sm" onclick="switchView('sonya-studio');SonyaStudio.openProject('${escape(p.id)}')">Открыть</button>
+                    <button type="button" class="btn-secondary btn-sm" onclick="switchAgentLearningPanel('agent-projects');AgentLearningProjects.openSonyaProject('${escape(p.id)}')">Открыть</button>
                     ${voteButtons('studio_project', p.id)}
                 </div>
             </article>`;

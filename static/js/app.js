@@ -67,7 +67,7 @@
     let dashboardRefreshTimer = null;
     let agentLearningPanel = 'learning';
 
-    const AGENT_LEARNING_VIEWS = new Set(['agent-learning', 'learning', 'design', 'masha', 'sonya-projects']);
+    const AGENT_LEARNING_VIEWS = new Set(['agent-learning', 'learning', 'design', 'masha', 'agent-projects', 'sonya-projects']);
     const INVESTOR_VIEWS = new Set(['investor', 'profile', 'studio', 'dashboard', 'projects']);
 
     function canViewAgentLearning(user) {
@@ -103,7 +103,7 @@
     window.switchAgentLearningPanel = function (panel) {
         if (panel === 'design') agentLearningPanel = 'design';
         else if (panel === 'masha') agentLearningPanel = 'masha';
-        else if (panel === 'sonya-projects') agentLearningPanel = 'sonya-projects';
+        else if (panel === 'agent-projects' || panel === 'sonya-projects') agentLearningPanel = 'agent-projects';
         else agentLearningPanel = 'learning';
         switchView('agent-learning');
     };
@@ -144,8 +144,10 @@
                 switchView('studio');
                 return;
             }
-            if (view === 'learning' || view === 'design' || view === 'masha' || view === 'sonya-projects') {
-                agentLearningPanel = view === 'design' ? 'design' : (view === 'masha' ? 'masha' : (view === 'sonya-projects' ? 'sonya-projects' : 'learning'));
+            if (view === 'learning' || view === 'design' || view === 'masha' || view === 'agent-projects' || view === 'sonya-projects') {
+                agentLearningPanel = view === 'design' ? 'design'
+                    : (view === 'masha' ? 'masha'
+                        : ((view === 'agent-projects' || view === 'sonya-projects') ? 'agent-projects' : 'learning'));
                 view = 'agent-learning';
             }
         } else if (view === 'timeline') {
@@ -179,7 +181,7 @@
         document.getElementById('alTabLearning')?.classList.toggle('active', isAgentLearning && agentLearningPanel === 'learning');
         document.getElementById('alTabMasha')?.classList.toggle('active', isAgentLearning && agentLearningPanel === 'masha');
         document.getElementById('alTabDesign')?.classList.toggle('active', isAgentLearning && agentLearningPanel === 'design');
-        document.getElementById('alTabSonyaProjects')?.classList.toggle('active', isAgentLearning && agentLearningPanel === 'sonya-projects');
+        document.getElementById('alTabAgentProjects')?.classList.toggle('active', isAgentLearning && agentLearningPanel === 'agent-projects');
 
         document.getElementById('studioView').classList.toggle('hidden', view !== 'studio');
         document.getElementById('chatView').classList.toggle('hidden', view !== 'chat');
@@ -187,7 +189,8 @@
         document.getElementById('tasksView').classList.toggle('hidden', view !== 'tasks');
         document.getElementById('mashaView')?.classList.toggle('hidden', !isAgentLearning || agentLearningPanel !== 'masha');
         document.getElementById('designView')?.classList.toggle('hidden', !isAgentLearning || agentLearningPanel !== 'design');
-        document.getElementById('sonyaLearningView')?.classList.toggle('hidden', !isAgentLearning || agentLearningPanel !== 'sonya-projects');
+        document.getElementById('agentProjectsView')?.classList.toggle('hidden', !isAgentLearning || agentLearningPanel !== 'agent-projects');
+        document.getElementById('sonyaLearningView')?.classList.add('hidden');
         document.getElementById('sonyaStudioView')?.classList.toggle('hidden', view !== 'sonya-studio');
         document.getElementById('dashboardView')?.classList.toggle('hidden', view !== 'dashboard');
         document.getElementById('kanbanView')?.classList.toggle('hidden', view !== 'kanban');
@@ -227,8 +230,8 @@
         if (isAgentLearning && agentLearningPanel === 'design' && window.SonyaDesignLab) {
             SonyaDesignLab.load();
         }
-        if (isAgentLearning && agentLearningPanel === 'sonya-projects' && window.SonyaDesignLab) {
-            SonyaDesignLab.loadSonyaLearning();
+        if (isAgentLearning && agentLearningPanel === 'agent-projects' && window.AgentLearningProjects) {
+            AgentLearningProjects.load();
         }
         if (isAgentLearning && agentLearningPanel === 'masha' && window.MashaLearningLab) {
             MashaLearningLab.load();
@@ -1812,7 +1815,7 @@
         connect();
 
         let startView = viewParam || (user?.default_view) || 'tasks';
-        const allowedViews = ['studio', 'chat', 'agent-learning', 'learning', 'design', 'masha', 'sonya-projects', 'sonya-studio', 'tasks', 'projects', 'kanban', 'sprint', 'timeline', 'dashboard', 'profile', 'admin', 'investor'];
+        const allowedViews = ['studio', 'chat', 'agent-learning', 'learning', 'design', 'masha', 'agent-projects', 'sonya-projects', 'sonya-studio', 'tasks', 'projects', 'kanban', 'sprint', 'timeline', 'dashboard', 'profile', 'admin', 'investor'];
         if (!allowedViews.includes(startView)) {
             startView = 'tasks';
         }
