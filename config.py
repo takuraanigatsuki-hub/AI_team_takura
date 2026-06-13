@@ -52,6 +52,7 @@ _defaults = {
     "sandbox_docker_image": "python:3.12-slim",
     "outbound_proxy_mode": "auto",
     "outbound_proxy": "",
+    "vflex_subscription_url": "",
     "room_api_key": "",
     "auto_theme": False,
     "telegram_notify_tasks": False,
@@ -151,6 +152,9 @@ def _load_config() -> dict:
         or os.environ.get("HTTP_PROXY")
         or cfg.get("outbound_proxy")
         or ""
+    )
+    cfg["vflex_subscription_url"] = (
+        os.environ.get("VFLEX_SUBSCRIPTION_URL") or cfg.get("vflex_subscription_url") or ""
     )
     cfg["room_api_key"] = os.environ.get("ROOM_API_KEY") or cfg.get("room_api_key") or ""
     for key, env in (

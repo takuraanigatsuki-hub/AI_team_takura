@@ -13,6 +13,13 @@ async def main() -> int:
     from integrations.rag.embeddings import embed_query, is_configured as emb_ok
 
     print(f"Outbound: {describe_outbound()}")
+    try:
+        import config as cfg
+        sub = cfg.config.get("vflex_subscription_url") or ""
+        if sub:
+            print(f"VFlex subscription: configured ({sub[:40]}…)")
+    except Exception:
+        pass
     ok = True
 
     if is_configured():

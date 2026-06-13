@@ -27,7 +27,25 @@ def explicit_proxy() -> Optional[str]:
         or cfg.config.get("outbound_proxy")
         or ""
     ).strip()
-    return url or None
+    if url:
+        return url
+    # VFlex / Clash — mixed-port 7890 по умолчанию
+    if os.environ.get("VFLEX_SUBSCRIPTION_URL") or cfg.config.get("vflex_subscription_url"):
+        return "http://127.0.0.1:7890"
+    return None
+
+
+def _local_proxy_alive(proxy: str) -> bool:
+    from urllib.parse import urlparse
+    import socket
+    p = urlparse(proxy)
+    host = p.hostname or "127.0.0.1"
+    port = p.port or 7890
+    try:
+        with socket.create_connection((host, port), timeout=0.35):
+            return True
+    except OSError:
+        return False
 
 
 def client_kwargs(timeout: float = 60.0, **extra) -> dict:
@@ -50,9 +68,9 @@ def client_kwargs(timeout: float = 60.0, **extra) -> dict:
             kw["proxy"] = proxy
         return kw
 
-    # auto — явный прокси из .env, иначе прямое подключение (без сломанного system proxy)
+    # auto — прокси только если VPN-клиент (7890) запущен, иначе напрямую
     kw["trust_env"] = False
-    if proxy:
+    if proxy and _local_proxy_alive(proxy):
         kw["proxy"] = proxy
     return kw
 
@@ -64,8 +82,10 @@ def async_client(timeout: float = 60.0, **extra) -> httpx.AsyncClient:
 def describe_outbound() -> str:
     mode = proxy_mode()
     proxy = explicit_proxy()
-    if mode == "proxy" or (mode == "auto" and proxy):
+    if mode == "proxy" or (mode == "auto" and proxy and _local_proxy_alive(proxy)):
         return f"proxy ({proxy})"
+    if mode == "auto" and proxy:
+        return f"direct (VPN proxy {proxy} offline)"
     if mode == "system":
         return "system env (HTTP_PROXY)"
     return "direct"
