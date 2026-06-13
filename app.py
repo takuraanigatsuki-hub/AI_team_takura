@@ -1645,6 +1645,32 @@ async def rag_embed(force: bool = False):
     return {"ok": True, "embed": result, "index": get_index_stats()}
 
 
+class RagUrlIngestRequest(BaseModel):
+    agent_id: str = "backend"
+    url: str = ""
+    title: str = ""
+
+
+@app.post("/api/rag/ingest-url")
+async def rag_ingest_url(body: RagUrlIngestRequest):
+    from integrations.rag.url_ingest import ingest_url
+    from integrations.rag.ingest import get_index_stats
+    if not body.url.strip():
+        raise HTTPException(status_code=400, detail="url required")
+    result = await ingest_url(body.agent_id, body.url, body.title)
+    if not result.get("ok"):
+        raise HTTPException(status_code=502, detail=result.get("error", "ingest failed"))
+    return {"ok": True, "ingest": result, "index": get_index_stats()}
+
+
+@app.post("/api/rag/ingest-default-docs")
+async def rag_ingest_default_docs():
+    from integrations.rag.url_ingest import ingest_default_docs
+    from integrations.rag.ingest import get_index_stats
+    result = await ingest_default_docs()
+    return {"ok": True, "report": result, "index": get_index_stats()}
+
+
 @app.get("/api/llm/status")
 async def llm_status():
     from integrations.llm_client import is_configured, router_model, _settings
