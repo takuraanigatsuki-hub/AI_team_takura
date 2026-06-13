@@ -105,7 +105,7 @@
             if (!r.ok) throw new Error(d.detail || 'Не удалось начать вход');
             const url = d.verify_url;
             browserHint.innerHTML = `Код: <strong>${d.user_code}</strong> · откройте браузер и подтвердите вход`;
-            if (window.pywebview?.api?.open_external) {
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.open_external) {
                 window.pywebview.api.open_external(url);
             } else {
                 window.open(url, '_blank', 'noopener');
