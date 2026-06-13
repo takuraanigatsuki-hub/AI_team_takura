@@ -3205,6 +3205,23 @@ async def masha_learning_lab():
     return room._learning_store().get_dashboard()
 
 
+@app.get("/api/learning/agent-hub")
+async def learning_agent_hub(request: Request):
+    from room.user_auth import can_view_agent_learning
+    from room.agent_learning_hub import build_agent_learning_hub
+    from room.message_filter import is_privileged
+
+    user = _current_user(request)
+    if not can_view_agent_learning(user):
+        raise HTTPException(status_code=403, detail="Обучение доступно только администраторам")
+    privileged = is_privileged(user.get("role", ""))
+    return build_agent_learning_hub(
+        privileged=privileged,
+        user_id=user.get("id", ""),
+        task_history=room.task_history,
+    )
+
+
 class LearningSubmitBody(BaseModel):
     title: str = ""
     description: str = ""

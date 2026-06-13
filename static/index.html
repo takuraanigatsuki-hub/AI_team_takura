@@ -239,7 +239,7 @@
                 <button type="button" class="al-tab active" id="alTabLearning" role="tab" onclick="switchAgentLearningPanel('learning')">📚 Лента</button>
                 <button type="button" class="al-tab" id="alTabMasha" role="tab" onclick="switchAgentLearningPanel('masha')">🎓 Маша</button>
                 <button type="button" class="al-tab" id="alTabDesign" role="tab" onclick="switchAgentLearningPanel('design')">🎨 Design Lab</button>
-                <button type="button" class="al-tab" id="alTabSonyaProjects" role="tab" onclick="switchAgentLearningPanel('sonya-projects')">✨ Проекты Сони</button>
+                <button type="button" class="al-tab" id="alTabAgentProjects" role="tab" onclick="switchAgentLearningPanel('agent-projects')">📁 Проекты</button>
             </div>
         </div>
     </div>
@@ -384,30 +384,40 @@
         </main>
     </div>
 
-    <!-- SONYA AUTO PROJECTS (learning tab) -->
-    <div id="sonyaLearningView" class="design-lab-layout hidden">
-        <aside class="dl-sidebar">
+    <!-- AGENT PROJECTS (learning tab) -->
+    <div id="agentProjectsView" class="design-lab-layout hidden">
+        <aside class="dl-sidebar ap-sidebar">
             <div class="dl-sonya-card">
-                <div class="dl-sonya-avatar">✨</div>
+                <div class="dl-sonya-avatar">📁</div>
                 <div>
-                    <h3>Проекты Сони</h3>
-                    <p class="muted">Автономные UI-проекты после обучения</p>
+                    <h3>Проекты агентов</h3>
+                    <p class="muted">На основе изученных знаний</p>
                 </div>
             </div>
-            <div class="dl-sidebar-actions">
-                <button type="button" class="btn-secondary btn-sm full-width" onclick="SonyaDesignLab.cleanupLearning()">🧹 Очистить черновики</button>
-                <button type="button" class="btn-primary btn-sm full-width" onclick="switchAgentLearningPanel('design')">🎨 Design Lab</button>
-            </div>
-            <p class="muted" style="font-size:12px;margin-top:12px">👍/👎 — Соня учитывает при выборе паттернов и макетов</p>
+            <div id="apAgentStats" class="dl-stats"></div>
+            <div class="panel-label" style="margin-top:12px">Агенты</div>
+            <div id="apAgentTabs" class="ap-agent-tabs"></div>
+            <p class="muted" style="font-size:12px;margin-top:12px;padding:0 4px">Проекты Сони открываются здесь — без перехода в Studio</p>
         </aside>
-        <main class="dl-main">
-            <header class="dl-header">
+        <main class="dl-main ap-main">
+            <header class="dl-header ap-list-header" id="apListHeader">
                 <div>
-                    <h2>✨ Авто-проекты Сони</h2>
-                    <p class="muted">Создаются в фоне после изучения Figma Community — не смешиваются с вашими проектами в Studio</p>
+                    <h2 id="apAgentTitle">—</h2>
+                    <p class="muted" id="apAgentSub">—</p>
                 </div>
+                <button type="button" class="btn-secondary btn-sm" onclick="AgentLearningProjects.load()">🔄 Обновить</button>
             </header>
-            <div id="slProjectsGrid" class="dl-studied-list"></div>
+            <div id="apProjectsGrid" class="dl-studied-list"></div>
+            <div id="apPreviewPanel" class="ap-preview-panel hidden">
+                <div class="ap-preview-toolbar">
+                    <button type="button" class="btn-secondary btn-sm" onclick="AgentLearningProjects.closePreview()">← К списку</button>
+                    <strong id="apPreviewTitle">—</strong>
+                </div>
+                <div class="ap-preview-body">
+                    <iframe id="apPreviewFrame" class="ss-preview-frame ap-preview-frame" title="Превью проекта"></iframe>
+                    <aside id="apPreviewMeta" class="ap-preview-meta"></aside>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -915,7 +925,8 @@
 <script src="/static/js/studio.js?v=22"></script>
 <script src="/static/js/react-preview.js?v=7"></script>
 <script src="/static/js/integrations.js?v=11"></script>
-<script src="/static/js/sonya-design-lab.js?v=8"></script>
+<script src="/static/js/agent-learning-projects.js?v=1"></script>
+<script src="/static/js/sonya-design-lab.js?v=9"></script>
 <script src="/static/js/ui-enhancements.js?v=8"></script>
 <script src="/static/js/support-tickets.js?v=2"></script>
 <script src="/static/js/support-panel.js?v=2"></script>
