@@ -28,13 +28,14 @@
     </a>
     <button type="button" class="lp-nav-toggle" id="lpNavToggle" aria-label="Меню" aria-expanded="false">☰</button>
     <nav class="lp-nav" id="lpNav" aria-label="Разделы">
-        <a href="#features">Возможности</a>
-        <a href="#capabilities">Всё платформа</a>
-        <a href="#how">Как работает</a>
-        <a href="#team">Команда</a>
-        <a href="#integrations">Интеграции</a>
-        <a href="#download">Скачать</a>
-        <a href="#pricing">Старт</a>
+        <button type="button" class="lp-nav-tab active" data-lp-tab="home">Главная</button>
+        <button type="button" class="lp-nav-tab" data-lp-tab="features">Возможности</button>
+        <button type="button" class="lp-nav-tab" data-lp-tab="platform">Платформа</button>
+        <button type="button" class="lp-nav-tab" data-lp-tab="how">Как работает</button>
+        <button type="button" class="lp-nav-tab" data-lp-tab="team">Команда</button>
+        <button type="button" class="lp-nav-tab" data-lp-tab="integrations">Интеграции</button>
+        <button type="button" class="lp-nav-tab" data-lp-tab="demo">Demo</button>
+        <button type="button" class="lp-nav-tab" data-lp-tab="download">Скачать</button>
     </nav>
     <div class="lp-header-right">
         <div class="lp-header-actions" id="lpAuthGuest">
@@ -51,7 +52,9 @@
     </div>
 </header>
 
-<main>
+<main class="lp-main" id="lpMain">
+    <!-- ─── Главная ─── -->
+    <section class="lp-panel active" id="panel-home" data-lp-panel="home">
     <section class="lp-hero">
         <div class="lp-hero-glow"></div>
         <div class="lp-hero-content">
@@ -72,6 +75,16 @@
                 <div><strong id="lpLiveRooms">124</strong><span>комнат live</span></div>
                 <div><strong id="lpLivePr">23</strong><span>PR за сутки</span></div>
             </div>
+            <nav class="lp-home-menu" id="lpHomeMenu" aria-label="Быстрый переход">
+                <button type="button" class="lp-menu-key" data-lp-tab="features"><span class="lp-menu-key-icon">✨</span><span class="lp-menu-key-label">Возможности</span><span class="lp-menu-key-hint">12 модулей</span></button>
+                <button type="button" class="lp-menu-key" data-lp-tab="platform"><span class="lp-menu-key-icon">🧩</span><span class="lp-menu-key-label">Платформа</span><span class="lp-menu-key-hint">полный список</span></button>
+                <button type="button" class="lp-menu-key" data-lp-tab="how"><span class="lp-menu-key-icon">⚡</span><span class="lp-menu-key-label">Как работает</span><span class="lp-menu-key-hint">3 шага</span></button>
+                <button type="button" class="lp-menu-key" data-lp-tab="team"><span class="lp-menu-key-icon">🤖</span><span class="lp-menu-key-label">Команда</span><span class="lp-menu-key-hint">13 агентов</span></button>
+                <button type="button" class="lp-menu-key" data-lp-tab="integrations"><span class="lp-menu-key-icon">🔗</span><span class="lp-menu-key-label">Интеграции</span><span class="lp-menu-key-hint">Figma · GitHub</span></button>
+                <button type="button" class="lp-menu-key" data-lp-tab="demo"><span class="lp-menu-key-icon">▶</span><span class="lp-menu-key-label">Demo</span><span class="lp-menu-key-hint">2 минуты</span></button>
+                <button type="button" class="lp-menu-key lp-menu-key-accent" data-lp-tab="download"><span class="lp-menu-key-icon">⬇</span><span class="lp-menu-key-label">Скачать</span><span class="lp-menu-key-hint">Windows app</span></button>
+                <a href="/portal?view=profile" class="lp-menu-key lp-menu-key-link"><span class="lp-menu-key-icon">👤</span><span class="lp-menu-key-label">Кабинет</span><span class="lp-menu-key-hint">профиль · admin</span></a>
+            </nav>
         </div>
         <div class="lp-hero-visual">
             <div class="lp-studio-wrap">
@@ -96,7 +109,10 @@
             </aside>
         </div>
     </section>
+    </section>
 
+    <!-- ─── Demo ─── -->
+    <section class="lp-panel" id="panel-demo" data-lp-panel="demo">
     <section class="lp-activity" aria-label="Активность комнат">
         <div class="lp-activity-inner">
             <div class="lp-activity-feed">
@@ -186,7 +202,10 @@ PR #42 · checks ✓</pre>
             </div>
         </div>
     </section>
+    </section>
 
+    <!-- ─── Возможности ─── -->
+    <section class="lp-panel" id="panel-features" data-lp-panel="features">
     <section class="lp-features" id="features">
         <p class="lp-section-label">Возможности</p>
         <h2>Всё для продуктовой команды</h2>
@@ -206,7 +225,10 @@ PR #42 · checks ✓</pre>
             <article class="lp-card"><span>📱</span><h3>PWA & Telegram</h3><p>Установка на телефон, push-уведомления и Telegram-бот для контроля комнаты.</p></article>
         </div>
     </section>
+    </section>
 
+    <!-- ─── Платформа ─── -->
+    <section class="lp-panel" id="panel-platform" data-lp-panel="platform">
     <section class="lp-capabilities" id="capabilities">
         <p class="lp-section-label">Полный список</p>
         <h2>Что умеет AI Team Room</h2>
@@ -288,7 +310,10 @@ PR #42 · checks ✓</pre>
             </div>
         </div>
     </section>
+    </section>
 
+    <!-- ─── Как работает ─── -->
+    <section class="lp-panel" id="panel-how" data-lp-panel="how">
     <section class="lp-how" id="how">
         <p class="lp-section-label">Как это работает</p>
         <h2>Три шага до результата</h2>
@@ -310,7 +335,10 @@ PR #42 · checks ✓</pre>
             </article>
         </div>
     </section>
+    </section>
 
+    <!-- ─── Команда ─── -->
+    <section class="lp-panel" id="panel-team" data-lp-panel="team">
     <section class="lp-team" id="team">
         <p class="lp-section-label">Команда</p>
         <h2>13 специализированных агентов</h2>
@@ -320,7 +348,10 @@ PR #42 · checks ✓</pre>
             <span>⚡ Cursor</span><span>📽️ Presenter</span><span>🧊 3D</span><span>📊 Evaluator</span><span>🛡️ Security</span>
         </div>
     </section>
+    </section>
 
+    <!-- ─── Интеграции ─── -->
+    <section class="lp-panel" id="panel-integrations" data-lp-panel="integrations">
     <section class="lp-integrations" id="integrations">
         <p class="lp-section-label">Интеграции</p>
         <h2>Подключается к вашему стеку</h2>
