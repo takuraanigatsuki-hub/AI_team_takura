@@ -11,7 +11,6 @@ concurrency:
 
 jobs:
   deploy:
-    if: ${{ secrets.VPS_HOST != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Deploy over SSH
@@ -24,7 +23,9 @@ jobs:
           script_stop: true
           script: |
             set -e
-            cd ${{ secrets.VPS_PATH || '~/AI_team_takura' }}
+            DEPLOY_PATH="${{ secrets.VPS_PATH }}"
+            if [ -z "$DEPLOY_PATH" ]; then DEPLOY_PATH="$HOME/AI_team_takura"; fi
+            cd "$DEPLOY_PATH"
             git fetch origin main
             git reset --hard origin/main
             bash scripts/deploy-vps.sh

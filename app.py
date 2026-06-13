@@ -273,6 +273,12 @@ if os.path.exists(output_dir):
 
 # ─── REST API ──────────────────────────────────────────────
 
+@app.get("/api/health")
+async def api_health():
+    """Healthcheck для Docker / мониторинга."""
+    return {"ok": True, "service": "ai-team-room"}
+
+
 @app.get("/", response_class=HTMLResponse)
 async def landing():
     """Главный сайт — лендинг с входом и регистрацией"""

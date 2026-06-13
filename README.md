@@ -101,6 +101,19 @@ python main.py
 python -m pytest tests/ -q
 ```
 
+## Production (VPS 24/7)
+
+Сайт на сервере, управление из Cursor через Git push.
+
+```bash
+# на VPS (один раз)
+bash scripts/install-server.sh
+nano .env
+bash scripts/deploy-vps.sh
+```
+
+Подробно: [docs/DEPLOY.md](docs/DEPLOY.md) — HTTPS, auto-deploy, бэкапы `data/`.
+
 ## Стек
 
 Python · FastAPI · WebSocket · Three.js · Cursor SDK · Playwright · Docker
