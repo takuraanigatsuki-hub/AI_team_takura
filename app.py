@@ -1721,9 +1721,9 @@ class SandboxRunRequest(BaseModel):
 
 @app.post("/api/sandbox/run")
 async def sandbox_run(body: SandboxRunRequest):
-    from integrations.sandbox.docker_runner import run_python, docker_available
+    from integrations.sandbox.docker_runner import run_python, docker_engine_ready
     result = await run_python(body.code, timeout=min(body.timeout, 60))
-    return {"ok": True, "docker": docker_available(), **result}
+    return {"ok": True, "docker": await docker_engine_ready(), **result}
 
 
 @app.get("/api/router/logs")
