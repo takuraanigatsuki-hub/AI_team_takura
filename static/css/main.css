@@ -2118,6 +2118,7 @@ body.has-pipeline .status-footer { box-shadow: 0 -2px 12px rgba(0,0,0,0.12); }
 .preview-badge { display: none; }
 
 /* ─── Figma Split ─── */
+.figma-split { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .figma-split.active { flex-direction: row; }
 .figma-split .split-figma { display: none; flex: 1; min-width: 0; padding: 8px; border-right: 1px solid var(--border); }
 .figma-split.active .split-figma { display: flex; flex-direction: column; }

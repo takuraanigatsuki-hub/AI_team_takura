@@ -83,15 +83,19 @@ try {
 </body></html>`;
     }
 
+    function setBadgeState(state, label) {
+        const badge = $('reactPreviewBadge');
+        if (!badge) return;
+        badge.classList.remove('live', 'loading');
+        if (state) badge.classList.add(state);
+        const labelEl = badge.querySelector('.preview-status-label');
+        if (labelEl && label) labelEl.textContent = label;
+    }
+
     function setLoading(on) {
         const overlay = $('reactPreviewLoading');
         if (overlay) overlay.classList.toggle('visible', on);
-        const badge = $('reactPreviewBadge');
-        if (badge) {
-            badge.textContent = on ? '● Loading' : '● Live';
-            badge.classList.toggle('live', !on);
-            badge.classList.toggle('loading', on);
-        }
+        setBadgeState(on ? 'loading' : 'live', on ? 'Загрузка' : 'В эфире');
     }
 
     function setError(msg) {
@@ -128,8 +132,9 @@ try {
     function setViewport(mode) {
         viewport = mode in VIEWPORTS ? mode : 'desktop';
         document.querySelectorAll('[data-preview-viewport]').forEach((btn) => {
-            btn.classList.toggle('active', btn.dataset.previewViewport === viewport);
-            btn.setAttribute('aria-pressed', btn.dataset.previewViewport === viewport ? 'true' : 'false');
+            const active = btn.dataset.previewViewport === viewport;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
         });
         applyViewport();
     }
@@ -158,7 +163,11 @@ try {
         setError(null);
 
         if (titleEl) titleEl.textContent = data.title || 'React Preview';
-        if (taskEl) taskEl.textContent = data.task ? `Задача: ${data.task}` : '';
+        if (taskEl) {
+            const taskText = data.task ? `Задача: ${data.task}` : '';
+            taskEl.textContent = taskText;
+            taskEl.title = taskText;
+        }
         if (codeEl) codeEl.textContent = data.code || '';
 
         updateSiteLink(data);
@@ -331,6 +340,10 @@ try {
 
         const panel = $('reactPreviewPanel');
         if (panel) panel.setAttribute('aria-hidden', 'true');
+
+        if (global.UIAccess?.applyMenuVisibility) {
+            global.UIAccess.applyMenuVisibility(global.Auth?.getUser?.());
+        }
     }
 
     if (document.readyState === 'loading') {

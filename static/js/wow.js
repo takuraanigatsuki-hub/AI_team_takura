@@ -79,8 +79,13 @@
     // ─── Figma Split ───
     function toggleCompare() {
         const el = document.getElementById('figmaSplitView');
+        const btn = document.getElementById('reactPreviewCompareBtn');
         if (!el) return;
         const on = el.classList.toggle('active');
+        if (btn) {
+            btn.classList.toggle('active', on);
+            btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        }
         if (on) refreshCompare();
     }
 
