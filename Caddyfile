@@ -1,0 +1,7 @@
+# HTTPS reverse proxy (Caddy + Let's Encrypt)
+# APP_DOMAIN в .env — ваш домен, A-запись → IP сервера
+
+{$APP_DOMAIN} {
+	encode gzip
+	reverse_proxy ai-team-room:8000
+}
