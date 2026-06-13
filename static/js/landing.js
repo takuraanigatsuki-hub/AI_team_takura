@@ -43,9 +43,17 @@
         });
     }
 
+    function parseAuthError(d, fallback) {
+        const detail = d?.detail;
+        if (typeof detail === 'string') return detail;
+        if (Array.isArray(detail)) return detail.map((x) => x.msg || String(x)).join(', ');
+        return fallback || 'Ошибка';
+    }
+
     async function initDownloadLinks() {
         try {
             const r = await fetch('/api/downloads/desktop/info');
+            if (!r.ok) throw new Error('HTTP ' + r.status);
             const info = await r.json();
             const setup = info.platforms?.find((p) => p.id === 'win-setup' && p.url);
             const portable = info.platforms?.find((p) => p.id === 'win-portable' && p.url);
