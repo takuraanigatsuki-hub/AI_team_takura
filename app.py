@@ -691,9 +691,9 @@ async def auth_device_start(request: Request):
 
 
 @app.get("/api/auth/device/poll/{device_id}")
-async def auth_device_poll(device_id: str):
+async def auth_device_poll(device_id: str, secret: str = ""):
     from room.desktop_auth import poll_device
-    return poll_device(device_id)
+    return poll_device(device_id, secret)
 
 
 @app.post("/api/auth/device/approve")
@@ -704,7 +704,7 @@ async def auth_device_approve(body: DeviceApproveBody, request: Request):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     token = _get_session_token(request)
-    ok = approve_device(body.device_id, token, user["id"])
+    ok = approve_device(body.device_id, token, user["id"], body.user_code)
     if not ok:
         raise HTTPException(status_code=400, detail="Device session expired or invalid")
     return {"ok": True, "message": "Desktop app authorized. Return to the application."}
