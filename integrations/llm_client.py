@@ -22,12 +22,12 @@ def _settings() -> dict:
     }
 
 
-async def chat(messages: list, max_tokens: int = 800, model: str = None) -> str:
+async def chat(messages: list, max_tokens: int = 800, model: str = None, timeout: float = 60.0) -> str:
     cfg = _settings()
     if not cfg["api_key"]:
         return ""
     use_model = model or cfg["model"]
-    async with async_client(timeout=60.0) as client:
+    async with async_client(timeout=timeout) as client:
         resp = await client.post(
             f"{cfg['base_url']}/chat/completions",
             headers={"Authorization": f"Bearer {cfg['api_key']}", "Content-Type": "application/json"},
@@ -85,7 +85,16 @@ async def chat_stream(messages: list, max_tokens: int = 900) -> AsyncIterator[st
                     continue
 
 
-async def agent_reply(agent_name: str, role: str, system: str, task: str, knowledge: list) -> str:
+async def agent_reply(
+    agent_name: str,
+    role: str,
+    system: str,
+    task: str,
+    knowledge: list,
+    *,
+    max_tokens: int = 800,
+    timeout: float = 60.0,
+) -> str:
     ctx = ""
     if knowledge:
         ctx = "\n".join(f"- {k.get('title', k.get('topic', ''))}: {k.get('summary', '')[:120]}"
@@ -94,4 +103,4 @@ async def agent_reply(agent_name: str, role: str, system: str, task: str, knowle
         {"role": "system", "content": f"Ты {agent_name}, {role}. {system}\nОтвечай на русском, кратко и по делу."},
         {"role": "user", "content": f"Задача: {task}\n\nКонтекст из базы знаний:\n{ctx or '—'}"},
     ]
-    return await chat(messages)
+    return await chat(messages, max_tokens=max_tokens, timeout=timeout)

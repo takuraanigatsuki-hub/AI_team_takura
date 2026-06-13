@@ -1,6 +1,11 @@
 """Генерация UI/артефактов через LLM — без готовых шаблонов."""
 
+import logging
 import re
+
+log = logging.getLogger(__name__)
+
+_CODE_MARKERS = ("function App", "const App", "export default function App")
 
 
 def _esc(s: str) -> str:
@@ -8,7 +13,7 @@ def _esc(s: str) -> str:
 
 
 async def generate_react_from_llm(task_text: str, hints: dict = None) -> dict:
-    """React-компонент от LLM; минимальный fallback без библиотеки шаблонов."""
+    """React-компонент от LLM; при сбое — богатый шаблон из react_preview."""
     hints = hints or {}
     title = (task_text or "Компонент")[:60]
     from room.task_routing import classify_task_kind, should_export_site
@@ -31,20 +36,31 @@ async def generate_react_from_llm(task_text: str, hints: dict = None) -> dict:
                 "Уникальный дизайн под задачу, не generic landing. "
                 "Верни только код компонента."
             )
-            code = await agent_reply(
-                "Соня", "Frontend Developer",
-                "Эксперт React UI", prompt, [],
-            )
-            code = _extract_code(code)
-            if code and "function App" in code:
-                result = {"title": title, "code": code, "generated_by": "llm"}
-                if is_site:
-                    result["is_site"] = True
-                return result
-    except Exception:
-        pass
+            last_err = None
+            for attempt in range(2):
+                try:
+                    raw = await agent_reply(
+                        "Соня", "Frontend Developer",
+                        "Эксперт React UI", prompt, [],
+                        max_tokens=8192,
+                        timeout=120.0,
+                    )
+                    code = _extract_code(raw)
+                    if code and any(marker in code for marker in _CODE_MARKERS):
+                        result = {"title": title, "code": code, "generated_by": "llm"}
+                        if is_site:
+                            result["is_site"] = True
+                        return result
+                    last_err = "LLM вернул код без App()"
+                except Exception as exc:
+                    last_err = str(exc)
+                    log.warning("LLM codegen attempt %s failed: %s", attempt + 1, exc)
+            if last_err:
+                log.warning("LLM codegen fallback for task %r: %s", title, last_err)
+    except Exception as exc:
+        log.warning("LLM codegen unavailable: %s", exc)
 
-    result = _minimal_react(title, task_text)
+    result = _template_react(task_text, hints)
     if is_site:
         result["is_site"] = True
     return result
@@ -62,35 +78,50 @@ async def generate_artifact_content(task_text: str, art_type: str, agent_name: s
                 "Создай уникальный результат под запрос. "
                 "Для presentation/table — HTML или markdown. Для code — блок кода."
             )
-            return await agent_reply(agent_name, art_type, "Expert", prompt, [])
-    except Exception:
-        pass
+            return await agent_reply(
+                agent_name, art_type, "Expert", prompt, [],
+                max_tokens=4096,
+                timeout=90.0,
+            )
+    except Exception as exc:
+        log.warning("LLM artifact generation failed: %s", exc)
     return f"Результат по задаче: {task_text}"
 
 
 def _extract_code(text: str) -> str:
-    m = re.search(r"```(?:jsx|javascript|js)?\s*([\s\S]*?)```", text)
+    m = re.search(r"```(?:jsx|javascript|js|tsx)?\s*([\s\S]*?)```", text, re.IGNORECASE)
     if m:
         return m.group(1).strip()
-    if "function App" in text:
-        return text.strip()
+    text = (text or "").strip()
+    for marker in _CODE_MARKERS:
+        if marker in text:
+            return text[text.find(marker):].strip()
     return ""
 
 
-def _minimal_react(title: str, task: str) -> dict:
-    """Единственный fallback — простой блок, не landing."""
+def _template_react(task_text: str, hints: dict | None = None) -> dict:
+    """Fallback — полноценный шаблон под тип задачи, не пустой каркас."""
+    hints = hints or {}
+    try:
+        from agents.react_preview import generate_react_preview
+
+        colors = hints.get("colors") or None
+        theme = hints.get("theme") or ""
+        preview = generate_react_preview(task_text, theme=theme, colors=colors)
+        preview["generated_by"] = "template"
+        return preview
+    except Exception as exc:
+        log.warning("Template react fallback failed: %s", exc)
+
+    title = (task_text or "Компонент")[:60]
     code = f"""
 function App() {{
-  const [note] = useState("{_esc(task)}");
+  const [note] = useState("{_esc(task_text)}");
   return (
     <div style={{{{ minHeight: '100vh', padding: 32, fontFamily: 'system-ui',
       background: 'linear-gradient(160deg,#1a1d2e,#252a40)', color: '#f0f0f5' }}}}>
-      <h1 style={{{{ fontSize: 24, marginBottom: 12 }}}}>{_esc(title)}</h1>
-      <p style={{{{ opacity: 0.85, lineHeight: 1.6 }}}}>{{note}}</p>
-      <div style={{{{ marginTop: 24, padding: 20, background: 'rgba(255,255,255,0.06)',
-        borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)' }}}}>
-        Сгенерировано под вашу задачу (LLM недоступен — базовый каркас).
-      </div>
+      <h1 style={{{{ fontSize: 28, marginBottom: 12, fontWeight: 700 }}}}>{_esc(title)}</h1>
+      <p style={{{{ opacity: 0.85, lineHeight: 1.6, maxWidth: 640 }}}}>{{note}}</p>
     </div>
   );
 }}
