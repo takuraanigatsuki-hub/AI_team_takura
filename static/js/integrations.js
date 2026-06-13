@@ -122,7 +122,7 @@
         const el = document.getElementById('cursorPanelBody');
         if (!el) return;
         if (!cursorStatus) {
-            el.innerHTML = global.UICore ? UICore.loadingState('', { compact: true }) : '<div class="dash-loading">Загрузка…</div>';
+            el.innerHTML = global.UICore ? UICore.loadingState('Загрузка…', { compact: true }) : '<div class="dash-loading">Загрузка…</div>';
             return;
         }
         const user = cursorStatus.user?.email || cursorStatus.user?.userEmail || '—';
@@ -290,7 +290,9 @@
                         <small class="muted">${p.inspiration ? `↳ ${p.inspiration}` : ''}</small>
                     </div>`).join('')}</div>` : '<p class="muted">Портfolio пуст — Соня скоро создаст первый проект</p>'}`;
         } catch (e) {
-            el.innerHTML = `<div class="panel-error">${e.message}</div>`;
+            el.innerHTML = global.UICore
+                ? UICore.errorState(e.message)
+                : `<div class="panel-error">${e.message}</div>`;
         }
     }
 

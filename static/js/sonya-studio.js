@@ -61,7 +61,7 @@
 
     async function loadProjects(selectId) {
         const listEl = document.getElementById('ssProjectList');
-        if (listEl) listEl.innerHTML = global.UICore ? UICore.loadingState('', { compact: true }) : '<div class="dash-loading">Загрузка…</div>';
+        if (listEl) listEl.innerHTML = global.UICore ? UICore.loadingState('Загрузка…', { compact: true }) : '<div class="dash-loading">Загрузка…</div>';
         try {
             const r = await fetch('/api/sonya/projects', { credentials: 'same-origin' });
             if (r.status === 401) {
@@ -99,7 +99,7 @@
                 title: 'Нет проектов',
                 text: 'Создайте первый дизайн-проект',
                 primaryLabel: 'Новый проект',
-                primaryOnclick: 'SonyaStudio.createNew()',
+                primaryOnclick: 'SonyaStudio.createProject()',
             }) : '<div class="panel-empty">Нет проектов.<br>Нажмите «Новый проект».</div>';
             return;
         }

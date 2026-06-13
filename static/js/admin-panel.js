@@ -226,7 +226,7 @@
             if (window.SecurityDashboard) SecurityDashboard.load();
         }
         else if (activeSection === 'flags') {
-            el.innerHTML = `<div class="admin-section-head"><h2>🚩 Feature Flags</h2><p class="muted">Включение функций платформы</p></div><div id="featureFlagsPanel">${global.UICore ? UICore.loadingState('', { compact: true }) : '<div class="dash-loading">Загрузка…</div>'}</div>`;
+            el.innerHTML = `<div class="admin-section-head"><h2>🚩 Feature Flags</h2><p class="muted">Включение функций платформы</p></div><div id="featureFlagsPanel">${global.UICore ? UICore.loadingState('Загрузка…', { compact: true }) : '<div class="dash-loading">Загрузка…</div>'}</div>`;
             loadFeatureFlags();
         }
         else if (activeSection === 'users') el.innerHTML = renderUsersTable(user);

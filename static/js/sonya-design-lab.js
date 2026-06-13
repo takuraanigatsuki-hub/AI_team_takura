@@ -75,7 +75,7 @@
         const paletteEl = el('dlPalette');
         const statsEl = el('dlStats');
         const discoveryEl = el('dlDiscoveryStatus');
-        if (studiedEl) studiedEl.innerHTML = global.UICore ? UICore.loadingState('', { compact: true }) : '<div class="panel-empty">Загрузка…</div>';
+        if (studiedEl) studiedEl.innerHTML = global.UICore ? UICore.loadingState('Загрузка…', { compact: true }) : '<div class="panel-empty">Загрузка…</div>';
         if (discoveryEl) discoveryEl.innerHTML = global.UICore ? UICore.loadingState('Загрузка статуса…', { compact: true }) : '<div class="panel-empty">Загрузка статуса…</div>';
         try {
             cache = await fetchDesignLab();

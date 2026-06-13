@@ -429,7 +429,7 @@
         }
 
         if (activeTab === 'workspaces') {
-            el.innerHTML = '<div class="dash-loading">Загрузка workspaces…</div>';
+            el.innerHTML = global.UICore ? UICore.loadingState('Загрузка workspaces…', { compact: true }) : '<div class="dash-loading">Загрузка workspaces…</div>';
             renderWorkspaces(user, el);
             return;
         }
