@@ -361,9 +361,9 @@
 .dl-header {
     position: relative;
     z-index: 2;
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
     padding: 10px 20px;
     border-bottom: 1px solid var(--ds-border);
@@ -371,6 +371,8 @@
     backdrop-filter: blur(12px);
 }
 .dl-header-logo {
+    grid-column: 1;
+    justify-self: start;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -380,6 +382,8 @@
     text-decoration: none;
 }
 .dl-header-nav {
+    grid-column: 2;
+    justify-self: center;
     display: flex;
     gap: 12px;
     font-size: 13px;
