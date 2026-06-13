@@ -83,6 +83,8 @@ async def lifespan(app: FastAPI):
             s = _settings()
             prov = "Smart AIPI" if "smartaipi" in (s.get("base_url") or "") else "OpenAI-compatible"
             print(f"🤖 LLM: {prov} | chat={s.get('model')} | router={__import__('integrations.llm_client', fromlist=['router_model']).router_model()}")
+            from integrations.http_client import describe_outbound
+            print(f"🌐 Outbound: {describe_outbound()}")
         else:
             print("🤖 LLM: не настроен (keyword-fallback)")
     except Exception as e:
