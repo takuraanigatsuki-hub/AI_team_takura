@@ -114,6 +114,10 @@ bash scripts/deploy-vps.sh
 
 Подробно: [docs/DEPLOY.md](docs/DEPLOY.md) — HTTPS, auto-deploy, бэкапы `data/`.
 
+**Куда что подключить (DNS, GitHub Secrets, .env):** [docs/WHERE_TO_CONNECT.md](docs/WHERE_TO_CONNECT.md)
+
+Шаблон production `.env`: скопируйте `.env.production.example` → `.env` на VPS.
+
 ## Стек
 
 Python · FastAPI · WebSocket · Three.js · Cursor SDK · Playwright · Docker
