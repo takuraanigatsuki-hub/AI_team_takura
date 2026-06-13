@@ -29,10 +29,19 @@
 
 ## Шаг 1 — VPS (сервер)
 
-### Где взять
-Timeweb · Hetzner · DigitalOcean · Selectel — **Ubuntu 22.04**, 2 GB RAM.
+### Где взять (оплата в рублях)
 
-### Что подключить на VPS
+Подробный рейтинг провайдеров: **[HOSTING_RU.md](./HOSTING_RU.md)**
+
+| Для кого | Куда | Ориентир цены |
+|----------|------|----------------|
+| Проще всего (VPS + домен) | [REG.RU](https://www.reg.ru/vps/linux) | ~980 ₽/мес (2 GB) |
+| Облако, почасовая оплата | [Timeweb Cloud](https://timeweb.cloud/services/vds-vps) | от ~880 ₽/мес |
+| Надёжнее, корп. уровень | [Selectel](https://selectel.ru/services/cloud/servers/) | ~1000+ ₽/мес |
+
+Оплата: карта, **СБП**, ЮMoney, SberPay.
+
+### Где взять (технически)
 
 | Куда | Что |
 |------|-----|
