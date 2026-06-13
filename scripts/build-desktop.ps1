@@ -1,4 +1,4 @@
-# AI Team Room — нативный desktop-клиент (WebView2 / .NET), без Python
+# AI Team Room — нативный desktop-клиент + установщик (.NET 8 / WebView2)
 # Требуется: .NET 8 SDK — winget install Microsoft.DotNet.SDK.8
 
 $ErrorActionPreference = "Stop"
@@ -17,30 +17,29 @@ if (-not $dotnet) {
 
 New-Item -ItemType Directory -Force -Path "$Root\dist" | Out-Null
 
-Write-Host "==> dotnet publish (native exe)..." -ForegroundColor Yellow
+Write-Host "==> dotnet publish client..." -ForegroundColor Yellow
 dotnet publish "$Root\desktop-client\AITeamRoom.csproj" -c Release -r win-x64 --self-contained true `
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o "$Root\dist\publish"
 
 $Portable = Join-Path $Root "dist\publish\AI_Team_Room.exe"
 if (-not (Test-Path $Portable)) {
-    Write-Host "Build failed" -ForegroundColor Red
+    Write-Host "Client build failed" -ForegroundColor Red
     exit 1
 }
 Copy-Item $Portable "$Root\dist\AI_Team_Room.exe" -Force
 Write-Host "OK Portable: $Root\dist\AI_Team_Room.exe" -ForegroundColor Green
 
-Write-Host "==> Installer wrapper..." -ForegroundColor Yellow
-$py = "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe"
-if (Test-Path $py) {
-    & $py -m pip install -q pyinstaller 2>$null
-    & $py -m PyInstaller build-installer.spec --noconfirm
-    if (Test-Path "$Root\dist\AI_Team_Room_Setup.exe") {
-        Write-Host "OK Setup: $Root\dist\AI_Team_Room_Setup.exe" -ForegroundColor Green
-    }
-} else {
-    Copy-Item "$Root\dist\AI_Team_Room.exe" "$Root\dist\AI_Team_Room_Setup.exe" -Force
-    Write-Host "OK Setup (copy): dist\AI_Team_Room_Setup.exe" -ForegroundColor Yellow
+Write-Host "==> dotnet publish installer..." -ForegroundColor Yellow
+dotnet publish "$Root\desktop-installer\AITeamRoom.Installer.csproj" -c Release -r win-x64 --self-contained true `
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o "$Root\dist\publish"
+
+$Setup = Join-Path $Root "dist\publish\AI_Team_Room_Setup.exe"
+if (-not (Test-Path $Setup)) {
+    Write-Host "Installer build failed" -ForegroundColor Red
+    exit 1
 }
+Copy-Item $Setup "$Root\dist\AI_Team_Room_Setup.exe" -Force
+Write-Host "OK Setup: $Root\dist\AI_Team_Room_Setup.exe" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "Upload dist\ to VPS for /api/downloads/desktop/*" -ForegroundColor Cyan

@@ -1,4 +1,5 @@
 using System.Drawing.Drawing2D;
+using System.Runtime.InteropServices;
 
 namespace AITeamRoom;
 
@@ -7,10 +8,17 @@ internal sealed class TitleBar : Panel
     public event EventHandler? RefreshClicked;
     public event EventHandler? SettingsClicked;
 
+    private const int WmNcLButtonDown = 0xA1;
+    private const int HtCaption = 0x2;
+
+    [DllImport("user32.dll")]
+    private static extern bool ReleaseCapture();
+
+    [DllImport("user32.dll")]
+    private static extern int SendMessage(IntPtr hWnd, int msg, int wParam, int lParam);
+
     private readonly Label _title;
     private readonly FlowLayoutPanel _right;
-    private bool _dragging;
-    private Point _dragStart;
     private Form? _host;
 
     public TitleBar()
@@ -65,15 +73,16 @@ internal sealed class TitleBar : Panel
         Controls.Add(_right);
         Controls.Add(left);
 
-        MouseDown += OnDragMouseDown;
-        MouseMove += OnDragMouseMove;
-        MouseUp += (_, _) => _dragging = false;
-        left.MouseDown += OnDragMouseDown;
-        left.MouseMove += OnDragMouseMove;
-        left.MouseUp += (_, _) => _dragging = false;
-        _title.MouseDown += OnDragMouseDown;
-        _title.MouseMove += OnDragMouseMove;
-        _title.MouseUp += (_, _) => _dragging = false;
+        MouseDown += (_, e) => { if (e.Button == MouseButtons.Left) BeginDrag(); };
+        left.MouseDown += (_, e) => { if (e.Button == MouseButtons.Left) BeginDrag(); };
+        _title.MouseDown += (_, e) => { if (e.Button == MouseButtons.Left) BeginDrag(); };
+    }
+
+    private void BeginDrag()
+    {
+        if (_host == null) return;
+        ReleaseCapture();
+        SendMessage(_host.Handle, WmNcLButtonDown, HtCaption, 0);
     }
 
     public void Attach(Form host)
@@ -107,29 +116,6 @@ internal sealed class TitleBar : Panel
         tt.SetToolTip(btn, tip);
         btn.Click += onClick;
         return btn;
-    }
-
-    private void OnDragMouseDown(object? sender, MouseEventArgs e)
-    {
-        if (e.Button != MouseButtons.Left || _host == null)
-            return;
-        _dragging = true;
-        _dragStart = e.Location;
-        if (sender is Control c && c != this)
-        {
-            var pt = c.PointToScreen(e.Location);
-            _dragStart = PointToClient(pt);
-        }
-    }
-
-    private void OnDragMouseMove(object? sender, MouseEventArgs e)
-    {
-        if (!_dragging || _host == null)
-            return;
-        var screen = PointToScreen(e.Location);
-        _host.Location = new Point(
-            screen.X - _dragStart.X - Left,
-            screen.Y - _dragStart.Y - Top + _host.Location.Y);
     }
 
     private void MinimizeHost() => _host?.WindowState = FormWindowState.Minimized;

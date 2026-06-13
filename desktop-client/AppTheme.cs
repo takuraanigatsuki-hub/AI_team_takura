@@ -1,3 +1,6 @@
+using System.Drawing.Drawing2D;
+using System.Runtime.InteropServices;
+
 namespace AITeamRoom;
 
 internal static class AppTheme

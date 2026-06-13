@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>AI_Team_Room_Setup</AssemblyName>
+    <RootNamespace>AITeamRoom.Installer</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <Version>1.1.0</Version>
+    <Product>AI Team Room Setup</Product>
+    <Company>Takura</Company>
+    <Description>Установщик AI Team Room</Description>
+  </PropertyGroup>
+  <ItemGroup Condition="Exists('..\dist\AI_Team_Room.exe')">
+    <EmbeddedResource Include="..\dist\AI_Team_Room.exe">
+      <LogicalName>AI_Team_Room.exe</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

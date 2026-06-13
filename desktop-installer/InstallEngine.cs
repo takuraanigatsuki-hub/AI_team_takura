@@ -108,21 +108,30 @@ internal static class InstallEngine
 
     static void CreateShortcut(string target, string shortcutPath)
     {
-        var ps = $@"
+        var ps = $"""
 $WshShell = New-Object -ComObject WScript.Shell
 $Shortcut = $WshShell.CreateShortcut('{shortcutPath.Replace("'", "''")}')
 $Shortcut.TargetPath = '{target.Replace("'", "''")}'
 $Shortcut.WorkingDirectory = '{Path.GetDirectoryName(target)!.Replace("'", "''")}'
 $Shortcut.Description = '{AppName}'
 $Shortcut.Save()
-";
-        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+""";
+        var tmp = Path.Combine(Path.GetTempPath(), "aitr-shortcut.ps1");
+        File.WriteAllText(tmp, ps, Encoding.UTF8);
+        try
         {
-            FileName = "powershell",
-            Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{ps.Replace("\"", "\\\"")}\"",
-            CreateNoWindow = true,
-            UseShellExecute = false,
-        })?.WaitForExit(15000);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "powershell",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -File \"{tmp}\"",
+                CreateNoWindow = true,
+                UseShellExecute = false,
+            })?.WaitForExit(15000);
+        }
+        finally
+        {
+            try { File.Delete(tmp); } catch { /* ignore */ }
+        }
     }
 
     static void RegisterUninstall(string installDir, string exePath)
