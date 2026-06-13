@@ -619,8 +619,10 @@
                     type: 'message',
                     message: data.message || '⏳ Задача ждёт подтверждения',
                 });
-                if (document.getElementById('tasksView') && !document.getElementById('tasksView').classList.contains('hidden')) loadTasks();
-                else if (window.UIEnhancements) UIEnhancements.toast('⏳ Виктор ждёт вашего решения', 'info');
+                const tasksOpen = document.getElementById('tasksView') && !document.getElementById('tasksView').classList.contains('hidden');
+                if (!tasksOpen && window.UIEnhancements) {
+                    UIEnhancements.toast('⏳ Виктор ждёт вашего решения', 'info');
+                }
                 break;
             case 'task_approved':
             case 'task_revision':
