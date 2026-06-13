@@ -595,10 +595,13 @@
                 credentials: 'same-origin',
                 body: JSON.stringify(body),
             });
-            const d = await r.json();
+            const d = global.UICore?.parseApiJson
+                ? await UICore.parseApiJson(r, 'Настройки сайта')
+                : await r.json();
             if (!r.ok) throw new Error(d.detail || 'Ошибка');
-            siteInfo = d;
+            siteInfo = d.config ? d : { ...siteInfo, config: d.config || d };
             if (window.UIEnhancements) UIEnhancements.toast('Настройки сайта сохранены', 'success');
+            renderContent();
         } catch (err) {
             if (window.UIEnhancements) UIEnhancements.toast(err.message, 'error');
         }

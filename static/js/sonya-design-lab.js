@@ -301,24 +301,8 @@
 
     async function loadSonyaLearning() {
         if (global.AgentLearningProjects) {
-            switchAgentLearningPanel('agent-projects');
-            await AgentLearningProjects.load('frontend');
-            return;
-        }
-        const grid = el('slProjectsGrid');
-        if (grid) grid.innerHTML = global.UICore ? UICore.loadingState('Загрузка…', { compact: true }) : '<div class="panel-empty">Загрузка…</div>';
-        try {
-            const r = await fetch('/api/sonya/projects?scope=learning', { credentials: 'same-origin' });
-            const d = global.UICore?.parseApiJson
-                ? await UICore.parseApiJson(r, 'Проекты Сони')
-                : await r.json();
-            renderSonyaLearningProjects(grid, d.projects || []);
-        } catch (e) {
-            if (grid) {
-                grid.innerHTML = global.UICore
-                    ? UICore.errorState(e.message, { retryOnclick: 'SonyaDesignLab.loadSonyaLearning()' })
-                    : `<div class="panel-error">${escape(e.message)}</div>`;
-            }
+            if (global.switchAgentLearningPanel) switchAgentLearningPanel('agent-projects');
+            return AgentLearningProjects.load('frontend');
         }
     }
 

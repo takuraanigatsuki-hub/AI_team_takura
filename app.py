@@ -1005,7 +1005,14 @@ async def admin_update_site(body: AdminSiteUpdate, request: Request):
         cfg_module.config["auto_theme"] = body.auto_theme
     if body.telegram_notify_tasks is not None:
         cfg_module.config["telegram_notify_tasks"] = body.telegram_notify_tasks
-    return {"ok": True, "config": result}
+    cfg = await get_config()
+    agents = await get_agents()
+    return {
+        "ok": True,
+        "config": cfg,
+        "agents_count": len(agents.get("agents", [])),
+        "active_agents": sum(1 for a in agents.get("agents", []) if a.get("status") in ("working", "thinking", "learning")),
+    }
 
 
 @app.post("/api/admin/console")
