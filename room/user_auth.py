@@ -640,6 +640,7 @@ def update_profile(
     user_id: str,
     *,
     name: str = None,
+    username: str = None,
     default_view: str = None,
     theme: str = None,
     project_goal: str = None,
@@ -650,7 +651,15 @@ def update_profile(
         if u.get("id") != user_id:
             continue
         if name is not None:
-            u["name"] = name.strip()[:80] or u.get("name", "")
+            new_name = validate_display_name(name.strip() or u.get("name", ""))
+            if _find_user_by_display_name(new_name, exclude_id=user_id):
+                raise ValueError("Это имя уже занято")
+            u["name"] = new_name
+        if username is not None and username.strip():
+            new_username = validate_username(username)
+            if _username_exists(new_username, user_id, users):
+                raise ValueError("Этот логин уже занят")
+            u["username"] = new_username
         if default_view is not None and default_view in ALLOWED_DEFAULT_VIEWS:
             u["default_view"] = default_view
         if theme is not None and theme in ("light", "dark", "auto"):
@@ -736,6 +745,7 @@ def ensure_owner(email: str, password: str, name: str = "Owner") -> dict:
         updated = {
             "id": str(uuid.uuid4())[:12],
             "email": email,
+            "username": _allocate_username(normalize_username(name) or email.split("@")[0], None, users),
             "name": (name or email.split("@")[0]).strip()[:80],
             "password": pw,
             "role": "owner",
@@ -895,6 +905,7 @@ def admin_list_users(admin_user: dict) -> list[dict]:
         out.append({
             "id": pub["id"],
             "email": pub["email"],
+            "username": pub.get("username") or u.get("username", ""),
             "name": pub["name"],
             "role": pub["role"],
             "role_label": pub["role_label"],
@@ -968,7 +979,10 @@ def admin_update_user(
     if target.get("role") == "owner" and not is_owner_user(admin_user):
         raise ValueError("Нельзя изменять владельца")
     if name is not None and name.strip():
-        target["name"] = name.strip()[:80]
+        new_name = validate_display_name(name)
+        if _find_user_by_display_name(new_name, exclude_id=target_user_id):
+            raise ValueError("Это имя уже занято")
+        target["name"] = new_name
     if role is not None:
         role = role.strip().lower()
         if role not in ROLE_PRIVILEGES:

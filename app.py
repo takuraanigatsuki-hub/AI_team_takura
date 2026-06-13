@@ -486,10 +486,12 @@ class AuthRegister(BaseModel):
     email: str
     password: str
     name: str = ""
+    username: str = ""
 
 
 class AuthLogin(BaseModel):
-    email: str
+    login: str = ""
+    email: str = ""
     password: str
 
 
@@ -502,6 +504,7 @@ class AuthSetup(BaseModel):
 
 class AuthProfileUpdate(BaseModel):
     name: str | None = None
+    username: str | None = None
     default_view: str | None = None
     theme: str | None = None
     project_goal: str | None = None
@@ -639,7 +642,7 @@ async def auth_register(body: AuthRegister):
     from fastapi.responses import JSONResponse
     from room.user_auth import register
     try:
-        user, token = register(body.email, body.password, body.name)
+        user, token = register(body.email, body.password, body.name, body.username)
         resp = JSONResponse({"ok": True, "user": user})
         _set_session_cookie(resp, token)
         return resp
@@ -652,7 +655,8 @@ async def auth_login(body: AuthLogin):
     from fastapi.responses import JSONResponse
     from room.user_auth import login
     try:
-        user, token = login(body.email, body.password)
+        login_id = (body.login or body.email or "").strip()
+        user, token = login(login_id, body.password)
         resp = JSONResponse({"ok": True, "user": user})
         _set_session_cookie(resp, token)
         return resp
@@ -742,6 +746,7 @@ async def auth_update_profile(body: AuthProfileUpdate, request: Request):
         updated = update_profile(
             user["id"],
             name=body.name,
+            username=body.username,
             default_view=body.default_view,
             theme=body.theme,
             project_goal=body.project_goal,
