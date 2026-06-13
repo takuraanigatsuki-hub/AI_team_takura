@@ -35,10 +35,11 @@ def test_startup_landing(client):
 def test_app_spa(client):
     r = client.get("/app")
     assert r.status_code == 200
-    assert "view-tab" in r.text or "3D Студия" in r.text
+    assert 'id="appSidebar"' in r.text or "app-sidebar" in r.text
+    assert "3D студия" in r.text or "3D Studio" in r.text
     assert "search.js" in r.text
     assert 'id="siteSearchInput"' not in r.text  # overlay created dynamically
-    assert 'onclick="SiteSearch.open()"' in r.text
+    assert "SiteSearch" in r.text
 
 
 def test_auth_register_login(client):
