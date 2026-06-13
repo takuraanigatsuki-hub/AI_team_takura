@@ -58,7 +58,7 @@ async def chat_stream(messages: list, max_tokens: int = 900) -> AsyncIterator[st
     cfg = _settings()
     if not cfg["api_key"]:
         return
-    async with httpx.AsyncClient(timeout=90.0) as client:
+    async with httpx.AsyncClient(timeout=90.0, trust_env=False) as client:
         async with client.stream(
             "POST",
             f"{cfg['base_url']}/chat/completions",
