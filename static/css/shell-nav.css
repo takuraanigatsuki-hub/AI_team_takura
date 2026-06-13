@@ -176,10 +176,12 @@ body.workspace-shell .sb-brand {
 body.workspace-shell .sb-brand-mark {
     width: 36px;
     height: 36px;
-    display: grid;
+    display: inline-grid;
     place-items: center;
     border-radius: 10px;
     font-size: 18px;
+    line-height: 1;
+    flex-shrink: 0;
     background: linear-gradient(135deg, #8b5cf6, #7aa2ff);
     box-shadow: 0 0 20px rgba(139, 92, 246, 0.35);
 }
