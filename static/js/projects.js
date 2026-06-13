@@ -1,4 +1,4 @@
-/** Вкладка «Проекты» — все артефакты команды */
+/** Вкладка «Проекты» — финальные артефакты команды */
 (function (global) {
     let filterAgent = '';
     let filterType = '';
@@ -11,7 +11,7 @@
         if (!el) return;
         el.innerHTML = global.UICore ? UICore.loadingState() : '<div class="dash-loading">Загрузка…</div>';
         try {
-            let url = '/api/projects?limit=100';
+            let url = '/api/projects?limit=100&deliverables=true';
             if (filterAgent) url += `&agent_id=${encodeURIComponent(filterAgent)}`;
             if (filterType) url += `&type=${encodeURIComponent(filterType)}`;
             const r = await fetch(url, { credentials: 'same-origin' });
@@ -41,14 +41,24 @@
         presentation: '📽️ Презентация',
         model_3d: '🧊 3D',
         ui: '🎨 UI',
+        site: '🌐 Сайт',
         code: '💻 Код',
-        architecture: '🏛️ Архитектура',
-        tests: '🧪 Тесты',
-        document: '📝 Док',
-        infra: '🔧 Infra',
-        review: '🔍 Review',
-        plan: '📋 План',
+        document: '📝 Документ',
     };
+
+    async function cleanup() {
+        if (!confirm('Удалить промежуточные артефакты и оставить только готовые проекты?')) return;
+        try {
+            const r = await fetch('/api/projects/cleanup', { method: 'DELETE', credentials: 'same-origin' });
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.detail || 'Ошибка');
+            if (global.UIEnhancements) UIEnhancements.toast(`Очищено: ${d.removed || 0}`, 'success');
+            load();
+        } catch (e) {
+            if (global.UIEnhancements) UIEnhancements.toast(e.message, 'error');
+            else alert(e.message);
+        }
+    }
 
     function render(data, el) {
         const stats = data.stats || {};
@@ -63,53 +73,38 @@
         const statEl = document.getElementById('projectsStats');
         if (statEl) {
             statEl.innerHTML = `
-                <div class="stat-card"><span class="stat-num">${stats.total || 0}</span><span class="stat-label">Всего</span></div>
+                <div class="stat-card"><span class="stat-num">${stats.total || 0}</span><span class="stat-label">Готовых</span></div>
                 <div class="stat-card"><span class="stat-num">${stats.by_type?.presentation || 0}</span><span class="stat-label">Презентации</span></div>
                 <div class="stat-card"><span class="stat-num">${stats.by_type?.model_3d || 0}</span><span class="stat-label">3D</span></div>
-                <div class="stat-card"><span class="stat-num">${stats.by_type?.code || 0}</span><span class="stat-label">Код</span></div>`;
+                <div class="stat-card"><span class="stat-num">${stats.by_type?.ui || stats.by_type?.site || 0}</span><span class="stat-label">UI / Сайты</span></div>`;
         }
 
         if (!projects.length) {
             el.innerHTML = global.UICore ? UICore.emptyState({
                 icon: '📦',
-                title: 'Нет проектов',
-                text: 'Отправьте задачу агенту — артефакты появятся здесь',
+                title: 'Нет готовых проектов',
+                text: 'Отправьте задачу — финальный результат появится здесь',
                 primaryLabel: 'Новая задача',
                 primaryOnclick: "switchView('chat')",
-            }) : '<div class="projects-empty"><div class="welcome-icon">📦</div><p>Нет проектов — отправьте задачу агенту</p></div>';
+            }) : '<div class="projects-empty"><div class="welcome-icon">📦</div><p>Нет проектов</p></div>';
             return;
         }
 
-        el.innerHTML = projects.map((p) => {
-            const admin = global.UIAccess?.canAccessConsole?.(global.Auth?.getUser());
-            return `
+        el.innerHTML = projects.map((p) => `
             <article class="project-card ${p.type}">
                 <div class="pc-head">
                     <span class="pc-type">${TYPE_LABELS[p.type] || p.type}</span>
                     <span class="pc-agent">${p.agent_emoji || ''} ${escape(p.agent_name || p.agent_id)}</span>
                 </div>
                 <h3 class="pc-title">${escape(p.title)}</h3>
-                <p class="pc-desc">${escape((p.description || '').slice(0, 100))}</p>
-                <div class="pc-tags">${(p.tags || []).slice(0, 4).map((t) => `<span class="tag">${escape(t)}</span>`).join('')}</div>
+                <p class="pc-desc">${escape((p.description || '').slice(0, 120))}</p>
                 <div class="pc-actions">
-                    ${p.has_preview ? `<a href="/api/projects/${p.id}/preview" target="_blank" class="btn-primary btn-sm">Открыть</a>` : ''}
+                    ${p.has_preview ? `<a href="/api/projects/${p.id}/preview" target="_blank" rel="noopener" class="btn-primary btn-sm">Открыть</a>` : ''}
+                    ${p.type === 'site' || p.type === 'ui' ? `<button type="button" class="btn-secondary btn-sm" onclick="switchView('sites')">🌐 Сайты</button>` : ''}
                     <button type="button" class="btn-secondary btn-sm" onclick="window.open('/api/projects/${p.id}/export?format=print','_blank')">PDF</button>
-                    <button type="button" class="btn-secondary btn-sm" onclick="ProjectsUI.diffWith('${p.id}')">Diff</button>
-                    ${admin ? `<button type="button" class="btn-secondary btn-sm" onclick="PowerPack.createPR('${p.id}')">PR</button>` : ''}
-                    <button type="button" class="btn-secondary btn-sm" onclick="AgentActivity.open('${p.agent_id}')">Агент</button>
-                    <button type="button" class="btn-secondary btn-sm" onclick="ProjectsUI.revise('${p.agent_id}','${p.id}')">✏️</button>
                 </div>
-                <time class="pc-time">${(p.created_at || '').slice(0, 16).replace('T', ' ')} · v${p.version || 1}</time>
-            </article>`;
-        }).join('');
-    }
-
-    async function diffWith(id) {
-        const other = prompt('ID второго проекта для сравнения:');
-        if (!other) return;
-        const r = await fetch(`/api/projects/${id}/diff/${other}`);
-        const d = await r.json();
-        if (window.PowerPack) PowerPack.showDiffModal(d);
+                <time class="pc-time">${(p.created_at || '').slice(0, 16).replace('T', ' ')}</time>
+            </article>`).join('');
     }
 
     function setFilter(agent, type) {
@@ -131,13 +126,9 @@
         }
     }
 
-    function revise(agentId, artifactId) {
-        if (window.AgentActivity) AgentActivity.revise(agentId, artifactId);
-    }
-
     function escape(s) {
         return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     }
 
-    global.ProjectsUI = { load, setFilter, setSearch, revise, diffWith };
+    global.ProjectsUI = { load, setFilter, setSearch, cleanup };
 })(window);

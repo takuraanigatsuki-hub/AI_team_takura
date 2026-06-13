@@ -179,6 +179,7 @@
         document.getElementById('sprintView')?.classList.toggle('hidden', view !== 'sprint');
         document.getElementById('timelineView')?.classList.toggle('hidden', view !== 'timeline');
         document.getElementById('projectsView')?.classList.toggle('hidden', view !== 'projects');
+        document.getElementById('sitesView')?.classList.toggle('hidden', view !== 'sites');
         document.getElementById('profileView')?.classList.toggle('hidden', view !== 'profile');
         document.getElementById('adminView')?.classList.toggle('hidden', view !== 'admin');
         document.getElementById('supportView')?.classList.toggle('hidden', view !== 'support');
@@ -201,6 +202,7 @@
             }
         }
         if (view === 'projects' && window.ProjectsUI) ProjectsUI.load();
+        if (view === 'sites' && window.SitesUI) SitesUI.load();
         if (view === 'kanban' && window.KanbanUI) KanbanUI.refresh();
         if (view === 'sprint' && window.SprintUI) SprintUI.load();
         if (view === 'timeline' && window.TimelineUI) TimelineUI.load(1);
@@ -923,6 +925,7 @@
         document.getElementById('messages').appendChild(div);
         scrollToBottom('messages');
         trimWorkChat();
+        if (data.type === 'task_done' && window.UIEnhancements) {
             UIEnhancements.toast(`✅ ${data.agent_name || 'Агент'}: задача выполнена`, 'success');
         }
         applyChatSearchFilter();

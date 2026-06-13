@@ -21,8 +21,9 @@
             { view: 'kanban', icon: '📌', label: 'Kanban' },
         ]},
         { group: 'Аналитика', items: [
-            { view: 'dashboard', icon: '📊', label: 'Dashboard' },
+            { view: 'dashboard', icon: '📊', label: 'Панель' },
             { view: 'projects', icon: '📦', label: 'Проекты' },
+            { view: 'sites', icon: '🌐', label: 'Сайты' },
             { view: 'timeline', icon: '⏱', label: 'Timeline' },
         ]},
         { group: 'Планирование', items: [
@@ -58,8 +59,9 @@
             { view: 'kanban', icon: '📌', label: 'Kanban' },
         ]},
         { group: 'Аналитика', items: [
-            { view: 'dashboard', icon: '📊', label: 'Dashboard' },
+            { view: 'dashboard', icon: '📊', label: 'Панель' },
             { view: 'projects', icon: '📦', label: 'Проекты' },
+            { view: 'sites', icon: '🌐', label: 'Сайты' },
             { view: 'timeline', icon: '⏱', label: 'Timeline' },
         ]},
         { group: 'Планирование', items: [
@@ -84,7 +86,7 @@
     const NAV_INVESTOR = [
         { group: 'Обзор', items: [
             { view: 'investor', icon: '💼', label: 'Investor', primary: true },
-            { view: 'dashboard', icon: '📊', label: 'Dashboard' },
+            { view: 'dashboard', icon: '📊', label: 'Панель' },
         ]},
         { group: 'Просмотр', items: [
             { view: 'studio', icon: '🎮', label: '3D' },
