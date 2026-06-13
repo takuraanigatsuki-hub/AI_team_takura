@@ -71,6 +71,7 @@
             { view: 'design', icon: '🎨', label: 'Design Lab', adminLearning: true },
         ]},
         { group: 'Система', advanced: true, items: [
+            { view: 'support', icon: '💬', label: 'Поддержка', supportPanel: true },
             { view: 'agent-learning', icon: '🔬', label: 'Обучение', adminLearning: true },
             { view: 'admin', icon: '🛡', label: 'Admin', admin: true },
             { view: 'investor', icon: '💼', label: 'Investor', investor: true },
@@ -98,6 +99,7 @@
         const mode = global.UICore?.getUiMode?.(user) || 'guest';
         if (mode === 'guest') return NAV_GUEST;
         if (mode === 'investor') return NAV_INVESTOR;
+        if (mode === 'support') return NAV_SUPPORT;
         if (mode === 'admin') return NAV_ADMIN;
         return NAV_MEMBER;
     }
@@ -120,6 +122,7 @@
 
     function canShow(item, user) {
         if (item.admin && !global.Auth?.canAccessAdmin?.(user)) return false;
+        if (item.supportPanel && !global.Auth?.canManageTickets?.(user)) return false;
         if (item.adminLearning && !global.Auth?.canViewAgentLearning?.(user)) return false;
         if (item.investor && !global.Auth?.canViewInvestorPortal?.(user)) return false;
         if (item.role === 'investor') {
