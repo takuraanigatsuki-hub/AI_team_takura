@@ -30,6 +30,7 @@
 
     function toast(msg, type) {
         if (global.UIEnhancements) UIEnhancements.toast(msg, type || 'info');
+        else if (type === 'success' || type === 'error') alert(msg);
     }
 
     function fmtTime(iso) {
@@ -329,7 +330,13 @@
     }
 
     async function open(opts) {
-        const user = global.Auth?.getUser?.() || null;
+        let user = global.Auth?.getUser?.() || null;
+        if (!user && opts?.landing) {
+            try {
+                const r = await fetch('/api/auth/me', { credentials: 'same-origin' });
+                if (r.ok) user = await r.json();
+            } catch (_) { /* guest */ }
+        }
         if (user && isStaff(user) && !opts?.landing) {
             global.switchView?.('support');
             return;
@@ -423,6 +430,6 @@
     }
 
     global.SupportTickets = {
-        open, close, backToHub, submit, sendFree, reply, back: backToHub,
+        open, close, backToHub, submit, sendFree, reply, back: backToHub, submitGuestReport,
     };
 })(window);
