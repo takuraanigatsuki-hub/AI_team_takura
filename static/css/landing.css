@@ -787,6 +787,17 @@ a { color: inherit; text-decoration: none; }
     margin-bottom: 16px;
 }
 .lp-react-nav { background: rgba(122, 162, 255, 0.35); }
+.lp-mock-hero-card {
+    width: min(420px, 92vw);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--lp-border);
+    box-shadow: 0 24px 60px rgba(0,0,0,.45);
+    background: var(--lp-card);
+}
+.lp-mock-rows { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.lp-mock-row { height: 10px; border-radius: 6px; background: rgba(255,255,255,.06); }
+.lp-mock-row.short { width: 65%; }
 .lp-mock-hero-block {
     height: 48px;
     background: linear-gradient(90deg, rgba(157, 78, 221, 0.3), rgba(122, 162, 255, 0.2));

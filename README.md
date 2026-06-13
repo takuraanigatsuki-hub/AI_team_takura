@@ -1,6 +1,6 @@
 # AI Team Room (AI_team_takura)
 
-**Автономная платформа с командой из 13 ИИ-агентов** — от идеи и дизайна до кода, тестов, презентаций и деплоя. Живая 3D-студия, командный чат, Kanban, Figma → React, Cursor SDK, GitHub sync и встроенная поддержка пользователей.
+**Автономная платформа с командой из 13 ИИ-агентов** — от идеи и дизайна до кода, тестов, презентаций и деплоя. Командный чат, Kanban, вкладка **Обучение** (проекты агентов на проверку), Figma → React, Cursor SDK, GitHub sync, **Android companion** и нативный **Windows-установщик с updater**.
 
 ## Что умеет проект
 
@@ -18,21 +18,21 @@
 | 🔧 DevOps | Docker, CI/CD, GitHub Actions, инфраструктура |
 | ⚡ Cursor (Лео) | AI-кодинг, Cloud Agent, GitHub PR |
 | 📽️ Presenter | Pitch deck, слайды, HTML-презентации |
-| 🧊 3D Modeler | Three.js, glTF, интерактивные 3D-сцены |
+| 🧊 3D Modeler | Three.js, glTF (артефакты обучения, не отдельная 3D-студия) |
 | 📊 Evaluator | Оценка качества работы агентов, коучинг |
 | 🛡️ Security | OWASP, аудит, мониторинг угроз (только admin) |
 
 ### 🎮 Интерфейс и рабочие пространства
 
-- **3D-студия** — аватары агентов на сцене, speech bubbles, confetti, mini-map, день/ночь
+- **Обучение** — агенты сдают проекты на проверку (как Sonya Studio), лента обучения и Design Lab для admin
 - **Командный чат** — streaming LLM-ответов, @mentions, история задач
 - **Kanban & Sprint** — backlog, приоритеты, burndown, статусы задач
 - **Timeline / Replay** — хронология событий комнаты
 - **Dashboard** — центр управления: задачи, интеграции, статистика
 - **React Preview** — живой предпросмотр UI прямо в приложении
 - **Sonya Figma Studio** — импорт макетов, Compare (Figma vs React), pipeline deploy
-- **Design Lab & Agent Learning** — обучение и улучшение агентов (admin)
 - **Investor Portal** — отдельный режим для инвесторов
+- **Android companion** — `/mobile` и APK (Capacitor); iOS позже
 - **PWA** — установка на телефон, push-уведомления
 
 ### ⚙️ Разработка и автоматизация
@@ -41,30 +41,31 @@
 - **React Preview + Deploy ZIP** — сборка и выдача артефактов
 - **Cursor Cloud Agent** — удалённое написание кода и PR на GitHub
 - **GitHub Auto-Sync** — commit + push при изменениях (admin)
+- **Knowledge sync** — `knowledge/*.json` и учебные проекты автоматически в репозиторий
 - **RAG knowledge base** — база знаний по ролям агентов
 - **QA Playwright** — автотесты UI в браузере
 - **Docker Sandbox** — изолированное выполнение кода
 - **ReAct loop** — plan → tool → observe для сложных задач
 - **Standup + Voice** — голосовые standup-сессии (TTS/STT)
 
+### 🖥️ Desktop (Windows)
+
+- **Установщик** `dist/AI_Team_Room_Setup.exe` — тёмный UI, ярлыки, регистрация в системе
+- **Updater** `AI_Team_Room_Updater.exe` — скачивает свежий setup с сервера
+- **Uninstaller** `AI_Team_Room_Uninstall.exe` — удаление в том же стиле, что установщик
+- Сборка: `.\scripts\build-desktop.ps1`
+
 ### 👥 Пользователи и администрирование
 
-- **Регистрация / вход** — личный кабинет, настройки, тема
+- **Регистрация / вход** — email или username, уникальные имена
 - **Подписки и баланс** — тарифы, кредиты, billing
 - **Роли**: owner, admin, tech_admin, support, investor, member
 - **Admin-панель** — пользователи, блокировка, сессии, привилегии
-- **Система поддержки** — тикеты, чат с оператором, готовые решения по темам
-- **Скрытие технического UI** — GitHub, API-ключи, Cursor только для admin
+- **Система поддержки** — тикеты, чат с оператором, guest-report на лендинге
 
 ### 🔗 Интеграции
 
-Figma · Cursor SDK · GitHub · Telegram · Linear · Jira · Notion · Vercel · Microsoft 365 (опционально)
-
-### 🛡️ Безопасность
-
-- Security middleware, rate limiting, блокировка IP
-- Фильтрация технических сообщений для обычных пользователей
-- Audit log, security events
+Figma · Cursor SDK · GitHub · Linear · Jira · Notion · Vercel · Telegram (опционально) · Microsoft 365
 
 ## Быстрый запуск (Windows)
 
@@ -81,19 +82,17 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Откройте http://localhost:8000 — главная страница с описанием возможностей, `/app` — рабочее приложение.
+Откройте http://localhost:8000 — главная страница, `/workspace` — приложение, `/mobile` — companion.
 
 ## Переменные окружения (.env)
 
-Скопируйте `.env.example` → `.env`:
-
 | Переменная | Назначение |
 |------------|------------|
-| `OPENAI_API_KEY` | LLM-ответы агентов (OpenAI-compatible, Smart AIPI) |
-| `CURSOR_API_KEY` | Cursor Cloud Agent (Лео) |
+| `OPENAI_API_KEY` | LLM-ответы агентов |
+| `CURSOR_API_KEY` | Cursor Cloud Agent |
 | `FIGMA_*` | Figma OAuth / token |
-| `TELEGRAM_*` | Уведомления + bot |
-| `ROOM_API_KEY` | Опциональная защита POST /api/task |
+| `TELEGRAM_*` | Опциональные уведомления (legacy) |
+| `ROOM_API_KEY` | Защита POST /api/task |
 
 ## Тесты
 
@@ -103,23 +102,9 @@ python -m pytest tests/ -q
 
 ## Production (VPS 24/7)
 
-Сайт на сервере, управление из Cursor через Git push.
-
 ```bash
-# на VPS (один раз)
 bash scripts/install-server.sh
-nano .env
 bash scripts/deploy-vps.sh
 ```
 
-Подробно: [docs/DEPLOY.md](docs/DEPLOY.md) — HTTPS, auto-deploy, бэкапы `data/`.
-
-**Куда что подключить (DNS, GitHub Secrets, .env):** [docs/WHERE_TO_CONNECT.md](docs/WHERE_TO_CONNECT.md)
-
-**REG.RU + Ubuntu:** пошагово [docs/REG_RU_SETUP.md](docs/REG_RU_SETUP.md)
-
-Шаблон production `.env`: скопируйте `.env.production.example` → `.env` на VPS.
-
-## Стек
-
-Python · FastAPI · WebSocket · Three.js · Cursor SDK · Playwright · Docker
+Подробно: [docs/DEPLOY.md](docs/DEPLOY.md) · Android: [android-companion/README.md](android-companion/README.md)
