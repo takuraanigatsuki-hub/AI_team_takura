@@ -292,17 +292,7 @@ internal sealed class HeroPanel : Panel
 
         var glowSize = 52 + (int)(Math.Sin(_pulse * Math.PI * 2) * 4);
         var glowRect = new Rectangle(16, 16 + (88 - glowSize) / 2 - 8, glowSize, glowSize);
-        using var glowBrush = new PathGradientBrush(new Point[] {
-            new(glowRect.X + glowRect.Width / 2, glowRect.Y + glowRect.Height / 2),
-            new(glowRect.Right, glowRect.Y),
-            new(glowRect.Right, glowRect.Bottom),
-            new(glowRect.X, glowRect.Bottom),
-            new(glowRect.X, glowRect.Y),
-        })
-        {
-            CenterColor = Color.FromArgb(55, InstallerTheme.Accent),
-            SurroundColors = [Color.FromArgb(0, InstallerTheme.Accent)]
-        };
+        using var glowBrush = new SolidBrush(Color.FromArgb(38, InstallerTheme.Accent));
         g.FillEllipse(glowBrush, glowRect);
 
         using var emojiFont = new Font("Segoe UI Emoji", 22F);

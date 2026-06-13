@@ -57,7 +57,12 @@ internal sealed class InstallerForm : Form
         _next.Anchor = AnchorStyles.Right | AnchorStyles.Bottom;
         _back.Location = new Point(360, 14);
         _next.Location = new Point(468, 14);
-        _back.Click += (_, _) => { if (_step > 0 && !_transitioning) _ = GoToStepAsync(_step - 1); };
+        _back.Click += (_, _) =>
+        {
+            if (_step <= 0 || _transitioning) return;
+            var target = _step == 3 && !_installOk ? 1 : _step - 1;
+            _ = GoToStepAsync(target);
+        };
         _next.Click += (_, _) => OnNext();
 
         _footer.Controls.Add(_back);
@@ -123,7 +128,7 @@ internal sealed class InstallerForm : Form
     {
         _progress.Visible = _step == 2;
         _status.Visible = _step == 2;
-        _back.Enabled = _step is 1 && !_transitioning;
+        _back.Enabled = (_step == 1 || (_step == 3 && !_installOk)) && !_transitioning;
         _next.Enabled = _step != 2 && !_transitioning;
         _next.Text = _step switch
         {
@@ -152,7 +157,7 @@ internal sealed class InstallerForm : Form
 
     void BuildWelcome()
     {
-        var hero = new HeroPanel { Emoji = "🤖", Title = "Добро пожаловать" };
+        var hero = new HeroPanel { Emoji = "🤖", Title = "Добро пожаловать", Dock = DockStyle.Top };
         var intro = MakeMuted(
             "Установите нативный клиент AI Team Room — рабочая область с 3D-студией, Kanban и чатом с 13 агентами.");
         var features = new FeatureList();
@@ -172,41 +177,52 @@ internal sealed class InstallerForm : Form
         AddHead("Папка установки");
         AddMuted("Выберите каталог. Конфигурация будет сохранена в зашифрованных файлах рядом с приложением.");
 
-        var pathRow = new Panel
-        {
-            Height = 36,
-            Dock = DockStyle.Top,
-            Margin = new Padding(0, 12, 0, 0),
-        };
+        var pathPanel = new Panel { Height = 88, Dock = DockStyle.Top, Padding = new Padding(0, 8, 0, 0) };
 
         _pathBox = new TextBox
         {
             Text = _installPath,
-            Dock = DockStyle.Fill,
-            Margin = new Padding(0, 0, 96, 0),
+            Location = new Point(0, 4),
+            Width = 420,
+            Anchor = AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Right,
         };
         InstallerTheme.StyleTextBox(_pathBox);
 
         var browse = new Button
         {
             Text = "Обзор…",
-            Dock = DockStyle.Right,
-            Width = 88,
+            Location = new Point(432, 2),
+            Size = new Size(88, 30),
+            Anchor = AnchorStyles.Top | AnchorStyles.Right,
         };
         InstallerTheme.StyleGhostButton(browse);
         browse.Click += (_, _) => BrowseFolder();
 
-        pathRow.Controls.Add(_pathBox);
-        pathRow.Controls.Add(browse);
+        _chkDesktop = new CheckBox
+        {
+            Text = "Ярлык на рабочем столе",
+            Checked = true,
+            Location = new Point(0, 44),
+            AutoSize = true,
+            ForeColor = InstallerTheme.Text,
+        };
+        _chkMenu = new CheckBox
+        {
+            Text = "Ярлык в меню Пуск",
+            Checked = true,
+            Location = new Point(0, 68),
+            AutoSize = true,
+            ForeColor = InstallerTheme.Text,
+        };
 
-        var opts = new Panel { Dock = DockStyle.Top, Height = 72, Padding = new Padding(0, 12, 0, 0) };
-        _chkDesktop = MakeCheck("Ярлык на рабочем столе", true, 0);
-        _chkMenu = MakeCheck("Ярлык в меню Пуск", true, 28);
-        opts.Controls.Add(_chkMenu);
-        opts.Controls.Add(_chkDesktop);
+        pathPanel.Controls.AddRange([_pathBox, browse, _chkDesktop, _chkMenu]);
+        pathPanel.Resize += (_, _) =>
+        {
+            browse.Left = Math.Max(0, pathPanel.Width - browse.Width);
+            _pathBox.Width = Math.Max(120, browse.Left - 8);
+        };
 
-        _content.Controls.Add(opts);
-        _content.Controls.Add(pathRow);
+        _content.Controls.Add(pathPanel);
     }
 
     void BuildProgress()
@@ -219,31 +235,32 @@ internal sealed class InstallerForm : Form
 
     void BuildDone()
     {
-        var badge = new SuccessBadge
-        {
-            Failed = !_installOk,
-            Location = new Point(0, 0),
-            Margin = new Padding(0, 0, 0, 8),
-        };
-        badge.Play();
-
-        var wrap = new Panel { Height = 80, Dock = DockStyle.Top };
-        wrap.Controls.Add(badge);
-
         AddHead(_installOk ? "Готово!" : "Не удалось установить");
+
+        var badgeRow = new Panel { Height = 76, Dock = DockStyle.Top };
+        var badge = new SuccessBadge { Failed = !_installOk, Location = new Point(0, 4) };
+        badge.Play();
+        badgeRow.Controls.Add(badge);
+
         AddMuted(_installOk
             ? $"Приложение установлено:\n{_installPath}\n\nconfig.secure и install.meta.secure зашифрованы для вашей учётной записи Windows."
-            : "Выберите другую папку или проверьте права на запись. Нажмите «Назад» на предыдущем шаге и попробуйте снова.");
+            : "Выберите другую папку или проверьте права на запись, затем нажмите «Назад» и попробуйте снова.");
 
         if (_installOk)
         {
-            _chkLaunch = MakeCheck("Запустить AI Team Room после закрытия", true, 0);
-            var launchPanel = new Panel { Dock = DockStyle.Top, Height = 36, Padding = new Padding(0, 8, 0, 0) };
-            launchPanel.Controls.Add(_chkLaunch);
-            _content.Controls.Add(launchPanel);
+            _chkLaunch = new CheckBox
+            {
+                Text = "Запустить AI Team Room после закрытия",
+                Checked = true,
+                AutoSize = true,
+                ForeColor = InstallerTheme.Text,
+                Dock = DockStyle.Top,
+                Padding = new Padding(0, 4, 0, 0),
+            };
+            _content.Controls.Add(_chkLaunch);
         }
 
-        _content.Controls.Add(wrap);
+        _content.Controls.Add(badgeRow);
     }
 
     void BrowseFolder()
@@ -355,18 +372,14 @@ internal sealed class InstallerForm : Form
             MessageBoxIcon.Information);
     }
 
-    CheckBox MakeCheck(string text, bool check, int top)
+    CheckBox MakeCheck(string text, bool check, int top) => new()
     {
-        return new CheckBox
-        {
-            Text = text,
-            Checked = check,
-            Location = new Point(0, top),
-            AutoSize = true,
-            ForeColor = InstallerTheme.Text,
-            Dock = DockStyle.Top,
-        };
-    }
+        Text = text,
+        Checked = check,
+        Location = new Point(0, top),
+        AutoSize = true,
+        ForeColor = InstallerTheme.Text,
+    };
 
     void AddHead(string text)
     {
