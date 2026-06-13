@@ -1,0 +1,28 @@
+# Production overlay: hide DB ports, proxy :80 -> app
+services:
+  ai-team-room:
+    ports: []
+
+  postgres:
+    ports: []
+
+  redis:
+    ports: []
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.ip:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      ai-team-room:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
