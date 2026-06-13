@@ -125,7 +125,82 @@ def get_latest_artifact(agent_id: str) -> Optional[dict]:
     return get_artifact(items[0]["id"])
 
 
-def list_all(limit: int = 100, agent_id: Optional[str] = None, art_type: Optional[str] = None) -> list:
+DELIVERABLE_TYPES = frozenset({
+    "presentation", "model_3d", "ui", "site", "code", "document",
+})
+HIDDEN_ARTIFACT_TYPES = frozenset({
+    "review", "plan", "tests", "architecture", "infra", "checklist",
+})
+AGENT_DELIVERABLE = {
+    "presenter": {"presentation"},
+    "modeler": {"model_3d"},
+    "frontend": {"ui", "site", "code"},
+    "backend": {"code"},
+    "architect": {"architecture", "document"},
+    "doc_writer": {"document"},
+    "qa": set(),
+    "reviewer": set(),
+    "pm": set(),
+    "devops": {"infra", "code"},
+    "cursor": {"code"},
+    "evaluator": set(),
+    "security": {"document"},
+}
+
+
+def list_deliverables(limit: int = 100, agent_id: Optional[str] = None, art_type: Optional[str] = None) -> list:
+    """Только финальные артефакты — по одному последнему на задачу/тип."""
+    items = _load_index()
+    filtered = []
+    for i in items:
+        t = i.get("type", "")
+        aid = i.get("agent_id", "")
+        if t in HIDDEN_ARTIFACT_TYPES:
+            continue
+        allowed = AGENT_DELIVERABLE.get(aid)
+        if allowed is not None and allowed and t not in allowed:
+            continue
+        if t not in DELIVERABLE_TYPES and t not in ("document",):
+            if t not in ("project",):
+                continue
+        if agent_id and aid != agent_id:
+            continue
+        if art_type and t != art_type:
+            continue
+        filtered.append(i)
+    # dedupe by task title — keep newest
+    seen_tasks = {}
+    out = []
+    for i in filtered:
+        key = (i.get("task") or i.get("title") or i.get("id", "")).strip().lower()[:120]
+        if not key:
+            out.append(i)
+            continue
+        prev = seen_tasks.get(key)
+        if not prev:
+            seen_tasks[key] = i
+            out.append(i)
+        else:
+            if (i.get("created_at") or "") > (prev.get("created_at") or ""):
+                out.remove(prev)
+                seen_tasks[key] = i
+                out.insert(0, i)
+    return out[:limit]
+
+
+def clear_non_deliverables() -> int:
+    items = _load_index()
+    keep = list_deliverables(limit=MAX_TOTAL)
+    keep_ids = {i["id"] for i in keep}
+    removed = 0
+    for i in items:
+        if i.get("id") not in keep_ids:
+            fp = os.path.join(ARTIFACTS_DIR, f"{i['id']}.json")
+            if os.path.exists(fp):
+                os.remove(fp)
+            removed += 1
+    _save_index(keep)
+    return removed
     items = _load_index()
     if agent_id:
         items = [i for i in items if i.get("agent_id") == agent_id]

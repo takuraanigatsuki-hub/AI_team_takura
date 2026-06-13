@@ -272,11 +272,14 @@ class TaskHistory:
     def get_for_user(self, user_id: str, limit: int = 100) -> List[Dict]:
         if not user_id:
             return []
-        matched = [t for t in self.tasks if self._belongs_to_user(t, user_id)]
+        matched = [t for t in self.tasks if self._belongs_to_user(t, user_id) and not t.get("parent_id")]
         return self.enrich_for_ui(list(reversed(matched)))[:limit]
 
+    def _parent_tasks(self, user_id: str) -> List[Dict]:
+        return [t for t in self.tasks if self._belongs_to_user(t, user_id) and not t.get("parent_id")]
+
     def stats_for_user(self, user_id: str) -> dict:
-        tasks = [t for t in self.tasks if self._belongs_to_user(t, user_id)]
+        tasks = self._parent_tasks(user_id)
         completed = sum(1 for t in tasks if t.get("status") == "completed")
         active_statuses = (
             "submitted", "queued", "in_progress", "triaging",

@@ -198,6 +198,26 @@ class RoomManager:
         self._append_history(message, "work")
         await self._send_to_clients(message, exclude)
 
+    async def _broadcast_balance(self, user_id: str):
+        if not user_id:
+            return
+        try:
+            from room.user_auth import _find_user, _public_user
+            raw = _find_user(user_id)
+            if not raw:
+                return
+            pub = _public_user(raw)
+            sub = pub.get("subscription") or {}
+            await self.broadcast_work({
+                "type": "balance_update",
+                "user_id": user_id,
+                "balance": sub.get("balance"),
+                "balance_display": sub.get("balance_display"),
+                "timestamp": datetime.now().isoformat(),
+            })
+        except Exception:
+            pass
+
     async def broadcast_learning(self, message: dict, exclude: WebSocket = None):
         message["channel"] = "learning"
         self._append_history(message, "learning")
@@ -549,17 +569,19 @@ class RoomManager:
         if not text.strip():
             return
 
+        uid, uname = self._actor_identity(user, connection_meta)
+
         await self.broadcast_work({
             "type": "user_message",
             "message": text,
             "target": target,
+            "user_id": uid if msg_type == "task" else (user.get("id", "") if user else connection_meta.get("user_id", "") if connection_meta else ""),
             "timestamp": datetime.now().isoformat()
         })
 
         if msg_type == "task":
-            if user:
+            if user and not skip_limit:
                 from room.task_limits import check_and_record
-                from room.user_auth import charge_user_action
                 ok, msg = check_and_record(user)
                 if not ok:
                     await self.broadcast_work({
@@ -568,6 +590,8 @@ class RoomManager:
                         "timestamp": datetime.now().isoformat(),
                     })
                     return
+            if user and not skip_charge:
+                from room.user_auth import charge_user_action
                 ok, msg = charge_user_action(user.get("id", ""), "task")
                 if not ok:
                     await self.broadcast_work({
@@ -576,8 +600,7 @@ class RoomManager:
                         "timestamp": datetime.now().isoformat(),
                     })
                     return
-
-            uid, uname = self._actor_identity(user, connection_meta)
+                await self._broadcast_balance(user.get("id", ""))
 
             try:
                 from room.workspaces import get_active
