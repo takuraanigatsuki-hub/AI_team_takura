@@ -988,7 +988,7 @@ async def admin_update_site(body: AdminSiteUpdate, request: Request):
         cursor_enabled=body.cursor_enabled,
         git_auto_sync=body.git_auto_sync,
     )
-    result = await update_config(update)
+    result = await update_config(update, request)
     import config as cfg_module
     if body.cursor_model:
         cfg_module.config["cursor_model"] = body.cursor_model.strip()
