@@ -31,3 +31,8 @@ class KnowledgeStore:
         path = KnowledgeStore._path(agent_id)
         with open(path, "w", encoding="utf-8") as f:
             json.dump(topics[-MAX_STORED_TOPICS:], f, indent=2, ensure_ascii=False)
+        try:
+            from integrations.knowledge_sync import mark_knowledge_dirty
+            mark_knowledge_dirty()
+        except Exception:
+            pass

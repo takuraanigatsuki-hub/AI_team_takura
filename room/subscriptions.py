@@ -16,7 +16,7 @@ SUBSCRIPTION_PLANS = {
         "monthly_credits": 50,
         "signup_bonus": 100,
         "max_tasks_per_day": 10,
-        "description": "3D-студия, чат и базовые задачи",
+        "description": "Чат, обучение и базовые задачи",
     },
     "starter": {
         "id": "starter",
@@ -67,7 +67,9 @@ SUBSCRIPTION_PLANS = {
 
 # Минимальный тариф для вкладки / функции
 VIEW_MIN_TIER = {
-    "studio": "free",
+    "agent-learning": "free",
+    "learning": "free",
+    "sonya-projects": "free",
     "chat": "free",
     "tasks": "free",
     "dashboard": "free",

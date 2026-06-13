@@ -183,6 +183,8 @@ async def lifespan(app: FastAPI):
     git_interval = cfg_module.config.get("git_sync_interval_sec", 60)
     figma_studio_task = None
     git_sync_task = asyncio.create_task(auto_sync_loop(room, interval=git_interval))
+    from integrations.knowledge_sync import knowledge_sync_loop
+    knowledge_sync_task = asyncio.create_task(knowledge_sync_loop(room, interval=90))
     if cfg_module.config.get("figma_study_enabled", True):
         from integrations.figma_learning import sonya_figma_studio_loop, ensure_seed_patterns
         ensure_seed_patterns()
@@ -220,6 +222,7 @@ async def lifespan(app: FastAPI):
     state_task.cancel()
     github_poll_task.cancel()
     git_sync_task.cancel()
+    knowledge_sync_task.cancel()
     security_task.cancel()
     if figma_studio_task:
         figma_studio_task.cancel()

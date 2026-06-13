@@ -604,7 +604,7 @@ def get_user_from_token(token: str) -> Optional[dict]:
 
 
 ALLOWED_DEFAULT_VIEWS = (
-    "studio", "dashboard", "chat", "kanban", "design", "sonya-studio",
+    "agent-learning", "dashboard", "chat", "kanban", "design", "sonya-studio",
     "tasks", "projects", "sprint", "profile",
 )
 
