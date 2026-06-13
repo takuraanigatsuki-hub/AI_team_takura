@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/landing.css?v=9">
+    <link rel="stylesheet" href="/static/css/landing.css?v=10">
     <link rel="icon" href="/static/icons/icon-192.png">
 </head>
 <body>
@@ -336,54 +336,43 @@ PR #42 · checks ✓</pre>
         </div>
     </section>
 
-    <section class="lp-download" id="download">
-        <div class="lp-download-inner">
-            <div class="lp-download-copy">
-                <span class="lp-badge">Windows · Desktop App</span>
-                <h2>Скачайте приложение</h2>
-                <p>Нативное окно с красивым запуском, входом и регистрацией. Рабочая область, кабинет и admin — как на сайте, но в отдельном приложении.</p>
-                <ul class="lp-download-list">
-                    <li>✨ Анимированный splash при запуске</li>
-                    <li>🌐 Вход через браузер — без повторного пароля</li>
-                    <li>🚀 Workspace + 👤 Portal в одном клиенте</li>
+    <section class="lp-download-compact" id="download">
+        <div class="lp-dl-card" id="pricing">
+            <div class="lp-dl-card-glow" aria-hidden="true"></div>
+            <div class="lp-dl-card-inner">
+                <span class="lp-badge">Windows · Desktop</span>
+                <h2>Скачайте <span class="lp-gradient">AI Team Room</span></h2>
+                <p class="lp-dl-lead">Рабочая область — в приложении. На сайте — кабинет, admin и поддержка.</p>
+                <ul class="lp-dl-tags">
+                    <li>✨ Splash</li>
+                    <li>🌐 Вход через браузер</li>
+                    <li>🚀 Сервер 24/7</li>
                 </ul>
-                <a href="/api/downloads/desktop/win/setup" class="lp-btn-xl" id="lpSectionDownload">Скачать для Windows</a>
-            </div>
-            <div class="lp-download-visual" aria-hidden="true">
-                <div class="lp-dl-mock">
-                    <div class="lp-dl-bar"><span></span><span></span><span></span></div>
-                    <div class="lp-dl-body">
-                        <div class="lp-dl-logo">🤖</div>
-                        <div class="lp-dl-line wide"></div>
-                        <div class="lp-dl-line"></div>
-                        <div class="lp-dl-btn"></div>
-                    </div>
+                <div class="lp-dl-actions" id="lpDlGuest">
+                    <a href="/api/downloads/desktop/win/setup" class="lp-btn-xl" id="lpSectionDownload">⬇ Скачать для Windows</a>
+                    <button type="button" class="lp-btn-xl-outline" id="btnCtaRegister">Создать аккаунт</button>
+                    <button type="button" class="lp-btn-ghost-soft" id="btnCtaLogin">Вход</button>
                 </div>
+                <div class="lp-dl-actions hidden" id="lpDlUser">
+                    <a href="/api/downloads/desktop/win/setup" class="lp-btn-xl" id="lpCtaDownload">⬇ Скачать приложение</a>
+                    <a href="/portal?view=profile" class="lp-btn-xl-outline">👤 Кабинет</a>
+                </div>
+                <nav class="lp-dl-portal" aria-label="Разделы сайта">
+                    <a href="/portal?view=profile">Кабинет</a>
+                    <a href="/portal?view=admin">Admin</a>
+                    <a href="/portal?view=support">Поддержка</a>
+                </nav>
             </div>
-        </div>
-    </section>
-
-    <section class="lp-cta" id="pricing">
-        <h2>Готовы начать?</h2>
-        <p>Регистрация за 30 секунд — мастер первой настройки проведёт через интерфейс.</p>
-        <div class="lp-hero-cta" id="lpCtaGuest">
-            <button type="button" class="lp-btn-xl" id="btnCtaRegister">Создать аккаунт</button>
-            <button type="button" class="lp-btn-xl-outline" id="btnCtaLogin">Уже есть аккаунт</button>
-        </div>
-        <div class="lp-hero-cta hidden" id="lpCtaUser">
-            <a href="/api/downloads/desktop/win/setup" class="lp-btn-xl" id="lpCtaDownload">Скачать приложение</a>
-            <a href="/portal?view=profile" class="lp-btn-xl-outline">Настройки профиля</a>
         </div>
     </section>
 </main>
 
-<footer class="lp-footer">
+<footer class="lp-footer lp-footer-compact">
     <div class="lp-footer-brand">
         <span class="lp-logo-mark">🤖</span>
         <span>AI Team Room · takura</span>
     </div>
     <div class="lp-footer-links">
-        <a href="/api/downloads/desktop/win/setup" id="lpFooterDownload">Скачать app</a>
         <a href="/portal?view=profile">Кабинет</a>
         <a href="/portal?view=admin">Admin</a>
         <a href="/portal?view=support">Поддержка</a>
@@ -420,6 +409,6 @@ PR #42 · checks ✓</pre>
 <script src="/static/js/studio-models.js?v=3"></script>
 <script src="/static/js/studio.js?v=21"></script>
 <script src="/static/js/landing-demo.js?v=1"></script>
-<script src="/static/js/landing.js?v=5"></script>
+<script src="/static/js/landing.js?v=6"></script>
 </body>
 </html>

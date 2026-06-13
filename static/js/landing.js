@@ -37,7 +37,7 @@
     function applyDownloadLinks(url) {
         downloadUrl = url || downloadUrl;
         document.querySelectorAll(
-            '#lpBtnDownload, #lpBtnDownloadUser, #lpHeroDownload, #lpHeroDownloadUser, #lpSectionDownload, #lpCtaDownload, #lpFooterDownload'
+            '#lpBtnDownload, #lpBtnDownloadUser, #lpHeroDownload, #lpHeroDownloadUser, #lpSectionDownload, #lpCtaDownload'
         ).forEach((el) => {
             if (el) el.setAttribute('href', downloadUrl);
         });
@@ -60,8 +60,8 @@
         document.getElementById('lpAuthUser')?.classList.add('hidden');
         document.getElementById('lpHeroCtaGuest')?.classList.remove('hidden');
         document.getElementById('lpHeroCtaUser')?.classList.add('hidden');
-        document.getElementById('lpCtaGuest')?.classList.remove('hidden');
-        document.getElementById('lpCtaUser')?.classList.add('hidden');
+        document.getElementById('lpDlGuest')?.classList.remove('hidden');
+        document.getElementById('lpDlUser')?.classList.add('hidden');
     }
 
     function showUserUI(user) {
@@ -70,8 +70,8 @@
         document.getElementById('lpAuthUser')?.classList.remove('hidden');
         document.getElementById('lpHeroCtaGuest')?.classList.add('hidden');
         document.getElementById('lpHeroCtaUser')?.classList.remove('hidden');
-        document.getElementById('lpCtaGuest')?.classList.add('hidden');
-        document.getElementById('lpCtaUser')?.classList.remove('hidden');
+        document.getElementById('lpDlGuest')?.classList.add('hidden');
+        document.getElementById('lpDlUser')?.classList.remove('hidden');
 
         const name = user.name || user.email?.split('@')[0] || 'Пользователь';
         const pill = document.getElementById('lpUserPill');
