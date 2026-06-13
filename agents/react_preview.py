@@ -1,16 +1,78 @@
 """Генерация runnable React-кода для live preview Сони."""
+import hashlib
 import re
 from integrations.figma_client import parse_figma_url
 from room.task_routing import classify_task_kind
 
+THEME_TEMPLATE_KIND = {
+    "landing": "site",
+    "dashboard": "dashboard",
+    "mobile": "form",
+    "ecommerce": "card",
+    "design_system": "navbar",
+    "portfolio": "hero",
+}
 
-def _esc(s: str) -> str:
-    return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ")[:80]
+
+def _esc(s: str, limit: int = 80) -> str:
+    return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ")[:limit]
 
 
-def _fmt(template: str, task: str) -> str:
-    """Подставить task без конфликта с JSX-фигурными скобками."""
-    return template.replace("{task}", _esc(task))
+def _headline_from_task(task: str) -> str:
+    try:
+        from integrations.sonya_commands import title_from_task
+        title = title_from_task(task, "")
+    except Exception:
+        title = ""
+    if title:
+        return title[:80]
+    t = (task or "").strip()
+    return (t[:80] + "…") if len(t) > 80 else t or "Ваш продукт"
+
+
+def _subtitle_from_task(task: str, theme: str = "") -> str:
+    tl = (task or "").lower()
+    if theme == "ecommerce" or any(w in tl for w in ("e-commerce", "магазин", "товар", "карточк")):
+        return "Каталог, карточки товаров и быстрый checkout — готово к интеграции с backend."
+    if theme == "dashboard" or any(w in tl for w in ("dashboard", "дашборд", "аналитик")):
+        return "Панель с метриками, графиками и фильтрами — данные обновляются в реальном времени."
+    if theme == "portfolio" or "portfolio" in tl or "портфолио" in tl:
+        return "Портфолио с кейсами, галереей работ и формой связи."
+    if theme == "mobile" or "mobile" in tl or "onboarding" in tl:
+        return "Пошаговый onboarding для мобильного приложения с прогрессом и CTA."
+    if "saas" in tl:
+        return "SaaS-лендинг с pricing, social proof и trial CTA."
+    if "стартап" in tl or "startup" in tl:
+        return "Pitch-ready landing для стартапа: hero, benefits и waitlist."
+    return "Современный адаптивный интерфейс под вашу задачу — готов к доработке и деплою."
+
+
+def _preview_context(task: str, theme: str = "", colors: list = None) -> dict:
+    seed = hashlib.sha256(f"{task}|{theme}".encode("utf-8")).hexdigest()
+    n = int(seed[:8], 16)
+    brands = ["NovaFlow", "Craftly", "Zenith", "PulseLab", "Bloom", "StackHub", "Mosaic", "Nexus", "Orbit", "Lumen"]
+    primary = "#4f7df3"
+    if colors:
+        primary = colors[0]
+    else:
+        palette = ["#6c63ff", "#4f7df3", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#06b6d4"]
+        primary = palette[n % len(palette)]
+    return {
+        "task": _esc(task, 120),
+        "headline": _esc(_headline_from_task(task), 80),
+        "subtitle": _esc(_subtitle_from_task(task, theme), 160),
+        "brand": _esc(brands[n % len(brands)], 24),
+        "primary": primary,
+    }
+
+
+def _fmt(template: str, task: str, *, theme: str = "", colors: list = None) -> str:
+    """Подставить переменные без конфликта с JSX-фигурными скобками."""
+    ctx = _preview_context(task, theme, colors)
+    out = template
+    for key, val in ctx.items():
+        out = out.replace("{" + key + "}", val)
+    return out
 
 
 def _extract_figma_url(task: str) -> str:
@@ -141,17 +203,40 @@ def _apply_learned_palette(preview: dict) -> dict:
         return preview
 
 
-def generate_react_preview(task: str) -> dict:
-    preview = _match_preview_template(task)
+def generate_react_preview(task: str, *, theme: str = "", colors: list = None) -> dict:
+    preview = _match_preview_template(task, theme=theme, colors=colors)
     preview = _apply_learned_palette(preview)
+    if colors and preview.get("code"):
+        primary = colors[0]
+        code = preview["code"]
+        for old in ("#4f7df3", "#6c63ff", "#667eea"):
+            code = code.replace(old, primary)
+        preview = {**preview, "code": code}
     if is_production_polish_task(task):
         preview = polish_preview(preview, task)
     return preview
 
 
-def _match_preview_template(task: str) -> dict:
+def _match_preview_template(task: str, *, theme: str = "", colors: list = None) -> dict:
     t = task.lower()
     kind = classify_task_kind(task)
+
+    if theme and theme in THEME_TEMPLATE_KIND:
+        forced = THEME_TEMPLATE_KIND[theme]
+        if forced == "site" and not (kind == "site" or is_site_task(task)):
+            pass
+        elif forced == "site":
+            return {"title": _headline_from_task(task) or "Landing", "code": _fmt(_WEBSITE, task, theme=theme, colors=colors), "is_site": True}
+        elif forced == "dashboard":
+            return {"title": "Analytics Dashboard", "code": _fmt(_DASHBOARD, task, theme=theme, colors=colors)}
+        elif forced == "card":
+            return {"title": "E-commerce", "code": _fmt(_CARD, task, theme=theme, colors=colors)}
+        elif forced == "navbar":
+            return {"title": "Design System", "code": _fmt(_NAVBAR, task, theme=theme, colors=colors)}
+        elif forced == "hero":
+            return {"title": "Portfolio", "code": _fmt(_HERO, task, theme=theme, colors=colors)}
+        elif forced == "form":
+            return {"title": "Mobile onboarding", "code": _fmt(_REGISTER_FORM, task, theme=theme, colors=colors)}
 
     if is_figma_import_task(task):
         figma_url = _extract_figma_url(task)
@@ -168,46 +253,46 @@ def _match_preview_template(task: str) -> dict:
                 return generate_react_from_figma(figma_stub, task=task)
 
     if kind == "site" or is_site_task(task):
-        return {"title": "Готовый сайт", "code": _fmt(_WEBSITE, task), "is_site": True}
+        return {"title": _headline_from_task(task) or "Landing", "code": _fmt(_WEBSITE, task, theme=theme, colors=colors), "is_site": True}
 
     if kind == "table" or any(w in t for w in [
         "таблиц", "таблицу", "таблицы", "table", "excel", "spreadsheet", "csv", "data grid",
     ]):
         if any(w in t for w in ["бухгалтер", "учёт", "учет", "accounting", "дебет", "кредит"]):
-            return {"title": "Бухгалтерская таблица", "code": _fmt(_ACCOUNTING_TABLE, task)}
-        return {"title": "Таблица данных", "code": _fmt(_TABLE, task)}
+            return {"title": "Бухгалтерская таблица", "code": _fmt(_ACCOUNTING_TABLE, task, theme=theme, colors=colors)}
+        return {"title": "Таблица данных", "code": _fmt(_TABLE, task, theme=theme, colors=colors)}
 
     if any(w in t for w in ["логин", "login", "авториз", "вход", "sign in"]):
-        return {"title": "Форма входа", "code": _fmt(_LOGIN_FORM, task)}
+        return {"title": "Форма входа", "code": _fmt(_LOGIN_FORM, task, theme=theme, colors=colors)}
 
     if any(w in t for w in ["регистрац", "register", "signup", "sign up"]):
-        return {"title": "Регистрация", "code": _fmt(_REGISTER_FORM, task)}
+        return {"title": "Регистрация", "code": _fmt(_REGISTER_FORM, task, theme=theme, colors=colors)}
 
     if any(w in t for w in ["кнопк", "button", "btn"]):
-        return {"title": "Интерактивная кнопка", "code": _fmt(_BUTTON, task)}
+        return {"title": "Интерактивная кнопка", "code": _fmt(_BUTTON, task, theme=theme, colors=colors)}
 
     if any(w in t for w in ["todo", "список дел", "чеклист", "checklist", "todo-лист", "todo list"]):
-        return {"title": "Todo-лист", "code": _fmt(_TODO, task)}
+        return {"title": "Todo-лист", "code": _fmt(_TODO, task, theme=theme, colors=colors)}
 
     if any(w in t for w in ["счётчик", "счетчик", "counter", "клик"]):
-        return {"title": "Счётчик", "code": _fmt(_COUNTER, task)}
+        return {"title": "Счётчик", "code": _fmt(_COUNTER, task, theme=theme, colors=colors)}
 
     if any(w in t for w in ["карточ", "card", "товар", "product"]):
-        return {"title": "Карточка", "code": _fmt(_CARD, task)}
+        return {"title": "Карточка", "code": _fmt(_CARD, task, theme=theme, colors=colors)}
 
     if any(w in t for w in ["модал", "modal", "диалог", "popup", "попап"]):
-        return {"title": "Модальное окно", "code": _fmt(_MODAL, task)}
+        return {"title": "Модальное окно", "code": _fmt(_MODAL, task, theme=theme, colors=colors)}
 
     if any(w in t for w in ["дашборд", "dashboard", "панел", "аналитик", "статистик"]):
-        return {"title": "Дашборд", "code": _fmt(_DASHBOARD, task)}
+        return {"title": "Дашборд", "code": _fmt(_DASHBOARD, task, theme=theme, colors=colors)}
 
     if any(w in t for w in ["навигац", "navbar", "меню", "header", "шапк"]):
-        return {"title": "Навигация", "code": _fmt(_NAVBAR, task)}
+        return {"title": "Навигация", "code": _fmt(_NAVBAR, task, theme=theme, colors=colors)}
 
     if any(w in t for w in ["форм", "form", "input", "поле"]):
-        return {"title": "Форма", "code": _fmt(_GENERIC_FORM, task)}
+        return {"title": "Форма", "code": _fmt(_GENERIC_FORM, task, theme=theme, colors=colors)}
 
-    return {"title": "UI компонент", "code": _fmt(_CARD, task)}
+    return {"title": _headline_from_task(task) or "UI компонент", "code": _fmt(_CARD, task, theme=theme, colors=colors)}
 
 
 _COMMON_STYLES = """
@@ -506,7 +591,8 @@ function App() {
 _WEBSITE = """
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const task = "{task}";
+  const headline = "{headline}";
+  const subtitle = "{subtitle}";
   const features = [
     { icon: '⚡', title: 'Быстро', desc: 'Оптимизированная загрузка и Core Web Vitals' },
     { icon: '🎨', title: 'Красиво', desc: 'Современный UI с адаптивной вёрсткой' },
@@ -515,7 +601,7 @@ function App() {
   const nav = ['Главная', 'О нас', 'Услуги', 'Контакты'];
   const s = {
     font: 'system-ui, -apple-system, sans-serif',
-    primary: '#4f7df3',
+    primary: '{primary}',
     dark: '#1a1c22',
     muted: '#6b7280',
   };
@@ -526,7 +612,7 @@ function App() {
         padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         position: 'sticky', top: 0, zIndex: 10
       }}>
-        <strong style={{ fontSize: 18, color: s.primary }}>MySite</strong>
+        <strong style={{ fontSize: 18, color: s.primary }}>{brand}</strong>
         <nav style={{ display: 'flex', gap: 20, fontSize: 14 }}>
           {nav.map(n => (
             <a key={n} href="#top" style={{ color: s.muted, textDecoration: 'none' }}>{n}</a>

@@ -29,14 +29,35 @@ def _has_studio_context(tl: str) -> bool:
     return False
 
 
-def _extract_title(text: str) -> str:
-    m = re.search(r"[«\"']([^»\"']+)[»\"']", text)
+def title_from_task(text: str, fallback: str = "") -> str:
+    """Человекочитаемое имя проекта из текста задачи."""
+    raw = (text or "").strip()
+    if not raw:
+        return fallback
+    m = re.search(r"[«\"']([^»\"']+)[»\"']", raw)
     if m:
         return m.group(1).strip()[:80]
-    m = re.search(r"(?:проект|макет|landing|лендинг)\s+[«\"']?([^,.!»\"']{3,60})", text, re.I)
-    if m:
-        return m.group(1).strip()
-    return ""
+    tl = _norm(raw)
+    cleaned = re.sub(
+        r"^(?:@?\s*соня\s*,?\s*)?(?:сделай|создай|сгенерируй|запусти|напиши|разработай|сверстай|построй|нужен|хочу)\s+",
+        "",
+        tl,
+    ).strip()
+    cleaned = re.sub(r"^(?:мне\s+)?(?:современный|новый|красивый|адаптивный)\s+", "", cleaned).strip()
+    if cleaned.startswith("landing page "):
+        cleaned = "Landing · " + cleaned[len("landing page "):]
+    elif cleaned.startswith("landing "):
+        cleaned = "Landing · " + cleaned[len("landing "):]
+    elif cleaned.startswith("лендинг "):
+        cleaned = "Лендинг · " + cleaned[len("лендинг "):]
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(" .")
+    if not cleaned:
+        return fallback
+    return cleaned[:80].capitalize()
+
+
+def _extract_title(text: str) -> str:
+    return title_from_task(text, "")
 
 
 def match_studio_intent(text: str) -> Optional[dict]:
