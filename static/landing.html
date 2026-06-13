@@ -40,12 +40,12 @@
         <div class="lp-header-actions" id="lpAuthGuest">
             <button type="button" class="lp-btn-ghost lp-btn-sm" id="btnLogin">Вход</button>
             <button type="button" class="lp-btn-primary lp-btn-sm" id="btnRegister">Регистрация</button>
-            <button type="button" class="lp-btn-accent lp-btn-sm" id="btnDashboard">Dashboard</button>
+            <a href="/api/downloads/desktop/win/setup" class="lp-btn-accent lp-btn-sm" id="lpBtnDownload">Скачать</a>
         </div>
         <div class="lp-header-actions lp-user-bar hidden" id="lpAuthUser">
             <span class="lp-user-pill" id="lpUserPill">👤 …</span>
             <a href="/portal?view=profile" class="lp-btn-ghost lp-btn-sm">Кабинет</a>
-            <a href="/workspace" class="lp-btn-accent lp-btn-sm" id="lpBtnWorkspace">В приложение</a>
+            <a href="/api/downloads/desktop/win/setup" class="lp-btn-accent lp-btn-sm" id="lpBtnDownloadUser">Скачать</a>
             <button type="button" class="lp-btn-ghost lp-btn-sm" id="btnLogout">Выход</button>
         </div>
     </div>
@@ -59,11 +59,12 @@
             <h1>Автономная команда<br><span class="lp-gradient">ИИ-агентов</span> для вашего проекта</h1>
             <p class="lp-lead">PM планирует, дизайнеры и разработчики пишут код, QA тестирует, DevOps деплоит — вы наблюдаете в 3D-офисе и управляете из одного интерфейса.</p>
             <div class="lp-hero-cta" id="lpHeroCtaGuest">
-                <button type="button" class="lp-btn-xl" id="btnHeroStart">Начать бесплатно</button>
-                <button type="button" class="lp-btn-xl-outline" id="btnHeroDemo">▶ Demo за 2 мин</button>
+                <a href="/api/downloads/desktop/win/setup" class="lp-btn-xl" id="lpHeroDownload">Скачать приложение</a>
+                <button type="button" class="lp-btn-xl-outline" id="btnHeroStart">Начать бесплатно</button>
+                <button type="button" class="lp-btn-xl-outline lp-btn-ghost-soft" id="btnHeroDemo">▶ Demo за 2 мин</button>
             </div>
             <div class="lp-hero-cta hidden" id="lpHeroCtaUser">
-                <a href="/workspace" class="lp-btn-xl" id="lpHeroWorkspace">Перейти в рабочую область</a>
+                <a href="/api/downloads/desktop/win/setup" class="lp-btn-xl" id="lpHeroDownloadUser">Скачать приложение</a>
                 <a href="/portal?view=profile" class="lp-btn-xl-outline">Личный кабинет</a>
             </div>
             <div class="lp-live-stats" id="lpLiveStats">
@@ -346,7 +347,7 @@ PR #42 · checks ✓</pre>
                     <li>🌐 Вход через браузер — без повторного пароля</li>
                     <li>🚀 Workspace + 👤 Portal в одном клиенте</li>
                 </ul>
-                <a href="/download" class="lp-btn-xl">Скачать для Windows</a>
+                <a href="/api/downloads/desktop/win/setup" class="lp-btn-xl" id="lpSectionDownload">Скачать для Windows</a>
             </div>
             <div class="lp-download-visual" aria-hidden="true">
                 <div class="lp-dl-mock">
@@ -370,7 +371,7 @@ PR #42 · checks ✓</pre>
             <button type="button" class="lp-btn-xl-outline" id="btnCtaLogin">Уже есть аккаунт</button>
         </div>
         <div class="lp-hero-cta hidden" id="lpCtaUser">
-            <a href="/workspace" class="lp-btn-xl">Открыть Dashboard</a>
+            <a href="/api/downloads/desktop/win/setup" class="lp-btn-xl" id="lpCtaDownload">Скачать приложение</a>
             <a href="/portal?view=profile" class="lp-btn-xl-outline">Настройки профиля</a>
         </div>
     </section>
