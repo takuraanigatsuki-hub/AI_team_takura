@@ -68,12 +68,16 @@
     let agentLearningPanel = 'learning';
 
     const AGENT_LEARNING_VIEWS = new Set(['agent-learning', 'learning', 'design', 'masha', 'sonya-projects']);
-    const INVESTOR_VIEWS = new Set(['investor', 'profile', 'studio', 'dashboard', 'projects']);
+    const INVESTOR_VIEWS = new Set(['investor', 'profile', 'agent-learning', 'dashboard', 'projects']);
 
     function canViewAgentLearning(user) {
         if (!user) return false;
         if (user.can_view_agent_learning) return true;
         return ['owner', 'admin', 'tech_admin'].includes(user.role);
+    }
+
+    function canViewLearningHub(user) {
+        return !!user || true;
     }
 
     function isPrivilegedUser(user) {
@@ -109,6 +113,7 @@
     };
 
     window.switchView = function (view) {
+        if (view === 'studio') view = 'agent-learning';
         if (window.AppShell?.redirectIfCrossShell?.(view)) return;
         const user = window.Auth?.getUser();
         if (view === 'admin') {
@@ -138,14 +143,14 @@
             switchView('investor');
             return;
         } else if (AGENT_LEARNING_VIEWS.has(view)) {
-            if (!canViewAgentLearning(user)) {
-                const msg = 'Обучение агентов доступно только администраторам';
+            const adminOnly = view === 'design' || view === 'masha';
+            if (adminOnly && !canViewAgentLearning(user)) {
+                const msg = 'Design Lab доступен только администраторам';
                 if (window.UIEnhancements) UIEnhancements.toast(msg, 'warn');
                 else alert(msg);
-                switchView('studio');
-                return;
-            }
-            if (view === 'learning' || view === 'design' || view === 'masha' || view === 'sonya-projects') {
+                agentLearningPanel = 'sonya-projects';
+                view = 'agent-learning';
+            } else if (view === 'learning' || view === 'design' || view === 'masha' || view === 'sonya-projects') {
                 agentLearningPanel = view === 'design' ? 'design' : (view === 'masha' ? 'masha' : (view === 'sonya-projects' ? 'sonya-projects' : 'learning'));
                 view = 'agent-learning';
             }

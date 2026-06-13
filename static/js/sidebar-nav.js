@@ -165,16 +165,17 @@
         if (item.admin && !global.Auth?.canAccessAdmin?.(user)) return false;
         if (item.supportPanel && !global.Auth?.canManageTickets?.(user) && !user?.is_support) return false;
         if (item.adminLearning && !global.Auth?.canViewAgentLearning?.(user)) return false;
+        if (item.view === 'agent-learning') return true;
         if (item.investor && !global.Auth?.canViewInvestorPortal?.(user)) return false;
         if (item.role === 'investor') {
             if (!user) return false;
             return user.is_investor || user.can_view_investor_portal || global.Auth?.canAccessAdmin?.(user);
         }
         if (user?.role === 'investor' || user?.is_investor) {
-            if (!['investor', 'studio', 'dashboard', 'projects'].includes(item.view)) return false;
+            if (!['investor', 'agent-learning', 'dashboard', 'projects'].includes(item.view)) return false;
         }
         if (user && global.ProfileCabinet?.canAccessView && !ProfileCabinet.canAccessView(user, item.view)) {
-            if (!['tasks', 'chat', 'kanban', 'studio'].includes(item.view)) return false;
+            if (!['tasks', 'chat', 'kanban', 'agent-learning'].includes(item.view)) return false;
         }
         return true;
     }
