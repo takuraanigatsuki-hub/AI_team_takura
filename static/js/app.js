@@ -1213,7 +1213,7 @@
         const input = document.getElementById('messageInput');
         const text = input.value.trim();
         if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
-        if (window.ChatCommands?.isSlashComposing?.(text)) return;
+        if (window.ChatCommands?.applyIfIncomplete?.(text)) return;
         if (window.ChatCommands) ChatCommands.hide();
         const target = document.getElementById('targetSelect').value;
         ws.send(JSON.stringify({ type: msgType, text, target }));
