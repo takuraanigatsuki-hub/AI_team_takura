@@ -22,5 +22,11 @@
     <EmbeddedResource Include="..\dist\AI_Team_Room.exe">
       <LogicalName>AI_Team_Room.exe</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\dist\AI_Team_Room_Updater.exe" Condition="Exists('..\dist\AI_Team_Room_Updater.exe')">
+      <LogicalName>AI_Team_Room_Updater.exe</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\dist\AI_Team_Room_Uninstall.exe" Condition="Exists('..\dist\AI_Team_Room_Uninstall.exe')">
+      <LogicalName>AI_Team_Room_Uninstall.exe</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

@@ -101,33 +101,40 @@ internal static class InstallEngine
         progress.Report((100, "Готово"));
     }
 
-    static async Task ExtractEmbeddedExeAsync(string destPath, IProgress<(int pct, string msg)>? progress, CancellationToken ct)
+    static async Task ExtractEmbeddedExeAsync(
+        string logicalName,
+        string destPath,
+        IProgress<(int pct, string msg)>? progress,
+        int pctStart,
+        int pctEnd,
+        CancellationToken ct)
     {
         var asm = Assembly.GetExecutingAssembly();
         var names = asm.GetManifestResourceNames();
         var resourceName = names.FirstOrDefault(n =>
-            n.EndsWith("AI_Team_Room.exe", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(n, "AI_Team_Room.exe", StringComparison.OrdinalIgnoreCase));
+            n.EndsWith(logicalName, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(n, logicalName, StringComparison.OrdinalIgnoreCase));
         if (resourceName == null)
             throw new FileNotFoundException(
-                "Встроенный AI_Team_Room.exe не найден. Сначала выполните scripts\\build-desktop.ps1");
+                $"Встроенный {logicalName} не найден. Сначала выполните scripts\\build-desktop.ps1");
 
         await using var stream = asm.GetManifestResourceStream(resourceName)
-            ?? throw new FileNotFoundException("Не удалось прочитать встроенный exe.");
+            ?? throw new FileNotFoundException($"Не удалось прочитать {logicalName}.");
 
         var total = stream.Length;
         if (total <= 0)
-            throw new InvalidOperationException("Встроенный exe пустой — пересоберите установщик.");
+            throw new InvalidOperationException($"{logicalName} пустой — пересоберите установщик.");
 
         await using var fs = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None);
         var buffer = new byte[81920];
         long copied;
         int read;
+        var span = Math.Max(1, pctEnd - pctStart);
         for (copied = 0; (read = await stream.ReadAsync(buffer, ct)) > 0; copied += read)
         {
             await fs.WriteAsync(buffer.AsMemory(0, read), ct);
-            var pct = 15 + (int)(copied * 28 / total);
-            progress?.Report((pct, "Копирование приложения…"));
+            var pct = pctStart + (int)(copied * span / total);
+            progress?.Report((pct, $"Копирование {logicalName}…"));
         }
     }
 
@@ -159,7 +166,7 @@ $Shortcut.Save()
         }
     }
 
-    static void RegisterUninstall(string installDir, string exePath)
+    static void RegisterUninstall(string installDir, string exePath, string uninstallPath, string updaterPath)
     {
         using var key = Registry.CurrentUser.CreateSubKey(UninstallRegKey);
         key.SetValue("DisplayName", AppName);
@@ -167,7 +174,10 @@ $Shortcut.Save()
         key.SetValue("Publisher", "Takura");
         key.SetValue("InstallLocation", installDir);
         key.SetValue("DisplayIcon", exePath);
-        key.SetValue("UninstallString", $"\"{exePath}\" --uninstall");
+        key.SetValue("UninstallString", $"\"{uninstallPath}\" \"{installDir}\"");
+        key.SetValue("QuietUninstallString", $"\"{uninstallPath}\" \"{installDir}\"");
+        key.SetValue("URLUpdateInfo", "http://80.78.245.66/api/downloads/desktop/info");
+        key.SetValue("UpdaterPath", updaterPath);
         key.SetValue("NoModify", 1, RegistryValueKind.DWord);
         key.SetValue("NoRepair", 1, RegistryValueKind.DWord);
     }

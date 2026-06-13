@@ -53,6 +53,11 @@ class LearningProjects:
                 "evaluations": self.evaluations[-MAX_ITEMS:],
                 "updated_at": datetime.now().isoformat(),
             }, f, ensure_ascii=False, indent=2)
+        try:
+            from integrations.knowledge_sync import mark_knowledge_dirty
+            mark_knowledge_dirty()
+        except Exception:
+            pass
 
     def _new_id(self) -> str:
         return str(uuid.uuid4())[:10]

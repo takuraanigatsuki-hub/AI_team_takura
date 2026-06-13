@@ -407,6 +407,16 @@ async def download_page():
     raise HTTPException(status_code=404, detail="Download page not found")
 
 
+@app.get("/mobile", response_class=HTMLResponse)
+async def mobile_companion_page():
+    """Мобильный companion (Android WebView / PWA)."""
+    html_file = os.path.join(static_dir, "mobile.html")
+    if os.path.exists(html_file):
+        with open(html_file, "r", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    raise HTTPException(status_code=404, detail="Mobile page not found")
+
+
 @app.get("/api/downloads/desktop/info")
 async def desktop_download_info():
     """Метаданные установщика для страницы загрузки."""

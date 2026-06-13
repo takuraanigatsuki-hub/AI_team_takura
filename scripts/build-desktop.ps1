@@ -30,6 +30,18 @@ if (-not (Test-Path $Portable)) {
 Copy-Item $Portable "$Root\dist\AI_Team_Room.exe" -Force
 Write-Host "OK Portable: $Root\dist\AI_Team_Room.exe" -ForegroundColor Green
 
+Write-Host "==> dotnet publish updater..." -ForegroundColor Yellow
+dotnet publish "$Root\desktop-updater\AITeamRoom.Updater.csproj" -c Release -r win-x64 --self-contained true `
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o "$Root\dist\publish-updater"
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+Copy-Item "$Root\dist\publish-updater\AI_Team_Room_Updater.exe" "$Root\dist\AI_Team_Room_Updater.exe" -Force
+
+Write-Host "==> dotnet publish uninstaller..." -ForegroundColor Yellow
+dotnet publish "$Root\desktop-uninstaller\AITeamRoom.Uninstaller.csproj" -c Release -r win-x64 --self-contained true `
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o "$Root\dist\publish-uninstall"
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+Copy-Item "$Root\dist\publish-uninstall\AI_Team_Room_Uninstall.exe" "$Root\dist\AI_Team_Room_Uninstall.exe" -Force
+
 Write-Host "==> dotnet publish installer..." -ForegroundColor Yellow
 dotnet publish "$Root\desktop-installer\AITeamRoom.Installer.csproj" -c Release -r win-x64 --self-contained true `
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o "$Root\dist\publish-setup"
