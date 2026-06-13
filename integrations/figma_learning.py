@@ -298,6 +298,13 @@ async def study_reference_file(
     parsed = parse_figma_url(url)
     if not parsed:
         return None
+    file_key = parsed.get("file_key") or ""
+    try:
+        from integrations.sonya_feedback import is_disliked
+        if file_key and is_disliked("figma_file", file_key):
+            return {"error": "disliked", "url": url}
+    except Exception:
+        pass
     if not is_figma_api_url(url):
         return {"error": "unsupported_url", "url": url}
 

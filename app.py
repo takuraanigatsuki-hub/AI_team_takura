@@ -2211,6 +2211,41 @@ async def sonya_feedback(body: SonyaFeedbackRequest, request: Request):
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+    frontend = room.agents.get("frontend")
+    if frontend and body.vote < 0:
+        label = body.target_id[:60]
+        frontend.learned_topics.append({
+            "topic": f"Preference: avoid {body.target_type}",
+            "title": "Обратная связь: улучшить",
+            "summary": f"Пользователю не понравилось ({body.target_type}): {label}. Избегать похожих решений.",
+            "source": "feedback",
+            "keywords": ["feedback", "dislike", body.target_type],
+            "timestamp": datetime.now().isoformat(),
+        })
+        if len(frontend.learned_topics) > 200:
+            frontend.learned_topics = frontend.learned_topics[-200:]
+        try:
+            frontend._persist_knowledge()
+        except Exception:
+            pass
+    elif frontend and body.vote > 0:
+        label = body.target_id[:60]
+        frontend.learned_topics.append({
+            "topic": f"Preference: prefer {body.target_type}",
+            "title": "Обратная связь: нравится",
+            "summary": f"Пользователю понравилось ({body.target_type}): {label}. Использовать похожие паттерны.",
+            "source": "feedback",
+            "keywords": ["feedback", "like", body.target_type],
+            "timestamp": datetime.now().isoformat(),
+        })
+        if len(frontend.learned_topics) > 200:
+            frontend.learned_topics = frontend.learned_topics[-200:]
+        try:
+            frontend._persist_knowledge()
+        except Exception:
+            pass
+
     return {
         "ok": True,
         "vote": entry,

@@ -433,6 +433,13 @@
     async function askSonyaNew() {
         try {
             const project = await postSonyaCreate();
+            if (project.origin === 'sonya_auto') {
+                if (window.UIEnhancements) {
+                    UIEnhancements.toast('Авто-проект Сони — смотрите Обучение → Проекты Сони', 'success');
+                }
+                if (window.switchAgentLearningPanel) switchAgentLearningPanel('sonya-projects');
+                return;
+            }
             await loadProjects(project.id);
             if (window.UIEnhancements) UIEnhancements.toast('Соня создала проект', 'success');
         } catch (e) {
