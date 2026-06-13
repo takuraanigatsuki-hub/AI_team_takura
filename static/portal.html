@@ -15,45 +15,23 @@
     <link rel="stylesheet" href="/static/css/enhancements.css?v=20">
     <link rel="stylesheet" href="/static/css/snow-theme.css?v=3">
     <link rel="stylesheet" href="/static/css/ui-core.css?v=9">
-    <link rel="stylesheet" href="/static/css/premium-theme.css?v=2">
+    <link rel="stylesheet" href="/static/css/premium-theme.css?v=3">
+    <link rel="stylesheet" href="/static/css/shell-nav.css?v=1">
     <link rel="stylesheet" href="/static/css/support.css?v=3">
 </head>
-<body class="has-sidebar portal-shell">
+<body class="portal-shell">
 <a href="#mainContent" class="skip-link">К содержимому</a>
 <div id="ariaLiveStatus" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
-<aside class="app-sidebar" id="appSidebar" aria-label="Навигация портала">
-    <div class="sb-brand">
-        <span class="sb-brand-mark" aria-hidden="true">👤</span>
-        <div class="sb-brand-text">
-            <span class="sb-label">AI Team Room</span>
-            <span class="sb-sublabel">портал · кабинет</span>
-        </div>
-        <button type="button" class="sb-collapse" id="sidebarToggle" title="Свернуть панель" aria-label="Свернуть панель">◀</button>
-    </div>
-    <nav class="sb-nav" id="appSidebarNav"></nav>
-    <div class="sb-footer" id="sbFooter">
-        <a href="/download?reason=desktop-only" class="sb-footer-link" title="Скачать desktop-клиент">🚀 Рабочая область</a>
-    </div>
-</aside>
-
-<div class="sb-overlay hidden" id="sidebarOverlay" aria-hidden="true"></div>
-
-<div class="app-content-wrap">
+<div class="app-content-wrap portal-content-wrap">
 <header class="header header-unified">
     <div class="header-row header-row-main">
         <button type="button" class="hdr-btn hdr-icon sb-mobile-toggle" id="mobileNavToggle" aria-label="Меню" aria-expanded="false" title="Навигация">☰</button>
-        <a href="/" class="logo logo-link logo-mobile-only" title="Главный сайт">
+        <a href="/" class="logo logo-link" title="Главный сайт">
             <div class="logo-mark">🤖</div>
-            <div class="logo-text"><h1>AI Team Room</h1></div>
+            <div class="logo-text"><h1>AI Team Room</h1><p class="logo-tag">портал</p></div>
         </a>
-        <div class="header-view-title" id="headerViewTitle">
-            <span class="header-view-icon" id="headerViewIcon" aria-hidden="true">👤</span>
-            <div class="header-view-text">
-                <span class="header-view-name" id="headerViewName">Кабинет</span>
-                <span class="header-view-sub muted" id="headerViewSub">аккаунт и настройки</span>
-            </div>
-        </div>
+        <nav class="portal-topnav" id="portalTopNav" aria-label="Разделы портала"></nav>
         <div class="header-actions header-actions-compact">
             <span class="hdr-balance hidden" id="headerBalanceChip" title="Баланс"></span>
             <button type="button" class="hdr-btn hdr-icon fp-hide-mobile" id="themeToggle" onclick="toggleTheme()" title="Тема">☀️</button>
@@ -109,8 +87,13 @@
     <button type="button" class="mtab active" data-view="profile"><span class="mtab-icon">👤</span>Кабинет</button>
     <button type="button" class="mtab hidden" data-view="admin" id="portalMobileAdmin"><span class="mtab-icon">🛡</span>Admin</button>
     <button type="button" class="mtab hidden" data-view="support" id="portalMobileSupport"><span class="mtab-icon">💬</span>Тикеты</button>
-    <a href="/download?reason=desktop-only" class="mtab mtab-link"><span class="mtab-icon">🚀</span>Workspace</a>
+    <a href="/download?reason=desktop-only" class="mtab mtab-link mtab-dl"><span class="mtab-icon">⬇</span>Скачать</a>
 </nav>
+
+<div class="portal-mobile-drawer hidden" id="portalMobileDrawer" aria-hidden="true">
+    <div class="portal-drawer-backdrop" id="portalDrawerBackdrop"></div>
+    <div class="portal-drawer-panel" id="portalDrawerPanel"></div>
+</div>
 
 <script>window.APP_SHELL = 'portal';</script>
 <script src="/static/js/app-shell.js?v=1"></script>
@@ -124,7 +107,7 @@
 <script src="/static/js/admin-panel.js?v=6"></script>
 <script src="/static/js/security-dashboard.js?v=3"></script>
 <script src="/static/js/ui-core.js?v=14"></script>
-<script src="/static/js/sidebar-nav.js?v=11"></script>
+<script src="/static/js/sidebar-nav.js?v=12"></script>
 <script src="/static/js/app.js?v=67"></script>
 </body>
 </html>
