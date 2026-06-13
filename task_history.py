@@ -39,14 +39,14 @@ class TaskHistory:
                     agent_name: str = None, agent_emoji: str = None,
                     parent_id: str = None, sender: str = "",
                     status: str = "queued", user_id: str = "",
-                    user_name: str = "") -> str:
+                    user_name: str = "", task_kind: str = "") -> str:
         if parent_id and not user_id:
             parent = self._find(parent_id)
             if parent:
                 user_id = parent.get("user_id", "")
                 user_name = user_name or parent.get("user_name", "")
         task_id = str(uuid.uuid4())[:8]
-        self.tasks.append({
+        row = {
             "id": task_id,
             "task": text,
             "target": target,
@@ -65,7 +65,18 @@ class TaskHistory:
             "priority": "medium",
             "comments": [],
             "workspace_id": "",
-        })
+        }
+        if task_kind:
+            row["task_kind"] = task_kind
+        elif not parent_id and text:
+            try:
+                from room.task_routing import classify_task_kind
+                kind = classify_task_kind(text)
+                if kind != "generic":
+                    row["task_kind"] = kind
+            except Exception:
+                pass
+        self.tasks.append(row)
         self._save()
         return task_id
 
@@ -95,7 +106,9 @@ class TaskHistory:
 
     def mark_awaiting_approval(self, task_id: str, response: str,
                                agent_name: str = "", agent_emoji: str = "",
-                               artifact_id: str = None, preview_url: str = None):
+                               artifact_id: str = None, preview_url: str = None,
+                               download_url: str = None, artifact_type: str = None,
+                               task_kind: str = None):
         t = self._find(task_id)
         if not t:
             return
@@ -110,9 +123,37 @@ class TaskHistory:
             t["artifact_id"] = artifact_id
         if preview_url:
             t["preview_url"] = preview_url
+        if download_url:
+            t["download_url"] = download_url
+        if artifact_type:
+            t["artifact_type"] = artifact_type
+        if task_kind:
+            t["task_kind"] = task_kind
         self._save()
         if t.get("parent_id"):
             self._try_complete_parent(t["parent_id"])
+
+    @staticmethod
+    def _pick_delivery_child(children: List[Dict]) -> Optional[Dict]:
+        awaiting = [c for c in children if c.get("status") == "awaiting_approval"]
+        if not awaiting:
+            return None
+        for agent_id in ("presenter", "modeler", "frontend", "doc_writer"):
+            for c in awaiting:
+                if c.get("agent_id") == agent_id:
+                    return c
+        return awaiting[0]
+
+    def _bubble_delivery_to_parent(self, parent: Dict, children: List[Dict]) -> None:
+        delivery = self._pick_delivery_child(children)
+        if not delivery:
+            return
+        for key in ("artifact_id", "preview_url", "download_url", "artifact_type", "task_kind"):
+            val = delivery.get(key)
+            if val and not parent.get(key):
+                parent[key] = val
+        if delivery.get("agent_id"):
+            parent["delivery_agent"] = delivery["agent_id"]
 
     def mark_user_approved(self, task_id: str, user_note: str = ""):
         t = self._find(task_id)
@@ -179,6 +220,7 @@ class TaskHistory:
         if all(c.get("status") in ("completed", "failed", "awaiting_approval") for c in children):
             if any(c.get("status") == "awaiting_approval" for c in children):
                 parent["status"] = "awaiting_approval"
+                self._bubble_delivery_to_parent(parent, children)
                 self._save()
                 return
             done = sum(1 for c in children if c.get("status") == "completed")
@@ -188,7 +230,32 @@ class TaskHistory:
             self._save()
 
     def get_all(self) -> List[Dict]:
-        return list(reversed(self.tasks))
+        return self.enrich_for_ui(list(reversed(self.tasks)))
+
+    def enrich_for_ui(self, tasks: List[Dict]) -> List[Dict]:
+        """Родительским задачам подставляем ссылки на файл (pptx и т.д.) из подзадач."""
+        by_id = {t.get("id"): dict(t) for t in tasks if t.get("id")}
+        children_map: Dict[str, List[Dict]] = {}
+        for t in tasks:
+            pid = t.get("parent_id")
+            if pid:
+                children_map.setdefault(pid, []).append(t)
+
+        out = []
+        for t in tasks:
+            row = dict(t)
+            if not row.get("parent_id"):
+                self._bubble_delivery_to_parent(row, children_map.get(row.get("id"), []))
+                if not row.get("task_kind") and row.get("task"):
+                    try:
+                        from room.task_routing import classify_task_kind
+                        kind = classify_task_kind(row["task"])
+                        if kind != "generic":
+                            row["task_kind"] = kind
+                    except Exception:
+                        pass
+            out.append(row)
+        return out
 
     def _belongs_to_user(self, task: dict, user_id: str) -> bool:
         if not user_id:
@@ -207,7 +274,7 @@ class TaskHistory:
         if not user_id:
             return []
         matched = [t for t in self.tasks if self._belongs_to_user(t, user_id)]
-        return list(reversed(matched))[:limit]
+        return self.enrich_for_ui(list(reversed(matched)))[:limit]
 
     def stats_for_user(self, user_id: str) -> dict:
         tasks = [t for t in self.tasks if self._belongs_to_user(t, user_id)]

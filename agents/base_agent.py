@@ -1073,6 +1073,9 @@ class BaseAgent:
             artifact = await self._save_task_artifact(task_text, response, task)
             artifact_id = artifact.get("id") if artifact else None
             preview_url = f"/api/projects/{artifact_id}/preview" if artifact_id and artifact.get("preview_html") else None
+            download_url = self._artifact_download_url(artifact)
+            from room.task_routing import resolve_task_intent
+            intent_kind = resolve_task_intent(task_text, task.get("original_task") or "")
 
             evaluator = self.room_manager.agents.get("evaluator") if self.room_manager else None
             if evaluator and hasattr(evaluator, "evaluate_output"):
@@ -1107,6 +1110,9 @@ class BaseAgent:
                 self.room_manager.record_task_awaiting_approval(
                     task_id, response, self.name, self.emoji,
                     artifact_id=artifact_id, preview_url=preview_url,
+                    download_url=download_url,
+                    artifact_type=artifact.get("type") if artifact else None,
+                    task_kind=intent_kind,
                 )
         except Exception as e:
             err = str(e)

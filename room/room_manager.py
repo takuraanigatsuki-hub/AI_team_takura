@@ -707,11 +707,13 @@ class RoomManager:
     def record_task_awaiting_approval(
         self, task_id: str, response: str, agent_name: str = "", agent_emoji: str = "",
         artifact_id: str = None, preview_url: str = None,
+        download_url: str = None, artifact_type: str = None, task_kind: str = None,
     ):
         if not task_id:
             return
         self.task_history.mark_awaiting_approval(
             task_id, response, agent_name, agent_emoji, artifact_id, preview_url,
+            download_url=download_url, artifact_type=artifact_type, task_kind=task_kind,
         )
         asyncio.create_task(self.pipeline.on_task_completed(task_id, failed=False))
         asyncio.create_task(self._broadcast_task_history())
@@ -741,16 +743,34 @@ class RoomManager:
         lines = []
         site_url = None
         preview_url = None
+        download_url = None
+        from room.task_routing import classify_task_kind
+        task_kind = t.get("task_kind") or classify_task_kind(t.get("task") or "")
         for c in children:
             if c.get("status") != "awaiting_approval":
                 continue
             who = f"{c.get('agent_emoji', '')} {c.get('agent_name', 'Агент')}".strip()
             snippet = (c.get("response") or "")[:140]
             lines.append(f"• **{who}**: {snippet}{'…' if len(c.get('response') or '') > 140 else ''}")
-            if c.get("preview_url"):
+            if c.get("preview_url") and not str(c.get("preview_url")).endswith("/api/sites/latest"):
                 preview_url = c["preview_url"]
-            if c.get("agent_id") == "frontend" and not site_url:
+            if c.get("download_url"):
+                download_url = c["download_url"]
+            elif c.get("artifact_id") and c.get("agent_id") == "presenter":
+                download_url = f"/api/projects/{c['artifact_id']}/file/presentation.pptx"
+            if (
+                task_kind in ("site", "ui")
+                and c.get("agent_id") == "frontend"
+                and not site_url
+            ):
                 site_url = c.get("preview_url") or "/api/sites/latest"
+
+        if not download_url and t.get("download_url"):
+            download_url = t["download_url"]
+        if not preview_url and t.get("preview_url"):
+            preview_url = t["preview_url"]
+        if not download_url and t.get("artifact_id") and task_kind == "presentation":
+            download_url = f"/api/projects/{t['artifact_id']}/file/presentation.pptx"
 
         if not lines and t.get("response"):
             lines.append((t.get("response") or "")[:400])
@@ -766,6 +786,8 @@ class RoomManager:
         if lines:
             msg += "\n".join(lines[:8]) + "\n\n"
         msg += "Откройте вкладку **Задачи** → ✓ Принять или ✎ Правки."
+        if download_url and task_kind == "presentation":
+            msg += f"\n\n📥 [**Скачать presentation.pptx**]({download_url})"
 
         await self.broadcast_work({
             "type": "task_awaiting_approval",
@@ -773,8 +795,10 @@ class RoomManager:
             "agent_id": "pm",
             "agent_name": pm_name,
             "agent_emoji": pm_emoji,
-            "site_url": site_url or preview_url,
+            "site_url": site_url if task_kind in ("site", "ui") else None,
             "preview_url": preview_url,
+            "download_url": download_url,
+            "task_kind": task_kind,
             "message": msg,
             "timestamp": datetime.now().isoformat(),
         })
