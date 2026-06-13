@@ -37,7 +37,7 @@
     function applyDownloadLinks(url) {
         downloadUrl = url || downloadUrl;
         document.querySelectorAll(
-            '#lpBtnDownload, #lpBtnDownloadUser, #lpHeroDownload, #lpHeroDownloadUser, #lpSectionDownload, #lpCtaDownload'
+            '#lpBtnDownload, #lpBtnDownloadUser, #lpHeroDownload, #lpHeroDownloadUser, #lpSectionDownload, #lpCtaDownload, #lpFooterDownload'
         ).forEach((el) => {
             if (el) el.setAttribute('href', downloadUrl);
         });
