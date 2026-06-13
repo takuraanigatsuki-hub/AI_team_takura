@@ -1376,7 +1376,7 @@ async def get_dashboard(request: Request):
     """Сводка для Dashboard: команда, знания, интеграции."""
     import config as cfg_module
     from integrations.local_git_sync import get_status as git_status
-    from room.message_filter import is_privileged, filter_agents_for_viewer
+    from room.message_filter import filter_agents_for_viewer
 
     user = _optional_user(request)
     viewer = {
