@@ -119,9 +119,18 @@
         if (window.UIAccess) UIAccess.applyMenuVisibility(user);
     }
 
+    function portalLink(view) {
+        return window.AppShell?.urlForView?.(view) || `/portal?view=${view}`;
+    }
+
+    function workspaceLink(view) {
+        return window.AppShell?.urlForView?.(view) || `/workspace?view=${view}`;
+    }
+
     function updateHeader() {
         const el = document.getElementById('userMenu');
         const summary = document.getElementById('userMenuSummary');
+        const isPortal = window.AppShell?.isPortal?.() || window.APP_SHELL === 'portal';
         if (!el) return;
         if (!currentUser) {
             if (summary) summary.textContent = '👤';
@@ -131,7 +140,7 @@
                 <a href="/" class="dropdown-item">На сайт</a>
                 <a href="/?auth=login" class="dropdown-item">Вход</a>
                 <a href="/?auth=register" class="dropdown-item">Регистрация</a>
-                <button type="button" class="dropdown-item" onclick="switchView('profile')">👤 Кабинет</button>`;
+                ${isPortal ? '' : `<a href="${portalLink('profile')}" class="dropdown-item">👤 Кабинет</a>`}`;
             return;
         }
         const name = escape(currentUser.name || currentUser.email.split('@')[0]);
@@ -145,21 +154,32 @@
             balChip.title = `Баланс: ${bal} кредитов`;
         }
         const adminBtn = canAccessAdmin(currentUser)
-            ? `<button type="button" class="dropdown-item" onclick="switchView('admin')">🛡 Admin</button>` : '';
+            ? (isPortal
+                ? `<button type="button" class="dropdown-item" onclick="switchView('admin')">🛡 Admin</button>`
+                : `<a href="${portalLink('admin')}" class="dropdown-item">🛡 Admin</a>`) : '';
         const supportStaffBtn = isSupportStaff(currentUser)
-            ? `<button type="button" class="dropdown-item" onclick="switchView('support')">💬 Тикеты поддержки</button>` : '';
+            ? (isPortal
+                ? `<button type="button" class="dropdown-item" onclick="switchView('support')">💬 Тикеты поддержки</button>`
+                : `<a href="${portalLink('support')}" class="dropdown-item">💬 Тикеты поддержки</a>`) : '';
         const supportUserBtn = !isSupportStaff(currentUser)
             ? `<button type="button" class="dropdown-item" onclick="SupportTickets?.open?.()">💬 Написать в поддержку</button>` : '';
         const investorBtn = canViewInvestorPortal(currentUser)
-            ? `<button type="button" class="dropdown-item" onclick="switchView('investor')">💼 Investor</button>` : '';
+            ? `<a href="${workspaceLink('investor')}" class="dropdown-item">💼 Investor</a>` : '';
+        const cabinetBtn = isPortal
+            ? `<button type="button" class="dropdown-item" onclick="switchView('profile')">👤 Кабинет</button>`
+            : `<a href="${portalLink('profile')}" class="dropdown-item">👤 Кабинет</a>`;
+        const workspaceBtn = isPortal
+            ? `<a href="/workspace" class="dropdown-item">🚀 Рабочая область</a>`
+            : '';
         if (summary) summary.textContent = name.slice(0, 1).toUpperCase();
         el.innerHTML = `
             <div class="dropdown-section-label">${name} · ${tierShort} ${bal} кр.</div>
-            <button type="button" class="dropdown-item" onclick="switchView('profile')">👤 Кабинет</button>
+            ${cabinetBtn}
             ${supportUserBtn}
             ${investorBtn}
             ${supportStaffBtn}
             ${adminBtn}
+            ${workspaceBtn}
             <button type="button" class="dropdown-item" onclick="Auth.logout()">Выход</button>
             <div class="dropdown-divider"></div>
             <a href="/" class="dropdown-item">На сайт</a>`;

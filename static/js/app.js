@@ -182,10 +182,10 @@
         document.getElementById('alTabDesign')?.classList.toggle('active', isAgentLearning && agentLearningPanel === 'design');
         document.getElementById('alTabSonyaProjects')?.classList.toggle('active', isAgentLearning && agentLearningPanel === 'sonya-projects');
 
-        document.getElementById('studioView').classList.toggle('hidden', view !== 'studio');
-        document.getElementById('chatView').classList.toggle('hidden', view !== 'chat');
-        document.getElementById('learningView').classList.toggle('hidden', !isAgentLearning || agentLearningPanel !== 'learning');
-        document.getElementById('tasksView').classList.toggle('hidden', view !== 'tasks');
+        document.getElementById('studioView')?.classList.toggle('hidden', view !== 'studio');
+        document.getElementById('chatView')?.classList.toggle('hidden', view !== 'chat');
+        document.getElementById('learningView')?.classList.toggle('hidden', !isAgentLearning || agentLearningPanel !== 'learning');
+        document.getElementById('tasksView')?.classList.toggle('hidden', view !== 'tasks');
         document.getElementById('mashaView')?.classList.toggle('hidden', !isAgentLearning || agentLearningPanel !== 'masha');
         document.getElementById('designView')?.classList.toggle('hidden', !isAgentLearning || agentLearningPanel !== 'design');
         document.getElementById('sonyaLearningView')?.classList.toggle('hidden', !isAgentLearning || agentLearningPanel !== 'sonya-projects');
@@ -1791,12 +1791,13 @@
 
     // ─── Init ────────────────────────────────────────────
     async function initApp() {
+        const isPortal = window.AppShell?.isPortal?.() || window.APP_SHELL === 'portal';
         applyTheme(getPreferredTheme());
         fetch('/api/config', { credentials: 'same-origin' }).then((r) => r.json()).then((cfg) => {
             if (cfg.auto_theme && window.AutoTheme) AutoTheme.start();
             else if (window.AutoTheme) AutoTheme.stop?.();
         }).catch(() => {});
-        if ('Notification' in window && Notification.permission === 'default') {
+        if (!isPortal && 'Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission().catch(() => {});
         }
 
@@ -1805,19 +1806,33 @@
         const viewParam = params.get('view');
         const setupParam = params.get('setup');
 
+        if (isPortal && !user) {
+            const next = encodeURIComponent(location.pathname + location.search);
+            location.href = `/?auth=login&next=${next}`;
+            return;
+        }
+
         if (setupParam === '1' && !user) {
             location.href = '/?auth=register';
             return;
         }
 
-        connect();
+        if (!isPortal) connect();
 
-        let startView = viewParam || (user?.default_view) || 'tasks';
-        const allowedViews = ['studio', 'chat', 'agent-learning', 'learning', 'design', 'masha', 'sonya-projects', 'sonya-studio', 'tasks', 'projects', 'kanban', 'sprint', 'timeline', 'dashboard', 'profile', 'admin', 'investor'];
+        let startView = viewParam || (user?.default_view) || (isPortal ? 'profile' : 'tasks');
+        const allowedViews = isPortal
+            ? ['profile', 'admin', 'support']
+            : ['studio', 'chat', 'agent-learning', 'learning', 'design', 'masha', 'sonya-projects', 'sonya-studio', 'tasks', 'projects', 'kanban', 'sprint', 'timeline', 'dashboard', 'investor'];
         if (!allowedViews.includes(startView)) {
-            startView = 'tasks';
+            startView = isPortal ? 'profile' : 'tasks';
         }
-        if (startView === 'admin' && !window.AdminPanel?.canAccess?.(user)) {
+        if (isPortal && startView === 'admin' && !window.AdminPanel?.canAccess?.(user)) {
+            startView = 'profile';
+        }
+        if (isPortal && startView === 'support' && !window.SupportPanel?.canAccess?.(user) && !window.Auth?.canManageTickets?.(user) && !user?.is_support) {
+            startView = 'profile';
+        }
+        if (!isPortal && startView === 'admin' && !window.AdminPanel?.canAccess?.(user)) {
             startView = user ? 'tasks' : 'tasks';
         }
         if (AGENT_LEARNING_VIEWS.has(startView) && !canViewAgentLearning(user)) {
@@ -1833,39 +1848,42 @@
 
         if (window.UICore) {
             UICore.initMobileNav();
-            UICore.initActivityPanel();
+            if (!isPortal) UICore.initActivityPanel();
         }
 
         if (window.Auth) Auth.updateNavVisibility(user);
         if (window.AdminPanel && user) AdminPanel.updateNavVisibility(user);
         if (window.UIAccess) UIAccess.applyMenuVisibility(user);
 
-        if (window.ReactPreview) ReactPreview.loadLatest({ autoOpen: false });
-        if (window.Integrations) {
-            Integrations.loadCursorStatus();
-            Integrations.loadFigmaStatus();
-        }
-        if (window.UIEnhancements) UIEnhancements.init();
-        if (window.FeaturePack) FeaturePack.init();
-        if (window.SiteSearch) SiteSearch.init();
-        if (window.PipelineUI) PipelineUI.load();
-        if (window.StudioMinimap) StudioMinimap.init();
-        if (window.SonyaStudio) SonyaStudio.init();
-
-        updateChatWelcome();
-
-        document.addEventListener('auth:updated', () => {
-            loadTasks();
+        if (!isPortal) {
+            if (window.ReactPreview) ReactPreview.loadLatest({ autoOpen: false });
+            if (window.Integrations) {
+                Integrations.loadCursorStatus();
+                Integrations.loadFigmaStatus();
+            }
+            if (window.FeaturePack) FeaturePack.init();
+            if (window.SiteSearch) SiteSearch.init();
+            if (window.PipelineUI) PipelineUI.load();
+            if (window.StudioMinimap) StudioMinimap.init();
+            if (window.SonyaStudio) SonyaStudio.init();
             updateChatWelcome();
-        });
+            document.addEventListener('auth:updated', () => {
+                loadTasks();
+                updateChatWelcome();
+            });
+        }
 
-        const needsSetup = user && !user.setup_complete;
-        if (needsSetup || setupParam === '1') {
-            if (window.SetupWizard) await SetupWizard.maybeStart(user);
-        } else if (window.CinematicOnboarding) {
-            CinematicOnboarding.start();
-        } else if (window.Onboarding) {
-            Onboarding.start();
+        if (window.UIEnhancements) UIEnhancements.init();
+
+        if (!isPortal) {
+            const needsSetup = user && !user.setup_complete;
+            if (needsSetup || setupParam === '1') {
+                if (window.SetupWizard) await SetupWizard.maybeStart(user);
+            } else if (window.CinematicOnboarding) {
+                CinematicOnboarding.start();
+            } else if (window.Onboarding) {
+                Onboarding.start();
+            }
         }
     }
 

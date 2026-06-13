@@ -575,8 +575,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         tier,
-                        success_url: location.origin + '/app?view=profile',
-                        cancel_url: location.origin + '/app?view=profile',
+                        success_url: location.origin + '/portal?view=profile',
+                        cancel_url: location.origin + '/portal?view=profile',
                     }),
                 });
                 const d = await r.json();
