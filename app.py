@@ -341,6 +341,104 @@ async def investor_portal_page():
     return RedirectResponse("/workspace?view=investor")
 
 
+@app.get("/desktop", response_class=HTMLResponse)
+async def desktop_app_shell():
+    """Оболочка десктоп-приложения — splash, вход, регистрация."""
+    html_file = os.path.join(static_dir, "desktop.html")
+    if os.path.exists(html_file):
+        with open(html_file, "r", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    raise HTTPException(status_code=404, detail="Desktop shell not found")
+
+
+@app.get("/auth/device", response_class=HTMLResponse)
+async def auth_device_page():
+    """Подтверждение входа десктоп-приложения через браузер."""
+    html_file = os.path.join(static_dir, "auth-device.html")
+    if os.path.exists(html_file):
+        with open(html_file, "r", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    raise HTTPException(status_code=404, detail="Device auth page not found")
+
+
+@app.get("/desktop/handoff")
+async def desktop_handoff(request: Request, t: str = ""):
+    """Одноразовый обмен handoff-токена на сессию (после входа через браузер)."""
+    from room.desktop_auth import consume_handoff
+    session_token = consume_handoff(t)
+    if not session_token:
+        return RedirectResponse("/desktop?error=handoff_expired")
+    resp = RedirectResponse("/workspace?desktop=1")
+    _set_session_cookie(resp, session_token)
+    return resp
+
+
+@app.get("/download", response_class=HTMLResponse)
+async def download_page():
+    """Страница загрузки десктоп-приложения."""
+    html_file = os.path.join(static_dir, "download.html")
+    if os.path.exists(html_file):
+        with open(html_file, "r", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    raise HTTPException(status_code=404, detail="Download page not found")
+
+
+@app.get("/api/downloads/desktop/info")
+async def desktop_download_info():
+    """Метаданные установщика для страницы загрузки."""
+    dist_dir = os.path.join(os.path.dirname(__file__), "dist")
+    installer = os.path.join(dist_dir, "AI_Team_Room_Setup.exe")
+    portable = os.path.join(dist_dir, "AI_Team_Room.exe")
+    info = {
+        "version": os.environ.get("DESKTOP_APP_VERSION", "1.0.0"),
+        "platforms": [],
+    }
+    if os.path.isfile(installer):
+        st = os.stat(installer)
+        info["platforms"].append({
+            "id": "win-setup",
+            "label": "Windows — установщик",
+            "filename": "AI_Team_Room_Setup.exe",
+            "url": "/api/downloads/desktop/win/setup",
+            "size_mb": round(st.st_size / (1024 * 1024), 1),
+        })
+    if os.path.isfile(portable):
+        st = os.stat(portable)
+        info["platforms"].append({
+            "id": "win-portable",
+            "label": "Windows — portable",
+            "filename": "AI_Team_Room.exe",
+            "url": "/api/downloads/desktop/win/portable",
+            "size_mb": round(st.st_size / (1024 * 1024), 1),
+        })
+    if not info["platforms"]:
+        info["platforms"].append({
+            "id": "win-build",
+            "label": "Windows — собрать из исходников",
+            "filename": "",
+            "url": "",
+            "size_mb": 0,
+            "hint": "Запустите scripts/build-desktop.ps1 на Windows для сборки .exe",
+        })
+    return info
+
+
+@app.get("/api/downloads/desktop/win/setup")
+async def desktop_download_setup():
+    path = os.path.join(os.path.dirname(__file__), "dist", "AI_Team_Room_Setup.exe")
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Installer not built yet. Run scripts/build-desktop.ps1")
+    return FileResponse(path, filename="AI_Team_Room_Setup.exe", media_type="application/octet-stream")
+
+
+@app.get("/api/downloads/desktop/win/portable")
+async def desktop_download_portable():
+    path = os.path.join(os.path.dirname(__file__), "dist", "AI_Team_Room.exe")
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Portable build not found. Run scripts/build-desktop.ps1")
+    return FileResponse(path, filename="AI_Team_Room.exe", media_type="application/octet-stream")
+
+
 async def _security_monitor_loop(room_mgr: RoomManager):
     """Фоновая обработка событий безопасности агентом Олег."""
     from room.security_monitor import get_monitor
@@ -497,6 +595,15 @@ def _set_session_cookie(response, token: str):
         samesite="lax",
         path="/",
     )
+
+
+def _public_base_url(request: Request) -> str:
+    env = os.environ.get("APP_PUBLIC_URL", "").strip().rstrip("/")
+    if env:
+        return env
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or "localhost:8000"
+    proto = request.headers.get("x-forwarded-proto") or request.url.scheme or "http"
+    return f"{proto}://{host}"
 
 
 def _get_session_token(request) -> str:

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Team Room</title>
+    <meta name="theme-color" content="#8b5cf6">
+    <link rel="icon" href="/static/icons/icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/desktop.css?v=1">
+</head>
+<body class="desktop-shell">
+<div class="ds-bg">
+    <div class="ds-orb ds-orb-a"></div>
+    <div class="ds-orb ds-orb-b"></div>
+    <div class="ds-grid"></div>
+</div>
+
+<!-- Splash -->
+<section class="ds-splash" id="dsSplash" aria-live="polite">
+    <div class="ds-splash-logo">
+        <div class="ds-logo-ring"></div>
+        <span class="ds-logo-mark" aria-hidden="true">🤖</span>
+    </div>
+    <h1 class="ds-splash-title">AI Team Room</h1>
+    <p class="ds-splash-sub" id="dsSplashSub">Запуск командной студии…</p>
+    <div class="ds-progress"><div class="ds-progress-bar" id="dsProgressBar"></div></div>
+    <ul class="ds-boot-steps" id="dsBootSteps">
+        <li class="active" data-step="init">Инициализация</li>
+        <li data-step="agents">13 агентов</li>
+        <li data-step="studio">3D-студия</li>
+        <li data-step="ready">Готово</li>
+    </ul>
+</section>
+
+<!-- Auth -->
+<section class="ds-auth hidden" id="dsAuth">
+    <div class="ds-auth-card">
+        <header class="ds-auth-head">
+            <div class="ds-auth-brand">
+                <span class="ds-auth-icon">🤖</span>
+                <div>
+                    <h2>Добро пожаловать</h2>
+                    <p>Войдите, чтобы открыть рабочую область и кабинет</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="ds-tabs" role="tablist">
+            <button type="button" class="ds-tab active" data-mode="login" role="tab" aria-selected="true">Вход</button>
+            <button type="button" class="ds-tab" data-mode="register" role="tab" aria-selected="false">Регистрация</button>
+        </div>
+
+        <form id="dsAuthForm" class="ds-form">
+            <label class="ds-label" for="dsEmail">Email</label>
+            <input type="email" id="dsEmail" class="ds-input" required autocomplete="username" placeholder="you@company.com">
+            <label class="ds-label hidden" id="dsNameLabel" for="dsName">Имя</label>
+            <input type="text" id="dsName" class="ds-input hidden" autocomplete="name" placeholder="Алексей">
+            <label class="ds-label" for="dsPassword">Пароль</label>
+            <input type="password" id="dsPassword" class="ds-input" required minlength="6" autocomplete="current-password" placeholder="минимум 6 символов">
+            <p class="ds-error hidden" id="dsError" role="alert"></p>
+            <button type="submit" class="ds-btn ds-btn-primary" id="dsSubmit">Войти</button>
+        </form>
+
+        <div class="ds-divider"><span>или</span></div>
+
+        <button type="button" class="ds-btn ds-btn-browser" id="dsBrowserLogin">
+            <span class="ds-btn-icon">🌐</span>
+            Войти через браузер
+        </button>
+        <p class="ds-browser-hint hidden" id="dsBrowserHint"></p>
+
+        <div class="ds-shortcuts">
+            <a href="/workspace" class="ds-link">🚀 Рабочая область</a>
+            <a href="/portal?view=profile" class="ds-link">👤 Кабинет</a>
+            <a href="/" class="ds-link">🌐 Сайт</a>
+        </div>
+    </div>
+
+    <footer class="ds-foot">
+        <span>AI Team Room · Desktop</span>
+        <span id="dsVersion">v1.0</span>
+    </footer>
+</section>
+
+<script src="/static/js/desktop-app.js?v=1"></script>
+</body>
+</html>

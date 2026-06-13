@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход в приложение — AI Team Room</title>
+    <link rel="icon" href="/static/icons/icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/desktop.css?v=1">
+</head>
+<body class="desktop-shell device-page">
+<div class="ds-bg"><div class="ds-orb ds-orb-a"></div><div class="ds-orb ds-orb-b"></div></div>
+<main class="ds-device-card">
+    <div class="ds-device-icon">🖥️ ↔ 🌐</div>
+    <h1>Подключение приложения</h1>
+    <p class="muted">Подтвердите вход в десктоп-приложение AI Team Room</p>
+    <div class="ds-device-code" id="deviceCode">------</div>
+    <p class="ds-device-status" id="deviceStatus">Проверка…</p>
+    <div class="ds-device-actions hidden" id="deviceGuest">
+        <button type="button" class="ds-btn ds-btn-primary" id="deviceLoginBtn">Войти на сайте</button>
+        <button type="button" class="ds-btn ds-btn-ghost" id="deviceRegisterBtn">Регистрация</button>
+    </div>
+    <button type="button" class="ds-btn ds-btn-primary hidden" id="deviceApproveBtn">Подтвердить вход в приложение</button>
+    <p class="ds-success hidden" id="deviceSuccess">✅ Готово! Вернитесь в приложение — окно обновится автоматически.</p>
+</main>
+<script src="/static/js/auth-device.js?v=1"></script>
+</body>
+</html>
