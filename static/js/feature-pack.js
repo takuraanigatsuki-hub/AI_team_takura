@@ -178,70 +178,120 @@
     }
 
     function openGlobalSearch() {
-        if (document.getElementById('fpSearchOverlay')) return;
-        const overlay = document.createElement('div');
-        overlay.id = 'fpSearchOverlay';
-        overlay.className = 'fp-search-overlay';
-        overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
-        const items = [
-            ...VIEWS.map((v) => ({ label: v.label, run: () => sw(v.id) })),
-            ...getCommands().slice(0, 12).map((c) => ({ label: c.label, run: c.run })),
-        ];
-        overlay.innerHTML = `
-            <div class="fp-search-box">
-                <input type="search" id="fpSearchInput" placeholder="Раздел или команда…" autofocus>
-                <div class="fp-search-results" id="fpSearchResults"></div>
-            </div>`;
-        document.body.appendChild(overlay);
-        const input = overlay.querySelector('#fpSearchInput');
-        const results = overlay.querySelector('#fpSearchResults');
-        const render = (q) => {
-            const qq = (q || '').toLowerCase();
-            const list = qq ? items.filter((i) => i.label.toLowerCase().includes(qq)) : items.slice(0, 10);
-            results.innerHTML = list.map((item, i) =>
-                `<button type="button" class="fp-search-item" data-i="${i}">${item.label}</button>`
-            ).join('') || '<div class="fp-search-empty">Ничего не найдено</div>';
-            results.querySelectorAll('.fp-search-item').forEach((btn) => {
-                btn.onclick = () => { list[+btn.dataset.i].run(); overlay.remove(); };
+        openCommandPalette();
+    }
+
+    let _paletteSearchTimer = null;
+    let _paletteSearchAbort = null;
+
+    async function fetchPaletteSearch(query, container) {
+        if (_paletteSearchAbort) _paletteSearchAbort.abort();
+        if (!query || query.length < 2) {
+            container.innerHTML = '';
+            container.classList.add('hidden');
+            return;
+        }
+        container.classList.remove('hidden');
+        container.innerHTML = '<div class="cmd-section-label">Найденное</div><div class="cmd-search-hint">Поиск…</div>';
+        _paletteSearchAbort = new AbortController();
+        try {
+            const r = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=8`, {
+                credentials: 'same-origin',
+                signal: _paletteSearchAbort.signal,
             });
-        };
-        input.addEventListener('input', () => render(input.value));
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') overlay.remove();
-            if (e.key === 'Enter') results.querySelector('.fp-search-item')?.click();
-        });
-        render('');
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            const d = await r.json();
+            const results = d.results || [];
+            if (!results.length) {
+                container.innerHTML = '<div class="cmd-section-label">Найденное</div><div class="cmd-search-hint">Ничего не найдено</div>';
+                return;
+            }
+            const TYPE_LABELS = { task: '📋', project: '📦', message: '💬', learning: '📚', sonya: '✨' };
+            container.innerHTML = '<div class="cmd-section-label">Найденное</div>' + results.map((item, i) =>
+                `<button type="button" class="cmd-item cmd-item-search" data-si="${i}">${TYPE_LABELS[item.type] || '·'} ${item.title || item.snippet || ''}</button>`
+            ).join('');
+            container.querySelectorAll('.cmd-item-search').forEach((btn) => {
+                btn.onclick = () => {
+                    document.getElementById('commandPalette')?.remove();
+                    if (global.SiteSearch) {
+                        global.SiteSearch.close?.();
+                        global.switchView?.(results[+btn.dataset.si].view);
+                        const res = results[+btn.dataset.si];
+                        setTimeout(() => {
+                            if (res.view === 'sonya-studio' && res.id && global.SonyaStudio?.openProject) {
+                                SonyaStudio.openProject(res.id);
+                            }
+                        }, 100);
+                    }
+                };
+            });
+        } catch (e) {
+            if (e.name !== 'AbortError') {
+                container.innerHTML = '<div class="cmd-section-label">Найденное</div><div class="cmd-search-hint">Ошибка поиска</div>';
+            }
+        }
     }
 
     function openCommandPalette() {
-        if (document.getElementById('commandPalette')) {
-            document.getElementById('commandPalette').remove();
-            return;
-        }
-        const commands = getCommands();
+        document.getElementById('fpSearchOverlay')?.remove();
+        const existing = document.getElementById('commandPalette');
+        if (existing) { existing.remove(); return; }
+
+        const commands = getCommands().filter((c) => c.label !== '🔍 Поиск');
         const pal = document.createElement('div');
         pal.id = 'commandPalette';
         pal.className = 'command-palette-overlay';
         pal.onclick = (e) => { if (e.target === pal) pal.remove(); };
         pal.innerHTML = `
             <div class="command-palette">
-                <input type="text" id="cmdSearch" placeholder="Команда…" autofocus>
+                <div class="command-palette-head">
+                    <span class="command-palette-icon" aria-hidden="true">⌘</span>
+                    <input type="search" id="cmdSearch" placeholder="Раздел, команда или поиск…" autofocus>
+                    <kbd class="command-palette-kbd">Esc</kbd>
+                </div>
+                <div class="cmd-search-section hidden" id="cmdSearchSection"></div>
+                <div class="cmd-section-label" id="cmdActionsLabel">Действия</div>
                 <div class="cmd-list" id="cmdList">${commands.map((a, i) =>
                     `<button type="button" class="cmd-item" data-i="${i}">${a.label}</button>`
                 ).join('')}</div>
             </div>`;
         document.body.appendChild(pal);
-        pal.querySelectorAll('.cmd-item').forEach((btn) => {
-            btn.onclick = () => { commands[+btn.dataset.i].run(); pal.remove(); };
+
+        const runCmd = (idx) => { commands[idx].run(); pal.remove(); };
+        pal.querySelectorAll('.cmd-item:not(.cmd-item-search)').forEach((btn) => {
+            btn.onclick = () => runCmd(+btn.dataset.i);
         });
+
         const search = pal.querySelector('#cmdSearch');
-        search?.addEventListener('input', () => {
-            const q = search.value.toLowerCase();
-            pal.querySelectorAll('.cmd-item').forEach((btn, i) => {
-                btn.style.display = commands[i].label.toLowerCase().includes(q) ? '' : 'none';
+        const list = pal.querySelector('#cmdList');
+        const searchSection = pal.querySelector('#cmdSearchSection');
+        const actionsLabel = pal.querySelector('#cmdActionsLabel');
+
+        const filterCommands = (q) => {
+            let visible = 0;
+            pal.querySelectorAll('#cmdList .cmd-item').forEach((btn, i) => {
+                const show = !q || commands[i].label.toLowerCase().includes(q);
+                btn.style.display = show ? '' : 'none';
+                if (show) visible++;
             });
+            actionsLabel.style.display = visible ? '' : 'none';
+            list.style.display = visible ? '' : 'none';
+        };
+
+        search?.addEventListener('input', () => {
+            const q = search.value.trim().toLowerCase();
+            filterCommands(q);
+            clearTimeout(_paletteSearchTimer);
+            _paletteSearchTimer = setTimeout(() => fetchPaletteSearch(search.value.trim(), searchSection), 200);
         });
-        search?.addEventListener('keydown', (e) => { if (e.key === 'Escape') pal.remove(); });
+        search?.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') pal.remove();
+            if (e.key === 'Enter') {
+                const first = searchSection.querySelector('.cmd-item-search:not([style*="none"])')
+                    || list.querySelector('.cmd-item:not([style*="none"])');
+                first?.click();
+            }
+        });
     }
 
     function toggleNotifyPanel() {
@@ -295,7 +345,7 @@
         const rows = [
             ['Ctrl+1', '3D Студия'], ['Ctrl+2', 'Чат'], ['Ctrl+3', 'Задачи'],
             ['Ctrl+4', 'Dashboard'], ['Ctrl+5', 'Кабинет'], ['Ctrl+Shift+L', 'Обучение (admin)'],
-            ['Ctrl+K', 'Команды'], ['Ctrl+G', 'Глобальный поиск'], ['Ctrl+Shift+F', 'Поиск по сайту'],
+            ['Ctrl+K / Ctrl+G', 'Быстрый доступ (разделы + команды + поиск)'], ['Ctrl+Shift+F', 'Расширенный поиск'],
             ['Ctrl+F', 'Поиск в чате'], ['Ctrl+Enter', 'Отправить'], ['Alt+←/→', 'Вкладки'],
             ['F', 'Фокус-режим'],
         ];
@@ -400,7 +450,7 @@
 
     function bindKeyboard() {
         document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'g') { e.preventDefault(); openGlobalSearch(); }
+            if (e.ctrlKey && e.key === 'g') { e.preventDefault(); openCommandPalette(); }
             if (e.key === 'f' && !e.ctrlKey && !/INPUT|TEXTAREA/.test(document.activeElement?.tagName || '')) {
                 e.preventDefault();
                 toggleFocusMode();

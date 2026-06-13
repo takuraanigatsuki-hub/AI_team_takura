@@ -30,7 +30,7 @@
         ]},
         { group: 'Студия', advanced: true, items: [
             { view: 'studio', icon: '🎮', label: '3D' },
-            { view: 'sonya-studio', icon: '✨', label: 'Studio' },
+            { view: 'sonya-studio', icon: '✨', label: 'Sonya Studio' },
         ]},
         { group: 'Аккаунт', items: [
             { view: 'profile', icon: '👤', label: 'Кабинет' },
@@ -54,7 +54,7 @@
         ]},
         { group: 'Студия', items: [
             { view: 'studio', icon: '🎮', label: '3D' },
-            { view: 'sonya-studio', icon: '✨', label: 'Studio' },
+            { view: 'sonya-studio', icon: '✨', label: 'Sonya Studio' },
             { view: 'design', icon: '🎨', label: 'Design Lab', adminLearning: true },
         ]},
         { group: 'Система', advanced: true, items: [
@@ -141,9 +141,12 @@
         if (!el) return;
         const user = global.Auth?.getUser?.();
         const NAV = getNav(user);
-        const quickBar = `<div class="sb-quick sb-label">
-            <button type="button" class="sb-quick-btn" onclick="FeaturePack?.openGlobalSearch?.()" title="Поиск">🔍 Поиск</button>
-            <button type="button" class="sb-quick-btn" onclick="FeaturePack?.openCommandPalette?.()" title="Команды">⌘ Команды</button>
+        const quickBar = `<div class="sb-quick">
+            <button type="button" class="sb-quick-btn sb-quick-unified" onclick="FeaturePack?.openCommandPalette?.()" title="Разделы, команды и поиск — Ctrl+K">
+                <span class="sb-quick-icon" aria-hidden="true">⌘</span>
+                <span class="sb-quick-label">Быстрый доступ</span>
+                <kbd class="sb-quick-kbd">K</kbd>
+            </button>
         </div>`;
         el.innerHTML = quickBar + NAV.map((g) => {
             const items = g.items.filter((i) => canShow(i, user));

@@ -12,7 +12,7 @@
             if (global.Auth?.canViewAgentLearning?.(global.Auth.getUser())) switchView('agent-learning');
         }, label: 'Обучение (admin)' },
         { keys: 'Ctrl+K', action: () => toggleCommandPalette(), label: 'Командная палитра' },
-        { keys: 'Ctrl+G', action: () => { if (global.FeaturePack?.openGlobalSearch) FeaturePack.openGlobalSearch(); }, label: 'Глобальный поиск' },
+        { keys: 'Ctrl+G', action: () => { if (global.FeaturePack?.openCommandPalette) FeaturePack.openCommandPalette(); }, label: 'Быстрый доступ' },
         { keys: 'Ctrl+Shift+F', action: () => { if (global.SiteSearch) SiteSearch.open(); }, label: 'Поиск по сайту' },
         { keys: 'Ctrl+/', action: () => toggleShortcutsHelp(), label: 'Справка' },
     ];

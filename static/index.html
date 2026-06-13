@@ -99,8 +99,8 @@
                     <button type="button" class="dropdown-item" onclick="PowerPack.voiceStandupRound()">🎙 Voice round</button>
                     <button type="button" class="dropdown-item" onclick="VoiceRoom.startListening()">🎤 Голосовая задача</button>
                     <div class="dropdown-divider"></div>
-                    <button type="button" class="dropdown-item" onclick="FeaturePack?.openGlobalSearch?.()">🔍 Поиск <kbd>Ctrl+G</kbd></button>
-                    <button type="button" class="dropdown-item" onclick="FeaturePack?.openCommandPalette?.()">⌘ Команды <kbd>Ctrl+K</kbd></button>
+                    <button type="button" class="dropdown-item" onclick="FeaturePack?.openCommandPalette?.()">⌘ Быстрый доступ <kbd>Ctrl+K</kbd></button>
+                    <button type="button" class="dropdown-item" onclick="SiteSearch?.open?.()">🔍 Поиск по данным <kbd>Ctrl+Shift+F</kbd></button>
                     <button type="button" class="dropdown-item" onclick="FeaturePack?.showShortcutsModal?.()">⌨️ Горячие клавиши</button>
                     <button type="button" class="dropdown-item" onclick="FeaturePack?.toggleFocusMode?.()">🎯 Фокус-режим</button>
                     <button type="button" class="dropdown-item fp-show-mobile" onclick="showSettings()">⚙️ Настройки</button>
@@ -109,8 +109,7 @@
             </details>
             <button type="button" class="hdr-btn hdr-icon activity-toggle" id="activityToggle" title="Лента событий" aria-expanded="false" aria-controls="activityPanel">📡<span class="activity-badge" id="activityBadge"></span></button>
             <button type="button" class="hdr-btn hdr-icon fp-notify-btn" id="fpNotifyBtn" title="Уведомления" onclick="FeaturePack?.toggleNotifyPanel?.()">🔔<span class="fp-notify-badge" id="fpNotifyBadge" style="display:none">0</span></button>
-            <button type="button" class="hdr-btn hdr-icon fp-hide-desktop" title="Поиск (Ctrl+Shift+F)" onclick="SiteSearch?.open?.()">🔍</button>
-            <button type="button" class="hdr-btn hdr-icon fp-hide-desktop" title="Команды (Ctrl+K)" onclick="FeaturePack?.openCommandPalette?.()">⌘</button>
+            <button type="button" class="hdr-btn hdr-icon fp-hide-desktop" title="Быстрый доступ (Ctrl+K)" onclick="FeaturePack?.openCommandPalette?.()">⌘</button>
             <button type="button" class="hdr-btn hdr-icon hidden" id="pwaInstallBtn" onclick="installPWA()" title="Установить приложение">📲</button>
             <button type="button" class="hdr-btn hdr-icon fp-hide-mobile" id="settingsBtn" onclick="showSettings()" title="Настройки">⚙️</button>
             <button type="button" class="hdr-btn hdr-icon fp-hide-mobile" id="themeToggle" onclick="toggleTheme()" title="Тема">☀️</button>
@@ -827,7 +826,7 @@
 <script src="/static/js/integrations.js?v=10"></script>
 <script src="/static/js/sonya-design-lab.js?v=6"></script>
 <script src="/static/js/ui-enhancements.js?v=8"></script>
-<script src="/static/js/feature-pack.js?v=10"></script>
+<script src="/static/js/feature-pack.js?v=11"></script>
 <script src="/static/js/search.js?v=3"></script>
 <script src="/static/js/dashboard.js?v=8"></script>
 <script src="/static/js/workspaces.js?v=1"></script>
@@ -845,7 +844,7 @@
 <script src="/static/js/chat-commands.js?v=2"></script>
 <script src="/static/js/masha-learning-lab.js?v=5"></script>
 <script src="/static/js/ui-core.js?v=8"></script>
-<script src="/static/js/sidebar-nav.js?v=6"></script>
+<script src="/static/js/sidebar-nav.js?v=7"></script>
 <script src="/static/js/investor-portal.js?v=3"></script>
 <script src="/static/js/security-dashboard.js?v=3"></script>
 <script src="/static/js/task-templates.js?v=3"></script>
