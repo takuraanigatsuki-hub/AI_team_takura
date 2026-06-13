@@ -1,5 +1,6 @@
 """Live pipeline — визуальный прогресс задачи по команде."""
 
+import asyncio
 from datetime import datetime
 from typing import Optional
 
@@ -10,6 +11,7 @@ class PipelineTracker:
     def __init__(self, room_manager):
         self.room = room_manager
         self.active: Optional[dict] = None
+        self._clear_task: Optional[asyncio.Task] = None
 
     def _progress(self) -> int:
         if not self.active:
