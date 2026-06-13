@@ -76,12 +76,12 @@
         if (isPrivilegedUser(window.Auth?.getUser())) return true;
         const hiddenTypes = new Set([
             'security_alert', 'github_sync_started', 'github_sync_done',
-            'git_sync_done', 'cursor_progress',
+            'git_sync_done', 'cursor_progress', 'pr_ready',
         ]);
         if (hiddenTypes.has(data.type)) return false;
         if ((data.agent_id || '').toLowerCase() === 'security') return false;
         const text = (data.message || data.text || '').toLowerCase();
-        if (/github sync|git sync|security alert|threat:|ip заблок/.test(text)) return false;
+        if (/github sync|git sync|security alert|threat:|ip заблок|commit на github|commit:|github\.com\//.test(text)) return false;
         return true;
     }
 
@@ -103,7 +103,7 @@
                 return;
             }
         } else if (view === 'support') {
-            if (!window.SupportPanel?.canAccess(user) && !window.Auth?.canManageTickets?.(user)) {
+            if (!window.SupportPanel?.canAccess(user) && !window.Auth?.canManageTickets?.(user) && !user?.is_support) {
                 if (window.SupportTickets?.open) SupportTickets.open();
                 else if (window.UIEnhancements) UIEnhancements.toast('Войдите, чтобы написать в поддержку', 'warn');
                 return;
@@ -593,6 +593,7 @@
                 if (window.DebateUI) DebateUI.show(data);
                 break;
             case 'pr_ready':
+                if (!isPrivilegedUser(window.Auth?.getUser())) break;
                 addLinkMessage(data.message || '🔗 PR / Commit готов', data.pr_url || data.commit_url);
                 break;
             case 'artifact_created':

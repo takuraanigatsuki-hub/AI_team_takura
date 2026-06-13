@@ -137,8 +137,12 @@
             fab.textContent = '💬';
             fab.setAttribute('aria-label', 'Поддержка');
             fab.onclick = () => {
+                const user = global.Auth?.getUser();
+                if (global.Auth?.isSupportStaff?.(user)) {
+                    sw('support');
+                    return;
+                }
                 if (global.SupportTickets?.open) SupportTickets.open();
-                else if (global.UIEnhancements) UIEnhancements.toast('Поддержка загружается…', 'info');
             };
             document.body.appendChild(fab);
         }

@@ -10,6 +10,7 @@ HIDDEN_MSG_TYPES = frozenset({
     "github_sync_done",
     "git_sync_done",
     "cursor_progress",
+    "pr_ready",
 })
 
 HIDDEN_AGENT_IDS = frozenset({"security"})
@@ -42,7 +43,10 @@ def should_show_message(message: dict, viewer: dict | None) -> bool:
         return False
 
     text = (message.get("message") or message.get("text") or "").lower()
-    if any(k in text for k in ("github sync", "git sync", "security alert", "threat:", "ip заблок")):
+    if any(k in text for k in (
+        "github sync", "git sync", "security alert", "threat:", "ip заблок",
+        "commit на github", "commit:", "github.com/",
+    )):
         return False
 
     return True

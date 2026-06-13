@@ -221,6 +221,7 @@ def _public_user(user: dict) -> dict:
         "can_view_agent_learning": can_view_agent_learning(user),
         "can_view_investor_portal": can_view_investor_portal(user),
         "can_manage_tickets": can_manage_tickets(user),
+        "can_access_support_panel": can_access_support_panel(user),
         "is_investor": role == "investor",
         "setup_complete": bool(user.get("setup_complete")),
         "default_view": user.get("default_view", "dashboard"),
@@ -305,10 +306,35 @@ def can_manage_tickets(user: dict | None) -> bool:
     """Панель поддержки — support, owner, admin, tech_admin."""
     if not user:
         return False
+    if user.get("is_support"):
+        return True
     role = user.get("role", "member")
     if role in ("owner", "admin", "tech_admin", "support"):
         return True
     return has_privilege(user, "manage_tickets") or has_privilege(user, "admin")
+
+
+def can_access_support_panel(user: dict | None) -> bool:
+    return can_manage_tickets(user)
+
+
+def _ensure_role_privileges(raw: dict) -> dict:
+    """Синхронизировать privileges с ролью (fix устаревших записей support/tech_admin)."""
+    if not raw:
+        return raw
+    role = raw.get("role", "member")
+    expected = _privileges_for_role(role)
+    current = raw.get("privileges")
+    if role in ("support", "tech_admin") and list(current or []) != list(expected):
+        raw["privileges"] = list(expected)
+        raw["updated_at"] = datetime.now().isoformat()
+        users = _load(USERS_FILE)
+        for i, u in enumerate(users):
+            if u.get("id") == raw.get("id"):
+                users[i] = raw
+                _save_users(users)
+                break
+    return raw
 
 
 def support_account_summary(user_id: str) -> Optional[dict]:
@@ -427,6 +453,7 @@ def get_user_from_token(token: str) -> Optional[dict]:
     user = _find_user(meta.get("user_id", ""))
     if not user or user.get("disabled"):
         return None
+    user = _ensure_role_privileges(user)
     return _public_user(user) if user else None
 
 

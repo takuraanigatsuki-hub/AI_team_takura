@@ -95,8 +95,15 @@
 
     function canManageTickets(user) {
         if (!user) return false;
-        if (user.can_manage_tickets) return true;
-        return ['support', 'admin', 'tech_admin'].includes(user.role) || user.is_owner || user.role === 'owner';
+        if (user.can_manage_tickets || user.can_access_support_panel) return true;
+        if (user.is_support || user.role === 'support') return true;
+        return ['admin', 'tech_admin'].includes(user.role) || user.is_owner || user.role === 'owner';
+    }
+
+    function isSupportStaff(user) {
+        if (!user) return false;
+        if (user.is_support || user.role === 'support') return true;
+        return canManageTickets(user) && ['admin', 'owner', 'tech_admin'].includes(user.role);
     }
 
     function updateNavVisibility(user) {
@@ -132,17 +139,19 @@
         const tierShort = sub.tier_emoji ? `${sub.tier_emoji}` : '';
         const adminBtn = canAccessAdmin(currentUser)
             ? `<button type="button" class="dropdown-item" onclick="switchView('admin')">🛡 Admin</button>` : '';
-        const supportBtn = canManageTickets(currentUser)
-            ? `<button type="button" class="dropdown-item" onclick="switchView('support')">💬 Тикеты</button>` : '';
+        const supportStaffBtn = isSupportStaff(currentUser)
+            ? `<button type="button" class="dropdown-item" onclick="switchView('support')">💬 Тикеты поддержки</button>` : '';
+        const supportUserBtn = !isSupportStaff(currentUser)
+            ? `<button type="button" class="dropdown-item" onclick="SupportTickets?.open?.()">💬 Написать в поддержку</button>` : '';
         const investorBtn = canViewInvestorPortal(currentUser)
             ? `<button type="button" class="dropdown-item" onclick="switchView('investor')">💼 Investor</button>` : '';
         if (summary) summary.textContent = name.slice(0, 1).toUpperCase();
         el.innerHTML = `
             <div class="dropdown-section-label">${name} · ${tierShort} ${bal} кр.</div>
             <button type="button" class="dropdown-item" onclick="switchView('profile')">👤 Кабинет</button>
-            <button type="button" class="dropdown-item" onclick="SupportTickets?.open?.()">💬 Написать в поддержку</button>
+            ${supportUserBtn}
             ${investorBtn}
-            ${supportBtn}
+            ${supportStaffBtn}
             ${adminBtn}
             <button type="button" class="dropdown-item" onclick="Auth.logout()">Выход</button>
             <div class="dropdown-divider"></div>

@@ -24,8 +24,9 @@
 
     function canAccess(user) {
         if (!user) return false;
-        if (user.can_manage_tickets) return true;
-        return global.Auth?.canManageTickets?.(user) || user.role === 'support' || user.is_owner || user.role === 'admin';
+        if (user.can_access_support_panel || user.can_manage_tickets) return true;
+        if (user.is_support || user.role === 'support') return true;
+        return global.Auth?.canManageTickets?.(user) || global.Auth?.isSupportStaff?.(user);
     }
 
     function toast(msg, type) {
