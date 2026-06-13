@@ -119,6 +119,8 @@ def main():
 
     if not OWNER_PASSWORD:
         raise SystemExit("Set OWNER_PASSWORD env var")
+
+    cmd = (
         f"chmod +x /tmp/reg-ru-bootstrap.sh && "
         f"USE_PROD={USE_PROD} "
         f"OWNER_EMAIL='{OWNER_EMAIL}' "
