@@ -248,6 +248,9 @@ app.add_middleware(SecurityMiddleware)
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
+output_dir = os.path.join(os.path.dirname(__file__), "output")
+if os.path.exists(output_dir):
+    app.mount("/output", StaticFiles(directory=output_dir), name="output")
 
 
 # ─── REST API ──────────────────────────────────────────────
@@ -1115,7 +1118,7 @@ async def assign_task(http_request: Request, body: TaskRequest):
         "type": "task",
         "text": body.text,
         "target": body.target
-    }, user=user)
+    }, user=user, skip_charge=True, skip_limit=True)
     return {"status": "ok", "message": f"Задача назначена: {body.text}"}
 
 
@@ -1497,21 +1500,44 @@ async def get_dashboard(request: Request):
 @app.get("/api/activity")
 async def get_activity(request: Request, limit: int = 30):
     """Последние события рабочего канала для ленты активности."""
-    from room.message_filter import filter_messages_for_viewer
+    from room.message_filter import filter_messages_for_viewer, is_privileged
 
     user = _optional_user(request)
     viewer = {
         "user_id": user.get("id", "") if user else "",
         "role": user.get("role", "guest") if user else "guest",
     }
+    uid = viewer["user_id"]
+    privileged = is_privileged(viewer.get("role", ""))
+    user_task_texts = set()
+    if uid and not privileged:
+        for t in room.task_history.get_for_user(uid, 50):
+            txt = (t.get("task") or t.get("text") or "").strip().lower()[:80]
+            if txt:
+                user_task_texts.add(txt)
+
     items = []
-    for msg in reversed(filter_messages_for_viewer(room.work_history, viewer)[-limit * 2:]):
+    for msg in reversed(filter_messages_for_viewer(room.work_history, viewer)[-limit * 3:]):
         msg_type = msg.get("type", "message")
-        if msg_type in ("agents_state", "history", "task_history", "direct_user_echo"):
+        if msg_type in ("agents_state", "history", "task_history", "direct_user_echo", "balance_update"):
             continue
         preview = (msg.get("message") or msg.get("text") or "")[:120]
         if not preview and msg_type not in ("github_sync_started", "github_sync_done", "git_sync_done"):
             continue
+        if not privileged and uid:
+            msg_uid = msg.get("user_id") or msg.get("owner_user_id") or ""
+            if msg_type == "user_message":
+                if msg_uid and msg_uid != uid:
+                    continue
+            elif msg_uid and msg_uid != uid:
+                continue
+            elif "подключил" in preview.lower() or "покинул" in preview.lower() or "пользователь" in preview.lower():
+                continue
+            elif user_task_texts and msg_type in ("message", "task_done", "result_ready", "site_ready", "pm_plan"):
+                hay = preview.lower()
+                if not any(hay in t or t[:40] in hay for t in user_task_texts):
+                    if not msg_uid:
+                        continue
         items.append({
             "type": msg_type,
             "message": preview,
@@ -2425,19 +2451,35 @@ async def get_kanban(request: Request):
     privileged = is_privileged(user.get("role", "")) if user else False
     tasks = room.task_history.get_all() if privileged else room.task_history.get_for_user(uid, 200)
     columns = {"submitted": [], "in_progress": [], "completed": [], "failed": []}
+    inbox = frozenset({"submitted", "queued", "triaging", "awaiting_approval", "revision_requested"})
     for task in tasks:
+        if task.get("parent_id"):
+            continue
         status = task.get("status", "submitted")
-        key = status if status in columns else "submitted"
-        if status == "queued":
+        if status == "completed":
+            key = "completed"
+        elif status in ("failed", "cancelled"):
+            key = "failed"
+        elif status == "in_progress":
+            key = "in_progress"
+        elif status in inbox:
             key = "submitted"
+        else:
+            key = "in_progress"
         columns[key].append(task)
     return {"columns": columns}
 
 
 @app.get("/api/projects")
-async def list_projects(agent_id: str = "", type: str = "", limit: int = 80):
-    from room.artifact_store import list_all, stats
-    items = list_all(limit=min(limit, 200), agent_id=agent_id or None, art_type=type or None)
+async def list_projects(request: Request, agent_id: str = "", type: str = "", limit: int = 80,
+                      deliverables: bool = True):
+    from room.artifact_store import list_all, stats, list_deliverables
+    items = list_all(
+        limit=min(limit, 200),
+        agent_id=agent_id or None,
+        art_type=type or None,
+        deliverables_only=deliverables,
+    )
     full = []
     for meta in items:
         from room.artifact_store import get_artifact
@@ -2445,7 +2487,54 @@ async def list_projects(agent_id: str = "", type: str = "", limit: int = 80):
         if art:
             preview = art.get("preview_html") or art.get("content", "")
             full.append({**meta, "has_preview": bool(preview), "file_count": len(art.get("files") or {})})
-    return {"projects": full, "stats": stats()}
+    st = stats()
+    if deliverables:
+        ditems = list_deliverables(limit=500)
+        by_type = {}
+        for i in ditems:
+            by_type[i.get("type", "?")] = by_type.get(i.get("type", "?"), 0) + 1
+        st = {"total": len(ditems), "by_type": by_type, "by_agent": {}}
+    return {"projects": full, "stats": st}
+
+
+@app.delete("/api/projects/cleanup")
+async def cleanup_projects(request: Request):
+    user = _current_user(request)
+    from room.message_filter import is_privileged
+    if not is_privileged(user.get("role", "")):
+        from room.user_auth import has_privilege
+        if not has_privilege(user, "admin"):
+            raise HTTPException(status_code=403, detail="Недостаточно прав")
+    from room.artifact_store import clear_non_deliverables
+    removed = clear_non_deliverables()
+    return {"ok": True, "removed": removed}
+
+
+@app.get("/api/sites")
+async def list_sites():
+    """Список готовых HTML-сайтов."""
+    sites_dir = os.path.join(os.path.dirname(__file__), "output", "sites")
+    if not os.path.isdir(sites_dir):
+        return {"sites": []}
+    sites = []
+    for name in sorted(os.listdir(sites_dir), reverse=True):
+        if not name.endswith(".html"):
+            continue
+        fp = os.path.join(sites_dir, name)
+        try:
+            st = os.stat(fp)
+            sites.append({
+                "id": name,
+                "title": name.replace(".html", "").replace("_", " ")[:80],
+                "url": f"/output/sites/{name}",
+                "preview_url": f"/output/sites/{name}",
+                "is_latest": name == "latest.html",
+                "size_kb": round(st.st_size / 1024, 1),
+                "modified_at": datetime.fromtimestamp(st.st_mtime).isoformat(),
+            })
+        except OSError:
+            continue
+    return {"sites": sites[:40]}
 
 
 @app.get("/api/projects/{artifact_id}")
@@ -2553,12 +2642,17 @@ class TemplateApplyRequest(BaseModel):
 
 
 @app.post("/api/templates/apply")
-async def apply_project_template(body: TemplateApplyRequest):
+async def apply_project_template(body: TemplateApplyRequest, request: Request):
     from integrations.project_templates import get_template
+    user = _current_user(request)
     tpl = get_template(body.template_id)
     if not tpl:
         raise HTTPException(status_code=404, detail="Template not found")
-    await room.handle_user_message({"type": "task", "text": tpl["task"], "target": "all"})
+    _charge_or_forbid(user, "task")
+    await room.handle_user_message(
+        {"type": "task", "text": tpl["task"], "target": "all"},
+        user=user, skip_charge=True, skip_limit=True,
+    )
     return {"ok": True, "template": tpl["id"], "task": tpl["task"]}
 
 
@@ -3027,7 +3121,10 @@ async def apply_task_template(template_id: str, request: Request):
             "msg_type": "learning",
         })
     else:
-        await room.handle_user_message({"type": "task", "text": text, "target": "all"})
+        await room.handle_user_message(
+            {"type": "task", "text": text, "target": "all"},
+            user=user, skip_charge=True, skip_limit=True,
+        )
     from room import audit_log
     audit_log.log_event("template_applied", user_id=user["id"], detail=template_id)
     return {"ok": True, "template": tpl}

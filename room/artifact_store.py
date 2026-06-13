@@ -201,6 +201,12 @@ def clear_non_deliverables() -> int:
             removed += 1
     _save_index(keep)
     return removed
+
+
+def list_all(limit: int = 100, agent_id: Optional[str] = None, art_type: Optional[str] = None,
+             deliverables_only: bool = False) -> list:
+    if deliverables_only:
+        return list_deliverables(limit=limit, agent_id=agent_id, art_type=art_type)
     items = _load_index()
     if agent_id:
         items = [i for i in items if i.get("agent_id") == agent_id]
