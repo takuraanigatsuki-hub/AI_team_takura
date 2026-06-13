@@ -40,12 +40,12 @@ internal static class InstallEngine
         ct.ThrowIfCancellationRequested();
         Directory.CreateDirectory(targetDir);
 
-        progress.Report((15, "Распаковка приложения…"));
+        progress.Report((12, "Распаковка приложения…"));
         ct.ThrowIfCancellationRequested();
         var exePath = Path.Combine(targetDir, ExeName);
-        await ExtractEmbeddedExeAsync(exePath, ct);
+        await ExtractEmbeddedExeAsync(exePath, progress, ct);
 
-        progress.Report((45, "Шифрование конфигурации…"));
+        progress.Report((48, "Шифрование конфигурации…"));
         ct.ThrowIfCancellationRequested();
         var configJson = JsonSerializer.Serialize(new
         {
@@ -89,21 +89,34 @@ internal static class InstallEngine
         progress.Report((100, "Готово"));
     }
 
-    static async Task ExtractEmbeddedExeAsync(string destPath, CancellationToken ct)
+    static async Task ExtractEmbeddedExeAsync(string destPath, IProgress<(int pct, string msg)>? progress, CancellationToken ct)
     {
         var asm = Assembly.GetExecutingAssembly();
         var names = asm.GetManifestResourceNames();
-        var resourceName = names.FirstOrDefault(n => n.EndsWith("AI_Team_Room.exe", StringComparison.OrdinalIgnoreCase));
+        var resourceName = names.FirstOrDefault(n =>
+            n.EndsWith("AI_Team_Room.exe", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(n, "AI_Team_Room.exe", StringComparison.OrdinalIgnoreCase));
         if (resourceName == null)
-            throw new FileNotFoundException("Встроенный AI_Team_Room.exe не найден. Пересоберите установщик.");
+            throw new FileNotFoundException(
+                "Встроенный AI_Team_Room.exe не найден. Сначала выполните scripts\\build-desktop.ps1");
 
         await using var stream = asm.GetManifestResourceStream(resourceName)
             ?? throw new FileNotFoundException("Не удалось прочитать встроенный exe.");
+
+        var total = stream.Length;
+        if (total <= 0)
+            throw new InvalidOperationException("Встроенный exe пустой — пересоберите установщик.");
+
         await using var fs = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None);
         var buffer = new byte[81920];
+        long copied;
         int read;
-        while ((read = await stream.ReadAsync(buffer, ct)) > 0)
+        for (copied = 0; (read = await stream.ReadAsync(buffer, ct)) > 0; copied += read)
+        {
             await fs.WriteAsync(buffer.AsMemory(0, read), ct);
+            var pct = 15 + (int)(copied * 28 / total);
+            progress?.Report((pct, "Копирование приложения…"));
+        }
     }
 
     static void CreateShortcut(string target, string shortcutPath)
