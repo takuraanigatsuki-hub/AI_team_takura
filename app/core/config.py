@@ -63,9 +63,21 @@ class Settings(BaseSettings):
     signal_consensus: int = 2
 
     # --- LLM advisor -----------------------------------------------------
+    # Дефолт — топовая reasoning-модель OpenAI (gpt-5.4-high).
+    # Альтернативы (через OpenRouter, LLM_PROVIDER=openrouter):
+    #   anthropic/claude-opus-4.8         — самый сильный reasoning от Anthropic
+    #   anthropic/claude-4.6-sonnet       — баланс цена/качество
+    #   openai/gpt-5.4-high               — то же самое через OpenRouter
+    # Для локального инференса: LLM_BASE_URL=http://localhost:11434/v1
     llm_provider: str = "openai"
     llm_api_key: str = ""
-    llm_model: str = "gpt-4o-mini"
+    llm_model: str = "gpt-5.4-high"
+    llm_base_url: str = ""  # пусто = дефолт провайдера
+
+    # Native function-calling (OpenAI tools API) вместо JSON-mode.
+    # Сильно надёжнее на frontier-моделях. На моделях, не поддерживающих
+    # tools, агент автоматически деградирует в JSON-mode.
+    llm_use_tools: bool = True
 
     # --- Autonomous agent ------------------------------------------------
     agent_enabled: bool = False
@@ -73,8 +85,18 @@ class Settings(BaseSettings):
     agent_max_actions_per_cycle: int = 3
     agent_news_per_cycle: int = 8
     agent_journal_lookback: int = 6  # сколько прошлых записей дневника подмешивать в контекст
-    agent_temperature: float = 0.3
-    agent_max_tokens: int = 900
+    agent_temperature: float = 0.2
+    agent_max_tokens: int = 1500
+
+    # --- Reflection ------------------------------------------------------
+    # Раз в N часов агент перечитывает свой дневник, оценивает выполненные
+    # сделки и пишет memo c уроками. Memo подмешивается в промпт следующих
+    # циклов — простая форма «обучения без ML».
+    reflection_enabled: bool = True
+    reflection_interval_hours: int = 12
+    reflection_journal_lookback: int = 30
+    reflection_max_tokens: int = 800
+    reflection_temperature: float = 0.4
 
     # --- Web auth --------------------------------------------------------
     web_user: str = ""

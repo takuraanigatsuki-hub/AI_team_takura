@@ -47,6 +47,12 @@ async def _lifespan(app: FastAPI):
         daily_task = asyncio.create_task(
             _daily_summary_loop(settings), name="telegram-daily-summary"
         )
+    reflection_task: asyncio.Task | None = None
+    if settings.reflection_enabled and settings.llm_api_key:
+        from .agent.reflection import reflection_loop
+        reflection_task = asyncio.create_task(
+            reflection_loop(settings), name="agent-reflection",
+        )
     if settings.agent_enabled and settings.llm_api_key:
         try:
             await get_agent().start()
@@ -55,6 +61,8 @@ async def _lifespan(app: FastAPI):
     yield
     if daily_task is not None:
         daily_task.cancel()
+    if reflection_task is not None:
+        reflection_task.cancel()
     try:
         await get_telegram_bot().stop()
     except Exception:

@@ -5,8 +5,10 @@ from fastapi import APIRouter, HTTPException, Query
 import pandas as pd
 
 from ..analytics import (
+    compute_portfolio_factors,
     compute_portfolio_risk,
     compute_returns,
+    monte_carlo_var,
     run_stress_tests,
 )
 from ..exchange.base import ExchangeError
@@ -121,6 +123,94 @@ async def risk(
         var_alpha=var_alpha,
     )
     return risk.as_dict()
+
+
+@router.get("/analytics/monte_carlo")
+async def monte_carlo(
+    engine: EngineDep,
+    _auth: AuthDep,
+    timeframe: str = Query("1h"),
+    candles: int = Query(500, ge=50, le=1500),
+    n_simulations: int = Query(10_000, ge=500, le=200_000),
+    horizon: int = Query(1, ge=1, le=30),
+    var_alpha: float = Query(0.05, gt=0.0, lt=0.5),
+):
+    """Monte Carlo VaR/CVaR из multivariate normal под текущую ковариацию."""
+    from sqlalchemy import select
+    from ..core.database import session_scope
+    from ..models.db import Position
+
+    symbols = engine.settings.symbols
+    returns, prices = await _fetch_returns_matrix(engine, symbols, timeframe, candles)
+    if returns.empty:
+        raise HTTPException(status_code=400, detail="no returns data")
+
+    with session_scope() as session:
+        rows = session.execute(
+            select(Position).where(Position.quantity > 0)
+        ).scalars().all()
+        holdings = {r.symbol: float(r.quantity) for r in rows}
+
+    if holdings:
+        weights_val: dict[str, float] = {}
+        total = 0.0
+        for sym, qty in holdings.items():
+            v = qty * prices.get(sym, 0.0)
+            weights_val[sym] = v
+            total += v
+        weights = {k: v / total for k, v in weights_val.items()} if total > 0 else {}
+        for s in symbols:
+            weights.setdefault(s, 0.0)
+    else:
+        weights = {s: 1.0 / len(symbols) for s in symbols}
+
+    result = monte_carlo_var(
+        returns, weights,
+        n_simulations=n_simulations,
+        horizon=horizon,
+        var_alpha=var_alpha,
+    )
+    return result.as_dict()
+
+
+@router.get("/analytics/factors")
+async def factors(
+    engine: EngineDep,
+    _auth: AuthDep,
+    timeframe: str = Query("1h"),
+    candles: int = Query(500, ge=50, le=1500),
+):
+    """Факторное разложение: BTC β, ETH β, momentum, volatility per asset + портфельно."""
+    from sqlalchemy import select
+    from ..core.database import session_scope
+    from ..models.db import Position
+
+    symbols = engine.settings.symbols
+    returns, prices = await _fetch_returns_matrix(engine, symbols, timeframe, candles)
+    if returns.empty:
+        raise HTTPException(status_code=400, detail="no returns data")
+
+    with session_scope() as session:
+        rows = session.execute(
+            select(Position).where(Position.quantity > 0)
+        ).scalars().all()
+        holdings = {r.symbol: float(r.quantity) for r in rows}
+
+    if holdings:
+        weights_val: dict[str, float] = {}
+        total = 0.0
+        for sym, qty in holdings.items():
+            v = qty * prices.get(sym, 0.0)
+            weights_val[sym] = v
+            total += v
+        weights = {k: v / total for k, v in weights_val.items()} if total > 0 else {
+            s: 1.0 / len(symbols) for s in symbols
+        }
+    else:
+        weights = {s: 1.0 / len(symbols) for s in symbols}
+
+    res = compute_portfolio_factors(returns, weights)
+    return res.as_dict()
 
 
 @router.get("/analytics/stress")

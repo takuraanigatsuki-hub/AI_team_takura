@@ -17,13 +17,14 @@ from ..core.logging import logger
 from ..engine.trader import TradeEngine, get_engine
 from ..exchange.base import ExchangeError
 from ..llm.client import LLMUnavailable, get_llm_client
-from ..models.db import AgentJournal
+from ..models.db import AgentJournal, AgentMemo
 from ..news.feeds import get_news_service
 from ..optimizer import max_sharpe, risk_parity
 from ..sentiment import aggregate_sentiment
 from ..strategies.indicators import bollinger_bands, ema, rsi
 from .prompts import SYSTEM_PROMPT
-from .tools import ToolExecutor, parse_plan, positions_snapshot
+from .tool_schemas import trade_tools
+from .tools import ToolCall, ToolExecutor, parse_plan, positions_snapshot
 
 
 @dataclass
@@ -110,33 +111,15 @@ class AutonomousAgent:
                 snapshot = await self._collect_snapshot()
                 news_items = await self._collect_news()
                 journal = self._collect_journal(self.settings.agent_journal_lookback)
-                user_prompt = self._build_user_prompt(snapshot, news_items, journal)
+                memos = self._collect_memos(limit=3)
+                user_prompt = self._build_user_prompt(snapshot, news_items, journal, memos)
 
                 client = get_llm_client()
-                try:
-                    raw = client.complete(
-                        SYSTEM_PROMPT,
-                        user_prompt,
-                        temperature=self.settings.agent_temperature,
-                        max_tokens=self.settings.agent_max_tokens,
-                        response_format_json=True,
-                    )
-                except LLMUnavailable as exc:
-                    self.stats.last_error = str(exc)
-                    self._save_journal(
-                        thesis="", actions=[], executed=[],
-                        market_view=snapshot, error=f"LLM: {exc}",
-                    )
-                    return {"error": str(exc)}
-
-                thesis, calls, parse_err = parse_plan(raw)
-                if parse_err:
-                    logger.warning("agent: bad JSON: {} :: raw={}", parse_err, raw[:300])
-                    self._save_journal(
-                        thesis=thesis, actions=[], executed=[],
-                        market_view=snapshot, error=f"parse: {parse_err}",
-                    )
-                    return {"error": parse_err}
+                thesis, calls, raw_for_log = await self._call_llm(
+                    client, user_prompt, snapshot
+                )
+                if calls is None:
+                    return {"error": raw_for_log or "llm failure"}
 
                 results = await self._executor.execute(
                     calls, snapshot, self.settings.agent_max_actions_per_cycle
@@ -160,6 +143,70 @@ class AutonomousAgent:
                 self.stats.last_error = str(exc)
                 logger.exception("agent.tick top-level error: {}", exc)
                 return {"error": str(exc)}
+
+    async def _call_llm(
+        self,
+        client,
+        user_prompt: str,
+        snapshot: dict[str, Any],
+    ) -> tuple[str, list[ToolCall] | None, str]:
+        """Зовёт LLM — сначала через native tools, при провале — fallback в JSON-mode.
+
+        Возвращает (thesis, calls, raw_or_error). При полной неудаче calls=None.
+        """
+        allowed = list(self.settings.symbols)
+        tools = trade_tools(allowed)
+
+        # ----- 1) tools API (native function-calling) --------------------
+        if self.settings.llm_use_tools:
+            try:
+                tools_resp = await asyncio.to_thread(
+                    client.complete_with_tools,
+                    SYSTEM_PROMPT, user_prompt, tools,
+                    temperature=self.settings.agent_temperature,
+                    max_tokens=self.settings.agent_max_tokens,
+                    tool_choice="auto",
+                )
+            except LLMUnavailable as exc:
+                logger.warning("tools API failed ({}), fallback to JSON-mode", exc)
+                tools_resp = None
+            if tools_resp is not None:
+                thesis = str(tools_resp.get("content") or "").strip()
+                calls = [
+                    ToolCall(tool=str(t["name"]).lower(), args=dict(t["arguments"] or {}))
+                    for t in tools_resp.get("tool_calls") or []
+                    if str(t.get("name", "")).lower() in {"place_order", "close_position", "hold"}
+                ]
+                # модель может вернуть только текст без tool_calls — это эквивалент "hold"
+                if not calls:
+                    calls = [ToolCall(tool="hold", args={"reason": thesis[:200] or "no tool calls"})]
+                return thesis, calls, "ok:tools"
+
+        # ----- 2) fallback: JSON-mode -----------------------------------
+        try:
+            raw = await asyncio.to_thread(
+                client.complete,
+                SYSTEM_PROMPT, user_prompt,
+                temperature=self.settings.agent_temperature,
+                max_tokens=self.settings.agent_max_tokens,
+                response_format_json=True,
+            )
+        except LLMUnavailable as exc:
+            self.stats.last_error = str(exc)
+            self._save_journal(
+                thesis="", actions=[], executed=[],
+                market_view=snapshot, error=f"LLM: {exc}",
+            )
+            return "", None, str(exc)
+        thesis, calls, parse_err = parse_plan(raw)
+        if parse_err:
+            logger.warning("agent JSON parse failed: {} :: raw={}", parse_err, raw[:300])
+            self._save_journal(
+                thesis=thesis, actions=[], executed=[],
+                market_view=snapshot, error=f"parse: {parse_err}",
+            )
+            return thesis, None, parse_err
+        return thesis, calls, "ok:json"
 
     # --------------------------------------------------------------- snapshot
     async def _collect_snapshot(self) -> dict[str, Any]:
@@ -362,17 +409,38 @@ class AutonomousAgent:
         snapshot: dict[str, Any],
         news: dict[str, Any],
         journal: list[dict[str, Any]],
+        memos: list[dict[str, Any]] | None = None,
     ) -> str:
+        memo_block = ""
+        if memos:
+            memo_block = (
+                "## Memo (твои собственные уроки из предыдущих рефлексий)\n"
+                f"```json\n{json.dumps(memos, ensure_ascii=False, indent=2)}\n```\n\n"
+            )
         return (
-            "## Снимок портфеля, рынка и риска\n"
-            f"```json\n{json.dumps(snapshot, ensure_ascii=False, indent=2)}\n```\n\n"
-            "## Свежие новости + агрегированный сентимент по инструментам\n"
-            f"```json\n{json.dumps(news, ensure_ascii=False, indent=2)}\n```\n\n"
-            "## Твои предыдущие записи\n"
-            f"```json\n{json.dumps(journal, ensure_ascii=False, indent=2)}\n```\n\n"
-            "Прими решение по правилам и верни JSON-план. Обоснование должно "
-            "ссылаться на конкретные числа из снапшота: VaR, β, contributions, сентимент."
+            memo_block
+            + "## Снимок портфеля, рынка и риска\n"
+            + f"```json\n{json.dumps(snapshot, ensure_ascii=False, indent=2)}\n```\n\n"
+            + "## Свежие новости + агрегированный сентимент по инструментам\n"
+            + f"```json\n{json.dumps(news, ensure_ascii=False, indent=2)}\n```\n\n"
+            + "## Твои предыдущие тики\n"
+            + f"```json\n{json.dumps(journal, ensure_ascii=False, indent=2)}\n```\n\n"
+            + "Прими решение по правилам и верни tool-вызовы (place_order / "
+            + "close_position / hold). Обоснование (`reason`) каждого вызова "
+            + "должно ссылаться на конкретные числа из снапшота: VaR, β, "
+            + "contribution-to-risk, сентимент, индикаторы."
         )
+
+    def _collect_memos(self, limit: int = 3) -> list[dict[str, Any]]:
+        with session_scope() as session:
+            rows = session.execute(
+                select(AgentMemo).order_by(AgentMemo.ts.desc()).limit(limit)
+            ).scalars().all()
+            return [
+                {"ts": row.ts.isoformat(), "summary": row.summary,
+                 "rules_learned": _safe_json(row.rules_learned)}
+                for row in reversed(rows)
+            ]
 
     def _save_journal(
         self,

@@ -152,6 +152,17 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 
 .agent-card .card-head { gap: 12px; flex-wrap: wrap; }
 .agent-card .controls .btn { padding: 5px 10px; font-size: 12px; }
+.agent-memos { margin-top: 14px; }
+.agent-memos > summary { cursor: pointer; color: var(--muted); font-weight: 600; padding: 6px 0; }
+.agent-memos > summary:hover { color: var(--text); }
+.memo-entry {
+  border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+  background: rgba(78,161,255,0.04); margin-top: 8px;
+}
+.memo-entry time { color: var(--muted); font-family: var(--mono); font-size: 11px; }
+.memo-entry .summary { font-size: 13px; margin: 6px 0; }
+.memo-entry ul { margin: 0; padding-left: 16px; font-size: 12px; }
+.memo-entry ul li { padding: 2px 0; }
 .agent-journal { display: flex; flex-direction: column; gap: 10px; max-height: 480px; overflow-y: auto; padding-right: 6px; }
 .journal-entry {
   border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;

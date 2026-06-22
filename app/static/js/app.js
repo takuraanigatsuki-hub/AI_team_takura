@@ -165,7 +165,7 @@
   async function refresh() {
     try {
       const [status, positions, decisions, orders, equity, agentStatus, journal, news, metrics,
-             risk, stress, optMs, optRp, sentiment] = await Promise.all([
+             risk, stress, optMs, optRp, sentiment, memos, mcVar, factors] = await Promise.all([
         api("/api/bot/status"),
         api("/api/bot/positions"),
         api("/api/bot/decisions?limit=30"),
@@ -180,6 +180,9 @@
         api("/api/optimizer/max_sharpe").catch(() => null),
         api("/api/optimizer/risk_parity").catch(() => null),
         api("/api/sentiment").catch(() => []),
+        api("/api/agent/memos?limit=10").catch(() => []),
+        api("/api/analytics/monte_carlo?n_simulations=5000").catch(() => null),
+        api("/api/analytics/factors").catch(() => null),
       ]);
       setKpis(status);
       renderPositions(positions);
@@ -195,6 +198,9 @@
       renderOptimizer($("#opt-sharpe"), optMs);
       renderOptimizer($("#opt-parity"), optRp);
       renderSentiment(sentiment);
+      renderMemos(memos);
+      renderMonteCarlo(mcVar);
+      renderFactors(factors);
     } catch (err) {
       console.error("refresh failed:", err);
     }
@@ -350,6 +356,64 @@
     ).join("") +
       `<li><span class="k">σ годовая</span><span>${fmtPct((res.volatility||0)*100)}</span></li>` +
       `<li><span class="k">Sharpe</span><span>${res.sharpe ?? "—"}</span></li>`;
+  }
+
+  function renderMemos(rows) {
+    $("#memos-count").textContent = (rows || []).length;
+    const box = $("#agent-memos");
+    if (!rows || !rows.length) {
+      box.innerHTML = '<div class="muted">memos пока нет — агент рефлексирует раз в N часов</div>';
+      return;
+    }
+    box.innerHTML = rows.slice(0, 10).map((m) => {
+      let rules = [];
+      try { rules = JSON.parse(m.rules_learned || "[]"); } catch (e) { rules = []; }
+      const items = rules.map((r) => `<li>${escapeHtml(r)}</li>`).join("");
+      return `
+        <div class="memo-entry">
+          <time>${tsFmt(m.ts)} · pnl за окно: ${fmt(m.realized_pnl_window, 2)}</time>
+          <div class="summary">${escapeHtml(m.summary || "(пусто)")}</div>
+          ${items ? `<ul>${items}</ul>` : ""}
+        </div>
+      `;
+    }).join("");
+  }
+
+  function renderMonteCarlo(mc) {
+    const box = $("#mc-var");
+    if (!mc || !mc.n_simulations) {
+      box.innerHTML = '<div class="muted">—</div>';
+      return;
+    }
+    const cards = [
+      ["Симуляций", String(mc.n_simulations), ""],
+      ["Горизонт", `${mc.horizon} периодов`, ""],
+      ["VaR " + Math.round(mc.var_alpha*100) + "%", fmtPct((mc.var_value||0)*100), "pnl-neg"],
+      ["CVaR", fmtPct((mc.cvar_value||0)*100), "pnl-neg"],
+      ["Худший", fmtPct((mc.worst_case||0)*100), "pnl-neg"],
+      ["Ожидаемая μ", fmtPct((mc.expected_return||0)*100), ""],
+    ];
+    box.innerHTML = cards.map(([l, v, cls]) =>
+      `<div class="m"><div class="m-label">${l}</div><div class="m-value ${cls}">${v}</div></div>`
+    ).join("");
+  }
+
+  function renderFactors(pf) {
+    const ul = $("#factor-portfolio");
+    if (!pf || !pf.weights || !Object.keys(pf.weights).length) {
+      ul.innerHTML = '<li class="muted">—</li>';
+      return;
+    }
+    const items = [
+      ["BTC β портфеля", fmt(pf.portfolio_btc_beta, 3)],
+      ["ETH β портфеля", fmt(pf.portfolio_eth_beta, 3)],
+      ["Momentum", fmtPct((pf.portfolio_momentum||0)*100)],
+      ["Volatility (период)", fmtPct((pf.portfolio_volatility||0)*100)],
+      ["Diversification", `${fmt((pf.diversification_score||0)*100, 1)}/100`],
+    ];
+    ul.innerHTML = items.map(([k, v]) =>
+      `<li><span class="k">${k}</span><span>${v}</span></li>`
+    ).join("");
   }
 
   function renderSentiment(items) {

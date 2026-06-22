@@ -100,6 +100,18 @@
       </div>
       <div class="risk-grid" style="margin-top: 14px">
         <div class="risk-card">
+          <h3>Monte Carlo VaR / CVaR</h3>
+          <div class="metrics-grid" id="mc-var">
+            <div class="muted">—</div>
+          </div>
+        </div>
+        <div class="risk-card">
+          <h3>Факторные экспозиции (портфель)</h3>
+          <ul class="kv-list" id="factor-portfolio"><li class="muted">—</li></ul>
+        </div>
+      </div>
+      <div class="risk-grid" style="margin-top: 14px">
+        <div class="risk-card">
           <h3>Stress tests</h3>
           <table class="mini-table" id="stress-table">
             <thead><tr><th>Сценарий</th><th>Δ портфеля</th></tr></thead>
@@ -186,6 +198,12 @@
       <div class="agent-journal" id="agent-journal">
         <div class="muted">журнал пока пуст</div>
       </div>
+      <details class="agent-memos">
+        <summary>🧪 Memos агента (выученные правила) — <span id="memos-count">0</span></summary>
+        <div id="agent-memos">
+          <div class="muted">memos пока нет</div>
+        </div>
+      </details>
     </section>
 
     <section class="card wide">

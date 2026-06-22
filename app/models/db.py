@@ -102,6 +102,28 @@ class BotState(Base):
     )
 
 
+class AgentMemo(Base):
+    """Memo, написанное агентом самому себе в результате периодической рефлексии.
+
+    Самая лёгкая форма «обучения без ML»: после N циклов агент перечитывает
+    собственный дневник + результаты сделок, формулирует уроки и кладёт сюда.
+    На следующих циклах memo подмешивается в его контекст.
+    """
+
+    __tablename__ = "agent_memos"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ts: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False, index=True
+    )
+    summary: Mapped[str] = mapped_column(Text, default="")  # 1-3 предложения, что выяснилось
+    rules_learned: Mapped[str] = mapped_column(Text, default="")  # JSON: список конкретных правил
+    journal_entries_reviewed: Mapped[int] = mapped_column(Integer, default=0)
+    orders_reviewed: Mapped[int] = mapped_column(Integer, default=0)
+    realized_pnl_window: Mapped[float] = mapped_column(Float, default=0.0)
+    mode: Mapped[str] = mapped_column(String(8), default="paper")
+
+
 class AgentJournal(Base):
     """Дневник автономного LLM-агента — что он подумал и сделал на каждом шаге."""
 

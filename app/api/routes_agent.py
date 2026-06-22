@@ -4,10 +4,11 @@ from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import select
 
 from ..agent.loop import AutonomousAgent, get_agent
+from ..agent.reflection import run_reflection
 from ..core.config import get_settings
 from ..core.database import get_session
-from ..models.db import AgentJournal
-from ..models.schemas import AgentJournalOut, AgentStatus, NewsItemOut
+from ..models.db import AgentJournal, AgentMemo
+from ..models.schemas import AgentJournalOut, AgentMemoOut, AgentStatus, NewsItemOut
 from ..news.feeds import get_news_service
 from .deps import AuthDep, SessionDep
 
@@ -79,3 +80,28 @@ async def news(_auth: AuthDep, limit: int = Query(20, ge=1, le=100),
     svc = get_news_service()
     items = await (svc.search(q, limit=limit) if q else svc.fetch(limit=limit))
     return [NewsItemOut(**i.as_dict()) for i in items]
+
+
+@router.get("/memos", response_model=list[AgentMemoOut])
+def memos(session: SessionDep, _auth: AuthDep, limit: int = Query(20, ge=1, le=100)):
+    rows = session.execute(
+        select(AgentMemo).order_by(AgentMemo.ts.desc()).limit(limit)
+    ).scalars().all()
+    return [AgentMemoOut.model_validate(r) for r in rows]
+
+
+@router.post("/reflect", response_model=dict)
+async def reflect(_auth: AuthDep):
+    """Запустить рефлексию вручную (не дожидаясь таймера)."""
+    settings = get_settings()
+    if not settings.llm_api_key:
+        raise HTTPException(status_code=400, detail="LLM_API_KEY не задан")
+    res = await run_reflection(settings)
+    return {
+        "summary": res.summary,
+        "rules": res.rules,
+        "journal_count": res.journal_count,
+        "orders_count": res.orders_count,
+        "realized_pnl": res.realized_pnl,
+        "error": res.error,
+    }

@@ -140,6 +140,30 @@ python -m scripts.historical_backtest \
 Перед запуском бота на реальных деньгах **обязательно прогоните этот скрипт
 и сравните с buy-&-hold**.
 
+## 🆙 Что добавлено в последнем апдейте (топовая модель + tools + reflection + factors + MC)
+
+- **Топовая reasoning-модель по умолчанию** (`LLM_MODEL=gpt-5.4-high`) +
+  пресеты для Anthropic через OpenRouter (`anthropic/claude-opus-4.8`) и
+  локального инференса (`LLM_BASE_URL=http://localhost:11434/v1`).
+- **Native function-calling** (OpenAI tools API) для агента — строгая
+  валидация схемы, symbol enum жёстко ограничен `allowed_symbols`.
+  Автоматический fallback в JSON-mode на моделях без поддержки tools.
+- **Reflection-цикл**: раз в `REFLECTION_INTERVAL_HOURS` часов агент
+  перечитывает свой дневник + закрытые сделки, формирует JSON
+  `{summary, rules_learned[]}` и сохраняет в таблицу `agent_memos`.
+  Memo подмешивается в контекст следующих циклов — простейшая форма
+  «обучения без ML».
+- **Multi-factor decomposition** (`app/analytics/factors.py`):
+  кросс-секционная OLS — BTC β, ETH β (резидуал), momentum, volatility,
+  size proxy, alpha, R² для каждого актива + взвешенные портфельные
+  экспозиции и `diversification_score` (нормированный 1 - HHI).
+- **Monte Carlo VaR** (`app/analytics/monte_carlo.py`): N симуляций из
+  multivariate normal на ковариации фактических доходностей, для
+  настраиваемого горизонта и α. На дашборде идёт рядом с historical VaR.
+
+Новые эндпоинты: `GET /api/agent/memos`, `POST /api/agent/reflect`,
+`GET /api/analytics/monte_carlo`, `GET /api/analytics/factors`.
+
 ## 📊 Aladdin-style риск-аналитика и оптимизация портфеля
 
 Поверх торгового движка работает слой портфельной аналитики и оптимизации,

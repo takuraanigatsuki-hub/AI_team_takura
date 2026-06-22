@@ -123,6 +123,19 @@ class AgentJournalOut(BaseModel):
     mode: ModeT
 
 
+class AgentMemoOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    ts: datetime
+    summary: str
+    rules_learned: str
+    journal_entries_reviewed: int
+    orders_reviewed: int
+    realized_pnl_window: float
+    mode: ModeT
+
+
 class NewsItemOut(BaseModel):
     title: str
     link: str
