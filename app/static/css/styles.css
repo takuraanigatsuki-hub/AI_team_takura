@@ -117,6 +117,32 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 10px;
 }
+.risk-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+.risk-card {
+  background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 14px;
+}
+.risk-card h3 {
+  margin: 0 0 10px 0; font-size: 13px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;
+}
+.kv-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.kv-list li {
+  display: flex; justify-content: space-between; gap: 12px;
+  font-family: var(--mono); font-size: 13px;
+  border-bottom: 1px dashed rgba(255,255,255,0.04); padding-bottom: 4px;
+}
+.kv-list li .k { color: var(--muted); }
+.mini-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.mini-table th, .mini-table td { padding: 4px 6px; }
+.mini-table th { color: var(--muted); font-weight: 600; text-align: left; }
+.mini-table td { font-family: var(--mono); }
+.label-bullish { color: var(--success); font-weight: 700; }
+.label-bearish { color: var(--danger); font-weight: 700; }
+.label-neutral { color: var(--muted); }
 .metrics-grid .m {
   background: var(--panel-2); border: 1px solid var(--border);
   border-radius: 10px; padding: 10px 12px;

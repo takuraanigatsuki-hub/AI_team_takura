@@ -77,6 +77,54 @@
       </div>
     </section>
 
+    <section class="card wide">
+      <header class="card-head">
+        <h2>📊 Риск-аналитика (Aladdin-style)</h2>
+        <span class="muted" id="risk-meta">загрузка…</span>
+      </header>
+      <div class="risk-grid">
+        <div class="risk-card">
+          <h3>VaR / CVaR (95%)</h3>
+          <div class="metrics-grid" id="risk-var">
+            <div class="muted">—</div>
+          </div>
+        </div>
+        <div class="risk-card">
+          <h3>Бета относительно BTC</h3>
+          <ul class="kv-list" id="risk-betas"><li class="muted">—</li></ul>
+        </div>
+        <div class="risk-card">
+          <h3>Contribution-to-risk</h3>
+          <ul class="kv-list" id="risk-contrib"><li class="muted">—</li></ul>
+        </div>
+      </div>
+      <div class="risk-grid" style="margin-top: 14px">
+        <div class="risk-card">
+          <h3>Stress tests</h3>
+          <table class="mini-table" id="stress-table">
+            <thead><tr><th>Сценарий</th><th>Δ портфеля</th></tr></thead>
+            <tbody><tr><td colspan="2" class="muted">—</td></tr></tbody>
+          </table>
+        </div>
+        <div class="risk-card">
+          <h3>Оптимальные веса (Max Sharpe)</h3>
+          <ul class="kv-list" id="opt-sharpe"><li class="muted">—</li></ul>
+        </div>
+        <div class="risk-card">
+          <h3>Оптимальные веса (Risk Parity)</h3>
+          <ul class="kv-list" id="opt-parity"><li class="muted">—</li></ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <header class="card-head">
+        <h2>🧠 Сентимент новостей</h2>
+        <span class="muted">из RSS, за 48ч</span>
+      </header>
+      <ul class="kv-list" id="sentiment-list"><li class="muted">—</li></ul>
+    </section>
+
     <section class="card">
       <header class="card-head">
         <h2>Открытые позиции</h2>

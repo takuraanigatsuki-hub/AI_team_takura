@@ -12,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 from . import __version__
 from .api.deps import auth_optional
 from .api.routes_agent import router as agent_router
+from .api.routes_analytics import router as analytics_router
 from .api.routes_bot import router as bot_router
 from .api.routes_market import router as market_router
 from .api.routes_metrics import router as metrics_router
@@ -118,6 +119,7 @@ def create_app() -> FastAPI:
     app.include_router(strategy_router)
     app.include_router(agent_router)
     app.include_router(metrics_router)
+    app.include_router(analytics_router)
 
     @app.get("/", response_class=HTMLResponse, include_in_schema=False)
     async def dashboard(request: Request, _auth: None = Depends(auth_optional)):

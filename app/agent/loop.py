@@ -10,6 +10,7 @@ from typing import Any
 import pandas as pd
 from sqlalchemy import select
 
+from ..analytics import compute_portfolio_risk, compute_returns, run_stress_tests
 from ..core.config import Settings, get_settings
 from ..core.database import session_scope
 from ..core.logging import logger
@@ -18,6 +19,8 @@ from ..exchange.base import ExchangeError
 from ..llm.client import LLMUnavailable, get_llm_client
 from ..models.db import AgentJournal
 from ..news.feeds import get_news_service
+from ..optimizer import max_sharpe, risk_parity
+from ..sentiment import aggregate_sentiment
 from ..strategies.indicators import bollinger_bands, ema, rsi
 from .prompts import SYSTEM_PROMPT
 from .tools import ToolExecutor, parse_plan, positions_snapshot
@@ -212,6 +215,9 @@ class AutonomousAgent:
                 "market_value": (qty * price) if price else None,
             })
 
+        # ----- Portfolio analytics (BlackRock-style: риск ПЕРВЫМ) -----
+        analytics = await self._collect_analytics(positions_qty, prices)
+
         return {
             "ts": datetime.now(timezone.utc).isoformat(),
             "mode": self.settings.mode,
@@ -234,15 +240,89 @@ class AutonomousAgent:
             "positions_qty": positions_qty,
             "prices": prices,
             "markets": per_symbol,
+            "analytics": analytics,
         }
 
-    async def _collect_news(self) -> list[dict[str, Any]]:
+    async def _collect_analytics(
+        self,
+        positions_qty: dict[str, float],
+        prices: dict[str, float],
+    ) -> dict[str, Any]:
+        """Считает риск-метрики портфеля и две предложенные аллокации."""
+        symbols = list(self.settings.symbols)
+        series: dict[str, pd.Series] = {}
+        for symbol in symbols:
+            try:
+                rows = await self.engine.exchange.fetch_ohlcv(
+                    symbol, timeframe=self.settings.timeframe, limit=300
+                )
+            except ExchangeError:
+                continue
+            if not rows:
+                continue
+            df = pd.DataFrame(rows, columns=["ts", "open", "high", "low", "close", "volume"])
+            series[symbol] = df.set_index("ts")["close"]
+        returns = compute_returns(series)
+        if returns.empty:
+            return {"available": False, "reason": "no return data"}
+
+        # текущие веса — по рыночной стоимости позиций
+        holdings_value: dict[str, float] = {}
+        for sym, qty in positions_qty.items():
+            price = prices.get(sym)
+            if price:
+                holdings_value[sym] = qty * price
+        total_val = sum(holdings_value.values())
+        if total_val > 0:
+            weights = {s: holdings_value.get(s, 0.0) / total_val for s in symbols}
+        else:
+            weights = None  # equal-weight
+
+        from ..api.routes_analytics import _periods_per_year
+        ppy = _periods_per_year(self.settings.timeframe)
+
+        risk = compute_portfolio_risk(returns, weights, periods_per_year=ppy)
+        stress = run_stress_tests(holdings_value) if holdings_value else []
         try:
-            items = await self.news.fetch(limit=self.settings.agent_news_per_cycle)
+            target_ms = max_sharpe(returns, periods_per_year=ppy)
+            target_rp = risk_parity(returns, periods_per_year=ppy)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("optimizer failed: {}", exc)
+            target_ms = target_rp = None
+
+        return {
+            "available": True,
+            "risk": {
+                "expected_return": risk.expected_return,
+                "volatility": risk.volatility,
+                "sharpe": risk.sharpe,
+                "var_95": risk.var_95,
+                "cvar_95": risk.cvar_95,
+                "betas": risk.betas,
+                "risk_contributions": [
+                    {"symbol": c.symbol, "weight": c.weight,
+                     "pct_of_total_risk": c.pct_of_total_risk}
+                    for c in risk.contributions
+                ],
+            },
+            "stress_tests": [
+                {"scenario": r.scenario, "description": r.description,
+                 "portfolio_change_pct": r.portfolio_change_pct}
+                for r in stress[:6]
+            ],
+            "suggested_allocations": {
+                "max_sharpe": target_ms.weights if target_ms and target_ms.converged else None,
+                "risk_parity": target_rp.weights if target_rp and target_rp.converged else None,
+            },
+        }
+
+    async def _collect_news(self) -> dict[str, Any]:
+        try:
+            items = await self.news.fetch(limit=self.settings.agent_news_per_cycle * 4)
         except Exception as exc:  # noqa: BLE001
             logger.warning("news fetch failed: {}", exc)
-            return []
-        return [
+            return {"items": [], "sentiment": {}}
+        items_payload = [
             {
                 "title": i.title,
                 "source": i.source,
@@ -251,6 +331,15 @@ class AutonomousAgent:
             }
             for i in items
         ]
+        sentiment_map = aggregate_sentiment(
+            items_payload, symbols=list(self.settings.symbols), max_age_hours=72
+        )
+        return {
+            "items": items_payload[: self.settings.agent_news_per_cycle],
+            "sentiment": {
+                k: v.as_dict() for k, v in sentiment_map.items()
+            },
+        }
 
     def _collect_journal(self, limit: int) -> list[dict[str, Any]]:
         with session_scope() as session:
@@ -271,17 +360,18 @@ class AutonomousAgent:
     def _build_user_prompt(
         self,
         snapshot: dict[str, Any],
-        news: list[dict[str, Any]],
+        news: dict[str, Any],
         journal: list[dict[str, Any]],
     ) -> str:
         return (
-            "## Снимок портфеля и рынка\n"
+            "## Снимок портфеля, рынка и риска\n"
             f"```json\n{json.dumps(snapshot, ensure_ascii=False, indent=2)}\n```\n\n"
-            "## Свежие новости (RSS)\n"
+            "## Свежие новости + агрегированный сентимент по инструментам\n"
             f"```json\n{json.dumps(news, ensure_ascii=False, indent=2)}\n```\n\n"
             "## Твои предыдущие записи\n"
             f"```json\n{json.dumps(journal, ensure_ascii=False, indent=2)}\n```\n\n"
-            "Прими решение по правилам и верни JSON-план."
+            "Прими решение по правилам и верни JSON-план. Обоснование должно "
+            "ссылаться на конкретные числа из снапшота: VaR, β, contributions, сентимент."
         )
 
     def _save_journal(

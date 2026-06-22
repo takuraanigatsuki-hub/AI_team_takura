@@ -164,7 +164,8 @@
 
   async function refresh() {
     try {
-      const [status, positions, decisions, orders, equity, agentStatus, journal, news, metrics] = await Promise.all([
+      const [status, positions, decisions, orders, equity, agentStatus, journal, news, metrics,
+             risk, stress, optMs, optRp, sentiment] = await Promise.all([
         api("/api/bot/status"),
         api("/api/bot/positions"),
         api("/api/bot/decisions?limit=30"),
@@ -174,6 +175,11 @@
         api("/api/agent/journal?limit=20"),
         api("/api/agent/news?limit=15").catch(() => []),
         api("/api/metrics/portfolio").catch(() => null),
+        api("/api/analytics/risk").catch(() => ({ error: "—" })),
+        api("/api/analytics/stress").catch(() => []),
+        api("/api/optimizer/max_sharpe").catch(() => null),
+        api("/api/optimizer/risk_parity").catch(() => null),
+        api("/api/sentiment").catch(() => []),
       ]);
       setKpis(status);
       renderPositions(positions);
@@ -184,6 +190,11 @@
       renderJournal(journal);
       renderNews(news);
       renderMetrics(metrics);
+      renderRisk(risk);
+      renderStress(stress);
+      renderOptimizer($("#opt-sharpe"), optMs);
+      renderOptimizer($("#opt-parity"), optRp);
+      renderSentiment(sentiment);
     } catch (err) {
       console.error("refresh failed:", err);
     }
@@ -280,6 +291,79 @@
   }
 
   function escapeAttr(s) { return escapeHtml(s); }
+
+  function renderRisk(risk) {
+    if (!risk || risk.error) {
+      $("#risk-meta").textContent = risk?.error || "нет данных";
+      return;
+    }
+    $("#risk-meta").textContent =
+      `годовая σ=${fmtPct((risk.volatility||0)*100)} · μ=${fmtPct((risk.expected_return||0)*100)} ` +
+      `· Sharpe=${risk.sharpe ?? "—"}`;
+    $("#risk-var").innerHTML = [
+      ["VaR 95% (период)", fmtPct((risk.var_95||0)*100), "pnl-neg"],
+      ["CVaR 95% (период)", fmtPct((risk.cvar_95||0)*100), "pnl-neg"],
+      ["Макс. убыток (hist)", fmtPct((risk.max_loss_observed||0)*100), "pnl-neg"],
+    ].map(([l, v, cls]) =>
+      `<div class="m"><div class="m-label">${l}</div><div class="m-value ${cls}">${v}</div></div>`
+    ).join("");
+
+    const betas = risk.betas || {};
+    $("#risk-betas").innerHTML = Object.keys(betas).length
+      ? Object.entries(betas).map(([s, b]) =>
+          `<li><span class="k">${s}</span><span>β=${fmt(b, 3)}</span></li>`
+        ).join("")
+      : '<li class="muted">—</li>';
+
+    const contrib = risk.contributions || [];
+    $("#risk-contrib").innerHTML = contrib.length
+      ? contrib.map((c) =>
+          `<li><span class="k">${c.symbol} (w=${fmtPct(c.weight*100)})</span>` +
+          `<span>${fmtPct(c.pct_of_total_risk)} риска</span></li>`
+        ).join("")
+      : '<li class="muted">—</li>';
+  }
+
+  function renderStress(stress) {
+    const tbody = $("#stress-table tbody");
+    if (!stress || !stress.length) {
+      tbody.innerHTML = '<tr><td colspan="2" class="muted">портфель пуст</td></tr>';
+      return;
+    }
+    tbody.innerHTML = stress.map((s) => {
+      const cls = s.portfolio_change_pct < 0 ? "pnl-neg" : "pnl-pos";
+      return `<tr><td>${escapeHtml(s.scenario)}</td>` +
+             `<td class="${cls}">${fmtPct(s.portfolio_change_pct)}</td></tr>`;
+    }).join("");
+  }
+
+  function renderOptimizer(elem, res) {
+    if (!res || !res.weights || !res.converged) {
+      elem.innerHTML = '<li class="muted">оптимизатор не сошёлся</li>';
+      return;
+    }
+    const entries = Object.entries(res.weights)
+      .filter(([_, w]) => w > 0.005)
+      .sort((a, b) => b[1] - a[1]);
+    elem.innerHTML = entries.map(([sym, w]) =>
+      `<li><span class="k">${sym}</span><span>${fmtPct(w*100)}</span></li>`
+    ).join("") +
+      `<li><span class="k">σ годовая</span><span>${fmtPct((res.volatility||0)*100)}</span></li>` +
+      `<li><span class="k">Sharpe</span><span>${res.sharpe ?? "—"}</span></li>`;
+  }
+
+  function renderSentiment(items) {
+    const list = $("#sentiment-list");
+    if (!items || !items.length) {
+      list.innerHTML = '<li class="muted">в окне 48ч нет упоминаний</li>';
+      return;
+    }
+    list.innerHTML = items.map((s) => {
+      const cls = "label-" + s.label;
+      return `<li><span class="k">${s.symbol}</span>` +
+             `<span class="${cls}">${s.label.toUpperCase()} (${s.score >= 0 ? "+" : ""}${s.score})</span></li>`;
+    }).join("");
+  }
 
   function bindControls() {
     const post = (path) => () => withButtons(true, async () => {

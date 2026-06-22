@@ -32,11 +32,14 @@ app/
 ├── risk/         # риск-менеджер: лимиты, стопы, тейки, дневной DD
 ├── engine/       # async торговый движок + бэктестер + агрегатор сигналов
 ├── metrics/      # метрики работы: PnL, Sharpe, drawdown, win-rate, attribution
+├── analytics/    # VaR, CVaR, β-к-BTC, correlation, contribution-to-risk, stress tests
+├── optimizer/    # Markowitz max-Sharpe / min-variance + risk parity (scipy)
+├── sentiment/    # крипто-лексикон + агрегация sentiment per-symbol
 ├── llm/          # тонкий клиент OpenAI-совместимого chat API
 ├── news/         # RSS-агрегатор крипто-новостей (без ключей)
 ├── agent/        # автономный LLM-портфельный менеджер (Project-Vend-style)
 ├── telegram/     # Bot API: уведомления (orders/agent/errors) + команды
-├── api/          # REST: bot, market, strategies, agent, metrics
+├── api/          # REST: bot, market, strategies, agent, metrics, analytics
 ├── templates/    # дашборд (Jinja2)
 └── static/       # CSS + JS (Chart.js по CDN)
 
@@ -44,8 +47,9 @@ scripts/
 └── historical_backtest.py    # CLI: скачивает годы OHLCV, прогоняет все стратегии
 
 docs/
-├── research.md   # выжимка из академики — почему ретейл теряет, что работало
-└── deploy.md     # пошаговый деплой: Fly.io / VPS systemd / Docker / Railway
+├── research.md            # выжимка из академики — почему ретейл теряет, что работало
+├── blackrock_aladdin.md   # как устроен Aladdin и что из него тут воспроизведено
+└── deploy.md              # пошаговый деплой: Fly.io / VPS systemd / Docker / Railway
 
 deploy/
 ├── trade.service       # systemd-юнит для VPS
@@ -135,6 +139,40 @@ python -m scripts.historical_backtest \
 Результат — в `data/backtest_*.json` + сводка в `data/backtest_summary.json`.
 Перед запуском бота на реальных деньгах **обязательно прогоните этот скрипт
 и сравните с buy-&-hold**.
+
+## 📊 Aladdin-style риск-аналитика и оптимизация портфеля
+
+Поверх торгового движка работает слой портфельной аналитики и оптимизации,
+конструктивно копирующий подход BlackRock Aladdin: **риск ПЕРВЫМ, доходность ВТОРОЙ**.
+
+Что считается на каждый запрос:
+
+- **Аналитика риска** (`/api/analytics/risk`):
+  annualized μ/σ/Sharpe, **historical VaR + CVaR (95%)**, корреляции,
+  **бета к BTC**, **risk contribution** (marginal + component + % of total) —
+  какая позиция реально таскает на себе риск портфеля.
+- **Стресс-тесты** (`/api/analytics/stress`) на реальных сценариях:
+  COVID-март-2020, Terra/Luna, FTX, плюс гипотетические BTC -30% флеш-крэш,
+  взлом биржи, регуляторный запрет в США.
+- **Оптимизатор портфеля** (`/api/optimizer/{max_sharpe|min_variance|risk_parity}`):
+  Markowitz max-Sharpe, минимум дисперсии и **risk-parity**
+  (Bridgewater All-Weather style) через scipy SLSQP с констрейнтами.
+- **Сентимент-анализ новостей** (`/api/sentiment`): крипто-лексикон
+  (bullish: ETF approval, ATH, inflows; bearish: hack, SEC, delisting, …)
+  с агрегацией per-symbol и фильтром по возрасту.
+
+Всё это автоматически передаётся **LLM-агенту** в контекст: он получает не
+голый снимок цен, а полную риск-картину + предложения двух оптимизаторов +
+сентимент по каждому инструменту. Системный промпт требует обосновывать
+любое действие конкретными числами (VaR, β, contribution, sentiment).
+
+Дашборд показывает всё это в отдельной панели «Риск-аналитика»:
+VaR/CVaR, β к BTC, contribution-to-risk, таблицу стресс-тестов и
+рекомендуемые веса от обоих оптимизаторов.
+
+Подробнее: [`docs/blackrock_aladdin.md`](docs/blackrock_aladdin.md) —
+что такое Aladdin на самом деле, какие его части воспроизведены здесь и
+чего сознательно нет.
 
 ## Research: почему ретейл-трейдеры теряют
 
