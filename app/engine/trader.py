@@ -453,10 +453,24 @@ class TradeEngine:
 
     # --------------------------------------------------------------- adaptive
     def _effective_weights(self, candles: pd.DataFrame) -> dict[str, float] | None:
-        """Адаптивные веса с поправкой на текущий регим (если включено)."""
+        """Итоговые веса = blend(adaptive, bandit) × regime preferences."""
         if not self.settings.adaptive_enabled:
             return None
         weights = dict(self.stats.adaptive_weights or {})
+        # blend с bandit-sampling если включено
+        if self.settings.bandit_enabled:
+            from ..adaptive.bandit import blend_weights, load_bandit_states, sample_weights
+
+            names = [s.name for s in self.strategies]
+            with session_scope() as session:
+                states = load_bandit_states(session, names=names)
+            bandit_w = sample_weights(states)
+            weights = blend_weights(
+                weights or {n: 1.0 for n in names},
+                bandit_w,
+                blend=self.settings.bandit_blend,
+            )
+
         if not weights and not self.settings.adaptive_use_regime:
             return None
         if self.settings.adaptive_use_regime and not candles.empty:

@@ -5,8 +5,15 @@ import json
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import select
 
+from ..adaptive.bandit import (
+    load_bandit_states,
+    sample_weights,
+    update_bandit_from_history,
+)
+from ..adaptive.genetic import run_genetic_cycle
 from ..adaptive.proposer import run_proposer_cycle
 from ..adaptive.regime import detect_regime
+from ..adaptive.retirement import run_retirement_cycle
 from ..adaptive.tuner import run_tuning_cycle
 from ..adaptive.weights import (
     compute_adaptive_weights,
@@ -14,7 +21,8 @@ from ..adaptive.weights import (
 )
 from ..core.database import session_scope
 from ..exchange.base import ExchangeError
-from ..models.db import StrategyConfig, StrategyPerformance
+from ..models.db import OnlineLexicon, StrategyConfig, StrategyPerformance
+from ..sentiment.online import load_online_weights, run_online_learning_cycle
 from .deps import AuthDep, EngineDep, SessionDep
 
 
@@ -121,6 +129,72 @@ async def run_proposer(_auth: AuthDep, engine: EngineDep,
             "backtest_score": p.backtest_score, "accepted": p.accepted,
             "reject_reason": p.reject_reason,
         } for p in results
+    ]
+
+
+@router.get("/bandit")
+def bandit_state(session: SessionDep, engine: EngineDep, _auth: AuthDep):
+    names = [s.name for s in engine.strategies]
+    states = load_bandit_states(session, names=names)
+    sampled = sample_weights(states)
+    return {
+        "enabled": engine.settings.bandit_enabled,
+        "blend": engine.settings.bandit_blend,
+        "states": [st.as_dict() for st in states.values()],
+        "sampled_weights": sampled,
+    }
+
+
+@router.post("/bandit/update")
+def bandit_update(_auth: AuthDep, lookback: int = Query(500, ge=10, le=5000)):
+    with session_scope() as session:
+        updated = update_bandit_from_history(session, lookback=lookback)
+    return {"updated": len(updated),
+            "states": [u.as_dict() for u in updated.values()]}
+
+
+@router.post("/genetic/run")
+async def genetic_run(_auth: AuthDep, engine: EngineDep,
+                      symbol: str = Query(None)):
+    sym = symbol or (engine.settings.symbols[0] if engine.settings.symbols else "BTC/USDT")
+    survivors = await run_genetic_cycle(engine.settings, symbol=sym)
+    engine.reload_strategies_from_db()
+    return [
+        {"base": c.base, "params": c.params, "score": c.score,
+         "generation": c.generation, "parents": list(c.parents) if c.parents else None}
+        for c in survivors
+    ]
+
+
+@router.post("/retirement/run")
+def retirement_run(_auth: AuthDep, engine: EngineDep):
+    res = run_retirement_cycle(engine.settings)
+    engine.reload_strategies_from_db()
+    return {
+        "retired": res.retired, "kept": res.kept,
+        "skipped_protected": res.skipped_protected,
+    }
+
+
+@router.post("/sentiment/learn")
+async def sentiment_learn(_auth: AuthDep, engine: EngineDep):
+    res = await run_online_learning_cycle(engine.settings)
+    return res
+
+
+@router.get("/sentiment/lexicon")
+def sentiment_lexicon(session: SessionDep, _auth: AuthDep,
+                      min_samples: int = Query(2, ge=1),
+                      limit: int = Query(50, ge=1, le=500)):
+    rows = session.execute(
+        select(OnlineLexicon).where(OnlineLexicon.samples >= min_samples)
+        .order_by(OnlineLexicon.samples.desc()).limit(limit)
+    ).scalars().all()
+    return [
+        {"word": r.word, "weight": round(r.weight, 4),
+         "samples": r.samples,
+         "last_seen_at": r.last_seen_at.isoformat()}
+        for r in rows
     ]
 
 

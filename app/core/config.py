@@ -130,6 +130,36 @@ class Settings(BaseSettings):
     proposer_max_tokens: int = 800
     proposer_temperature: float = 0.5
 
+    # --- Thompson sampling bandit ---------------------------------------
+    # Каждая стратегия имеет Beta(α, β) — модель вероятности «правильного»
+    # голоса. Используется как мультипликативный буст adaptive_weights,
+    # обеспечивая explore/exploit (новые стратегии получают шанс).
+    bandit_enabled: bool = True
+    bandit_blend: float = 0.5  # 0=только adaptive, 1=только bandit-sampling
+
+    # --- Genetic algorithm ----------------------------------------------
+    # После каждого цикла tuner'а отбирает top-N конфигов и эволюционирует
+    # их: crossover + mutation → новое поколение → бэктест → top.
+    ga_enabled: bool = True
+    ga_population_size: int = 12
+    ga_generations: int = 2
+    ga_mutation_rate: float = 0.25
+
+    # --- Online sentiment learning --------------------------------------
+    # Учится: после новости со словом X средняя реакция цены была -2%
+    # → пометить X как bearish. Сохраняется в online_lexicon.
+    sentiment_online_enabled: bool = True
+    sentiment_online_interval_hours: int = 6
+    sentiment_online_horizon_hours: int = 8  # горизонт оценки реакции цены
+    sentiment_online_learning_rate: float = 0.1
+
+    # --- Strategy retirement --------------------------------------------
+    # Авто-отключение хронически убыточных конфигов из tuner/llm.
+    retirement_enabled: bool = True
+    retirement_interval_hours: int = 6
+    retirement_min_decisions: int = 30  # мин. число решений для оценки
+    retirement_pnl_threshold: float = -3.0  # отключаем если attributable_pnl < threshold
+
     # --- Web auth --------------------------------------------------------
     web_user: str = ""
     web_password: str = ""

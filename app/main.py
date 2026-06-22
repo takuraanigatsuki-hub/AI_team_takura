@@ -62,6 +62,18 @@ async def _lifespan(app: FastAPI):
     if settings.proposer_enabled and settings.llm_api_key:
         from .adaptive.proposer import proposer_loop
         proposer_task = asyncio.create_task(proposer_loop(settings), name="strategy-proposer")
+    ga_task: asyncio.Task | None = None
+    if settings.ga_enabled:
+        from .adaptive.genetic import ga_loop
+        ga_task = asyncio.create_task(ga_loop(settings), name="genetic-algorithm")
+    retirement_task: asyncio.Task | None = None
+    if settings.retirement_enabled:
+        from .adaptive.retirement import retirement_loop
+        retirement_task = asyncio.create_task(retirement_loop(settings), name="strategy-retirement")
+    online_task: asyncio.Task | None = None
+    if settings.sentiment_online_enabled:
+        from .sentiment.online import online_loop
+        online_task = asyncio.create_task(online_loop(settings), name="online-sentiment")
     weights_task: asyncio.Task | None = None
     if settings.adaptive_enabled:
         weights_task = asyncio.create_task(
@@ -81,6 +93,12 @@ async def _lifespan(app: FastAPI):
         tuner_task.cancel()
     if proposer_task is not None:
         proposer_task.cancel()
+    if ga_task is not None:
+        ga_task.cancel()
+    if retirement_task is not None:
+        retirement_task.cancel()
+    if online_task is not None:
+        online_task.cancel()
     if weights_task is not None:
         weights_task.cancel()
     try:
@@ -99,18 +117,24 @@ async def _lifespan(app: FastAPI):
 
 
 async def _adaptive_weights_loop(settings) -> None:
-    """Периодически пересчитывает адаптивные веса стратегий и подгружает новые
-    конфиги из БД (если auto-tuner или proposer что-то добавили)."""
+    """Периодически пересчитывает адаптивные веса стратегий + обновляет
+    bandit-постериоры + перегружает strategy configs из БД."""
     import asyncio
 
     interval = max(60, settings.adaptive_refresh_minutes * 60)
-    # стартовый прогрев — через 30 секунд
-    await asyncio.sleep(30)
+    await asyncio.sleep(30)  # warm-up
     while True:
         try:
             engine = get_engine()
             engine.reload_strategies_from_db()
             engine.refresh_adaptive_weights()
+            if settings.bandit_enabled:
+                from .adaptive.bandit import update_bandit_from_history
+                from .core.database import session_scope
+                with session_scope() as session:
+                    update_bandit_from_history(
+                        session, lookback=settings.adaptive_lookback_decisions
+                    )
         except asyncio.CancelledError:
             raise
         except Exception as exc:  # noqa: BLE001

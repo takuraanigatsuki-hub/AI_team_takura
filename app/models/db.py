@@ -136,6 +136,44 @@ class StrategyPerformance(Base):
     )
 
 
+class BanditPosterior(Base):
+    """Постериор Thompson-sampling бандита для каждой стратегии.
+
+    Beta(α, β) — модель «вероятности успеха» голоса этой стратегии.
+    При успехе → α += 1; при неудаче → β += 1.
+    Веса = sample(Beta(α, β)) для каждой стратегии, нормализованные.
+    """
+
+    __tablename__ = "bandit_posterior"
+
+    strategy_name: Mapped[str] = mapped_column(String(96), primary_key=True)
+    alpha: Mapped[float] = mapped_column(Float, default=1.0)  # успехи (+1 prior)
+    beta: Mapped[float] = mapped_column(Float, default=1.0)   # неудачи (+1 prior)
+    samples: Mapped[int] = mapped_column(Integer, default=0)
+    last_weight: Mapped[float] = mapped_column(Float, default=1.0)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class OnlineLexicon(Base):
+    """Динамический сентимент-словарь, обучаемый по реакции цены на новости.
+
+    Каждое слово накапливает avg(price_change) после новостей, где оно
+    встречалось. Веса используются как дополнение к статическому лексикону
+    в app/sentiment/analyzer.py.
+    """
+
+    __tablename__ = "online_lexicon"
+
+    word: Mapped[str] = mapped_column(String(64), primary_key=True)
+    weight: Mapped[float] = mapped_column(Float, default=0.0)  # [-1, 1]
+    samples: Mapped[int] = mapped_column(Integer, default=0)
+    last_seen_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
 class BotState(Base):
     """Ключ-значение для рантайм-флагов (running / paused / kill-switch / итд)."""
 
