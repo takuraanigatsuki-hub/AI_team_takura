@@ -39,6 +39,9 @@ class _RuntimeStats:
     paused: bool = False
     kill_switch: bool = False
     cached_balances: dict[str, float] = field(default_factory=dict)
+    adaptive_weights: dict[str, float] = field(default_factory=dict)
+    last_regime: dict | None = None
+    last_strategy_refresh_at: datetime | None = None
 
 
 class TradeEngine:
@@ -199,7 +202,10 @@ class TradeEngine:
                     reason=f"ошибка: {exc}",
                 ))
 
-        signal = aggregate_votes(symbol, price, votes, self.settings.signal_consensus)
+        weights = self._effective_weights(candles)
+        signal = aggregate_votes(
+            symbol, price, votes, self.settings.signal_consensus, weights=weights,
+        )
         self._log_decision(signal)
 
         if signal.action == "buy":
@@ -444,6 +450,71 @@ class TradeEngine:
             pos.quantity -= sell_qty
             if pos.quantity <= 1e-12:
                 pos.quantity = 0.0
+
+    # --------------------------------------------------------------- adaptive
+    def _effective_weights(self, candles: pd.DataFrame) -> dict[str, float] | None:
+        """Адаптивные веса с поправкой на текущий регим (если включено)."""
+        if not self.settings.adaptive_enabled:
+            return None
+        weights = dict(self.stats.adaptive_weights or {})
+        if not weights and not self.settings.adaptive_use_regime:
+            return None
+        if self.settings.adaptive_use_regime and not candles.empty:
+            from ..adaptive.regime import apply_regime_preferences, detect_regime
+
+            regime = detect_regime(candles["close"], window=60)
+            self.stats.last_regime = regime.as_dict()
+            base_lookup = {s.name: getattr(s, "_base_name", s.name) for s in self.strategies}
+            for s in self.strategies:
+                weights.setdefault(s.name, 1.0)
+            weights = apply_regime_preferences(weights, regime, base_lookup)
+        return weights or None
+
+    def refresh_adaptive_weights(self) -> dict[str, float]:
+        """Пересчитать адаптивные веса из недавних решений и сохранить snapshot."""
+        from ..adaptive.weights import (
+            compute_adaptive_weights, compute_performance_snapshots,
+            persist_performance_snapshots,
+        )
+        with session_scope() as session:
+            snapshots = compute_performance_snapshots(
+                session, lookback=self.settings.adaptive_lookback_decisions
+            )
+            weights = compute_adaptive_weights(
+                snapshots,
+                w_min=self.settings.adaptive_min_weight,
+                w_max=self.settings.adaptive_max_weight,
+            )
+            now = datetime.now(timezone.utc)
+            persist_performance_snapshots(
+                session, snapshots,
+                window_start=now - timedelta(hours=self.settings.adaptive_refresh_minutes / 60 * 24),
+                window_end=now,
+            )
+        self.stats.adaptive_weights = weights
+        if weights:
+            logger.info("adaptive weights refreshed: {}", weights)
+        return weights
+
+    def reload_strategies_from_db(self) -> int:
+        """Загрузить активные StrategyConfig из БД, заменить self.strategies.
+
+        Если конфигов в БД нет — оставляем то, что построено по settings.strategies.
+        Возвращает количество стратегий после загрузки.
+        """
+        from ..strategies.registry import build_strategies_from_db
+
+        with session_scope() as session:
+            db_strategies = build_strategies_from_db(session)
+        if db_strategies:
+            # сохраним base name для regime preferences
+            for s in db_strategies:
+                if not getattr(s, "_base_name", None):
+                    s._base_name = s.name.split("__")[0] if "__" in s.name else s.name
+            self.strategies = db_strategies
+            self.stats.last_strategy_refresh_at = datetime.now(timezone.utc)
+            logger.info("loaded {} strategies from DB", len(db_strategies))
+        return len(self.strategies)
 
     # --------------------------------------------------------------- public
     def status(self) -> BotStatus:

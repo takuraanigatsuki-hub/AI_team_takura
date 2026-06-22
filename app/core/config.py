@@ -98,6 +98,38 @@ class Settings(BaseSettings):
     reflection_max_tokens: int = 800
     reflection_temperature: float = 0.4
 
+    # --- Adaptive layer --------------------------------------------------
+    # Веса стратегий в агрегаторе адаптируются под их недавнюю
+    # производительность (по решениям + сделкам).
+    adaptive_enabled: bool = True
+    adaptive_refresh_minutes: int = 60
+    adaptive_lookback_decisions: int = 500
+    adaptive_min_weight: float = 0.1
+    adaptive_max_weight: float = 3.0
+    adaptive_use_regime: bool = True  # учитывать регим рынка при взвешивании
+
+    # --- Auto-tuner ------------------------------------------------------
+    # Периодический walk-forward random-search по параметрам стратегий.
+    # Лучшие конфигурации сохраняются как StrategyConfig (created_by=tuner)
+    # и подмешиваются в активный набор.
+    tuner_enabled: bool = True
+    tuner_interval_hours: int = 24
+    tuner_samples_per_strategy: int = 30
+    tuner_walk_forward_folds: int = 3
+    tuner_history_candles: int = 600
+    tuner_history_timeframe: str = "1h"
+    tuner_keep_top_n: int = 2  # сколько лучших variantов оставлять
+
+    # --- LLM strategy proposer ------------------------------------------
+    # LLM смотрит на adaptive weights + regime + journal и предлагает новые
+    # конфигурации параметров (НЕ код). Каждая идёт в бэктест, и если она
+    # обыгрывает свой baseline — сохраняется.
+    proposer_enabled: bool = True
+    proposer_interval_hours: int = 24
+    proposer_max_new_per_cycle: int = 3
+    proposer_max_tokens: int = 800
+    proposer_temperature: float = 0.5
+
     # --- Web auth --------------------------------------------------------
     web_user: str = ""
     web_password: str = ""

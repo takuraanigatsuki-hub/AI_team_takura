@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 
 from . import __version__
 from .api.deps import auth_optional
+from .api.routes_adaptive import router as adaptive_router
 from .api.routes_agent import router as agent_router
 from .api.routes_analytics import router as analytics_router
 from .api.routes_bot import router as bot_router
@@ -53,6 +54,19 @@ async def _lifespan(app: FastAPI):
         reflection_task = asyncio.create_task(
             reflection_loop(settings), name="agent-reflection",
         )
+    tuner_task: asyncio.Task | None = None
+    if settings.tuner_enabled:
+        from .adaptive.tuner import tuner_loop
+        tuner_task = asyncio.create_task(tuner_loop(settings), name="auto-tuner")
+    proposer_task: asyncio.Task | None = None
+    if settings.proposer_enabled and settings.llm_api_key:
+        from .adaptive.proposer import proposer_loop
+        proposer_task = asyncio.create_task(proposer_loop(settings), name="strategy-proposer")
+    weights_task: asyncio.Task | None = None
+    if settings.adaptive_enabled:
+        weights_task = asyncio.create_task(
+            _adaptive_weights_loop(settings), name="adaptive-weights"
+        )
     if settings.agent_enabled and settings.llm_api_key:
         try:
             await get_agent().start()
@@ -63,6 +77,12 @@ async def _lifespan(app: FastAPI):
         daily_task.cancel()
     if reflection_task is not None:
         reflection_task.cancel()
+    if tuner_task is not None:
+        tuner_task.cancel()
+    if proposer_task is not None:
+        proposer_task.cancel()
+    if weights_task is not None:
+        weights_task.cancel()
     try:
         await get_telegram_bot().stop()
     except Exception:
@@ -76,6 +96,26 @@ async def _lifespan(app: FastAPI):
         await engine.stop()
     except Exception:
         pass
+
+
+async def _adaptive_weights_loop(settings) -> None:
+    """Периодически пересчитывает адаптивные веса стратегий и подгружает новые
+    конфиги из БД (если auto-tuner или proposer что-то добавили)."""
+    import asyncio
+
+    interval = max(60, settings.adaptive_refresh_minutes * 60)
+    # стартовый прогрев — через 30 секунд
+    await asyncio.sleep(30)
+    while True:
+        try:
+            engine = get_engine()
+            engine.reload_strategies_from_db()
+            engine.refresh_adaptive_weights()
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("adaptive weights refresh failed: {}", exc)
+        await asyncio.sleep(interval)
 
 
 async def _daily_summary_loop(settings) -> None:
@@ -128,6 +168,7 @@ def create_app() -> FastAPI:
     app.include_router(agent_router)
     app.include_router(metrics_router)
     app.include_router(analytics_router)
+    app.include_router(adaptive_router)
 
     @app.get("/", response_class=HTMLResponse, include_in_schema=False)
     async def dashboard(request: Request, _auth: None = Depends(auth_optional)):

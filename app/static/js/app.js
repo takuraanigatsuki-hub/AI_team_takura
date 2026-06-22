@@ -165,7 +165,8 @@
   async function refresh() {
     try {
       const [status, positions, decisions, orders, equity, agentStatus, journal, news, metrics,
-             risk, stress, optMs, optRp, sentiment, memos, mcVar, factors] = await Promise.all([
+             risk, stress, optMs, optRp, sentiment, memos, mcVar, factors,
+             adaptiveW, regime, strategiesList] = await Promise.all([
         api("/api/bot/status"),
         api("/api/bot/positions"),
         api("/api/bot/decisions?limit=30"),
@@ -183,6 +184,9 @@
         api("/api/agent/memos?limit=10").catch(() => []),
         api("/api/analytics/monte_carlo?n_simulations=5000").catch(() => null),
         api("/api/analytics/factors").catch(() => null),
+        api("/api/adaptive/weights").catch(() => null),
+        api("/api/adaptive/regime").catch(() => null),
+        api("/api/adaptive/strategies").catch(() => []),
       ]);
       setKpis(status);
       renderPositions(positions);
@@ -201,6 +205,7 @@
       renderMemos(memos);
       renderMonteCarlo(mcVar);
       renderFactors(factors);
+      renderAdaptive(adaptiveW, regime, strategiesList);
     } catch (err) {
       console.error("refresh failed:", err);
     }
@@ -398,6 +403,34 @@
     ).join("");
   }
 
+  function renderAdaptive(weightsResp, regime, strategies) {
+    if (regime && regime.label) {
+      $("#regime-meta").textContent =
+        `регим: ${regime.label.toUpperCase()} (conf ${fmt((regime.confidence||0)*100, 0)}%, ` +
+        `vol z=${fmt(regime.vol_z_score, 2)})`;
+    }
+    const list = $("#strategies-weighted");
+    const w = (weightsResp && weightsResp.weights) || {};
+    const eng = (weightsResp && weightsResp.current_engine_weights) || {};
+    const items = (strategies || []).filter((s) => s.enabled);
+    if (!items.length) {
+      list.innerHTML = '<li class="muted">нет активных стратегий</li>';
+      return;
+    }
+    list.innerHTML = items.slice(0, 20).map((s) => {
+      const adaptive = w[s.name];
+      const effective = eng[s.name];
+      const score = s.backtest_score;
+      const scoreCls = score >= 0 ? "pnl-pos" : "pnl-neg";
+      const wText = adaptive !== undefined ? `w=${fmt(adaptive, 2)}` : "";
+      const eText = effective !== undefined ? `· effective ${fmt(effective, 2)}` : "";
+      const sText = score ? ` · backtest ${fmtPct(score)}` : "";
+      return `<li><span class="k">${escapeHtml(s.name)} ` +
+             `<small style="color:var(--muted)">[${s.created_by}]</small></span>` +
+             `<span class="${scoreCls}">${wText} ${eText}${sText}</span></li>`;
+    }).join("");
+  }
+
   function renderFactors(pf) {
     const ul = $("#factor-portfolio");
     if (!pf || !pf.weights || !Object.keys(pf.weights).length) {
@@ -448,6 +481,10 @@
     $("#btn-agent-start").addEventListener("click", post("/api/agent/start"));
     $("#btn-agent-stop").addEventListener("click", post("/api/agent/stop"));
     $("#btn-agent-tick").addEventListener("click", post("/api/agent/tick"));
+
+    $("#btn-tuner-run").addEventListener("click", post("/api/adaptive/tuner/run?samples=20"));
+    $("#btn-proposer-run").addEventListener("click", post("/api/adaptive/proposer/run"));
+    $("#btn-strategies-reload").addEventListener("click", post("/api/adaptive/strategies/reload"));
   }
 
   document.addEventListener("DOMContentLoaded", () => {

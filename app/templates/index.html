@@ -156,9 +156,15 @@
 
     <section class="card">
       <header class="card-head">
-        <h2>Активные стратегии</h2>
+        <h2>🧬 Активные стратегии + адаптивные веса</h2>
+        <span class="muted" id="regime-meta">регим: —</span>
       </header>
-      <ul id="strategies-list" class="chips">
+      <div class="controls" style="margin-bottom: 10px">
+        <button id="btn-tuner-run"    class="btn">▶ Tuner (новые параметры)</button>
+        <button id="btn-proposer-run" class="btn">🧠 LLM proposer</button>
+        <button id="btn-strategies-reload" class="btn ghost">🔄 Reload</button>
+      </div>
+      <ul class="kv-list" id="strategies-weighted">
         <li class="muted">—</li>
       </ul>
       <p class="muted small">

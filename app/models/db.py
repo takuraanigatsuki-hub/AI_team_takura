@@ -90,6 +90,52 @@ class DecisionLog(Base):
     mode: Mapped[str] = mapped_column(String(8), default="paper")
 
 
+class StrategyConfig(Base):
+    """Конфигурация конкретного экземпляра стратегии (база + параметры).
+
+    Параметры — JSON. Базовая стратегия (`base`) обязана быть в реестре
+    `app/strategies/registry.py::STRATEGY_FACTORIES`. Никакой исполняемый код
+    в БД не хранится — это критическое safety-свойство.
+    """
+
+    __tablename__ = "strategy_configs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(96), unique=True, index=True)
+    base: Mapped[str] = mapped_column(String(64), index=True)
+    params: Mapped[str] = mapped_column(Text, default="{}")  # JSON-словарь параметров
+    enabled: Mapped[int] = mapped_column(Integer, default=1)  # 1/0 — для активации
+    created_by: Mapped[str] = mapped_column(String(16), default="user")  # user|tuner|llm
+    backtest_score: Mapped[float] = mapped_column(Float, default=0.0)
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False, index=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class StrategyPerformance(Base):
+    """Snapshot производительности конкретной стратегии за окно."""
+
+    __tablename__ = "strategy_performance"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    strategy_name: Mapped[str] = mapped_column(String(96), index=True)
+    window_start: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    window_end: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    votes: Mapped[int] = mapped_column(Integer, default=0)
+    decisive_votes: Mapped[int] = mapped_column(Integer, default=0)
+    accuracy: Mapped[float] = mapped_column(Float, default=0.0)  # доля «правильных» решений
+    attributable_pnl: Mapped[float] = mapped_column(Float, default=0.0)
+    avg_confidence: Mapped[float] = mapped_column(Float, default=0.0)
+    weight: Mapped[float] = mapped_column(Float, default=1.0)  # назначенный после анализа вес
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False, index=True
+    )
+
+
 class BotState(Base):
     """Ключ-значение для рантайм-флагов (running / paused / kill-switch / итд)."""
 

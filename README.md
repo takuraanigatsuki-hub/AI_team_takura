@@ -140,6 +140,81 @@ python -m scripts.historical_backtest \
 Перед запуском бота на реальных деньгах **обязательно прогоните этот скрипт
 и сравните с buy-&-hold**.
 
+## 🧬 Адаптивный слой: бот учится на ошибках и сам генерирует стратегии
+
+Поверх всего предыдущего поднят **автономный цикл самообучения**:
+
+1. **Адаптивные веса стратегий**
+   Каждый час `compute_performance_snapshots` пробегает по последним
+   `ADAPTIVE_LOOKBACK_DECISIONS=500` решениям + закрытым сделкам, считает
+   per-strategy attributable PnL (по доле confidence в финальном сигнале),
+   accuracy и applies экспоненциальное переvзвешивание
+   `w = exp(λ · z_score(pnl) + accuracy_bonus)`. Веса умножаются на
+   confidence каждого голоса в агрегаторе — выигрывающие стратегии
+   получают больший вес, проигрывающие — меньший.
+
+2. **Регим-детектор** (`app/adaptive/regime.py`)
+   Классифицирует рынок как `trending_up / trending_down / ranging / volatile`
+   на основе наклона log-цены и z-score реализованной волатильности
+   относительно baseline'а (вычисляется СТРОГО ИЗ ИСТОРИИ ДО текущего
+   окна, чтобы спайк не «растворялся» в собственном baseline).
+   В режиме `trending` бустит трендовые стратегии (MA, BB), в `ranging`
+   — mean-reversion (RSI), в `volatile` — режет всех.
+
+3. **Auto-tuner** (`app/adaptive/tuner.py`)
+   Раз в `TUNER_INTERVAL_HOURS=24` часов делает walk-forward random-search
+   по параметрам каждой базовой стратегии: 30 случайных конфигов на
+   каждую базу, 3 фолда исторических OHLCV, score = средний PnL%
+   out-of-sample. Лучшие `TUNER_KEEP_TOP_N=2` сохраняются как
+   `StrategyConfig(created_by='tuner')` и автоматически подхватываются
+   в активный набор через `engine.reload_strategies_from_db()`.
+
+4. **LLM strategy proposer** (`app/adaptive/proposer.py`)
+   Раз в `PROPOSER_INTERVAL_HOURS=24` LLM получает на вход:
+   допустимые диапазоны параметров, текущие активные стратегии + их
+   adaptive weights, performance snapshots, memos агента. Возвращает
+   JSON со списком новых конфигов. **Никакого кода — только числа**:
+   модель может предложить лишь параметры существующих базовых
+   стратегий (`ma_crossover`, `rsi_reversion`, `bollinger_breakout`),
+   и они автоматически clamp-аются под допустимые диапазоны. Каждое
+   предложение проходит микро-бэктест против baseline дефолта;
+   принимаются только те, у которых positive PnL.
+
+5. **Параметризуемый strategy registry**
+   `STRATEGY_FACTORIES` + `DynamicStrategy` — стратегии теперь живут
+   как `StrategyConfig` в БД (имя, база, JSON-параметры, score,
+   created_by). При каждом тике engine может перезагрузить их из
+   БД (`/api/adaptive/strategies/reload` или авто-цикл).
+
+### Новые эндпоинты адаптивного слоя
+- `GET  /api/adaptive/weights` — текущие веса + per-strategy snapshots
+- `POST /api/adaptive/weights/refresh` — пересчитать прямо сейчас
+- `GET  /api/adaptive/regime?symbol=BTC/USDT` — текущий регим рынка
+- `GET  /api/adaptive/strategies` — все конфиги в БД
+- `POST /api/adaptive/strategies/{id}/toggle` — включить/выключить
+- `POST /api/adaptive/strategies/reload` — engine перечитывает БД
+- `POST /api/adaptive/tuner/run?samples=20` — запустить тюнер
+- `POST /api/adaptive/proposer/run` — запустить LLM-proposer
+- `GET  /api/adaptive/performance_history` — история снапшотов
+
+### Жёсткие safety-гарантии (важно)
+- **LLM-proposer не может выйти за диапазон параметров** — `clamp_params()`
+  принудительно приводит к допустимым значениям + типам.
+- **LLM-proposer не может предложить новую базовую стратегию** — только
+  параметры существующих (`ma_crossover` / `rsi_reversion` / `bollinger_breakout`).
+- **Никакой исполняемый код в БД не хранится** — только JSON параметров.
+- **Каждое LLM-предложение проходит бэктест перед активацией**.
+- **Tuner результаты тоже проходят walk-forward** — score выше baseline'а
+  не означает «работать в live», но это минимальный фильтр.
+
+### Что видит UI
+На дашборде появилась карточка «🧬 Активные стратегии + адаптивные веса»:
+- регим рынка с confidence,
+- список активных стратегий с их именем, базой, `[created_by]` меткой
+  (`user|tuner|llm`), adaptive weight, effective weight (после regime
+  preferences), backtest score,
+- кнопки «Tuner», «LLM proposer», «Reload».
+
 ## 🆙 Что добавлено в последнем апдейте (топовая модель + tools + reflection + factors + MC)
 
 - **Топовая reasoning-модель по умолчанию** (`LLM_MODEL=gpt-5.4-high`) +

@@ -10,20 +10,30 @@ def aggregate_votes(
     price: float,
     votes: list[StrategyVote],
     consensus: int = 2,
+    weights: dict[str, float] | None = None,
 ) -> Signal:
     """Слить голоса стратегий в один сигнал.
 
     Алгоритм:
-    - считаем голоса 'buy'/'sell' (взвешенные по confidence);
-    - выигрывает действие с большей суммарной уверенностью;
-    - оно становится сигналом, только если число согласных стратегий (с conf>0.2)
-      не меньше `consensus`.
+    - confidence каждого голоса умножается на адаптивный вес стратегии
+      (weights[strategy_name], default 1.0);
+    - выигрывает действие с большей взвешенной суммарной уверенностью;
+    - становится сигналом, только если число согласных стратегий (с
+      conf*weight ≥ 0.2) не меньше `consensus`.
     """
-    actionable = [v for v in votes if v.action in ("buy", "sell") and v.confidence > 0.0]
+    weights = weights or {}
+    enriched = []
+    for v in votes:
+        w = float(weights.get(v.name, 1.0))
+        eff_conf = v.confidence * w
+        enriched.append((v, w, eff_conf))
+
+    actionable = [(v, w, eff) for v, w, eff in enriched
+                  if v.action in ("buy", "sell") and eff > 0.0]
 
     weighted: Counter[str] = Counter()
-    for v in actionable:
-        weighted[v.action] += v.confidence
+    for v, _w, eff in actionable:
+        weighted[v.action] += eff
 
     if not actionable:
         return Signal(
@@ -31,17 +41,16 @@ def aggregate_votes(
             votes=votes, reason="нет actionable голосов",
         )
 
-    winner = max(weighted.items(), key=lambda kv: kv[1])
-    action, score = winner
+    action, score = max(weighted.items(), key=lambda kv: kv[1])
 
-    agree = [v for v in actionable if v.action == action and v.confidence >= 0.2]
+    agree = [v for v, _w, eff in actionable if v.action == action and eff >= 0.2]
     if len(agree) < consensus:
         return Signal(
             symbol=symbol, action="hold", confidence=score / max(len(actionable), 1),
             price=price, votes=votes,
             reason=(
-                f"{action} поддержан {len(agree)} из {len(votes)} стратегий, "
-                f"нужно {consensus}"
+                f"{action} поддержан {len(agree)} из {len(votes)} стратегий "
+                f"(взвешенно), нужно {consensus}"
             ),
         )
 
@@ -49,5 +58,5 @@ def aggregate_votes(
     reason = "; ".join(v.reason for v in agree if v.reason)
     return Signal(
         symbol=symbol, action=action, confidence=confidence, price=price,
-        votes=votes, reason=reason or f"{action} по консенсусу",
+        votes=votes, reason=reason or f"{action} по взвешенному консенсусу",
     )
