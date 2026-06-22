@@ -1,0 +1,44 @@
+# Fly.io конфиг для развёртывания Trade
+# Использование:
+#   fly auth login
+#   fly launch --no-deploy --copy-config            # создаст приложение
+#   fly volumes create trade_data --size 1          # 1 ГБ под SQLite
+#   fly secrets set LLM_API_KEY=...  TELEGRAM_BOT_TOKEN=... TELEGRAM_CHAT_ID=...
+#   fly deploy
+# Цена: ~ $5/мес за shared-cpu-1x + 1ГБ volume.
+
+app = "trade-bot"
+primary_region = "fra"   # измените на ближайший к вам регион Fly.io
+
+[build]
+
+[env]
+  PORT = "8000"
+  HOST = "0.0.0.0"
+  MODE = "paper"
+  DATABASE_URL = "sqlite:////data/trade.db"
+  AGENT_ENABLED = "false"
+  DEBUG = "false"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "get"
+    path = "/health"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory = "512mb"
+
+[[mounts]]
+  source = "trade_data"
+  destination = "/data"

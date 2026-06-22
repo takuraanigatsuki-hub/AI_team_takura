@@ -1,0 +1,30 @@
+[Unit]
+Description=Trade — autonomous crypto trading bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=trade
+Group=trade
+WorkingDirectory=/home/trade/app
+EnvironmentFile=/home/trade/app/.env
+ExecStart=/home/trade/app/.venv/bin/python run.py
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/trade.log
+StandardError=append:/var/log/trade.log
+
+# жёсткие ограничения по ресурсам (на случай утечек)
+MemoryHigh=400M
+MemoryMax=600M
+CPUQuota=80%
+
+# защита системы
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

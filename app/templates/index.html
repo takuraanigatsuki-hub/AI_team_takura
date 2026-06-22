@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ app_name }} — торговый дашборд</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><text y=%2248%22 font-size=%2248%22>📈</text></svg>">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+</head>
+<body data-mode="{{ mode }}">
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">▲</span>
+      <h1>{{ app_name }}</h1>
+      <span class="ver">v{{ version }}</span>
+    </div>
+    <div class="topbar-meta">
+      <span class="badge mode mode-{{ mode }}">{{ mode|upper }}</span>
+      <span class="muted">{{ exchange }} · {{ timeframe }}</span>
+      <span id="last-tick" class="muted">—</span>
+    </div>
+    <div class="controls">
+      <button id="btn-start" class="btn primary">Старт</button>
+      <button id="btn-pause" class="btn">Пауза</button>
+      <button id="btn-tick" class="btn ghost">Tick</button>
+      <button id="btn-stop" class="btn">Стоп</button>
+      <button id="btn-kill" class="btn danger">KILL</button>
+    </div>
+  </header>
+
+  {% if mode == 'live' %}
+  <div class="live-banner">
+    ⚠️ <strong>LIVE MODE</strong> — бот может выставлять реальные ордера на бирже. Убедитесь, что вы понимаете риски.
+  </div>
+  {% endif %}
+
+  <main class="grid">
+    <section class="card kpis">
+      <div class="kpi">
+        <div class="kpi-label">Капитал</div>
+        <div class="kpi-value" id="kpi-equity">—</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Кэш</div>
+        <div class="kpi-value" id="kpi-cash">—</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">В позициях</div>
+        <div class="kpi-value" id="kpi-positions-value">—</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">P&amp;L день</div>
+        <div class="kpi-value" id="kpi-daily-pnl">—</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Статус</div>
+        <div class="kpi-value" id="kpi-status">—</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <header class="card-head">
+        <h2>Equity curve</h2>
+        <span class="muted">последние 500 точек</span>
+      </header>
+      <div class="chart-wrap"><canvas id="equity-chart"></canvas></div>
+    </section>
+
+    <section class="card">
+      <header class="card-head">
+        <h2>Производительность</h2>
+        <span class="muted" id="metrics-since">—</span>
+      </header>
+      <div class="metrics-grid" id="metrics-grid">
+        <div class="muted">пока нет данных</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <header class="card-head">
+        <h2>Открытые позиции</h2>
+      </header>
+      <div class="table-wrap">
+        <table id="positions-table">
+          <thead>
+            <tr>
+              <th>Символ</th><th>Кол-во</th><th>Средняя</th><th>Цена</th>
+              <th>Стоимость</th><th>P&amp;L</th><th>Стоп</th><th>Тейк</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="8" class="muted">нет позиций</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <header class="card-head">
+        <h2>Активные стратегии</h2>
+      </header>
+      <ul id="strategies-list" class="chips">
+        <li class="muted">—</li>
+      </ul>
+      <p class="muted small">
+        Инструменты: <span id="symbols-list">—</span>
+      </p>
+    </section>
+
+    <section class="card wide">
+      <header class="card-head">
+        <h2>Журнал решений</h2>
+        <span class="muted">последние 30</span>
+      </header>
+      <div class="table-wrap">
+        <table id="decisions-table">
+          <thead>
+            <tr>
+              <th>Время</th><th>Символ</th><th>Действие</th>
+              <th>Уверенность</th><th>Цена</th><th>Обоснование</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="6" class="muted">пока пусто</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card wide agent-card">
+      <header class="card-head">
+        <h2>🤖 Автономный ИИ-агент</h2>
+        <span class="muted"><span id="agent-status">—</span></span>
+        <div class="controls" style="margin-left:auto">
+          <button id="btn-agent-start" class="btn primary">Старт агента</button>
+          <button id="btn-agent-tick"  class="btn">Tick сейчас</button>
+          <button id="btn-agent-stop"  class="btn">Стоп агента</button>
+        </div>
+      </header>
+      <p class="muted small" id="agent-meta">—</p>
+      <div class="agent-journal" id="agent-journal">
+        <div class="muted">журнал пока пуст</div>
+      </div>
+    </section>
+
+    <section class="card wide">
+      <header class="card-head">
+        <h2>📰 Новости</h2>
+        <span class="muted">RSS, обновление каждые 5 минут</span>
+      </header>
+      <ul class="news-list" id="news-list">
+        <li class="muted">загрузка…</li>
+      </ul>
+    </section>
+
+    <section class="card wide">
+      <header class="card-head">
+        <h2>Последние ордера</h2>
+        <span class="muted">последние 30</span>
+      </header>
+      <div class="table-wrap">
+        <table id="orders-table">
+          <thead>
+            <tr>
+              <th>Время</th><th>Символ</th><th>Сторона</th>
+              <th>Кол-во</th><th>Цена</th><th>Сумма</th><th>Комиссия</th><th>Причина</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="8" class="muted">пока пусто</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>Trade · paper-режим по умолчанию · реальная торговля — на ваш страх и риск</span>
+  </footer>
+
+  <script src="/static/js/app.js" defer></script>
+</body>
+</html>

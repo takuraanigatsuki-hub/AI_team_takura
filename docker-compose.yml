@@ -1,0 +1,12 @@
+services:
+  trade:
+    build: .
+    image: trade:latest
+    container_name: trade
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
